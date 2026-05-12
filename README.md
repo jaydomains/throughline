@@ -6,7 +6,7 @@ Throughline loads a methodology bundle that codifies your documentation discipli
 
 ## Status
 
-**Phase 2 in progress.** Backend (Phase 1) plus a React UI shell with nine view-mode routing, project switcher, command palette, SSE channel, and backend-down banner. View stubs are intentional placeholders until later phases fill them in.
+**Phase 3 in progress.** Phases 1 + 2 + 3 complete: backend runtime substrate, browser UI shell, and items + sessions + manual entry + item detail panel landed. A freeform-bound project now tracks tasks end-to-end with bundle-derived boards, structured + free-text blockers (T-D8), tags, parent/child nesting, branch refs (T-D38), session memberships, and a slide-in detail panel with arrow-key cycling, stale yellow flag (T-D46), and the full audit history per item. Capture surfaces, library, reconcile engine, and the SiteMesh bundle still ahead.
 
 ## What it does
 

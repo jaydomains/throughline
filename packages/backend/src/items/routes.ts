@@ -1,0 +1,207 @@
+import type { FastifyInstance } from 'fastify';
+import {
+  BlockerCycleError,
+  ItemNotFoundError,
+  ItemPolicyError,
+  ProjectNotFoundError,
+  type ItemsService,
+} from './service.js';
+import type { ProjectsService } from '../projects/service.js';
+
+export function registerItemRoutes(
+  app: FastifyInstance,
+  projects: ProjectsService,
+  items: ItemsService,
+): void {
+  function requireProject(id: string): boolean {
+    return projects.get(id) !== null;
+  }
+
+  app.get<{
+    Params: { id: string };
+    Querystring: { session_id?: string; parent_id?: string };
+  }>('/api/projects/:id/items', async (req, reply) => {
+    if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+    const { session_id, parent_id } = req.query;
+    const filter: Parameters<ItemsService['list']>[0] = { project_id: req.params.id };
+    if (session_id !== undefined) filter.session_id = session_id;
+    if (parent_id !== undefined) filter.parent_id = parent_id === 'null' ? null : parent_id;
+    return { items: items.list(filter) };
+  });
+
+  app.get<{ Params: { id: string } }>('/api/projects/:id/policy', async (req, reply) => {
+    if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+    return { policy: items.policy(req.params.id) };
+  });
+
+  app.get<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/items/:itemId',
+    async (req, reply) => {
+      const item = items.get(req.params.itemId);
+      if (!item || item.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
+      return { item };
+    },
+  );
+
+  app.post<{
+    Params: { id: string };
+    Body: {
+      title?: string;
+      type?: string;
+      status?: string;
+      description?: string;
+      blocker_text?: string | null;
+      parent_id?: string | null;
+      branch_ref?: string | null;
+      tags?: string[];
+      session_ids?: string[];
+    };
+  }>('/api/projects/:id/items', async (req, reply) => {
+    if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+    const body = req.body ?? {};
+    if (typeof body.title !== 'string' || body.title.length === 0) {
+      return reply.code(400).send({ error: 'title_required' });
+    }
+    try {
+      const input: Parameters<ItemsService['create']>[0] = {
+        project_id: req.params.id,
+        title: body.title,
+      };
+      if (body.type !== undefined) input.type = body.type;
+      if (body.status !== undefined) input.status = body.status;
+      if (body.description !== undefined) input.description = body.description;
+      if (body.blocker_text !== undefined && body.blocker_text !== null)
+        input.blocker_text = body.blocker_text;
+      if (body.parent_id !== undefined) input.parent_id = body.parent_id;
+      if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
+      if (body.tags !== undefined) input.tags = body.tags;
+      if (body.session_ids !== undefined) input.session_ids = body.session_ids;
+      const item = items.create(input);
+      return reply.code(201).send({ item });
+    } catch (err) {
+      if (err instanceof ItemPolicyError) {
+        return reply.code(400).send({ error: 'policy_violation', field: err.field, message: err.message });
+      }
+      if (err instanceof ProjectNotFoundError || err instanceof ItemNotFoundError) {
+        return reply.code(400).send({ error: 'not_found', message: err.message });
+      }
+      throw err;
+    }
+  });
+
+  app.patch<{
+    Params: { id: string; itemId: string };
+    Body: {
+      title?: string;
+      type?: string;
+      status?: string;
+      description?: string;
+      blocker_text?: string | null;
+      parent_id?: string | null;
+      branch_ref?: string | null;
+    };
+  }>('/api/projects/:id/items/:itemId', async (req, reply) => {
+    const existing = items.get(req.params.itemId);
+    if (!existing || existing.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
+    try {
+      const item = items.update(req.params.itemId, req.body ?? {});
+      return { item };
+    } catch (err) {
+      if (err instanceof ItemPolicyError) {
+        return reply.code(400).send({ error: 'policy_violation', field: err.field, message: err.message });
+      }
+      if (err instanceof BlockerCycleError) {
+        return reply.code(400).send({ error: 'cycle' });
+      }
+      throw err;
+    }
+  });
+
+  app.delete<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/items/:itemId',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      items.delete(req.params.itemId);
+      return reply.code(204).send();
+    },
+  );
+
+  app.post<{ Params: { id: string; itemId: string }; Body: { tag?: string } }>(
+    '/api/projects/:id/items/:itemId/tags',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      const tag = req.body?.tag;
+      if (typeof tag !== 'string' || tag.length === 0) return reply.code(400).send({ error: 'tag_required' });
+      items.addTag(req.params.itemId, tag);
+      return { item: items.get(req.params.itemId) };
+    },
+  );
+
+  app.delete<{ Params: { id: string; itemId: string; tag: string } }>(
+    '/api/projects/:id/items/:itemId/tags/:tag',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      items.removeTag(req.params.itemId, decodeURIComponent(req.params.tag));
+      return { item: items.get(req.params.itemId) };
+    },
+  );
+
+  app.post<{
+    Params: { id: string; itemId: string };
+    Body: { blocked_by_item_id?: string };
+  }>('/api/projects/:id/items/:itemId/blockers', async (req, reply) => {
+    const existing = items.get(req.params.itemId);
+    if (!existing || existing.project_id !== req.params.id)
+      return reply.code(404).send({ error: 'not_found' });
+    const blockedBy = req.body?.blocked_by_item_id;
+    if (typeof blockedBy !== 'string' || blockedBy.length === 0)
+      return reply.code(400).send({ error: 'blocked_by_item_id_required' });
+    try {
+      items.addBlocker(req.params.itemId, blockedBy);
+      return { item: items.get(req.params.itemId) };
+    } catch (err) {
+      if (err instanceof BlockerCycleError) return reply.code(400).send({ error: 'cycle' });
+      if (err instanceof ItemNotFoundError) return reply.code(400).send({ error: 'blocker_not_found' });
+      throw err;
+    }
+  });
+
+  app.delete<{ Params: { id: string; itemId: string; blockedById: string } }>(
+    '/api/projects/:id/items/:itemId/blockers/:blockedById',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      items.removeBlocker(req.params.itemId, req.params.blockedById);
+      return { item: items.get(req.params.itemId) };
+    },
+  );
+
+  app.post<{ Params: { id: string; itemId: string; sessionId: string } }>(
+    '/api/projects/:id/items/:itemId/sessions/:sessionId',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      items.addSessionMembership(req.params.itemId, req.params.sessionId);
+      return { item: items.get(req.params.itemId) };
+    },
+  );
+
+  app.delete<{ Params: { id: string; itemId: string; sessionId: string } }>(
+    '/api/projects/:id/items/:itemId/sessions/:sessionId',
+    async (req, reply) => {
+      const existing = items.get(req.params.itemId);
+      if (!existing || existing.project_id !== req.params.id)
+        return reply.code(404).send({ error: 'not_found' });
+      items.removeSessionMembership(req.params.itemId, req.params.sessionId);
+      return { item: items.get(req.params.itemId) };
+    },
+  );
+}

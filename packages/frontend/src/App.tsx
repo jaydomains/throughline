@@ -19,10 +19,10 @@ import {
   LibraryView,
   ModulesView,
   ProjectsView,
-  SessionView,
-  SessionsIndex,
-  TreeView,
 } from './views/stubs.js';
+import { SessionsIndex } from './views/SessionsIndex.js';
+import { SessionView } from './views/SessionView.js';
+import { TreeView } from './views/TreeView.js';
 import { api } from './api.js';
 
 function activeProjectIdFromPath(path: string): string | null {

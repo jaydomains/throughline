@@ -402,7 +402,7 @@ Mermaid is an export format. Generate from any scope: a single session, items ta
 
 ### 7.22 Audit log (queryable)
 
-Every state change to every item, library entry, project, methodology bundle binding, and gate firing generates an audit log entry: timestamp, actor (user manual edit, AI extraction, AI reconcile, GitHub auto-apply, methodology gate), field changed, old value, new value, trigger context (PR number for GitHub triggers, model and prompt fingerprint for AI triggers, gate identifier for methodology triggers).
+Every state change to every item, session, library entry, project, methodology bundle binding, and gate firing generates an audit log entry: timestamp, actor (user manual edit, AI extraction, AI reconcile, GitHub auto-apply, methodology gate), field changed, old value, new value, trigger context (PR number for GitHub triggers, model and prompt fingerprint for AI triggers, gate identifier for methodology triggers).
 
 The audit log is queryable; queries power the periodic review, retro generation, drift detection tier 1, the personal RAG audit-history substrate, and methodology-state reconstruction. Visible in the item detail panel's history tab; searchable by time range, actor, or trigger type.
 
@@ -448,7 +448,7 @@ Throughline persists state across these functional categories:
 - **Sessions** — per-project saved view definitions
 - **Library entries** — per-project notes, prompts, snippets, imported docs
 - **Directives** — active rules attached to items or library entries
-- **Audit history** — append-only record of every state change across items, library entries, projects, methodology bindings, and gate firings
+- **Audit history** — append-only record of every state change across items, sessions, library entries, projects, methodology bindings, and gate firings
 - **Chat history** — per-context conversation records
 - **Drift signals** — both code-drift and discipline-drift, queued for the drift inbox with auto-dismissal tracking
 - **Orphaned verifier rules** — methodology-specific cleanup queue
@@ -618,7 +618,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D33 | Verifier rule lifecycle on item deletion: orphan-flag, not auto-removal. Methodology bundle defines verifier-rule type and storage; SiteMesh bundle declares Semgrep rules in repo Semgrep config area. Rule files stay until user merges a cleanup PR; orphans surface in periodic review and settings; one-click cleanup-PR-draft action available; dismiss-without-removal also supported. | 7.16 |
 | T-D34 | Manual item-to-PR linking via auto-detect from active git branch + user override + skip-acceptable. Items without PR association lose tier-2 drift coverage but retain tiers 1, 3, 4. | 7.14 |
 | T-D35 | Reconcile diff has six categories: completed, new, edited (covers title and description changes under one row), blocker changes, contradicted (spawns drift signal rather than auto-revert), no-change | 7.7 |
-| T-D36 | Audit log scope covers items, library entries, projects, methodology bindings, and gate firings | 7.22, 8 |
+| T-D36 | Audit log scope covers items, sessions, library entries, projects, methodology bindings, and gate firings | 7.22, 8 |
 | T-D37 | Internal file movements within Throughline-managed directories (inbox archiving, failure quarantine) are not user-facing writes and run autonomously; carve-out from the no-autonomous-writes principle | 5, 7.6 |
 | T-D38 | Items carry optional branch and PR references, populated automatically from session context or set manually; branches remain free-text strings, not first-class entities; items reference PRs (not branches as first-class fields) | 7.4, 8 |
 | T-D39 | Methodology runtime as the product core. Throughline is methodology-agnostic; bundles configure all methodology-specific concepts (primary unit, anchor format, marker rules, state machine, review patterns, validation). Tracker, library, and intelligence layer are surfaces over the runtime. | 2, 7.1 |

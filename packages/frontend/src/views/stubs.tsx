@@ -1,4 +1,4 @@
-import { Navigate, useParams } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import type { Project } from '@throughline/shared';
 import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
@@ -52,25 +52,6 @@ export function HomeView() {
   );
 }
 
-export function SessionView() {
-  const { sessionId } = useParams();
-  return (
-    <Stub
-      title={`Session ${sessionId ?? ''}`}
-      body="Phase 3 lands sessions + items CRUD. Phase 2 ships the route as an empty stub."
-    />
-  );
-}
-
-export function SessionsIndex() {
-  return (
-    <Stub
-      title="Sessions"
-      body="Sidebar of session views lands in Phase 3 alongside the session boards. Phase 2 ships the route as an empty stub."
-    />
-  );
-}
-
 export function ModulesView({
   bundles,
   projectBundleId,
@@ -86,15 +67,6 @@ export function ModulesView({
     <Stub
       title="Modules"
       body="Phase 7 brings this alive for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts. Phase 2 ships the route as an empty stub."
-    />
-  );
-}
-
-export function TreeView() {
-  return (
-    <Stub
-      title="Tree"
-      body="File-explorer-style hierarchy lands when items exist (Phase 3). Phase 2 ships the route as an empty stub."
     />
   );
 }
