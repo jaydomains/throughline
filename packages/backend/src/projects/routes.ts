@@ -1,7 +1,12 @@
 import type { FastifyInstance } from 'fastify';
 import { BundleNotLoadedError, type ProjectsService } from './service.js';
+import type { SettingsService } from '../settings/service.js';
 
-export function registerProjectRoutes(app: FastifyInstance, projects: ProjectsService): void {
+export function registerProjectRoutes(
+  app: FastifyInstance,
+  projects: ProjectsService,
+  settings: SettingsService,
+): void {
   app.get('/api/projects', async (req) => {
     const includeArchived =
       (req.query as { include_archived?: string } | undefined)?.include_archived === 'true';
@@ -72,5 +77,15 @@ export function registerProjectRoutes(app: FastifyInstance, projects: ProjectsSe
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     projects.delete(req.params.id);
     return reply.code(204).send();
+  });
+
+  // Phase 2: records the user's last-active project so the UI can default
+  // the project switcher on next session. The active-project concept is URL
+  // state in the browser; this endpoint persists the hint only.
+  app.post<{ Params: { id: string } }>('/api/projects/:id/switch', async (req, reply) => {
+    const existing = projects.get(req.params.id);
+    if (!existing) return reply.code(404).send({ error: 'not_found' });
+    settings.set('last_active_project_id', req.params.id);
+    return { ok: true as const };
   });
 }
