@@ -6,7 +6,7 @@ Throughline loads a methodology bundle that codifies your documentation discipli
 
 ## Status
 
-**Pre-implementation.** This repository currently contains only the v1 specification and supporting documents. No code yet. The next session will begin Phase 1 (see [`ROADMAP.md`](ROADMAP.md)).
+**Phase 1 in progress.** Backend skeleton, SQLite datastore + migrations, audit log, project model, bundle loader, and the freeform methodology bundle are in place. No UI yet — that's Phase 2.
 
 ## What it does
 
@@ -37,7 +37,26 @@ Closing the browser tab does not stop background work — reminders fire, pollin
 
 ## Install and run
 
-The build hasn't started yet. Once Phase 1 lands, this section will document the single-command setup. Until then, see [`ROADMAP.md`](ROADMAP.md) for the build plan and [`CODE_SPEC.md`](CODE_SPEC.md) for implementation choices.
+Requires Node.js 20+ and `pnpm`.
+
+```
+pnpm install
+pnpm dev                 # tsx watch, dev mode
+# or:
+pnpm build && pnpm --filter @throughline/backend start
+```
+
+The backend binds to `127.0.0.1:47823` by default (configurable via `THROUGHLINE_PORT`). State lives at `~/.throughline/` — SQLite datastore, secrets file, and the Claude Code inbox archive. Login auto-start per platform is documented at [`docs/install/auto-start.md`](docs/install/auto-start.md).
+
+A minimal CLI ships with the backend:
+
+```
+pnpm --filter @throughline/backend exec throughline health
+pnpm --filter @throughline/backend exec throughline projects create --name Demo --repo /path/to/repo
+pnpm --filter @throughline/backend exec throughline projects list
+```
+
+For the broader build plan see [`ROADMAP.md`](ROADMAP.md) and [`CODE_SPEC.md`](CODE_SPEC.md).
 
 ## Documentation
 

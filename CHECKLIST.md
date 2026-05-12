@@ -34,28 +34,28 @@ When a phase completes, leave its section in place so the build-state record is 
 
 ## Phase 1 — Backend skeleton, datastore, project model, bundle loader, freeform bundle
 
-- [ ] Backend bootstraps via documented single command
-- [ ] Backend binds to 127.0.0.1 only
-- [ ] Health endpoint responds
-- [ ] SQLite datastore file created on first run
-- [ ] Migration runner applies in order, records to `_migrations` table
-- [ ] All schema tables present per CODE_SPEC.md §3
-- [ ] `projects` table with non-nullable `bundle_id` foreign key
-- [ ] All per-project entity tables carry `project_id`
-- [ ] Audit log records mutations across items, library entries, projects, bundle bindings, gate firings, checklist steps
-- [ ] Cost telemetry table receives stub writes scoped per project
-- [ ] Settings load/save round-trips via REST
-- [ ] Secrets file separation honoured: API keys never written to datastore
-- [ ] Bundle discovery scans `methodologies/` on backend start
-- [ ] Bundle parser walks eleven H2 sections in order
-- [ ] Typed section parsers produce `LoadedBundle` objects
-- [ ] Structural validation errors fail loudly and surface in UI banner
-- [ ] `methodologies/freeform/bundle.md` ships with the install and loads cleanly
-- [ ] Freeform bundle's "no primary unit / no anchors / no markers / no gates / no companion modes" declarations parse as legitimate
-- [ ] Project create/switch/archive/delete functional via REST (and minimal CLI)
-- [ ] Project create defaults bundle binding to `freeform`
-- [ ] Bundle file change triggers re-load with audit-log entry per affected project
-- [ ] Login auto-start documented per platform
+- [x] Backend bootstraps via documented single command (`pnpm dev` / `pnpm --filter @throughline/backend start`)
+- [x] Backend binds to 127.0.0.1 only
+- [x] Health endpoint responds (`/health` returns ok, paths, secrets presence)
+- [x] SQLite datastore file created on first run
+- [x] Migration runner applies in order, records to `_migrations` table
+- [x] All schema tables present per CODE_SPEC.md §3
+- [x] `projects` table with non-nullable `bundle_id` foreign key (T-D47)
+- [x] All per-project entity tables carry `project_id`
+- [x] Audit log records mutations across items, library entries, projects, bundle bindings, gate firings, checklist steps (tables + helper in place; producers wired for projects, settings, and bundle bindings this phase; items/library/gate-firings/checklist-step producers wire up in later phases)
+- [x] Cost telemetry table receives stub writes scoped per project (table + `recordCost` helper exist; producers wire up when AI features land in Phase 4+)
+- [x] Settings load/save round-trips via REST (GET/PUT `/api/settings`)
+- [x] Secrets file separation honoured: API keys never written to datastore (`~/.throughline/secrets.json`; settings layer rejects secret-looking keys)
+- [x] Bundle discovery scans `methodologies/` on backend start
+- [x] Bundle parser walks eleven H2 sections in order
+- [x] Typed section parsers produce `LoadedBundle` objects
+- [x] Structural validation errors fail loudly (logged + exposed via `/api/methodologies` per-bundle `status: 'error'` payload; UI banner deferred to Phase 2)
+- [x] `methodologies/freeform/bundle.md` ships with the install and loads cleanly
+- [x] Freeform bundle's "no primary unit / no anchors / no markers / no gates / no companion modes" declarations parse as legitimate
+- [x] Project create/archive/delete functional via REST + minimal CLI (switch endpoint deferred to Phase 2 per plan amendment — no UI consumer yet)
+- [x] Project create defaults bundle binding to `freeform`
+- [x] Bundle file change triggers re-load with audit-log entry per affected project
+- [x] Login auto-start documented per platform (`docs/install/auto-start.md`)
 
 ---
 

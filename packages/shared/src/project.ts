@@ -1,0 +1,33 @@
+export type ProjectState = 'active' | 'archived';
+
+export interface Project {
+  id: string;
+  name: string;
+  repo_path: string;
+  github_owner: string | null;
+  github_repo: string | null;
+  bundle_id: string;
+  state: ProjectState;
+  settings_json: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+}
+
+export interface CreateProjectInput {
+  name: string;
+  repo_path: string;
+  bundle_id?: string;
+  github_owner?: string;
+  github_repo?: string;
+  settings?: Record<string, unknown>;
+}
+
+export interface UpdateProjectInput {
+  name?: string;
+  repo_path?: string;
+  github_owner?: string | null;
+  github_repo?: string | null;
+  state?: ProjectState;
+  settings?: Record<string, unknown>;
+}

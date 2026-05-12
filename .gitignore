@@ -16,10 +16,15 @@ Thumbs.db
 *.pem
 *.key
 
-# Local datastore (path TBD by CODE_SPEC.md; placeholder)
-# *.db
-# *.db-journal
-# *.db-wal
-# *.db-shm
+# Local datastore lives outside the repo (~/.throughline/); these guard against accidental in-repo copies.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
 
-# Build / dependency artefacts will be added once CODE_SPEC.md fixes the stack
+# Build / dependency artefacts
+node_modules/
+dist/
+*.tsbuildinfo
+coverage/
+.pnpm-store/
