@@ -1,8 +1,8 @@
 # Throughline
 
-A local, single-user session companion for parallel AI-coded development.
+A local, single-user methodology runtime for AI-assisted software development.
 
-Throughline tracks outstanding work across multiple Claude Code sessions, surfaces drift in completed items by combining static rule checks (Semgrep) with semantic code search (Semble), and turns saved notes and prompts into active memory.
+Throughline loads a methodology bundle that codifies your documentation discipline — file conventions, anchor format, marker taxonomy, build phases, review patterns, validation rules — then applies that methodology to one or more projects you bring. On top of the runtime sits a familiar work tracker, a reference library, and an intelligence layer. The same Throughline supports any project that has a methodology bundle declared for it.
 
 ## Status
 
@@ -10,11 +10,13 @@ Throughline tracks outstanding work across multiple Claude Code sessions, surfac
 
 ## What it does
 
-- **Tracks outstanding work** — todos and decisions with status lifecycle, blockers, tags, and infinite nesting. Items live in one pool; sessions are saved views over that pool.
-- **Captures messy input** — paste a Claude Code transcript, drop a `.md` file, dictate, or jot to the scratchpad. AI extracts and classifies; you review before items land.
-- **Stores reference material** — notes, prompts, snippets, imported docs in a searchable library.
-- **Detects drift on completed items** — tiered signal system from Semgrep failures, GitHub revert events, code-touch detection, and dump-zone heuristics.
-- **Closes the loop with GitHub** — polls for PR events, surfaces status, auto-reconciles on merge with confidence-thresholded apply.
+The product has three layers:
+
+- **Methodology runtime (core).** Loads a bundle describing how a project is documented and built. Parses the project's docs against the bundle, runs review checklists as structured workflows, gates build phases, surfaces discipline drift, scaffolds session handovers. SiteMesh's authoring discipline ships as the first bundle; a minimum-spec `freeform` bundle ships alongside for lightweight projects.
+- **Tracker (surface over the runtime).** Items, sessions, library, directives, drift detection, audit log — a work-tracking surface informed by the methodology beneath. Items know which primary unit they belong to, which anchor they cite, what phase they're in, whether their PR has cleared the methodology's gates.
+- **Intelligence layer (over both).** AI-assisted dump zone extraction, reconcile, chat, RAG over the project's docs and code, end-of-session retros, dependency sequencing, stakeholder rendering, drift re-verification. Always reviewable before applying.
+
+**Multi-project from v1.** Multiple projects coexist in one Throughline instance. Each binds to a methodology bundle; the freeform bundle is the default at project create.
 
 See [`SPEC.md`](SPEC.md) for the full functional description.
 
@@ -28,10 +30,10 @@ See [`SPEC.md`](SPEC.md) for the full functional description.
 
 Two pieces, both on your laptop:
 
-- **Backend service** — long-lived local process. Handles persistence, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Auto-runs on login.
+- **Backend service** — long-lived local process. Handles persistence, methodology bundle loading and enforcement, project doc parsing, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Auto-runs on login.
 - **Browser UI** — served from the backend over a local-only address. The browser does not access the filesystem, OS notifications, or external networks directly; the backend mediates everything.
 
-Closing the browser tab does not stop background work — reminders fire, polling continues, drift checks run.
+Closing the browser tab does not stop background work — reminders fire, polling continues, drift checks run, methodology gates enforce.
 
 ## Install and run
 
@@ -53,10 +55,10 @@ Throughline integrates with — but does not bundle:
 
 - **Anthropic API** (account + key) for all AI features
 - **GitHub** (account + PAT) for repo and PR awareness
-- **Semgrep + GitHub Actions** on your repo for tier-1 drift detection
+- **Semgrep + GitHub Actions** on repos whose bundle declares Semgrep-based verifier rules (SiteMesh does; freeform does not)
 - **Semble** for local code search
 
-It degrades gracefully when these are absent: no Anthropic key disables AI but everything else works; no GitHub PAT disables polling but sessions remain editable; no Semble disables code Q&A and tier-3 drift detection.
+It degrades gracefully when these are absent: no Anthropic key disables AI but everything else works; no GitHub PAT disables polling but sessions remain editable; no Semble disables code Q&A and code-drift tier 3; a project bound to the freeform bundle gets a methodology-free tracker experience natively.
 
 ## Owner
 

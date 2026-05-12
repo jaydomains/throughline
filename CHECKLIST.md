@@ -6,67 +6,95 @@ When a phase completes, leave its section in place so the build-state record is 
 
 ---
 
-## Phase 0 — Repo bootstrap & decision freeze
+## Phase 0 — Repo bootstrap & v5.1 documentation regeneration
 
-- [x] Repo directory created at chosen path
-- [x] SPEC.md placed at the repo's chosen location
-- [x] §16 path references updated to match chosen structure
-- [x] §14 ledger pointer path updated to match chosen structure
-- [x] TL;DR `Repo path` corrected for standalone repo
-- [x] README.md written
-- [x] DECISIONS.md written with all 39 T-D anchor entries
-- [x] CODE_SPEC.md written with C-D1 (TypeScript stack) anchored
-- [x] ROADMAP.md written
-- [x] CHECKLIST.md initialised
-- [x] .gitignore written
-- [x] Errors / contradictions in SPEC.md surfaced for spec author
+- [x] SPEC.md v5.1 in place (no edits this session)
+- [x] DECISIONS.md regenerated against v5.1 §14 (48 T-D anchors)
+- [x] Existing T-D bodies renumbered to match new §14 numbering
+- [x] T-D10 refined to call out four-content-types + whiteboards-deferred wording
+- [x] T-D21 expanded to the two-stream framing (code-drift + discipline-drift)
+- [x] T-D26 refined for bundle-defined verifier-rule conventions
+- [x] T-D33 refined for bundle-defined verifier-rule type/storage
+- [x] T-D35 refined: "edited (covers title and description under one row)"
+- [x] T-D36 expanded to projects + methodology bindings + gate firings
+- [x] T-D38 refined: items reference PRs (not branches as first-class fields)
+- [x] T-D39–T-D48 authored with full bodies
+- [x] Rationale-needed markers preserved where the rationale isn't recoverable
+- [x] CODE_SPEC.md regenerated against v5.1 (methodology runtime + project model + bundle parsing + gate runtime + discipline-drift + companion runtime + session-start scaffolding)
+- [x] C-D1 and C-D2 preserved
+- [x] C-D3 through C-D9 authored
+- [x] CODE_SPEC.md Questions for the spec author surfaces remaining gaps
+- [x] ROADMAP.md regenerated against v5.1 (sixteen phases, runtime-first)
+- [x] CHECKLIST.md regenerated to match the new ROADMAP
+- [x] README.md reframed to describe Throughline as a methodology runtime
+- [x] §13 recommended defaults adopted at the relevant phases
+- [x] §13 open questions without recommended defaults flagged with build-time fallbacks
 
 ---
 
-## Phase 1 — Backend skeleton & datastore
+## Phase 1 — Backend skeleton, datastore, project model, bundle loader, freeform bundle
 
 - [ ] Backend bootstraps via documented single command
 - [ ] Backend binds to 127.0.0.1 only
 - [ ] Health endpoint responds
 - [ ] SQLite datastore file created on first run
 - [ ] Migration runner applies in order, records to `_migrations` table
-- [ ] All schema tables present per CODE_SPEC.md §2
+- [ ] All schema tables present per CODE_SPEC.md §3
+- [ ] `projects` table with non-nullable `bundle_id` foreign key
+- [ ] All per-project entity tables carry `project_id`
+- [ ] Audit log records mutations across items, library entries, projects, bundle bindings, gate firings, checklist steps
+- [ ] Cost telemetry table receives stub writes scoped per project
 - [ ] Settings load/save round-trips via REST
-- [ ] Secrets file separation (T-D4) honoured: API keys never written to datastore
-- [ ] Audit log records test mutations end-to-end
-- [ ] Cost telemetry table receives stub writes
+- [ ] Secrets file separation honoured: API keys never written to datastore
+- [ ] Bundle discovery scans `methodologies/` on backend start
+- [ ] Bundle parser walks eleven H2 sections in order
+- [ ] Typed section parsers produce `LoadedBundle` objects
+- [ ] Structural validation errors fail loudly and surface in UI banner
+- [ ] `methodologies/freeform/bundle.md` ships with the install and loads cleanly
+- [ ] Freeform bundle's "no primary unit / no anchors / no markers / no gates / no companion modes" declarations parse as legitimate
+- [ ] Project create/switch/archive/delete functional via REST (and minimal CLI)
+- [ ] Project create defaults bundle binding to `freeform`
+- [ ] Bundle file change triggers re-load with audit-log entry per affected project
 - [ ] Login auto-start documented per platform
 
 ---
 
-## Phase 2 — Browser UI shell & view-mode plumbing
+## Phase 2 — Browser UI shell & nine view-mode plumbing
 
 - [ ] React app served by backend at `/`
-- [ ] All six view-mode routes render an empty stub
+- [ ] Project switcher in header lists and switches projects
+- [ ] All nine view-mode routes render an empty stub under `/projects/:id/...`
+- [ ] Modules view mode hidden for projects whose bundle declares no primary unit
+- [ ] Methodology-gates view mode hidden for projects whose bundle declares no gates
 - [ ] Header view-mode toggle switches routes
 - [ ] Header includes scratchpad placeholder, cost meter placeholder, backup indicator placeholder
 - [ ] Command palette opens/closes via `Cmd+K` / `Ctrl+K`
 - [ ] Command palette fuzzy-search infrastructure ready
+- [ ] Command palette can jump across projects
 - [ ] Keyboard navigation primitives in place (tab/shift-tab indent, arrow nav, Esc close, `?` reference)
 - [ ] SSE channel established and demonstrates ping/pong
+- [ ] Backend-down state shows a banner rather than crashing
 
 ---
 
 ## Phase 3 — Items, sessions, manual entry, item detail panel
 
-- [ ] Item create / read / update / delete via UI
-- [ ] Session create / read / update / delete via UI
+- [ ] Item create / read / update / delete via UI within a project
+- [ ] Session create / read / update / delete within a project
 - [ ] Item-session many-to-many membership works
-- [ ] Status lifecycle enforced (todos: 4 states; decisions: 3 states)
+- [ ] Item types come from the active project's bundle (freeform: `task`)
+- [ ] Status lifecycle enforced per bundle declaration (freeform: `open`/`done`)
 - [ ] Free-text blocker description field functional
 - [ ] Structured blocker references functional
 - [ ] Tags add/remove
 - [ ] Parent/child nesting renders to arbitrary depth
-- [ ] Branch reference field on items (auto-populates from session, override available)
-- [ ] Todos board and decisions board render side by side per session
+- [ ] Branch reference free-text field on items (auto-populates from session, override available)
+- [ ] Bundle-defined boards render correctly (freeform: single board called "tasks")
 - [ ] Item detail panel slides in from right
 - [ ] Detail panel arrow-key navigation through parent list
-- [ ] Detail panel shows: status, tags, blockers, branch ref, code refs (placeholder), verifier rules (placeholder), directives (placeholder), audit history, linked items, git context
+- [ ] Detail panel shows: status, tags, blockers, branch ref, methodology context (placeholder until bundle declares fields), code refs (placeholder), verifier rules (placeholder), directives (placeholder), audit history, linked items, git context
+- [ ] Stale yellow flag renders in detail panel header per stale threshold
+- [ ] Stale yellow flag renders next to item titles in list views
 - [ ] Manual entry inline form is keyboard-driven
 - [ ] All lifecycle transitions audit-logged
 
@@ -78,7 +106,7 @@ When a phase completes, leave its section in place so the build-state record is 
 - [ ] Scratchpad has no AI processing and no review modal
 - [ ] Session dump zone accepts paste + file drop
 - [ ] Library dump zone accepts paste + file drop
-- [ ] Dump zone routes through Anthropic for extraction
+- [ ] Dump zone extraction parameterised by active project's bundle
 - [ ] Review modal shows proposed-items + cross-session re-route option
 - [ ] Voice input via browser-native speech recognition (desktop-only)
 - [ ] Voice destination toggle (session vs library dump zone)
@@ -86,6 +114,7 @@ When a phase completes, leave its section in place so the build-state record is 
 - [ ] Claude Code push: inbox directory configurable
 - [ ] Inbox watcher picks up new files
 - [ ] Inbox queue processes serially with per-file state tracking
+- [ ] Inbox file → project routing convention works
 - [ ] Processed files archive to dated subdirectory (default 30-day retention)
 - [ ] Failed files quarantine with sibling error metadata
 - [ ] Code TODO/FIXME import: manual trigger in UI
@@ -96,45 +125,97 @@ When a phase completes, leave its section in place so the build-state record is 
 
 ## Phase 5 — Reconcile engine
 
-- [ ] Reconcile diff produces all six categories (completed, new, edited, blocker changes, contradicted, no-change)
-- [ ] Edited covers rename + description-only updates
+- [ ] Reconcile diff produces all six categories
+- [ ] Edited row covers title and description changes under one row
 - [ ] Review modal renders the six-category structure
 - [ ] User can accept / reject per category before applying
 - [ ] Apply mutates state and audit-logs every change
-- [ ] Contradicted spawns drift signal (not state revert)
+- [ ] Contradicted spawns code-drift signal (not state revert)
 - [ ] Drift signal tier reflects PR association (tier-2 if associated, tier-3 otherwise)
 
 ---
 
 ## Phase 6 — Library, directives, repo `.md` ingestion
 
+- [ ] Library entries scoped per project
 - [ ] Library entries: notes, prompts, snippets, imported docs all functional
 - [ ] Notes attachable to multiple items; many-to-many table populated
 - [ ] Prompts support `{{var_name}}` placeholders with fill-in modal
 - [ ] Snippet quick-copy button always visible
 - [ ] Imported docs: AI generates summary + tag suggestions on import
 - [ ] Library entry full-text search
-- [ ] Library entry semantic search routed (Semble for code-related queries — placeholder until Phase 8; local embeddings for note-related queries — placeholder until Phase 9)
+- [ ] Library entry semantic search routed (Semble for code-related queries — placeholder until Phase 11; local embeddings for text queries — placeholder until Phase 14)
+- [ ] Cross-project library toggle
 - [ ] Pin directive: parent view shows pinned item sticky
 - [ ] Reminder directive: relative + absolute + recurrence rules
 - [ ] Reminder fires OS notification regardless of browser tab state
 - [ ] Recurring reminders persist until directive removed
-- [ ] Include-in-prompt directive: session-start prompt auto-prepends flagged items
-- [ ] One-click copy session-start prompt to clipboard
+- [ ] Include-in-prompt directive: session-start prompt auto-prepends flagged items (placeholder hook until Phase 13)
 - [ ] Directives view groups by type (pinned / reminders / include-in-prompt)
 - [ ] Directives view shows count per group, each collapsible
 - [ ] Reminders sorted by next firing within their group
 - [ ] Repo `.md` ingestion: folder-opt-in selector
 - [ ] `.md` re-ingest: snapshot by default with per-entry track-source toggle
-- [ ] Library entries audit-logged (T-D37)
+- [ ] Library entries audit-logged
 
 ---
 
-## Phase 7 — GitHub integration & drift detection (tiers 1–4)
+## Phase 7 — SiteMesh bundle delivery & bundle-aware capture parameterisation
+
+- [ ] `methodologies/sitemesh/bundle.md` authored per the eleven-section structure
+- [ ] SiteMesh bundle parses cleanly through the bundle loader
+- [ ] SiteMesh-bound project: item types `todo` and `decision` declared by bundle and surfaced in UI
+- [ ] SiteMesh-bound project: status lifecycles per bundle (todos 4 states; decisions 3 states)
+- [ ] SiteMesh-bound project: todos and decisions render on separate boards
+- [ ] Methodology-context fields populate on items (primary unit / phase / anchor citations / marker refs)
+- [ ] Modules view renders for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts
+- [ ] No code path uses SiteMesh-specific terminology unmediated by the bundle (verified by review)
+- [ ] Phase 3 UI works for both freeform-bound and SiteMesh-bound projects without per-bundle code branches
+
+---
+
+## Phase 8 — Methodology gate runtime (four phase moments + PR-open)
+
+- [ ] Gate dispatcher implemented per C-D6
+- [ ] Pre-write moment dispatch (provisional trigger: signal file + UI action)
+- [ ] Per-commit moment dispatch (provisional trigger: `.git/COMMIT_EDITMSG` watch or installed pre-commit hook)
+- [ ] Plan-mode moment dispatch (provisional trigger: plan-mode marker file in Claude Code inbox)
+- [ ] Post-commit moment dispatch (provisional trigger: git log poll or installed post-commit hook)
+- [ ] PR-open moment dispatch via GitHub poller (placeholder until Phase 10 polling lives)
+- [ ] Multi-gate per phase moment supported; gates run independently
+- [ ] Each gate firing writes to `gate_firings`
+- [ ] Each gate firing writes an audit-log entry
+- [ ] Mechanical gates execute scripts and validators via child-process spawn
+- [ ] Judgement gates call Anthropic with bundle-supplied prompt template
+- [ ] Gate failures surface in methodology-gates view as proposals
+- [ ] "Override with reason" action records audit-log row with reason + original findings reference
+- [ ] "Fix and retry" action re-fires the gate
+- [ ] SiteMesh per-commit moment: verify-structure.sh and sitemesh-pre-commit run as two independent gates
+- [ ] Throughline never silently blocks the underlying repo
+
+---
+
+## Phase 9 — Discipline-drift engine
+
+- [ ] Discipline-drift scanners instantiate from the loaded bundle's validation-rules section
+- [ ] Scanners watch project doc files via chokidar
+- [ ] Pre-write moment also fires write-time scanners
+- [ ] Signals write to `drift_signals` with `stream='discipline'`
+- [ ] Signals scoped to `item_id` or `primary_unit_ref` where applicable
+- [ ] Methodology-gates view shows category-grouped lists
+- [ ] Modules view shows badges on affected primary units
+- [ ] Items associated with affected primary units inherit a methodology-drift indicator in list rows and detail panel
+- [ ] Freeform-bound projects: scanner instantiation is no-op (verified)
+- [ ] Bundle re-load tears down and rebuilds scanners
+
+---
+
+## Phase 10 — GitHub integration & code-drift detection
 
 - [ ] GitHub PAT stored in secrets file (not datastore)
 - [ ] Polling at 60s for active sessions, 5min otherwise
 - [ ] ETag caching reduces redundant API calls
+- [ ] Per-project GitHub `owner/repo` configuration
 - [ ] PR badges render (needs review / approved / merged)
 - [ ] Activity timestamps + PR links surface per session
 - [ ] Auto-reconcile on merge with high/medium/low confidence branches
@@ -146,14 +227,14 @@ When a phase completes, leave its section in place so the build-state record is 
 - [ ] Manual item-to-PR linking: override action
 - [ ] Manual item-to-PR linking: skip path
 - [ ] Re-association possible from item detail panel anytime
-- [ ] Tier-1 Semgrep findings read via GitHub API and matched to items by rule filename
+- [ ] Code-drift tier-1: Semgrep findings read via GitHub API and matched to items by rule filename
 - [ ] Tier-1 failure badges item red; passing clears badge
 - [ ] Tier-2 GitHub revert event detection; item badged orange
 - [ ] Tier-3 watches for new PRs touching files in `item_code_refs`; item badged yellow
 - [ ] Tier-4 dedup: cosine ≥ 0.80 trigger, AI confirmation pass for 0.70–0.80
 - [ ] Tier-4 signals route to drift inbox (not item badge)
 - [ ] Tier-4 stale signals auto-dismiss after 7 days with audit-logged reason
-- [ ] Drift inbox count surfaces in header
+- [ ] Drift inbox count surfaces in header (counts both streams)
 - [ ] Drift signal carries explicit reasoning text
 - [ ] Re-verify-via-AI action available on every signal
 - [ ] Manual re-open action available on every signal
@@ -162,14 +243,15 @@ When a phase completes, leave its section in place so the build-state record is 
 - [ ] One-click cleanup-PR-draft action constructs PR via API
 - [ ] Dismiss-without-removal supported and audit-logged
 - [ ] Workflow-template warning fires at first GitHub-integration use if expected workflow not present in repo
+- [ ] PR-open methodology gate fires via Phase 8 dispatcher
 
 ---
 
-## Phase 8 — Semble integration
+## Phase 11 — Semble integration
 
 - [ ] Backend spawns Semble as a child process
 - [ ] Semble lifecycle (start, restart) managed by backend
-- [ ] Semble indexes the configured repo on first connection
+- [ ] Semble indexes the configured per-project repo on first connection
 - [ ] Semble re-indexes incrementally on file changes
 - [ ] Done-time code linking: Semble searches by item title + description
 - [ ] Top results presented to user for confirmation
@@ -177,81 +259,120 @@ When a phase completes, leave its section in place so the build-state record is 
 - [ ] Plain-English code Q&A: scratchpad/library question routes to Semble + Anthropic summarisation
 - [ ] Code Q&A returns answer with source links
 - [ ] Dump zone item creation enrichment: Semble suggestions appear in review modal
-- [ ] Tier-3 drift detection begins firing as items accumulate code refs
+- [ ] Tier-3 code-drift detection begins firing as items accumulate code refs
 
 ---
 
-## Phase 9 — RAG & intelligence layer
+## Phase 12 — Companion review runtime
 
-- [ ] Notes substrate: local embeddings generated incrementally on note edit
-- [ ] Notes substrate: top-k cosine retrieval + Anthropic summarisation
-- [ ] Code substrate: routed to Semble per Phase 8
+- [ ] Bundle-declared checklists instantiate as `ChecklistRun` records
+- [ ] Step state machine: pending → in-progress → passed | failed | skipped
+- [ ] Mechanical steps execute via shared mechanical-execution infrastructure
+- [ ] Mechanical step findings write to audit log
+- [ ] Judgement steps open a UI panel
+- [ ] Judgement steps accept user judgement with rationale
+- [ ] Judgement steps optionally hand off to AI-via-Anthropic (default Sonnet)
+- [ ] AI-judgement results carry prompt fingerprint and model in audit log
+- [ ] Step transitions audit-logged
+- [ ] Run completion offers optional library-note summary attached to discussed items
+- [ ] Failed mechanical steps do not halt the run; override audit-logged and run continues
+
+---
+
+## Phase 13 — Session-start scaffolding
+
+- [ ] Endpoint generates session-start prompts for the active project
+- [ ] Companion-mode selection: bundle-declared enum with default
+- [ ] Context-assembly retrieves project spec, decisions, anchors, markers, execution-plan slice, dependencies
+- [ ] Include-in-prompt directives auto-prepend to the generated prompt
+- [ ] Anthropic Haiku call classifies relevance
+- [ ] Bundle templates section provides the prompt template
+- [ ] One-click copy-to-clipboard
+- [ ] Cost telemetry records every assembly call
+- [ ] Freeform-bound project produces a minimum-spec prompt
+
+---
+
+## Phase 14 — RAG & intelligence layer
+
+- [ ] Text substrate: local embeddings generated incrementally on content edit
+- [ ] Text substrate: top-k cosine retrieval + Anthropic summarisation
+- [ ] Code substrate: routed to Semble per Phase 11
 - [ ] Audit-history substrate: structured queries on the audit log
 - [ ] Router: keyword heuristics first pass
 - [ ] Router: user-overridable per-query toggle
 - [ ] RAG response cites sources across substrates
+- [ ] Queries project-scoped by default with cross-project toggle
 - [ ] End-of-session retro: user-initiated trigger only
-- [ ] Retro generates one-page summary using items + audit + Claude Code transcripts in window
+- [ ] Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window
 - [ ] Retro saved as library note
 - [ ] Retro optionally attached to discussed items
 - [ ] Retro optionally appended to `session-start.md` for next session
 - [ ] Periodic review: configurable interval (default 2 weeks)
-- [ ] Periodic review hygiene questions cover tier-3 drift no-action, decisions older than 60 days, sessions untouched 30+ days, longest-held blockers, orphaned verifier rules
+- [ ] Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories
 - [ ] Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count
+- [ ] Sequencing deprioritises items in primary units failing methodology gates
 - [ ] "Do next" view surfaces unblock-impact summaries
 - [ ] Stakeholder view toggle re-renders item content in plain language
 - [ ] Stakeholder view cache invalidates on item edit
-- [ ] Per-list chat panel reads session items as context
+- [ ] Per-list chat panel reads session items + methodology context as input
 - [ ] Per-list chat proposed changes route through review
 - [ ] Dump zone chat mode toggle: paste, refine, apply through review
 - [ ] Chat history persisted per context and retrievable
 
 ---
 
-## Phase 10 — Backup, cost meter, hygiene polish
+## Phase 15 — Backup, cost meter, settings polish, hygiene
 
 - [ ] Manual export downloads SQLite file as timestamped copy
-- [ ] API keys excluded from export (T-D25, T-D4)
+- [ ] API keys excluded from export
+- [ ] `methodologies/` directory excluded from export (ships with install)
 - [ ] Header backup indicator turns red after threshold days (default 7)
 - [ ] Auto-copy target path setting works
 - [ ] Auto-copy fires on schedule when target set
 - [ ] Cost meter visible in header at all times
 - [ ] Cost meter breaks down by feature category
 - [ ] Cost meter shows day / week / month
+- [ ] Cost meter scopes per active project with global rollup option
 - [ ] Daily threshold warning (configurable; default = no threshold)
 - [ ] Orphaned rules panel functional in settings
-- [ ] Stale-item indicator (yellow border + detail-panel header indicator) per §7.22
-- [ ] Settings panel exposes every knob in §7.22
+- [ ] Settings panel exposes every knob in SPEC §7.25
 - [ ] Settings: Anthropic API key
 - [ ] Settings: GitHub PAT
-- [ ] Settings: local repo path
+- [ ] Settings: per-project local repo path
+- [ ] Settings: per-project methodology bundle binding (default freeform)
 - [ ] Settings: default model selector + per-feature overrides
 - [ ] Settings: stale threshold
 - [ ] Settings: backup nudge interval + auto-copy target
 - [ ] Settings: periodic review interval
-- [ ] Settings: GitHub default `owner/repo` and per-session branch fields
+- [ ] Settings: GitHub default `owner/repo` per project and per-session branch fields
 - [ ] Settings: Claude Code inbox directory + archive retention
-- [ ] Settings: Semgrep rules path
 - [ ] Settings: OS notification permission grant button
 - [ ] Settings: cost meter daily threshold
 
 ---
 
-## Phase 11 — Definition of Done walkthrough
+## Phase 16 — Definition of Done walkthrough
 
-- [ ] §11 bullet 1 — items in single datastore with stable IDs; sessions are saved views
-- [ ] §11 bullet 2 — items support full schema per §7.2 + branch/PR/code/verifier/audit
-- [ ] §11 bullet 3 — six view modes functional and switchable
-- [ ] §11 bullet 4 — all capture surfaces functional with consistent review-before-apply
-- [ ] §11 bullet 5 — reconcile produces six categories cleanly
-- [ ] §11 bullet 6 — three directive types functional with OS notifications; directives view groups by type
-- [ ] §11 bullet 7 — GitHub polling + PR state + auto-reconcile + manual item-PR linking
-- [ ] §11 bullet 8 — drift tiers 1–4 + orphan-flag lifecycle
-- [ ] §11 bullet 9 — Semble local integration functional
-- [ ] §11 bullet 10 — Personal RAG with three substrates and router
-- [ ] §11 bullet 11 — retro, periodic review, dependency sequencing, stakeholder, command palette functional
-- [ ] §11 bullet 12 — cost meter visible in header at all times
-- [ ] §11 bullet 13 — confidence scores logged from day 1
-- [ ] §11 bullet 14 — single-file backup + optional auto-copy
-- [ ] §11 bullet 15 — settings panel covers all required knobs
-- [ ] §11 bullet 16 — backend single-command setup; frontend served from backend
+- [ ] §11 bullet — methodology runtime loads bundles from `methodologies/`; eleven-section parsing; runtime configures validators, sweeps, marker scanners, state-machine transitions (one or more gates per phase moment), review-checklist steps, template parsers
+- [ ] §11 bullet — SiteMesh and freeform bundles both ship and load
+- [ ] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform
+- [ ] §11 bullet — items live in one local datastore per project with stable identifiers; sessions are saved views
+- [ ] §11 bullet — items support infinite nesting, methodology-defined type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log
+- [ ] §11 bullet — nine view modes functional and switchable; modules and methodology-gates hide where bundle declares none
+- [ ] §11 bullet — all capture surfaces functional with consistent review-before-apply where applicable
+- [ ] §11 bullet — reconcile produces structured diffs with all six categories and applies cleanly
+- [ ] §11 bullet — three directive types functional with OS notification integration; directives view groups by type
+- [ ] §11 bullet — four library content types all first-class
+- [ ] §11 bullet — GitHub integration polls at documented cadence, PR state surfaces, auto-reconcile on merge confidence-thresholded; manual item-to-PR linking functional
+- [ ] §11 bullet — methodology gates fire on PR open, transition events, and commit-prep moments; failures surface as proposals; never silently block
+- [ ] §11 bullet — both code-drift (four tiers) and discipline-drift (bundle-defined) streams active and surfacing
+- [ ] §11 bullet — stale yellow flag appears in all list views and detail panel header
+- [ ] §11 bullet — Semble local integration: indexing, code Q&A, item enrichment functional
+- [ ] §11 bullet — Personal RAG with three substrates and router functional
+- [ ] §11 bullet — end-of-session retro, periodic review, dependency sequencing, stakeholder toggle, command palette, companion runtime, session-start scaffolding functional
+- [ ] §11 bullet — cost meter visible in header at all times
+- [ ] §11 bullet — GitHub auto-apply confidence scores logged in audit log from day 1
+- [ ] §11 bullet — single-file backup with optional auto-copy
+- [ ] §11 bullet — settings panel covers all required knobs
+- [ ] §11 bullet — backend installs and runs via documented single-command setup; frontend served from backend
