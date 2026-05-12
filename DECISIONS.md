@@ -12,10 +12,10 @@ Where rationale could not be recovered from SPEC.md, the entry is marked `<!-- R
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.1, 8
+- **Sections affected:** 7.3, 8
 
 ### Decision
-Items live in a single global pool with stable identifiers. A session is a saved view definition that filters the pool by item membership. Items can belong to multiple sessions; marking an item done in any view marks it done everywhere.
+Items live in a single global pool (per project) with stable identifiers. A session is a saved view definition that filters the pool by item membership. Items can belong to multiple sessions; marking an item done in any view marks it done everywhere.
 
 ### Context
 Earlier drafts treated sessions as containers. That forced duplication of items across sessions and made cross-session reasoning awkward.
@@ -35,16 +35,16 @@ Items table holds the canonical record; a join table holds session memberships. 
 - **Sections affected:** 3
 
 ### Decision
-Throughline runs as two pieces on the user's laptop: a long-lived backend service and a browser UI. Backend handles persistence, scheduling, file watching, external network calls, and Claude Code → Throughline push. UI is a presentation layer over the backend.
+Throughline runs as two pieces on the user's laptop: a long-lived backend service and a browser UI. Backend handles persistence, scheduling, file watching, methodology runtime enforcement, external network calls, and Claude Code → Throughline push. UI is a presentation layer over the backend.
 
 ### Context
-A browser-only design could not do background work, scheduled tasks, or filesystem watching.
+A browser-only design could not do background work, scheduled tasks, filesystem watching, or methodology rule enforcement.
 
 ### Rationale
-Closing the browser tab must not kill reminders, polling, or drift checks. Filesystem and OS notifications must be reachable. Putting these in the backend lets the user close the browser without losing the things that matter.
+Closing the browser tab must not kill reminders, polling, drift checks, or gate enforcement. Filesystem and OS notifications must be reachable. Putting these in the backend lets the user close the browser without losing the things that matter.
 
 ### Implications
-Two-process deployment. Login auto-start required. Backend exposes a local-only HTTP surface for the browser. Backend owns all state.
+Two-process deployment. Login auto-start required. Backend exposes a local-only HTTP surface for the browser. Backend owns all state and runs the methodology runtime.
 
 ---
 
@@ -52,7 +52,7 @@ Two-process deployment. Login auto-start required. Backend exposes a local-only 
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.20, 8
+- **Sections affected:** 7.23, 8
 
 ### Decision
 All Throughline state lives in a single-file local datastore. Backup is a copy of that file. There is no separate serialisation layer between the datastore and the backup format.
@@ -72,13 +72,13 @@ SQLite (or similar) is the natural choice. Schema migrations apply in-place. No 
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 8, 7.22
+- **Sections affected:** 8, 7.25
 
 ### Decision
 Anthropic API keys, GitHub PATs, and any future API keys live in backend configuration, separate from the primary datastore. Keys are never accessible to the browser and never included in backups.
 
 ### Context
-Backups are designed to be copyable to external locations (Dropbox, Drive, USB — T-D29). Keys in backups are leakable.
+Backups are designed to be copyable to external locations (Dropbox, Drive, USB — T-D28). Keys in backups are leakable.
 
 ### Rationale
 Splitting keys out of state keeps backups safe to share or store off-machine. Browser isolation prevents key exfiltration through XSS or rogue extensions.
@@ -92,7 +92,7 @@ Two configuration surfaces: the datastore (state) and a backend-only secrets con
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.5, 7.10
+- **Sections affected:** 7.7, 7.13
 
 ### Decision
 Every AI-proposed change passes through a review modal before applying. The only exception is confidence-thresholded GitHub auto-apply on PR merge, and that exception still records audit entries and offers 24-hour undo.
@@ -104,7 +104,7 @@ AI extraction is fallible. §5 establishes "no silent state changes" as a core p
 Review-before-apply is the operationalisation of that principle. It costs the user a click but guards against silent corruption of the work pool.
 
 ### Implications
-Every capture surface except scratchpad routes through review. Confidence scoring must be exposed to the UI for the auto-apply branch (T-D6, T-D19).
+Every capture surface except scratchpad routes through review. Confidence scoring must be exposed to the UI for the auto-apply branch (T-D6, T-D18).
 
 ---
 
@@ -112,7 +112,7 @@ Every capture surface except scratchpad routes through review. Confidence scorin
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.10
+- **Sections affected:** 7.13
 
 ### Decision
 PR-merge auto-reconcile may auto-apply only when AI confidence is high. Each auto-apply records: PR number, AI reasoning, confidence score, and the full PR description used. A 24-hour undo window applies.
@@ -132,7 +132,7 @@ Confidence scoring must be instrumented from the first AI-reconcile call. Undo m
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.10
+- **Sections affected:** 7.13
 
 ### Decision
 GitHub awareness is via polling. No webhook receivers in v1.
@@ -144,7 +144,7 @@ Single-user, local backend. Webhooks would require a public endpoint or a tunnel
 The authenticated GitHub rate limit (5000/hr) is comfortable margin given the cadence (60s active, 5min otherwise). Polling avoids the operational complexity of inbound traffic.
 
 ### Implications
-ETag caching needed to stay efficient under the rate limit. Polling cadence varies by session activity (active: 60s, otherwise: 5min). State cache (8) tracks last-known PR states.
+ETag caching needed to stay efficient under the rate limit. Polling cadence varies by session activity (active: 60s, otherwise: 5min). State cache (§8) tracks last-known PR states.
 
 ---
 
@@ -152,7 +152,7 @@ ETag caching needed to stay efficient under the rate limit. Polling cadence vari
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.2
+- **Sections affected:** 7.4
 
 ### Decision
 Items carry both a free-text blocker description and structured blocker references to other items.
@@ -161,7 +161,7 @@ Items carry both a free-text blocker description and structured blocker referenc
 Some blockers are external ("waiting on Carel's review") and have no item to link to. Others are internal and should drive graph edges.
 
 ### Rationale
-Forcing all blockers to be items would clutter the pool with placeholder items for external waits. Forcing all to be free-text would lose the graph signal needed for blocker-chain visualisation and dependency-aware sequencing (§7.15).
+Forcing all blockers to be items would clutter the pool with placeholder items for external waits. Forcing all to be free-text would lose the graph signal needed for blocker-chain visualisation and dependency-aware sequencing (§7.18).
 
 ### Implications
 UI needs both inputs. Graph view edges come from structured refs only. Free-text shows in the item card. Both contribute to the "blocked" lifecycle state.
@@ -172,7 +172,7 @@ UI needs both inputs. Graph view edges come from structured refs only. Free-text
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.2, 7.6
+- **Sections affected:** 7.4, 7.8
 
 ### Decision
 Long-form journaled thinking lives in library notes attached to items via a many-to-many relationship. Items do not carry a per-item journal field.
@@ -192,10 +192,10 @@ Item detail panel shows attached notes (linked, not embedded). Library is where 
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.6
+- **Sections affected:** 7.8, 12
 
 ### Decision
-The library supports exactly four content types: notes, prompts, snippets, imported docs. Each first-class.
+The library supports exactly four content types in v1: notes, prompts, snippets, imported docs. Each first-class. Whiteboards are deferred to v1.1 (T-D43) and reconsidered once Throughline is in regular use and the gap is felt empirically.
 
 ### Context
 The library is the home for non-item reference content captured or referenced during sessions.
@@ -212,7 +212,7 @@ Each type has a distinct UI affordance: notes use a markdown editor; prompts hav
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.7
+- **Sections affected:** 7.9
 
 ### Decision
 Repo `.md` ingestion requires the user to point the backend at specific directories. No recursive whole-repo scan by default.
@@ -224,7 +224,7 @@ A whole-repo scan ingests `node_modules`, vendored docs, generated files — noi
 Per-folder opt-in keeps the library focused on docs the user actually wants surfaced.
 
 ### Implications
-Settings carries a list of opted-in directories. Ingestion is a discrete user action per folder. Re-ingest behaviour on file change is a §13 open item (recommended snapshot + per-entry track-source toggle).
+Settings carries a list of opted-in directories. Ingestion is a discrete user action per folder. Re-ingest behaviour on file change is a §13 recommended-default item (snapshot + per-entry track-source toggle).
 
 ---
 
@@ -232,7 +232,7 @@ Settings carries a list of opted-in directories. Ingestion is a discrete user ac
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.8
+- **Sections affected:** 7.10
 
 ### Decision
 V1 supports exactly three directive types: pin, reminder (relative / absolute / recurring), and include-in-session-start-prompt. Append-to-document, surface-on-tag, surface-on-session, and recur-only-without-time-anchor are deferred.
@@ -252,10 +252,10 @@ UI exposes three directive options. Deferred types stay parked unless evidence d
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.9, 7.12, 7.13
+- **Sections affected:** 7.11, 7.15, 7.16
 
 ### Decision
-Throughline does not visualise code architecture. Code search delegates to Semble; rule verification delegates to Semgrep.
+Throughline does not visualise code architecture. Code search delegates to Semble; rule verification delegates to Semgrep (or whatever verifier tool a methodology bundle declares).
 
 ### Context
 An architecture view was considered for earlier drafts.
@@ -264,7 +264,7 @@ An architecture view was considered for earlier drafts.
 Static analysis fails on architectures that route through a runtime message bus. Bespoke parsing couples Throughline to a specific codebase. Neither path fits a tool meant to work across many sessions and repos.
 
 ### Implications
-View modes do not include "architecture." Semble and Semgrep are first-class dependencies. Throughline's job is visualising work, not code.
+View modes do not include "architecture." Semble and Semgrep are first-class dependencies for SiteMesh-bound projects. Throughline's job is visualising work and methodology state, not code.
 
 ---
 
@@ -272,7 +272,7 @@ View modes do not include "architecture." Semble and Semgrep are first-class dep
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.18
+- **Sections affected:** 7.21
 
 ### Decision
 Mermaid is an export format. The primary visual interaction with the data is the in-app interactive graph view.
@@ -284,31 +284,11 @@ Mermaid was considered as a possible primary visualisation.
 An interactive graph view supports navigation (click to open, drag, hover for context); a static Mermaid render does not. Mermaid remains useful for export to docs, PRs, and chat.
 
 ### Implications
-Graph view is built natively. Mermaid generation is on-demand AI output for any chosen scope (single session, items tagged X, blocker chain). Output as `.mmd` text or rendered SVG.
+Graph view is built natively. Mermaid generation is on-demand AI output for any chosen scope (single session, items tagged X, blocker chain, primary-unit topology, methodology-gate state). Output as `.mmd` text or rendered SVG.
 
 ---
 
-## T-D15 — SiteMesh component reuse is not a v1 goal
-
-- **Date:** 2026-05-09
-- **Status:** active
-- **Sections affected:** 12
-
-### Decision
-Throughline is not designed to feed components into SiteMesh in v1. It is scoped to its own job.
-
-### Context
-Earlier framing considered SiteMesh component extraction as a v1 design constraint.
-
-### Rationale
-Designing for reuse in another product distorts the API and slows v1. Any future reuse path requires extracting pure components and is its own project.
-
-### Implications
-No abstractions are added to ease external embedding. UI components are tailored to Throughline's use cases.
-
----
-
-## T-D16 — Single spec covers all of v1; no spec split per feature area
+## T-D15 — Single spec covers all of v1; no spec split per feature area
 
 - **Date:** 2026-05-09
 - **Status:** active
@@ -328,11 +308,11 @@ All functional decisions land in one document. `CODE_SPEC.md` and `DECISIONS.md`
 
 ---
 
-## T-D17 — Claude Code push via watched filesystem inbox
+## T-D16 — Claude Code push via watched filesystem inbox
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.4
+- **Sections affected:** 7.6
 
 ### Decision
 Claude Code feeds Throughline by dropping files at a configurable inbox directory. The backend watches the directory, picks up new files, and runs them through the dump zone flow with a "from Claude Code session: <branch>" annotation. Processed files archive to a dated subdirectory (default 30-day retention, configurable). Failed files move to a failures subdirectory with sibling error metadata.
@@ -344,15 +324,15 @@ Earlier drafts considered clipboard or transcript paste.
 A watched directory is robust to backend downtime — files queue on disk and are picked up on next start. Clipboard requires Throughline to be active. Eliminates manual transcript paste.
 
 ### Implications
-Inbox path configurable. Archive retention configurable. Failure files preserved for retry or manual inspection. Internal moves run autonomously per T-D38.
+Inbox path configurable. Archive retention configurable. Failure files preserved for retry or manual inspection. Internal moves run autonomously per T-D37.
 
 ---
 
-## T-D18 — Stakeholder view toggle exists from v1
+## T-D17 — Stakeholder view toggle exists from v1
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.15
+- **Sections affected:** 7.18
 
 ### Decision
 Stakeholder view (re-render item content in plain language) ships in v1.
@@ -364,15 +344,15 @@ Stakeholder view is one of several intelligence-layer features.
 <!-- RATIONALE NEEDED -->
 
 ### Implications
-Each item's content has a cached plain-language rendering. Cache invalidates on item edit (per §13 recommendation). One AI call per item per regeneration; cost flows through the cost meter (T-D30).
+Each item's content has a cached plain-language rendering. Cache invalidates on item edit (per §13 recommendation). One AI call per item per regeneration; cost flows through the cost meter (T-D29).
 
 ---
 
-## T-D19 — Confidence-thresholded auto-apply: high → auto, medium → one-click, low → modal
+## T-D18 — Confidence-thresholded auto-apply: high → auto, medium → one-click, low → modal
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.10
+- **Sections affected:** 7.13
 
 ### Decision
 AI confidence on PR-merge auto-reconcile maps to three branches:
@@ -391,31 +371,31 @@ Confidence scoring must produce a numeric or categorical signal usable by the di
 
 ---
 
-## T-D20 — Local backend rather than browser-only
+## T-D19 — Local backend rather than browser-only
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 3
 
 ### Decision
-Background work, scheduled tasks, and filesystem watching live in the backend. The browser handles UI only.
+Background work, scheduled tasks, filesystem watching, and methodology runtime live in the backend. The browser handles UI only.
 
 ### Context
-Same problem as T-D2 from a different angle: where does background state live?
+Same problem as T-D2 from a different angle: where does background state and runtime enforcement live?
 
 ### Rationale
-Browsers cannot reliably run timers when their tab is closed, cannot watch filesystems, and cannot persist state across machine restarts the way a local service can.
+Browsers cannot reliably run timers when their tab is closed, cannot watch filesystems, cannot run methodology validators against project repos, and cannot persist state across machine restarts the way a local service can.
 
 ### Implications
 Backend must be installable as a long-lived process. UI gracefully handles backend-down state (e.g., shows a "backend not running" banner instead of crashing).
 
 ---
 
-## T-D21 — Review-before-apply for all capture surfaces except scratchpad
+## T-D20 — Review-before-apply for all capture surfaces except scratchpad
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.4
+- **Sections affected:** 7.6
 
 ### Decision
 Scratchpad is friction-free with no AI processing and no review modal. Every other capture surface (manual entry, dump zones, voice, Claude Code push, code TODO/FIXME import) routes through review.
@@ -431,37 +411,39 @@ Scratchpad UI is always visible in the header. Manual review of scratchpad conte
 
 ---
 
-## T-D22 — Drift detection in 4 tiers; tier-4 auto-dismisses after 7 days
+## T-D21 — Drift detection runs in two streams: code-drift (four tiers) and discipline-drift (bundle-defined categories)
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.11
+- **Sections affected:** 7.14
 
 ### Decision
-Drift detection runs in four tiers:
-- **Tier 1** — Semgrep failure (red badge).
-- **Tier 2** — GitHub revert event (orange badge).
-- **Tier 3** — relevant code touched, Semble-linked (yellow badge).
-- **Tier 4** — duplicate-looking dump entry (drift inbox).
+Drift detection runs in two parallel streams.
 
-Tier-4 weak signals auto-dismiss after 7 days with a "stale-no-action" reason recorded in the audit log.
+**Code-drift, four tiers:**
+- **Tier 1** — Semgrep failure on a verifier rule attached to a done item (red badge).
+- **Tier 2** — GitHub revert event on a PR a done item is associated with (orange badge).
+- **Tier 3** — new PR touches files in a done item's code references (yellow badge).
+- **Tier 4** — duplicate-looking dump zone entry matching a done item, cosine similarity ≥ 0.80 with AI confirmation pass for borderline 0.70–0.80. Routes to drift inbox; auto-dismisses with an audit-logged "stale-no-action" reason after 7 days.
+
+**Discipline-drift, bundle-defined categories:** the methodology bundle declares the categories. Examples from SiteMesh include structural conformance failures, banned-string violations, marker violations in wrong phases, cross-reference failures, and phase-transition violations. The runtime hosts whatever drift categories the bundle declares; freeform declares none, so the discipline-drift stream is a no-op there.
 
 ### Context
-A single-channel drift system either over-alerts (badge fatigue) or under-detects.
+A single-channel drift system either over-alerts (badge fatigue) or under-detects. A code-only drift system misses methodology violations that show up in docs rather than code.
 
 ### Rationale
-Strong signals badge directly so they cannot be missed. Weak signals collect in the inbox so they don't pollute main views. Auto-dismissal of tier-4 prevents inbox bloat while preserving searchability via the audit log.
+Strong signals badge directly so they cannot be missed. Weak signals collect in the inbox so they don't pollute main views. Auto-dismissal of tier-4 prevents inbox bloat while preserving searchability via the audit log. Two streams keep code regressions and methodology violations on equal footing without forcing one taxonomy to model the other.
 
 ### Implications
-Each tier is a separate signal pipeline. Drift inbox UI counter in the header. Audit log queryable for stale-dismissal reason. Re-verify-via-AI action available on every signal.
+Code-drift and discipline-drift share the `drift_signals` table with a `stream` discriminator. Each tier and each discipline category is a separate signal pipeline. Drift inbox UI counter in the header. Audit log queryable for stale-dismissal reason. Re-verify-via-AI action available on every signal. Discipline-drift surfaces in the methodology-gates view and as badges on affected primary units.
 
 ---
 
-## T-D23 — Periodic review user-initiated, not background AI
+## T-D22 — Periodic review user-initiated, not background AI
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.15
+- **Sections affected:** 7.18
 
 ### Decision
 Periodic review surfaces hygiene questions on a configurable interval (default 2 weeks), but only when the user opens the review surface. No background AI activity.
@@ -473,15 +455,15 @@ Periodic review surfaces hygiene questions on a configurable interval (default 2
 Background AI runs are surprise costs and surprise state changes; both erode trust. Audit-log queries (no AI) are cheap and run continuously; AI summary/synthesis fires only when the user opens the review.
 
 ### Implications
-Hygiene queries run on audit-log data without AI. AI calls in the periodic review fire on user open. Cost meter (T-D30) shows zero spend during quiet periods.
+Hygiene queries run on audit-log data without AI. AI calls in the periodic review fire on user open. Cost meter (T-D29) shows zero spend during quiet periods.
 
 ---
 
-## T-D24 — Chat history persisted per context
+## T-D23 — Chat history persisted per context
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.16
+- **Sections affected:** 7.19
 
 ### Decision
 Chat history (dump zone chat, per-list chat) is persisted per context for retrieval.
@@ -493,15 +475,15 @@ Chat surfaces accumulate useful state — refinements, decisions, abandoned draf
 <!-- RATIONALE NEEDED -->
 
 ### Implications
-Storage is per-context (per-dump-zone, per-list). Retrievable later. Where chat actions cause state changes, those changes are also captured in the audit log per T-D37.
+Storage is per-context (per-dump-zone, per-list). Retrievable later. Where chat actions cause state changes, those changes are also captured in the audit log per T-D36.
 
 ---
 
-## T-D25 — Audit log never exposes API keys or full prompt content
+## T-D24 — Audit log never exposes API keys or full prompt content
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.19, 8
+- **Sections affected:** 7.22, 8
 
 ### Decision
 Audit log entries record actor, field changed, old value, new value, and trigger context. Entries never include API keys and never include full prompt content beyond what's needed to reconstruct the trigger.
@@ -510,83 +492,83 @@ Audit log entries record actor, field changed, old value, new value, and trigger
 The audit log is searchable, visible in the UI, and part of the datastore (and therefore part of any backup).
 
 ### Rationale
-Backups must be safe to share (T-D3, T-D4, T-D29). Excluding keys and full prompts keeps that contract intact.
+Backups must be safe to share (T-D3, T-D4, T-D28). Excluding keys and full prompts keeps that contract intact.
 
 ### Implications
 Trigger context records model + prompt fingerprint, not the prompt itself. API keys never written to audit-log fields by any code path. Entries remain useful for reconstruction without leaking secrets or user data.
 
 ---
 
-## T-D26 — Personal RAG has 3 substrates with a router
+## T-D25 — Personal RAG has 3 substrates with a router
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.18
+
+### Decision
+Personal RAG supports three substrates:
+- **Code** — Semble.
+- **Text** — local embeddings over library content, item descriptions, and project docs.
+- **Audit history** — structured queries over the audit log.
+
+A router selects one or more substrates per query and synthesises an answer with citations.
+
+### Context
+A single-substrate RAG either misses code intent (text-only) or misses time/state context (code-only).
+
+### Rationale
+Three substrates cover three classes of personal knowledge: where things are in code, what was thought about them, and when state transitions happened.
+
+### Implications
+Each substrate has its own indexer and query path. Router uses keyword heuristics ("where is X" → code, "when did" → audit, default → text) with user-overridable per-query toggle; AI classification of query intent is deferred.
+
+---
+
+## T-D26 — Semgrep in GitHub Actions; bundle-defined rule conventions; user-managed workflow
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.16
+
+### Decision
+Semgrep runs in GitHub Actions on every PR, not in the backend. Backend reads findings via the GitHub API. The methodology bundle defines rule conventions; the SiteMesh bundle declares that rules live in a dedicated subdirectory of the repo's Semgrep config area, with one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions. The GitHub Actions workflow is user-managed; a recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is not present.
+
+### Context
+Tier-1 drift requires reliable rule execution. Backend execution would be brittle and tie up local resources. The methodology runtime owns rule conventions so different bundles can declare different verifier-tool conventions over time.
+
+### Rationale
+GitHub Actions is already the CI substrate; running Semgrep there is free and reliable. Bundle-defined naming convention is what allows the backend to match findings to items unambiguously when reading via API, while still letting other methodologies adopt different conventions.
+
+### Implications
+Workflow setup is a one-time user task. Rule path configurable in settings per project. Verifier rule lifecycle on item deletion follows T-D33 (orphan-flag, not auto-removal).
+
+---
+
+## T-D27 — Semble runs as a backend-managed local service
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 7.15
 
 ### Decision
-Personal RAG supports three substrates:
-- **Code** — Semble.
-- **Notes** — local embeddings over library notes and item descriptions.
-- **Audit history** — structured queries over the audit log.
-
-A router selects one or more substrates per query and synthesises an answer with citations.
-
-### Context
-A single-substrate RAG either misses code intent (notes-only) or misses time/state context (code-only).
-
-### Rationale
-Three substrates cover three classes of personal knowledge: where things are in code, what was thought about them, and when state transitions happened.
-
-### Implications
-Each substrate has its own indexer and query path. Router decision mechanism is a §13 open item; recommended heuristics-first (keywords like "where is X" → code, "when did" → audit, default → notes), with user-overridable per-query toggle.
-
----
-
-## T-D27 — Semgrep in GitHub Actions; one-file-per-item rule convention; user-managed workflow
-
-- **Date:** 2026-05-09
-- **Status:** active
-- **Sections affected:** 7.13
-
-### Decision
-Semgrep runs in GitHub Actions on every PR, not in the backend. Backend reads findings via the GitHub API. Throughline-managed rules live in a configurable subdirectory of the repo's Semgrep config area, with one rule file per item, named by the item's stable identifier. The GitHub Actions workflow is user-managed; a recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is absent.
-
-### Context
-Tier-1 drift requires reliable rule execution. Backend execution would be brittle and tie up local resources.
-
-### Rationale
-GitHub Actions is already the CI substrate; running Semgrep there is free and reliable. The one-file-per-item naming convention is what allows the backend to match findings to items unambiguously when reading via API.
-
-### Implications
-Workflow setup is a one-time user task. Rule path configurable in settings (§7.22). Verifier rule lifecycle on item deletion follows T-D34 (orphan-flag, not auto-removal).
-
----
-
-## T-D28 — Semble runs as a backend-managed local service
-
-- **Date:** 2026-05-09
-- **Status:** active
-- **Sections affected:** 7.12
-
-### Decision
 Semble runs locally as a service started by the backend on launch. It indexes the user's repo on first connection, watches for changes, and re-indexes incrementally. No API key.
 
 ### Context
-Code search is needed for tier-3 drift detection, plain-English code Q&A, and item-creation enrichment.
+Code search is needed for code-drift tier 3, plain-English code Q&A, and item-creation enrichment.
 
 ### Rationale
 A local-only service avoids the per-call cost and latency of cloud code search. No API key keeps configuration light.
 
 ### Implications
-Backend manages Semble lifecycle (start, restart, indexing trigger). Semble runs alongside Throughline as a separate process. Repo path setting (§7.22) drives Semble's index target.
+Backend manages Semble lifecycle (start, restart, indexing trigger). Semble runs alongside Throughline as a separate process. Per-project repo path drives Semble's index target.
 
 ---
 
-## T-D29 — Backup is a single-file copy; optional configurable auto-copy
+## T-D28 — Backup is a single-file copy; optional configurable auto-copy
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.20
+- **Sections affected:** 7.23
 
 ### Decision
 Backup is a single-file copy of the underlying datastore. Optional configurable auto-copy target (Dropbox, Drive, USB, etc.) on a schedule. Off by default.
@@ -602,11 +584,11 @@ Header indicator turns red after the configurable threshold (default 7 days) wit
 
 ---
 
-## T-D30 — Cost meter visible in header at all times
+## T-D29 — Cost meter visible in header at all times
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.22
+- **Sections affected:** 7.25
 
 ### Decision
 Running token spend and dollar estimate are visible in the UI header at all times, broken down by feature category for the current day, week, and month. A configurable daily threshold warns when exceeded.
@@ -622,14 +604,14 @@ Cost telemetry table writes per AI call. UI subscribes to running totals. Daily 
 
 ---
 
-## T-D31 — Home view (not a session) is the default landing surface
+## T-D30 — Home view (not a session) is the default landing surface
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.9
+- **Sections affected:** 7.11
 
 ### Decision
-Home view is the default landing surface when Throughline opens. It is not a session and not a board. It surfaces in-progress items, recent drift signals, items mentioned in the last Claude Code push, items unblocked since last visit, drift inbox count, scratchpad jot count, and recent activity.
+Home view is the default landing surface when Throughline opens, scoped to the current project. It is not a session and not a board. It surfaces in-progress items this week, recent drift signals (code and discipline), items mentioned in the last Claude Code push, items unblocked since last visit, methodology phase indicators per the bundle's state machine, drift inbox count, scratchpad jot count, and recent activity.
 
 ### Context
 Defaulting to "last session opened" reinforces session silos.
@@ -638,11 +620,11 @@ Defaulting to "last session opened" reinforces session silos.
 A user opening Throughline most often wants the cross-cut answer ("where am I right now"), not the last view they had open. Sessions are still one click away.
 
 ### Implications
-Home view computes its panels from across the pool. "Since last visit" timestamp persists on view exit (per §13 recommendation). Home is the only view mode that aggregates across the whole pool.
+Home view computes its panels from across the project's pool. "This week" = rolling 7 days from now. "Since last visit" timestamp persists on view exit (per §13 recommendation). Home is the only view mode that aggregates across the whole project pool.
 
 ---
 
-## T-D32 — Backend mediates all external network calls
+## T-D31 — Backend mediates all external network calls
 
 - **Date:** 2026-05-09
 - **Status:** active
@@ -662,7 +644,7 @@ Every external integration has a backend endpoint. Browser only talks to the loc
 
 ---
 
-## T-D33 — OS notifications abstracted across platforms via a single capability layer
+## T-D32 — OS notifications abstracted across platforms via a single capability layer
 
 - **Date:** 2026-05-09
 - **Status:** active
@@ -682,31 +664,31 @@ Notification permission handled once at the backend layer. UI does not call OS n
 
 ---
 
-## T-D34 — Verifier rule lifecycle on item deletion: orphan-flag, not auto-removal
+## T-D33 — Verifier rule lifecycle on item deletion: orphan-flag, not auto-removal
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.13, 7.15, 7.22
+- **Sections affected:** 7.16
 
 ### Decision
-When an item with verifier rules is deleted, the rule files in the repo are not auto-removed. The rule is orphan-flagged in Throughline and surfaces in the periodic review hygiene list and a dedicated settings panel. A one-click action drafts a cleanup PR for user review and merge. Dismiss-without-removal is also supported and audit-logged.
+When an item with verifier rules is deleted, the rule files in the repo are not auto-removed. The methodology bundle defines verifier-rule type and storage; the SiteMesh bundle declares Semgrep rules living in the repo's Semgrep config area. The rule is orphan-flagged in Throughline and surfaces in the periodic review hygiene list and a dedicated settings panel. A one-click action drafts a cleanup PR for user review and merge. Dismiss-without-removal is also supported and audit-logged.
 
 ### Context
 Deleting items in Throughline must not silently mutate the user's repo (§5).
 
 ### Rationale
-Orphan-flagging keeps the user in control while preventing rule files from rotting in CI. The PR-draft action is the bridge: it stages the change for human review rather than writing autonomously.
+Orphan-flagging keeps the user in control while preventing rule files from rotting in CI. The PR-draft action is the bridge: it stages the change for human review rather than writing autonomously. Bundle-defined storage lets other methodologies adopt different verifier-rule conventions without reshuffling the orphan-handling code path.
 
 ### Implications
 Orphaned-rules tracking table. Settings panel surfacing every orphan. PR-drafting code path. Dismissal recorded in audit log. Periodic review hygiene list includes orphans.
 
 ---
 
-## T-D35 — Manual item-to-PR linking: auto-detect + override + skip
+## T-D34 — Manual item-to-PR linking: auto-detect + override + skip
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.11
+- **Sections affected:** 7.14
 
 ### Decision
 When marking an item done manually, Throughline associates the item with a PR via three steps:
@@ -714,10 +696,10 @@ When marking an item done manually, Throughline associates the item with a PR vi
 2. **Override** — user can pick another PR or paste a PR number.
 3. **Skip** — if no PR is detected and the user doesn't pick one, the item is marked done without PR association.
 
-Skipped items lose tier-2 drift coverage but retain tiers 1 (with verifier rule), 3, and 4.
+Skipped items lose code-drift tier-2 coverage but retain tiers 1 (with verifier rule), 3, and 4.
 
 ### Context
-Tier-2 drift detection requires a PR association. Auto-reconcile populates this on merge; manual completion needs a fallback.
+Code-drift tier-2 detection requires a PR association. Auto-reconcile populates this on merge; manual completion needs a fallback.
 
 ### Rationale
 Auto-detect handles the common case. Override handles ambiguity. Skip respects items that genuinely have no PR (decisions, infra work, cross-repo work).
@@ -727,51 +709,51 @@ Item detail panel shows the proposed PR with override + skip actions. Re-associa
 
 ---
 
-## T-D36 — Reconcile diff has 6 categories; contradicted spawns drift signal
+## T-D35 — Reconcile diff has 6 categories; edited covers title and description; contradicted spawns drift signal
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.5
+- **Sections affected:** 7.7
 
 ### Decision
-Reconcile diff produces six categories: completed, new, edited (covers rename + description refinement), blocker changes, contradicted, no-change. Contradicted items spawn a drift signal (tier-2 if a PR is associated, tier-3 otherwise) rather than auto-reverting state.
+Reconcile diff produces six categories: completed, new, edited (covers title and description changes under one row), blocker changes, contradicted, no-change. Contradicted items spawn a drift signal (code-drift tier-2 if a PR is associated, code-drift tier-3 otherwise) rather than auto-reverting state.
 
 ### Context
 A reconcile that auto-reverts on "input claims this is broken" is a silent state change driven by potentially-noisy input.
 
 ### Rationale
-Drift discipline applies. Contradicted-as-drift means the user adjudicates rather than the input deciding for them. Consolidating "renamed" and "description refined" under "edited" simplifies the diff vocabulary.
+Drift discipline applies. Contradicted-as-drift means the user adjudicates rather than the input deciding for them. Consolidating title and description refinements under "edited" simplifies the diff vocabulary.
 
 ### Implications
 Reconcile applies across five categories directly; the sixth (contradicted) routes to drift. UI clearly distinguishes contradicted from completed in the review modal.
 
 ---
 
-## T-D37 — Audit log scope: items + library entries
+## T-D36 — Audit log scope covers items, library entries, projects, methodology bindings, and gate firings
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 7.19, 8
+- **Sections affected:** 7.22, 8
 
 ### Decision
-The audit log records every state change to every item and every library entry.
+The audit log records every state change to every item, library entry, project, methodology bundle binding, and every methodology gate firing.
 
 ### Context
-Library entries are mutable state too — notes get edited, prompts get refined, snippets get updated.
+Items and library entries are mutable state; projects and bundle bindings change less often but their changes (project create/archive, bundle re-bind, bundle file change) materially alter what the runtime enforces; gate firings are the methodology runtime's primary externally-visible behaviour.
 
 ### Rationale
-One audit substrate for both classes of mutable state preserves a uniform query surface for periodic review and the audit-log RAG substrate (T-D26).
+One audit substrate across all of these preserves a uniform query surface for periodic review, the audit-log RAG substrate (T-D25), and methodology-state reconstruction. Bundle changes audit-logged means a retroactive effect (a bundle change altering interpretation of existing data) is traceable to its trigger.
 
 ### Implications
-Audit log table records both entity types with a discriminator. UI shows history in both item and library detail panels. RAG audit substrate queries across both.
+Audit log table records all entity types with a discriminator. Gate-firing entries record the moment, gate identifier, status, and findings reference. UI shows history in item, library, project, and methodology-gates detail panels. RAG audit substrate queries across the full surface.
 
 ---
 
-## T-D38 — Internal Throughline-managed file moves are autonomous
+## T-D37 — Internal Throughline-managed file moves are autonomous
 
 - **Date:** 2026-05-09
 - **Status:** active
-- **Sections affected:** 5, 7.4
+- **Sections affected:** 5, 7.6
 
 ### Decision
 Internal file movements within Throughline-managed directories (Claude Code inbox archiving, failure quarantine, datastore housekeeping) are not user-facing writes and run autonomously. Carve-out from the no-autonomous-writes principle.
@@ -780,27 +762,227 @@ Internal file movements within Throughline-managed directories (Claude Code inbo
 §5 establishes "no autonomous repo file writes" to protect the user's repo from surprise changes.
 
 ### Rationale
-Inbox archiving and failure quarantine are bookkeeping inside Throughline-owned directories, not user-visible mutations. Gating them behind review would defeat the watched-FS-inbox model (T-D17).
+Inbox archiving and failure quarantine are bookkeeping inside Throughline-owned directories, not user-visible mutations. Gating them behind review would defeat the watched-FS-inbox model (T-D16).
 
 ### Implications
 Archiving and failure-quarantine code paths run without user prompts. Logging may be added for transparency. Throughline-managed directories are clearly delineated from user-managed directories in settings.
 
 ---
 
-## T-D39 — Items carry an optional branch reference; branches not first-class
+## T-D38 — Items carry optional branch and PR references; branches free-text, PRs first-class
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.4, 8
+
+### Decision
+Items carry an optional branch reference and optional PR associations. Branch references are populated automatically from the active session's branch field or set manually; branches remain free-text strings, not first-class entities. PR associations are first-class fields on items — items reference PRs (not branches as first-class fields) — and drive code-drift tier-2.
+
+### Context
+PR association (T-D34) requires a branch to look up. Code-drift tiers 2 and 3 benefit from branch context. PRs, by contrast, are the unit drift-detection signals key on directly.
+
+### Rationale
+First-class branches would introduce a new entity, lifecycle, and indexing concerns. A free-text reference does the job — git is the source of truth for branch identity. PRs as first-class fields make tier-2 drift detection clean: the item points at the PR, the GitHub poller updates the PR's status, the signal pipeline reads the association.
+
+### Implications
+No branches table. Sessions and items both reference branches by string. Items have a structured PR association table. Cleanup of stale branch references is the user's concern (handled at the git layer, not the Throughline layer).
+
+---
+
+## T-D39 — Methodology runtime as the product core
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 2, 7.1
+
+### Decision
+The methodology runtime is Throughline's core. Throughline is methodology-agnostic; methodology bundles configure all methodology-specific concepts (primary unit, anchor format, marker rules, state machine, review patterns, validation). The tracker (items, sessions, library, directives, drift, audit) and the intelligence layer (RAG, retro, sequencing, stakeholder, companion review, session-start scaffolding) are surfaces over the runtime, not standalone products.
+
+### Context
+Earlier framing treated Throughline as a tracker with intelligence features. SiteMesh's authoring discipline was a specific consumer of the tracker; running other projects required mental translation or code branches per project.
+
+### Rationale
+The discipline that keeps AI-assisted development honest is currently re-enacted by hand every session. Codifying it as a bundle and applying it as runtime behaviour eliminates the per-session re-work. With a methodology-agnostic runtime, the same Throughline supports any project that declares a bundle binding — SiteMesh, freeform, or whatever ships later — without code-path special-casing per methodology.
+
+### Implications
+Code paths must not hardcode SiteMesh terminology. The runtime calls into the loaded bundle for validators, gates, item-type vocabulary, review patterns, templates, and primary-unit grouping. Tracker and intelligence-layer features parameterise their behaviour on bundle declarations. Adding a new methodology is authoring a bundle, not changing code.
+
+---
+
+## T-D40 — Projects as first-class entities; multi-project from v1
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 7.2, 8
 
 ### Decision
-Items carry an optional branch reference, populated automatically from the active session's branch field or set manually. Branches remain free-text strings, not first-class entities.
+Projects are first-class entities. Multiple projects coexist in one Throughline instance. Each project is a codebase + a methodology bundle binding + Throughline state. Project lifecycle (create, switch, archive, delete) is functional from v1.
 
 ### Context
-PR association (T-D35) requires a branch to look up. Tier-2/3 drift detection benefits from branch context.
+Earlier framing scoped Throughline to a single repo. Even single-user work spans multiple projects (SiteMesh, side projects, experiments) over time; serialising them through one tracker instance loses cross-project carry-over.
 
 ### Rationale
-First-class branches would introduce a new entity, lifecycle, and indexing concerns. A free-text reference does the job — git is the source of truth for branch identity.
+The same Throughline is meant to support any project that declares a methodology binding. Multi-project is the substrate that makes one tool useful across the user's full work surface rather than being scoped to a single repo. Doing it from v1 avoids a single-project schema becoming retrofitted later.
 
 ### Implications
-No branches table. Sessions and items both reference branches by string. Cleanup of stale branch references is the user's concern (handled at the git layer, not the Throughline layer).
+Schema carries a `project_id` foreign key on per-project entities (items, sessions, library entries, drift signals, audit history, etc.). A dedicated projects view mode lists, switches, archives, and deletes projects. Most surfaces are project-scoped by default with explicit cross-project toggles (library, rollup) where useful. Project create defaults the bundle binding to freeform (T-D47).
+
+---
+
+## T-D41 — SiteMesh and freeform bundles ship with v1
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.1, 12
+
+### Decision
+Throughline v1 ships with two concrete methodology bundles: SiteMesh (the rich-discipline reference) and freeform (the minimum-spec bundle). Additional bundles are authored as markdown files following the eleven-section structure (T-D42) and added to Throughline's `methodologies/` directory. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
+
+### Context
+The methodology runtime is methodology-agnostic, but it must be exercised against real bundles from day one to prove the runtime contract.
+
+### Rationale
+Freeform proves the runtime can host a minimum-spec methodology and gives "I just want to track some stuff" projects a first-class home (T-D47). SiteMesh proves the runtime can host the rich-discipline reference. Shipping both stress-tests the bundle contract under both ends of the spectrum, surfacing parser and validator gaps a single bundle would miss.
+
+### Implications
+The bundle loader must succeed against both shipped bundles. Both are part of the shipped artefact under the `methodologies/` directory. Freeform is the create-time default binding. Drafting a third bundle is a markdown-authoring task, not a code task.
+
+---
+
+## T-D42 — Eleven-section bundle structure with multi-gate-per-phase-moment
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.1, 7.12
+
+### Decision
+Every methodology bundle declares eleven sections: identity, project layout, anchor system, marker system, state machine, communication model, gating model, review patterns, templates, validation rules, authority hierarchy. The state-machine section declares one or more gates per phase moment, each with its own check definitions. Gates produce independent findings streams; one gate can pass while another at the same moment fails.
+
+### Context
+A fixed contract is the only way the runtime can generically parse and apply different bundles. Real-world methodology gating has multiple distinct checks at the same phase moment (SiteMesh per-commit example: `verify-structure.sh` for code architecture rules and `sitemesh-pre-commit` for docs banned-string sweep — two independent gates at the same moment).
+
+### Rationale
+A fixed-section structure lets the runtime walk known headings and dispatch each to a typed parser. Multi-gate-per-phase-moment captures the actual decomposition of real gating: code architecture checks and docs checks are independent concerns that happen to fire at the same trigger; conflating them under a single per-moment check loses the granularity needed to surface partial pass/fail.
+
+### Implications
+Bundle parser walks the eleven sections by heading. The state-machine parser models each phase moment as `[gate_id → gate_spec]`. Gate firings produce per-gate findings streams in the audit log (T-D36). UI surfaces gate-level pass/fail in the methodology-gates view, not just phase-moment pass/fail.
+
+---
+
+## T-D43 — Whiteboards deferred to v1.1
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.8, 12
+
+### Decision
+The library has four content types in v1 (notes, prompts, snippets, imported docs — T-D10). Whiteboards as a fifth canvas-based ideation surface with AI extraction are deferred to v1.1, reconsidered once Throughline is in regular use and the gap is felt empirically.
+
+### Context
+Whiteboards were considered as a v1 library content type. The feature has obvious appeal but uncertain shape.
+
+### Rationale
+The gap needs to be felt empirically before designing the feature; building it pre-emptively risks designing for use cases that don't materialise in actual single-user practice. Deferring keeps v1 scope tight without precluding the addition.
+
+### Implications
+No canvas substrate in v1. Library schema remains extensible so adding a fifth type later does not require a destructive migration. Whiteboards parked in §12 of SPEC.md until reconsidered.
+
+---
+
+## T-D44 — Methodology gates fire as proposals, never enforced blocks
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 5, 7.12
+
+### Decision
+Methodology gate failures surface as proposals to the user — "this commit would introduce two banned strings; review here" — with an audit-logged override path. Throughline never silently blocks the underlying repo. The user can override (with audit log entry) or fix and retry.
+
+### Context
+A gate that blocks the user's commit, PR, or write outright would put Throughline in the way of work the user might have explicit reason to do anyway. §5 already establishes "no silent state changes"; gates are an analogous concern in the opposite direction.
+
+### Rationale
+The user must remain in control of the repo. Gating is a discipline aid, not a guardrail enforced over the user's head. Audit-logged overrides preserve the discipline trace without forcing the discipline. The PR-open gate (§7.13) follows the same rule: failures notify, do not block.
+
+### Implications
+Every gate has an "override with reason" affordance and a "fix and retry" affordance. Override entries are first-class audit-log rows recording the override reason and the gate's original findings. UI surfaces gate failures in the methodology-gates view and as notifications, never as a forced state-machine halt.
+
+---
+
+## T-D45 — Companion review runs as a structured workflow
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.18
+
+### Decision
+The methodology bundle's companion review checklist runs inside Throughline as a structured workflow. The bundle declares which checklist steps are mechanical (Throughline executes a script or validator) and which are judgement (Throughline surfaces a panel for human or AI reviewer to make the call). Step completions and findings land in the audit log.
+
+### Context
+Review patterns are part of the bundle's eleven-section structure (§8 of the bundle: review patterns). They were previously re-enacted by hand each session.
+
+### Rationale
+Codifying review as a workflow makes step status, completion, and findings queryable. The mechanical/judgement split lets fully automatable checks (e.g., anchor citation validation, marker presence) run without human bottlenecking while preserving human judgement where the call is genuinely subjective (scope, regression, summary assessments).
+
+### Implications
+A workflow engine drives review-pattern execution. Mechanical-step results write directly to the audit log. Judgement steps open a panel and capture the call (the call can be made by the user or by AI-via-Anthropic, default model Sonnet per §9). Companion review output is queryable across sessions via the audit-log RAG substrate (T-D25).
+
+---
+
+## T-D46 — Stale yellow flag in list views and detail panel header
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.17, 7.25
+
+### Decision
+The configured stale-threshold yellow flag appears next to item titles in every list view (session boards, tree view, search results) and in the item detail panel header.
+
+### Context
+Items go stale silently when surfaced only in their detail panel.
+
+### Rationale
+Surfacing the flag in list contexts catches staleness incidentally during normal scanning — the user sees stale items while doing other work, not only when they go looking. The detail-panel header repeats the flag for items the user has drilled into.
+
+### Implications
+List-row components render the flag based on the per-item updated-at vs the configured threshold. Detail-panel header renders the same flag inline with the title. The stale threshold itself is a settings knob (§7.25).
+
+---
+
+## T-D47 — Freeform bundle as second concrete; no `none` binding
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.1, 7.2
+
+### Decision
+Every project binds to exactly one methodology bundle; `none` is not a valid binding. The freeform bundle (no markers, no anchors, no gates, single board with single item type called "task") supports the "I just want to track some stuff" case without code-level special-casing.
+
+### Context
+The runtime is methodology-agnostic (T-D39). Lightweight projects still need a binding for code paths to work uniformly.
+
+### Rationale
+A `none` binding would require `if (project.has_bundle)` branches throughout the runtime — defeating the methodology-agnostic core. A freeform bundle that legitimately declares "no primary units, no anchors, no gates" lets every code path treat every project uniformly. The runtime asks the bundle what to do; freeform answers "nothing methodology-specific."
+
+### Implications
+Settings.bundle is a non-nullable foreign key. Freeform is the create-time default. Views that depend on bundle features (modules, methodology-gates) hide for freeform-bound projects via the bundle's own declarations (no primary units → no modules view; no gates → no methodology-gates view), not via a special "freeform" code path.
+
+---
+
+## T-D48 — Methodology-agnostic spec language
+
+- **Date:** 2026-05-09
+- **Status:** active
+- **Sections affected:** 7.14, 7.18, 7.13
+
+### Decision
+SPEC.md describes what the runtime expects, not what SiteMesh happens to do. Runtime concepts are introduced first; SiteMesh-specific terms appear only as parenthetical examples.
+
+### Context
+Earlier spec drafts used SiteMesh vocabulary (module, anchor, marker) as if it were universal Throughline language. Bundle authors reading the spec then had to translate SiteMesh's terms back to runtime concepts.
+
+### Rationale
+Bundle authors must be able to read the spec and see the runtime contract directly. Using SiteMesh terms as if universal hides the fact that those terms belong to one bundle. The methodology-agnostic core (T-D39) only holds if the spec language reflects it.
+
+### Implications
+Documentation review checks for SiteMesh-only terminology used as if it were universal. New spec sections introduce the runtime concept first (e.g., "primary unit") and the SiteMesh-specific term in parentheses ("module"). The glossary makes the runtime-vs-bundle distinction explicit per term.
