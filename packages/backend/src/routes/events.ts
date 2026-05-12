@@ -33,7 +33,13 @@ export function registerEventsRoute(app: FastifyInstance): void {
       send('ping', { seq, at: new Date().toISOString() });
     }, PING_INTERVAL_MS);
 
+    // Cleanup may fire twice (close + error on the same socket); guard so the
+    // second call is a no-op. Convention: any cleanup registered on multiple
+    // events should be idempotent by default.
+    let cleaned = false;
     const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
       clearInterval(interval);
       reply.raw.end();
     };

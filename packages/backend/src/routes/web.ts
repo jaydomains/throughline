@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
+import { readFile } from 'node:fs/promises';
 import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { FastifyInstance } from 'fastify';
@@ -63,6 +64,15 @@ const DEV_STUB = `<!doctype html>
   <p>Then reload this page.</p>
 </body></html>`;
 
+function isEnoent(err: unknown): boolean {
+  return (
+    typeof err === 'object' &&
+    err !== null &&
+    'code' in err &&
+    (err as { code?: unknown }).code === 'ENOENT'
+  );
+}
+
 export function registerWebRoutes(app: FastifyInstance): void {
   const distDir = resolveFrontendDist();
 
@@ -73,6 +83,9 @@ export function registerWebRoutes(app: FastifyInstance): void {
   }
 
   app.log.info(`frontend dist: ${distDir}`);
+  // Startup-time read is single-shot — sync is fine here and avoids a top-level
+  // await. Per-request reads below use the async API so the event loop stays
+  // unblocked.
   const indexPath = join(distDir, 'index.html');
   const indexHtml = readFileSync(indexPath, 'utf8');
 
@@ -96,11 +109,16 @@ export function registerWebRoutes(app: FastifyInstance): void {
     if (!candidate.startsWith(distDir + '/') && candidate !== distDir) {
       return reply.type('text/html').send(indexHtml);
     }
-    if (existsSync(candidate)) {
+    try {
+      const content = await readFile(candidate);
       const ext = extname(candidate).toLowerCase();
       const mime = MIME[ext] ?? 'application/octet-stream';
-      return reply.type(mime).send(readFileSync(candidate));
+      return reply.type(mime).send(content);
+    } catch (err) {
+      if (isEnoent(err)) {
+        return reply.type('text/html').send(indexHtml);
+      }
+      throw err;
     }
-    return reply.type('text/html').send(indexHtml);
   });
 }
