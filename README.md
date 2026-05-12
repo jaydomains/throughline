@@ -6,7 +6,7 @@ Throughline loads a methodology bundle that codifies your documentation discipli
 
 ## Status
 
-**Phase 1 in progress.** Backend skeleton, SQLite datastore + migrations, audit log, project model, bundle loader, and the freeform methodology bundle are in place. No UI yet — that's Phase 2.
+**Phase 2 in progress.** Backend (Phase 1) plus a React UI shell with nine view-mode routing, project switcher, command palette, SSE channel, and backend-down banner. View stubs are intentional placeholders until later phases fill them in.
 
 ## What it does
 
@@ -41,9 +41,15 @@ Requires Node.js 20+ and `pnpm`.
 
 ```
 pnpm install
-pnpm dev                 # tsx watch, dev mode
-# or:
-pnpm build && pnpm --filter @throughline/backend start
+
+# Two-terminal dev flow (hot reload on both):
+pnpm dev                 # backend on 127.0.0.1:47823 (tsx watch)
+pnpm dev:web             # frontend Vite dev server on 127.0.0.1:5173 (proxies /api, /events, /health to the backend)
+
+# Or build everything and serve the UI from the backend:
+pnpm build
+pnpm --filter @throughline/backend start
+# Then visit http://127.0.0.1:47823
 ```
 
 The backend binds to `127.0.0.1:47823` by default (configurable via `THROUGHLINE_PORT`). State lives at `~/.throughline/` — SQLite datastore, secrets file, and the Claude Code inbox archive. Login auto-start per platform is documented at [`docs/install/auto-start.md`](docs/install/auto-start.md).

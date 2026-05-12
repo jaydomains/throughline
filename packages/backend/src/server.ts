@@ -10,6 +10,8 @@ import { registerSettingsRoutes } from './settings/routes.js';
 import { createSettingsService } from './settings/service.js';
 import { registerMethodologyRoutes } from './routes/methodologies.js';
 import { registerHealthRoute } from './routes/health.js';
+import { registerEventsRoute } from './routes/events.js';
+import { registerWebRoutes } from './routes/web.js';
 
 export interface ServerHandle {
   app: FastifyInstance;
@@ -19,7 +21,16 @@ export interface ServerHandle {
   close: () => Promise<void>;
 }
 
-export async function startServer(config: Config): Promise<ServerHandle> {
+export interface StartServerOptions {
+  serveFrontend?: boolean;
+}
+
+export async function startServer(
+  config: Config,
+  options: StartServerOptions = {},
+): Promise<ServerHandle> {
+  const { serveFrontend = true } = options;
+
   mkdirSync(config.dataDir, { recursive: true });
   mkdirSync(config.inboxDir, { recursive: true });
   mkdirSync(config.archiveDir, { recursive: true });
@@ -43,12 +54,20 @@ export async function startServer(config: Config): Promise<ServerHandle> {
   const settings = createSettingsService(db);
 
   registerHealthRoute(app);
+  registerEventsRoute(app);
   registerMethodologyRoutes(app, registry);
-  registerProjectRoutes(app, projects);
+  registerProjectRoutes(app, projects, settings);
   registerSettingsRoutes(app, settings);
+  // Static-serve registers a catch-all and must come last so API routes win.
+  if (serveFrontend) registerWebRoutes(app);
 
   await app.listen({ host: config.host, port: config.port });
-  const url = `http://${config.host}:${config.port}`;
+  // Derive the bound port from the listening socket so callers requesting port 0
+  // (tests) get a working URL.
+  const addr = app.server.address();
+  const boundPort =
+    typeof addr === 'object' && addr !== null && 'port' in addr ? addr.port : config.port;
+  const url = `http://${config.host}:${boundPort}`;
 
   return {
     app,
