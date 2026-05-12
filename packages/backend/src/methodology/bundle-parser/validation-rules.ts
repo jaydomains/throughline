@@ -12,6 +12,7 @@ function parseDriftCategories(body: string): DisciplineDriftCategory[] {
   const out: DisciplineDriftCategory[] = [];
   const headings: Array<{ name: string; index: number }> = [];
   let match: RegExpExecArray | null;
+  DRIFT_CATEGORY_HEADING.lastIndex = 0;
   while ((match = DRIFT_CATEGORY_HEADING.exec(body)) !== null) {
     headings.push({ name: match[1]!.trim(), index: match.index });
   }

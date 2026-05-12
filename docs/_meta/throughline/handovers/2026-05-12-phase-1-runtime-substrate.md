@@ -44,6 +44,10 @@ Plan-time amendments (not anchor-level):
 - `POST /api/projects/:id/switch` deferred to Phase 2 (no UI consumer in Phase 1).
 - Default port set to `47823` (no spec value).
 
+Conventions adopted during review (apply going forward):
+- **Regex construction.** Build regexes with `g`/`gim` flags *inside* their consuming function, not at module level. A fresh `RegExp` per call eliminates the `lastIndex` carry-over bug entirely. Module-level `const`s with stateful flags are forbidden; if a pattern is shared, hoist the *source string* and instantiate per call. Phase 1 left two module-level patterns with explicit `lastIndex = 0` resets (review-patterns.ts, validation-rules.ts) under this convention as an interim shape; refactor when next touched.
+- **`/health` minimalism.** `/health` returns `{ ok: true, version }` only — never filesystem paths or other diagnostic state. Path or runtime diagnostics belong on a separate `/api/diagnostics` endpoint with explicit purpose.
+
 ---
 
 ## Active Blockers

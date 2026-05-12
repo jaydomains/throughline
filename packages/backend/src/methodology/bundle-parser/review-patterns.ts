@@ -16,6 +16,7 @@ export function parseReviewPatterns(_bundleId: string, body: string): ReviewPatt
 
   const companion_modes: CompanionMode[] = [];
   let match: RegExpExecArray | null;
+  COMPANION_MODE_HEADING.lastIndex = 0;
   while ((match = COMPANION_MODE_HEADING.exec(body)) !== null) {
     const id = match[1]!.trim();
     companion_modes.push({ id, name: id, description: '' });

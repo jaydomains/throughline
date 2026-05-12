@@ -42,7 +42,7 @@ export async function startServer(config: Config): Promise<ServerHandle> {
   const projects = createProjectsService(db, registry);
   const settings = createSettingsService(db);
 
-  registerHealthRoute(app, config);
+  registerHealthRoute(app);
   registerMethodologyRoutes(app, registry);
   registerProjectRoutes(app, projects);
   registerSettingsRoutes(app, settings);

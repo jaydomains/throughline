@@ -11,7 +11,7 @@ export interface SettingsService {
   setMany(entries: Record<string, unknown>): void;
 }
 
-const BANNED_KEY_PATTERN = /(api_key|secret|password|token|pat)$/i;
+const BANNED_KEY_PATTERN = /(?:api_key|secret|password|token|github_pat)(?:$|_)/i;
 
 function ensureNotSecret(key: string): void {
   if (BANNED_KEY_PATTERN.test(key)) {
