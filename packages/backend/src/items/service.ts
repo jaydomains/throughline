@@ -71,10 +71,52 @@ export interface ItemsService {
   removeSessionMembership(id: string, sessionId: string): void;
 }
 
-function rowToItem(db: DB, row: ItemRow): Item {
-  const tags = (db.prepare('SELECT tag FROM item_tags WHERE item_id = ? ORDER BY tag').all(row.id) as Array<{ tag: string }>).map((r) => r.tag);
-  const blockers = (db.prepare('SELECT blocked_by_item_id FROM item_blockers WHERE item_id = ?').all(row.id) as Array<{ blocked_by_item_id: string }>).map((r) => r.blocked_by_item_id);
-  const session_ids = (db.prepare('SELECT session_id FROM item_session_memberships WHERE item_id = ?').all(row.id) as Array<{ session_id: string }>).map((r) => r.session_id);
+interface ItemChildren {
+  tagsById: Map<string, string[]>;
+  blockersById: Map<string, string[]>;
+  sessionsById: Map<string, string[]>;
+}
+
+// Batch-fetch all child rows for a set of item ids in three queries total, then index
+// them by item_id. Convention: list-shape methods batch their child queries via
+// WHERE item_id IN (...), not per-row loops. Avoids the N+1 pattern propagating to
+// sessions list / library list / etc. in future phases.
+function loadItemChildren(db: DB, ids: string[]): ItemChildren {
+  if (ids.length === 0) {
+    return { tagsById: new Map(), blockersById: new Map(), sessionsById: new Map() };
+  }
+  const placeholders = ids.map(() => '?').join(',');
+  const tagsById = new Map<string, string[]>();
+  const blockersById = new Map<string, string[]>();
+  const sessionsById = new Map<string, string[]>();
+  const tagRows = db
+    .prepare(`SELECT item_id, tag FROM item_tags WHERE item_id IN (${placeholders}) ORDER BY tag`)
+    .all(...ids) as Array<{ item_id: string; tag: string }>;
+  for (const r of tagRows) {
+    const arr = tagsById.get(r.item_id) ?? [];
+    arr.push(r.tag);
+    tagsById.set(r.item_id, arr);
+  }
+  const blockerRows = db
+    .prepare(`SELECT item_id, blocked_by_item_id FROM item_blockers WHERE item_id IN (${placeholders})`)
+    .all(...ids) as Array<{ item_id: string; blocked_by_item_id: string }>;
+  for (const r of blockerRows) {
+    const arr = blockersById.get(r.item_id) ?? [];
+    arr.push(r.blocked_by_item_id);
+    blockersById.set(r.item_id, arr);
+  }
+  const sessionRows = db
+    .prepare(`SELECT item_id, session_id FROM item_session_memberships WHERE item_id IN (${placeholders})`)
+    .all(...ids) as Array<{ item_id: string; session_id: string }>;
+  for (const r of sessionRows) {
+    const arr = sessionsById.get(r.item_id) ?? [];
+    arr.push(r.session_id);
+    sessionsById.set(r.item_id, arr);
+  }
+  return { tagsById, blockersById, sessionsById };
+}
+
+function rowToItemWithChildren(row: ItemRow, children: ItemChildren): Item {
   return {
     id: row.id,
     project_id: row.project_id,
@@ -85,12 +127,16 @@ function rowToItem(db: DB, row: ItemRow): Item {
     blocker_text: row.blocker_text,
     parent_id: row.parent_id,
     branch_ref: row.branch_ref,
-    tags,
-    blockers,
-    session_ids,
+    tags: children.tagsById.get(row.id) ?? [],
+    blockers: children.blockersById.get(row.id) ?? [],
+    session_ids: children.sessionsById.get(row.id) ?? [],
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
+}
+
+function rowToItem(db: DB, row: ItemRow): Item {
+  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]));
 }
 
 function bundleFor(registry: MethodologyRegistry, bundleId: string): BundleLoadResult {
@@ -144,7 +190,8 @@ export function createItemsService(
       }
       const sql = `SELECT i.* FROM items i${joins} WHERE ${filters.join(' AND ')} ORDER BY i.created_at ASC`;
       const rows = db.prepare(sql).all(...joinParams, ...filterParams) as ItemRow[];
-      return rows.map((r) => rowToItem(db, r));
+      const children = loadItemChildren(db, rows.map((r) => r.id));
+      return rows.map((r) => rowToItemWithChildren(r, children));
     },
 
     get(id) {
@@ -345,6 +392,20 @@ export function createItemsService(
       if (!before) throw new ItemNotFoundError(id);
       const target = getRow(blockedById);
       if (!target || target.project_id !== before.project_id) throw new ItemNotFoundError(blockedById);
+      // BFS walk from blockedById following its own blockers; reaching `id` along the chain
+      // means the proposed edge closes a cycle. Mirrors the parent-walk pattern above.
+      const blockersOf = db.prepare('SELECT blocked_by_item_id FROM item_blockers WHERE item_id = ?');
+      const queue: string[] = [blockedById];
+      const seen = new Set<string>();
+      while (queue.length > 0) {
+        const node = queue.shift()!;
+        if (node === id) throw new BlockerCycleError();
+        if (seen.has(node)) continue;
+        seen.add(node);
+        for (const row of blockersOf.all(node) as Array<{ blocked_by_item_id: string }>) {
+          queue.push(row.blocked_by_item_id);
+        }
+      }
       const r = db
         .prepare('INSERT OR IGNORE INTO item_blockers (item_id, blocked_by_item_id) VALUES (?, ?)')
         .run(id, blockedById);

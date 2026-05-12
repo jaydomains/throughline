@@ -30,6 +30,8 @@ export function ItemDetailPanel({
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingDesc, setEditingDesc] = useState<string | null>(null);
+  const [editingBlockerText, setEditingBlockerText] = useState<string | null>(null);
+  const [editingBranchRef, setEditingBranchRef] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [blockerDraft, setBlockerDraft] = useState('');
 
@@ -117,8 +119,9 @@ export function ItemDetailPanel({
     onChanged();
   }
 
-  async function setBlockerText(value: string) {
+  async function persistBlockerText(value: string) {
     if (!item) return;
+    if ((item.blocker_text ?? '') === value) return;
     await api.updateItem(projectId, item.id, { blocker_text: value.length === 0 ? null : value });
     await refresh();
     onChanged();
@@ -143,8 +146,9 @@ export function ItemDetailPanel({
     onChanged();
   }
 
-  async function setBranchRef(value: string) {
+  async function persistBranchRef(value: string) {
     if (!item) return;
+    if ((item.branch_ref ?? '') === value) return;
     await api.updateItem(projectId, item.id, { branch_ref: value.length === 0 ? null : value });
     await refresh();
     onChanged();
@@ -239,8 +243,14 @@ export function ItemDetailPanel({
           <span className="muted">Free-text</span>
           <input
             aria-label="Free-text blocker description"
-            value={item.blocker_text ?? ''}
-            onChange={(e) => setBlockerText(e.target.value)}
+            value={editingBlockerText ?? item.blocker_text ?? ''}
+            onChange={(e) => setEditingBlockerText(e.target.value)}
+            onBlur={async () => {
+              if (editingBlockerText !== null) {
+                await persistBlockerText(editingBlockerText);
+              }
+              setEditingBlockerText(null);
+            }}
           />
         </label>
         <div className="blocker-refs">
@@ -274,8 +284,14 @@ export function ItemDetailPanel({
         <h3>Branch ref (T-D38)</h3>
         <input
           aria-label="Branch reference"
-          value={item.branch_ref ?? ''}
-          onChange={(e) => setBranchRef(e.target.value)}
+          value={editingBranchRef ?? item.branch_ref ?? ''}
+          onChange={(e) => setEditingBranchRef(e.target.value)}
+          onBlur={async () => {
+            if (editingBranchRef !== null) {
+              await persistBranchRef(editingBranchRef);
+            }
+            setEditingBranchRef(null);
+          }}
         />
       </section>
 

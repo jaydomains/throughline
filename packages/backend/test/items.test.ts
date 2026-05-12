@@ -113,6 +113,21 @@ describe('items service', () => {
     }
   });
 
+  it('rejects a transitive blocker cycle via BFS walk', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      const a = items.create({ project_id: project.id, title: 'A' });
+      const b = items.create({ project_id: project.id, title: 'B' });
+      const c = items.create({ project_id: project.id, title: 'C' });
+      items.addBlocker(a.id, b.id); // A blocked by B
+      items.addBlocker(b.id, c.id); // B blocked by C
+      // Closing the chain — C blocked by A — would form a cycle A->B->C->A.
+      expect(() => items.addBlocker(c.id, a.id)).toThrow(BlockerCycleError);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('honours free-text blocker description and structured blockers together (T-D8)', async () => {
     const { backend, items, project } = await setup();
     try {
