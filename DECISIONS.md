@@ -729,23 +729,23 @@ Reconcile applies across five categories directly; the sixth (contradicted) rout
 
 ---
 
-## T-D36 — Audit log scope covers items, library entries, projects, methodology bindings, and gate firings
+## T-D36 — Audit log scope covers items, sessions, library entries, projects, methodology bindings, and gate firings
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 7.22, 8
 
 ### Decision
-The audit log records every state change to every item, library entry, project, methodology bundle binding, and every methodology gate firing.
+The audit log records every state change to every item, session, library entry, project, methodology bundle binding, and every methodology gate firing.
 
 ### Context
-Items and library entries are mutable state; projects and bundle bindings change less often but their changes (project create/archive, bundle re-bind, bundle file change) materially alter what the runtime enforces; gate firings are the methodology runtime's primary externally-visible behaviour.
+Items and library entries are mutable state; sessions are views over items (T-D1) but their own CRUD — create, rename, branch-ref edits, delete — is itself a state change that affects which items render in which view; projects and bundle bindings change less often but their changes (project create/archive, bundle re-bind, bundle file change) materially alter what the runtime enforces; gate firings are the methodology runtime's primary externally-visible behaviour.
 
 ### Rationale
-One audit substrate across all of these preserves a uniform query surface for periodic review, the audit-log RAG substrate (T-D25), and methodology-state reconstruction. Bundle changes audit-logged means a retroactive effect (a bundle change altering interpretation of existing data) is traceable to its trigger.
+One audit substrate across all of these preserves a uniform query surface for periodic review, the audit-log RAG substrate (T-D25), and methodology-state reconstruction. Bundle changes audit-logged means a retroactive effect (a bundle change altering interpretation of existing data) is traceable to its trigger. Sessions included in scope because session lifecycle changes feed the periodic-review hygiene queries ("sessions untouched 30+ days", SPEC §7.18) and need an honest history of their own renames and member-changes — otherwise the periodic-review surface would be querying a partial substrate.
 
 ### Implications
-Audit log table records all entity types with a discriminator. Gate-firing entries record the moment, gate identifier, status, and findings reference. UI shows history in item, library, project, and methodology-gates detail panels. RAG audit substrate queries across the full surface.
+Audit log table records all entity types with a discriminator. Gate-firing entries record the moment, gate identifier, status, and findings reference. Session entries record create / rename / branch-ref / membership-add / membership-remove / delete. UI shows history in item, library, project, session, and methodology-gates detail panels. RAG audit substrate queries across the full surface.
 
 ---
 

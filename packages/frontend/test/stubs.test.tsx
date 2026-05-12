@@ -8,9 +8,6 @@ import {
   LibraryView,
   ModulesView,
   ProjectsView,
-  SessionView,
-  SessionsIndex,
-  TreeView,
   GatesView,
 } from '../src/views/stubs.js';
 import type { Project } from '@throughline/shared';
@@ -42,10 +39,8 @@ describe('View stubs', () => {
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
-  it('renders Sessions, Tree, Graph, Library, Directives stubs', () => {
+  it('renders Graph, Library, Directives stubs (Sessions/Tree are now live views, tested separately)', () => {
     const cases: Array<[string, React.ReactNode]> = [
-      ['Sessions', <SessionsIndex />],
-      ['Tree', <TreeView />],
       ['Graph', <GraphView />],
       ['Library', <LibraryView />],
       ['Directives', <DirectivesView />],
@@ -55,17 +50,6 @@ describe('View stubs', () => {
       expect(screen.getByRole('heading', { name: label })).toBeInTheDocument();
       unmount();
     }
-  });
-
-  it('SessionView includes the session id in its heading', () => {
-    render(
-      <MemoryRouter initialEntries={['/projects/p1/sessions/s99']}>
-        <Routes>
-          <Route path="/projects/:id/sessions/:sessionId" element={<SessionView />} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('heading', { name: /Session s99/ })).toBeInTheDocument();
   });
 
   it('ProjectsView lists projects passed in', () => {

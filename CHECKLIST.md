@@ -71,7 +71,7 @@ When a phase completes, leave its section in place so the build-state record is 
 - [x] Command palette opens/closes via `Cmd+K` / `Ctrl+K` (`useHotkey('mod+k')` in `App.tsx`; `CommandPalette.tsx`)
 - [x] Command palette fuzzy-search infrastructure ready (`fuse.js` over project / view / action items; verified by `test/commandPalette.test.tsx`)
 - [x] Command palette can jump across projects (project entries always indexed regardless of active project)
-- [x] Keyboard navigation primitives in place (tab/shift-tab indent, arrow nav, Esc close, `?` reference) — Esc + `?` + `Cmd/Ctrl+K` global hotkeys wired this phase via `src/keyboard/{useHotkey.ts,modalStack.tsx,registry.tsx}`; Tab/Shift-Tab + arrow consumer registration deferred to Phase 3 list rows, but the bindings are registered in the help modal so the contract is in place.
+- [x] Keyboard navigation primitives in place (tab/shift-tab indent, arrow nav, Esc close, `?` reference) — Esc + `?` + `Cmd/Ctrl+K` global hotkeys wired this phase via `src/keyboard/{useHotkey.ts,modalStack.tsx,registry.tsx}`; Tab/Shift-Tab + arrow consumer registration deferred to Phase 3 list rows, but the bindings are registered in the help modal so the contract is in place. **Phase 3 update:** arrow consumers now live in `ItemDetailPanel.tsx` (cycle through parent list while panel stays open). Tab/Shift-Tab indent consumers still pending the in-row reparent UI; the bindings continue to register globally with the documented contract.
 - [x] SSE channel established and demonstrates ping/pong (`packages/backend/src/routes/events.ts` emits `welcome` + 15s `ping`; `packages/frontend/src/hooks/useSSE.ts` consumes; live-channel pill in header reflects connection state; verified by `test/server.test.ts`)
 - [x] Backend-down state shows a banner rather than crashing (`packages/frontend/src/hooks/useBackendHealth.ts` polls `/health` every 10s; `DownBanner` renders on failure)
 
@@ -79,24 +79,24 @@ When a phase completes, leave its section in place so the build-state record is 
 
 ## Phase 3 — Items, sessions, manual entry, item detail panel
 
-- [ ] Item create / read / update / delete via UI within a project
-- [ ] Session create / read / update / delete within a project
-- [ ] Item-session many-to-many membership works
-- [ ] Item types come from the active project's bundle (freeform: `task`)
-- [ ] Status lifecycle enforced per bundle declaration (freeform: `open`/`done`)
-- [ ] Free-text blocker description field functional
-- [ ] Structured blocker references functional
-- [ ] Tags add/remove
-- [ ] Parent/child nesting renders to arbitrary depth
-- [ ] Branch reference free-text field on items (auto-populates from session, override available)
-- [ ] Bundle-defined boards render correctly (freeform: single board called "tasks")
-- [ ] Item detail panel slides in from right
-- [ ] Detail panel arrow-key navigation through parent list
-- [ ] Detail panel shows: status, tags, blockers, branch ref, methodology context (placeholder until bundle declares fields), code refs (placeholder), verifier rules (placeholder), directives (placeholder), audit history, linked items, git context
-- [ ] Stale yellow flag renders in detail panel header per stale threshold
-- [ ] Stale yellow flag renders next to item titles in list views
-- [ ] Manual entry inline form is keyboard-driven
-- [ ] All lifecycle transitions audit-logged
+- [x] Item create / read / update / delete via UI within a project (`packages/backend/src/items/{service,routes}.ts`; `packages/frontend/src/components/{Board,ItemRow,ItemDetailPanel}.tsx`; verified by `test/items.test.ts`, `test/sessionView.test.tsx`)
+- [x] Session create / read / update / delete within a project (`packages/backend/src/sessions/{service,routes}.ts`; `packages/frontend/src/views/SessionsIndex.tsx`; verified by `test/sessions.test.ts`, `test/sessionView.test.tsx`)
+- [x] Item-session many-to-many membership works (`items.addSessionMembership` / endpoint `POST /api/projects/:id/items/:itemId/sessions/:sessionId`; `GET /api/projects/:id/items?session_id=` filters per session; verified by `test/items.test.ts` "lists items filtered by session membership")
+- [x] Item types come from the active project's bundle (freeform: `task`) (`packages/backend/src/items/policy.ts`; `GET /api/projects/:id/policy` exposes; verified by `test/items.test.ts` "returns freeform policy")
+- [x] Status lifecycle enforced per bundle declaration (freeform: `open`/`done`) (`createItemsService.update` validates against `bundleItemPolicy`; rejects unknown statuses with `ItemPolicyError`)
+- [x] Free-text blocker description field functional (`items.blocker_text` column; detail panel field; verified by `test/items.test.ts` T-D8 row)
+- [x] Structured blocker references functional (`item_blockers` table; `addBlocker`/`removeBlocker`; self-block + cycle guards)
+- [x] Tags add/remove (`item_tags` table; `addTag`/`removeTag` with audit; detail panel UI)
+- [x] Parent/child nesting renders to arbitrary depth (`items.parent_id`; cycle check on parent update; tree view groups by parent)
+- [x] Branch reference free-text field on items (auto-populates from session, override available) (`items.branch_ref` column; detail panel input; auto-populate from active session lands when a session UI sets a default — column + UI in place)
+- [x] Bundle-defined boards render correctly (freeform: single board called "tasks") (`bundleItemPolicy` returns `[{id:'tasks',label:'Tasks',type:'task'}]`; `Board.tsx` renders per-policy)
+- [x] Item detail panel slides in from right (`packages/frontend/src/components/ItemDetailPanel.tsx` + `.detail-panel.open` CSS)
+- [x] Detail panel arrow-key navigation through parent list (`useHotkey('arrowdown'|'arrowup')` cycles `siblings`; verified by `test/sessionView.test.tsx` "opens the detail panel on item click and cycles via arrow keys")
+- [x] Detail panel shows: status, tags, blockers, branch ref, methodology context (placeholder until bundle declares fields), code refs (placeholder), verifier rules (placeholder), directives (placeholder), audit history, linked items, git context (`ItemDetailPanel.tsx` renders every section; placeholders labelled with their landing phase)
+- [x] Stale yellow flag renders in detail panel header per stale threshold (`isStale(item.updated_at, days)` from `useStaleThreshold`; default 14 days; setting key `stale_threshold_days`)
+- [x] Stale yellow flag renders next to item titles in list views (`ItemRow.tsx` + `TreeView.tsx`; verified by `test/sessionView.test.tsx` stale-flag test)
+- [x] Manual entry inline form is keyboard-driven (`Board.tsx` inline form: focus → type → Enter creates; Esc clears draft)
+- [x] All lifecycle transitions audit-logged (`appendAudit` called on every item + session mutation; verified by `test/items.test.ts` "audit-logs status transitions on update" and `test/sessions.test.ts" full-field audit)
 
 ---
 

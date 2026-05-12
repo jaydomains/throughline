@@ -1,5 +1,6 @@
 export type AuditEntityType =
   | 'item'
+  | 'session'
   | 'library'
   | 'project'
   | 'bundle_binding'

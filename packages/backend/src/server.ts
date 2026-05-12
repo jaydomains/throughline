@@ -8,6 +8,11 @@ import { createProjectsService } from './projects/service.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { registerSettingsRoutes } from './settings/routes.js';
 import { createSettingsService } from './settings/service.js';
+import { createItemsService } from './items/service.js';
+import { registerItemRoutes } from './items/routes.js';
+import { createSessionsService } from './sessions/service.js';
+import { registerSessionRoutes } from './sessions/routes.js';
+import { registerAuditRoutes } from './audit/routes.js';
 import { registerMethodologyRoutes } from './routes/methodologies.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerEventsRoute } from './routes/events.js';
@@ -52,11 +57,16 @@ export async function startServer(
   });
   const projects = createProjectsService(db, registry);
   const settings = createSettingsService(db);
+  const sessions = createSessionsService(db, projects);
+  const items = createItemsService(db, projects, registry);
 
   registerHealthRoute(app);
   registerEventsRoute(app);
   registerMethodologyRoutes(app, registry);
   registerProjectRoutes(app, projects, settings);
+  registerSessionRoutes(app, projects, sessions);
+  registerItemRoutes(app, projects, items);
+  registerAuditRoutes(app, db);
   registerSettingsRoutes(app, settings);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);

@@ -104,6 +104,70 @@ describe('POST /api/projects/:id/switch', () => {
   });
 });
 
+describe('items + sessions REST', () => {
+  let run: TestRun;
+  beforeEach(async () => {
+    run = await makeRun();
+  });
+  afterEach(async () => {
+    await run.cleanup();
+  });
+
+  it('round-trips a session + item + policy + audit through the API', async () => {
+    const created = await fetch(`${run.server.url}/api/projects`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'demo', repo_path: '/tmp/d' }),
+    });
+    const { project } = (await created.json()) as { project: { id: string } };
+
+    const policyRes = await fetch(`${run.server.url}/api/projects/${project.id}/policy`);
+    const { policy } = (await policyRes.json()) as { policy: { types: string[]; statuses: string[] } };
+    expect(policy.types).toEqual(['task']);
+    expect(policy.statuses).toEqual(['open', 'done']);
+
+    const sessionRes = await fetch(`${run.server.url}/api/projects/${project.id}/sessions`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'wave 1' }),
+    });
+    expect(sessionRes.status).toBe(201);
+    const { session } = (await sessionRes.json()) as { session: { id: string } };
+
+    const itemRes = await fetch(`${run.server.url}/api/projects/${project.id}/items`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'first task' }),
+    });
+    expect(itemRes.status).toBe(201);
+    const { item } = (await itemRes.json()) as { item: { id: string } };
+
+    const linkRes = await fetch(
+      `${run.server.url}/api/projects/${project.id}/items/${item.id}/sessions/${session.id}`,
+      { method: 'POST' },
+    );
+    expect(linkRes.status).toBe(200);
+
+    const sessionItems = await fetch(
+      `${run.server.url}/api/projects/${project.id}/items?session_id=${session.id}`,
+    );
+    const itemsBody = (await sessionItems.json()) as { items: Array<{ id: string }> };
+    expect(itemsBody.items.map((i) => i.id)).toEqual([item.id]);
+
+    const audit = await fetch(
+      `${run.server.url}/api/audit?entity_type=item&entity_id=${item.id}`,
+    );
+    const { entries } = (await audit.json()) as { entries: Array<{ field: string }> };
+    expect(entries.some((e) => e.field === 'create')).toBe(true);
+  });
+
+  it('returns default stale_threshold_days from /api/settings', async () => {
+    const res = await fetch(`${run.server.url}/api/settings`);
+    const { settings } = (await res.json()) as { settings: Record<string, unknown> };
+    expect(settings['stale_threshold_days']).toBe(14);
+  });
+});
+
 describe('GET /events (SSE)', () => {
   let run: TestRun;
   beforeEach(async () => {
