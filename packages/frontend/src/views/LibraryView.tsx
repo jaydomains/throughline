@@ -9,10 +9,14 @@ import { LIBRARY_ENTRY_TYPES } from '@throughline/shared';
 import { api } from '../api.js';
 import { useItemPolicy } from '../hooks/useItemPolicy.js';
 import { useSessions } from '../hooks/useSessions.js';
+import { useDirectives, directivesFor, isPinned } from '../hooks/useDirectives.js';
+import type { Directive } from '@throughline/shared';
 import { DumpZone } from '../components/DumpZone.js';
 import { TagChipsEditor } from '../components/TagChipsEditor.js';
 import { PromptFillModal } from '../components/PromptFillModal.js';
 import { AttachItemModal } from '../components/AttachItemModal.js';
+import { DirectiveModal } from '../components/DirectiveModal.js';
+import { DirectiveBadge } from '../components/DirectiveBadge.js';
 
 const TYPE_LABEL: Record<LibraryEntryType, string> = {
   note: 'Notes',
@@ -46,6 +50,14 @@ export function LibraryView() {
   const [promptFillFor, setPromptFillFor] = useState<LibraryEntry | null>(null);
   const [attachFor, setAttachFor] = useState<LibraryEntry | null>(null);
   const [copyToast, setCopyToast] = useState<string | null>(null);
+  const [directiveTarget, setDirectiveTarget] = useState<{
+    entry: LibraryEntry;
+    existing: Directive | null;
+  } | null>(null);
+  const {
+    byParent: directivesByParent,
+    refresh: refreshDirectives,
+  } = useDirectives(projectId ?? null);
 
   const refresh = useCallback(async () => {
     if (!projectId) return;
@@ -94,7 +106,19 @@ export function LibraryView() {
     };
   }, [projectId, searchQuery, typeFilter, scope]);
 
-  const visibleEntries = searchResult ? searchResult.entries : entries;
+  const allVisibleEntries = searchResult ? searchResult.entries : entries;
+  // Phase 6b — pinned entries sticky to the top of the sidebar list (pin scope for
+  // Phase 6 = session board + library sidebar). Filters and search apply first, then
+  // partition: pinned first, unpinned next, preserving relative order from the backend.
+  const pinnedEntries = useMemo(
+    () => allVisibleEntries.filter((e) => isPinned(directivesFor(directivesByParent, 'library', e.id))),
+    [allVisibleEntries, directivesByParent],
+  );
+  const unpinnedEntries = useMemo(
+    () => allVisibleEntries.filter((e) => !isPinned(directivesFor(directivesByParent, 'library', e.id))),
+    [allVisibleEntries, directivesByParent],
+  );
+  const visibleEntries = [...pinnedEntries, ...unpinnedEntries];
   const selected = useMemo(
     () => visibleEntries.find((e) => e.id === selectedId) ?? null,
     [visibleEntries, selectedId],
@@ -205,7 +229,37 @@ export function LibraryView() {
             {visibleEntries.length === 0 && (
               <li className="muted">No entries.</li>
             )}
-            {visibleEntries.map((e) => (
+            {pinnedEntries.length > 0 && (
+              <li
+                className="pinned-divider"
+                data-testid="library-pinned-divider"
+                aria-hidden="true"
+              >
+                📌 pinned
+              </li>
+            )}
+            {pinnedEntries.map((e) => (
+              <li
+                key={e.id}
+                className={`${selectedId === e.id ? 'selected ' : ''}pinned-entry`}
+                onClick={() => setSelectedId(e.id)}
+                data-testid={`library-entry-row-${e.id}`}
+              >
+                <strong>{e.title}</strong>
+                <DirectiveBadge directives={directivesFor(directivesByParent, 'library', e.id)} />
+                <span className="meta">{e.type}</span>
+                {e.tags.length > 0 && (
+                  <div className="tags-inline">
+                    {e.tags.map((t) => (
+                      <span key={t} className="tag">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </li>
+            ))}
+            {unpinnedEntries.map((e) => (
               <li
                 key={e.id}
                 className={selectedId === e.id ? 'selected' : ''}
@@ -213,6 +267,7 @@ export function LibraryView() {
                 data-testid={`library-entry-row-${e.id}`}
               >
                 <strong>{e.title}</strong>
+                <DirectiveBadge directives={directivesFor(directivesByParent, 'library', e.id)} />
                 <span className="meta">{e.type}</span>
                 {e.tags.length > 0 && (
                   <div className="tags-inline">
@@ -235,11 +290,20 @@ export function LibraryView() {
             <EntryEditor
               entry={selected}
               attachedItems={attachedItems}
+              directives={directivesFor(directivesByParent, 'library', selected.id)}
               onPatch={(p) => void onPatchEntry(selected, p)}
               onDelete={() => void onDeleteEntry(selected)}
               onCopySnippet={() => void onCopySnippet(selected)}
               onUsePrompt={() => setPromptFillFor(selected)}
               onAttach={() => setAttachFor(selected)}
+              onAddDirective={() => setDirectiveTarget({ entry: selected, existing: null })}
+              onEditDirective={(d) =>
+                setDirectiveTarget({ entry: selected, existing: d })
+              }
+              onDeleteDirective={async (d) => {
+                await api.deleteDirective(selected.project_id, d.id);
+                await refreshDirectives();
+              }}
             />
           )}
         </main>
@@ -266,6 +330,18 @@ export function LibraryView() {
           }}
         />
       )}
+      {directiveTarget && (
+        <DirectiveModal
+          open={directiveTarget !== null}
+          onClose={() => setDirectiveTarget(null)}
+          onSaved={() => void refreshDirectives()}
+          projectId={directiveTarget.entry.project_id}
+          parentType="library"
+          parentId={directiveTarget.entry.id}
+          parentTitle={directiveTarget.entry.title}
+          existing={directiveTarget.existing}
+        />
+      )}
     </div>
   );
 }
@@ -273,21 +349,29 @@ export function LibraryView() {
 interface EditorProps {
   entry: LibraryEntry;
   attachedItems: { id: string; title: string; type: string; status: string }[];
+  directives: Directive[];
   onPatch: (patch: { title?: string; body?: string; tags?: string[] }) => void;
   onDelete: () => void;
   onCopySnippet: () => void;
   onUsePrompt: () => void;
   onAttach: () => void;
+  onAddDirective: () => void;
+  onEditDirective: (d: Directive) => void;
+  onDeleteDirective: (d: Directive) => void;
 }
 
 function EntryEditor({
   entry,
   attachedItems,
+  directives,
   onPatch,
   onDelete,
   onCopySnippet,
   onUsePrompt,
   onAttach,
+  onAddDirective,
+  onEditDirective,
+  onDeleteDirective,
 }: EditorProps) {
   const [title, setTitle] = useState(entry.title);
   const [body, setBody] = useState(entry.body);
@@ -356,6 +440,45 @@ function EntryEditor({
         rows={16}
         data-testid="library-editor-body"
       />
+      <section className="library-directives" data-testid="library-directives">
+        <h3>Directives ({directives.length})</h3>
+        {directives.length === 0 && (
+          <p className="muted">No directives — add a pin, reminder, or include-in-prompt.</p>
+        )}
+        {directives.length > 0 && (
+          <ul className="library-directives-list">
+            {directives.map((d) => (
+              <li key={d.id} data-testid={`library-directive-${d.id}`}>
+                <span className="meta">{d.kind}</span>
+                {d.kind === 'reminder' && d.next_fire_at !== null && (
+                  <span> · {new Date(d.next_fire_at).toLocaleString()}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onEditDirective(d)}
+                  data-testid={`library-directive-edit-${d.id}`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDeleteDirective(d)}
+                  data-testid={`library-directive-delete-${d.id}`}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={onAddDirective}
+          data-testid="library-directive-add"
+        >
+          Add directive…
+        </button>
+      </section>
       {entry.type === 'note' && (
         <section className="library-attached-items" data-testid="library-attached-items">
           <h3>Attached items ({attachedItems.length})</h3>

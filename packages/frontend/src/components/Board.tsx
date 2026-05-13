@@ -9,6 +9,8 @@ interface BoardProps {
   board: BoardSpec;
   policy: ItemPolicy;
   items: Item[];
+  // Phase 6b — item ids with a pin directive; rendered sticky at the top of their column.
+  pinnedIds?: ReadonlySet<string>;
   staleDays: number;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
@@ -21,6 +23,7 @@ export function Board({
   board,
   policy,
   items,
+  pinnedIds,
   staleDays,
   selectedId,
   onSelect,
@@ -40,6 +43,7 @@ export function Board({
               board={board}
               status={status}
               items={columnItems}
+              {...(pinnedIds !== undefined ? { pinnedIds } : {})}
               staleDays={staleDays}
               selectedId={selectedId}
               orderedIds={items.map((i) => i.id)}
@@ -59,6 +63,7 @@ interface BoardColumnProps {
   board: BoardSpec;
   status: string;
   items: Item[];
+  pinnedIds?: ReadonlySet<string>;
   staleDays: number;
   selectedId: string | null;
   orderedIds: string[];
@@ -72,6 +77,7 @@ function BoardColumn({
   board,
   status,
   items,
+  pinnedIds,
   staleDays,
   selectedId,
   orderedIds,
@@ -98,11 +104,35 @@ function BoardColumn({
     }
   }
 
+  const pinned = pinnedIds ? items.filter((i) => pinnedIds.has(i.id)) : [];
+  const unpinned = pinnedIds ? items.filter((i) => !pinnedIds.has(i.id)) : items;
+
   return (
     <div className="board-column" data-testid={`column-${board.id}-${status}`}>
       <h3>{status}</h3>
+      {pinned.length > 0 && (
+        <>
+          <div className="pinned-divider" data-testid={`pinned-${board.id}-${status}`}>
+            📌 pinned
+          </div>
+          <ul className="item-list pinned-list">
+            {pinned.map((item) => (
+              <ItemRow
+                key={item.id}
+                projectId={projectId}
+                item={item}
+                staleDays={staleDays}
+                selected={selectedId === item.id}
+                siblings={orderedIds}
+                onSelect={() => onSelect(item.id)}
+                onChanged={onRefresh}
+              />
+            ))}
+          </ul>
+        </>
+      )}
       <ul className="item-list">
-        {items.map((item) => (
+        {unpinned.map((item) => (
           <ItemRow
             key={item.id}
             projectId={projectId}

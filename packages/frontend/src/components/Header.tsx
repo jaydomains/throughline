@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { Project } from '@throughline/shared';
 import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
+import { useDirectives } from '../hooks/useDirectives.js';
 import { InboxStatus } from './InboxStatus.js';
 import { ProjectSwitcher } from './ProjectSwitcher.js';
 import { Scratchpad } from './Scratchpad.js';
@@ -26,6 +27,7 @@ export function Header({
     ? projects.find((p) => p.id === activeProjectId) ?? null
     : null;
   const bundle = activeProject ? findBundle(bundles, activeProject.bundle_id) : undefined;
+  const { directives } = useDirectives(activeProjectId);
 
   return (
     <header className="header" role="banner">
@@ -47,6 +49,17 @@ export function Header({
         <span className={`dot ${sseConnected ? 'ok' : 'danger'}`} />
         live
       </span>
+
+      {activeProject && (
+        <Link
+          to={`/projects/${activeProject.id}/directives`}
+          className="header-pill directives-hint"
+          title="Active directives (T-D12)"
+          data-testid="directives-hint"
+        >
+          Directives ({directives.length})
+        </Link>
+      )}
 
       <Scratchpad activeProjectId={activeProjectId} />
 

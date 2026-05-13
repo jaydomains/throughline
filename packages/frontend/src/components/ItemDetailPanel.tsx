@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AuditEntry, Item, ItemPolicy, LibraryEntry } from '@throughline/shared';
+import type { AuditEntry, Directive, Item, ItemPolicy, LibraryEntry, ReminderPayload } from '@throughline/shared';
 import { api } from '../api.js';
 import { isStale } from '../hooks/useStaleThreshold.js';
 import { useModalRegistration } from '../keyboard/modalStack.js';
 import { useHotkey } from '../keyboard/useHotkey.js';
 import { AttachNoteToItemModal } from './AttachNoteToItemModal.js';
+import { DirectiveModal } from './DirectiveModal.js';
 
 interface Props {
   projectId: string;
@@ -37,6 +38,10 @@ export function ItemDetailPanel({
   const [tagDraft, setTagDraft] = useState('');
   const [blockerDraft, setBlockerDraft] = useState('');
   const [attachNoteOpen, setAttachNoteOpen] = useState(false);
+  const [directives, setDirectives] = useState<Directive[]>([]);
+  const [directiveModal, setDirectiveModal] = useState<{ existing: Directive | null } | null>(
+    null,
+  );
 
   const refresh = useCallback(async () => {
     try {
@@ -56,6 +61,12 @@ export function ItemDetailPanel({
       setAttachedNotes(n.notes);
     } catch {
       setAttachedNotes([]);
+    }
+    try {
+      const d = await api.listDirectivesForItem(projectId, itemId);
+      setDirectives(d.directives);
+    } catch {
+      setDirectives([]);
     }
   }, [projectId, itemId]);
 
@@ -349,11 +360,61 @@ export function ItemDetailPanel({
         </button>
       </section>
 
+      <section className="detail-section" data-testid="detail-directives">
+        <h3>Directives ({directives.length})</h3>
+        {directives.length === 0 && (
+          <p className="muted">No directives — add a pin, reminder, or include-in-prompt.</p>
+        )}
+        {directives.length > 0 && (
+          <ul className="detail-directives-list">
+            {directives.map((d) => (
+              <li key={d.id} data-testid={`detail-directive-${d.id}`}>
+                <span className="meta">{d.kind}</span>
+                {d.kind === 'reminder' && d.next_fire_at !== null && (
+                  <span> · {new Date(d.next_fire_at).toLocaleString()}</span>
+                )}
+                {d.kind === 'reminder' && (d.payload as ReminderPayload).recurrence && (
+                  <span>
+                    {' '}
+                    · every {(d.payload as ReminderPayload).recurrence!.every}{' '}
+                    {(d.payload as ReminderPayload).recurrence!.unit}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDirectiveModal({ existing: d })}
+                  data-testid={`detail-directive-edit-${d.id}`}
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await api.deleteDirective(projectId, d.id);
+                    await refresh();
+                  }}
+                  data-testid={`detail-directive-delete-${d.id}`}
+                >
+                  Delete
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={() => setDirectiveModal({ existing: null })}
+          data-testid="detail-directive-add"
+        >
+          Add directive…
+        </button>
+      </section>
+
       <section className="detail-section">
-        <h3>Code refs · verifier rules · directives · git context</h3>
+        <h3>Code refs · verifier rules · git context</h3>
         <p className="muted">
-          Code refs land in Phase 11 (Semble); verifier rules in Phase 10; directives in Phase 6b;
-          PR/git context in Phase 10.
+          Code refs land in Phase 11 (Semble); verifier rules in Phase 10; PR/git context in
+          Phase 10.
         </p>
       </section>
 
@@ -387,6 +448,21 @@ export function ItemDetailPanel({
         currentAttached={attachedNotes}
         onChanged={() => void refresh()}
       />
+      {directiveModal && item && (
+        <DirectiveModal
+          open={directiveModal !== null}
+          onClose={() => setDirectiveModal(null)}
+          onSaved={() => {
+            void refresh();
+            onChanged();
+          }}
+          projectId={projectId}
+          parentType="item"
+          parentId={itemId}
+          parentTitle={item.title}
+          existing={directiveModal.existing}
+        />
+      )}
     </aside>
   );
 }

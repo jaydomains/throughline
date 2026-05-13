@@ -12,13 +12,13 @@ import { KeyboardProvider, useKeyboardRegistry } from './keyboard/registry.js';
 import { ModalStackProvider } from './keyboard/modalStack.js';
 import { useHotkey } from './keyboard/useHotkey.js';
 import {
-  DirectivesView,
   GatesView,
   GraphView,
   HomeView,
   ModulesView,
   ProjectsView,
 } from './views/stubs.js';
+import { DirectivesView } from './views/DirectivesView.js';
 import { LibraryView } from './views/LibraryView.js';
 import { SessionsIndex } from './views/SessionsIndex.js';
 import { SessionView } from './views/SessionView.js';

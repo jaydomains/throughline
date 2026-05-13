@@ -5,6 +5,7 @@ import { useItems } from '../hooks/useItems.js';
 import { useItemPolicy } from '../hooks/useItemPolicy.js';
 import { useSessions } from '../hooks/useSessions.js';
 import { useStaleThreshold } from '../hooks/useStaleThreshold.js';
+import { useDirectives, directivesFor, isPinned } from '../hooks/useDirectives.js';
 import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
 import { Board } from '../components/Board.js';
 import { DumpZone } from '../components/DumpZone.js';
@@ -24,6 +25,14 @@ export function SessionView() {
     ...(sessionId ? { sessionId } : {}),
   });
   const staleDays = useStaleThreshold();
+  const { byParent: directivesByParent, refresh: refreshDirectives } = useDirectives(projectId);
+  const pinnedIds = useMemo(() => {
+    const set = new Set<string>();
+    for (const item of items) {
+      if (isPinned(directivesFor(directivesByParent, 'item', item.id))) set.add(item.id);
+    }
+    return set;
+  }, [items, directivesByParent]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const orderedIds = items.map((i) => i.id);
@@ -48,10 +57,14 @@ export function SessionView() {
               board={board}
               policy={policy}
               items={items.filter((i) => i.type === board.type)}
+              pinnedIds={pinnedIds}
               staleDays={staleDays}
               selectedId={selectedId}
               onSelect={setSelectedId}
-              onRefresh={refresh}
+              onRefresh={() => {
+                refresh();
+                void refreshDirectives();
+              }}
             />
           ))}
         </div>

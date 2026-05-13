@@ -2,6 +2,7 @@ export type AuditEntityType =
   | 'item'
   | 'session'
   | 'library'
+  | 'directive'
   | 'project'
   | 'bundle_binding'
   | 'gate_firing'

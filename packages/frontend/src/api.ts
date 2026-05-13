@@ -5,9 +5,13 @@ import type {
   AuditEntry,
   CodeTodoScanResult,
   CreateItemInput,
+  CreateDirectiveInput,
   CreateLibraryEntryInput,
   CreateProjectInput,
   CreateSessionInput,
+  Directive,
+  DirectiveKind,
+  DirectiveParentType,
   DumpZoneProposal,
   InboxQueueEntry,
   InboxStatusSummary,
@@ -27,6 +31,7 @@ import type {
   ReconcileRun,
   ScratchpadJot,
   Session,
+  UpdateDirectiveInput,
   UpdateItemInput,
   UpdateLibraryEntryInput,
   UpdateSessionInput,
@@ -302,6 +307,45 @@ export const api = {
       method: 'DELETE',
     }).then((r) => {
       if (!r.ok) throw new Error(`DELETE reconcile run failed: ${r.status}`);
+    }),
+
+  // Phase 6b — directives (T-D12). Three kinds: pin, reminder, include_prompt.
+  listDirectives: (
+    projectId: string,
+    opts: { kind?: DirectiveKind; parentType?: DirectiveParentType; parentId?: string } = {},
+  ) => {
+    const params = new URLSearchParams();
+    if (opts.kind) params.set('kind', opts.kind);
+    if (opts.parentType) params.set('parentType', opts.parentType);
+    if (opts.parentId) params.set('parentId', opts.parentId);
+    const qs = params.toString();
+    return jsonFetch<{ directives: Directive[] }>(
+      `/api/projects/${pid(projectId)}/directives${qs ? `?${qs}` : ''}`,
+    );
+  },
+  listDirectivesForItem: (projectId: string, itemId: string) =>
+    jsonFetch<{ directives: Directive[] }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/directives`,
+    ),
+  listDirectivesForLibraryEntry: (projectId: string, entryId: string) =>
+    jsonFetch<{ directives: Directive[] }>(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}/directives`,
+    ),
+  createDirective: (projectId: string, input: Omit<CreateDirectiveInput, 'project_id'>) =>
+    jsonFetch<{ directive: Directive }>(`/api/projects/${pid(projectId)}/directives`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+  updateDirective: (projectId: string, directiveId: string, input: UpdateDirectiveInput) =>
+    jsonFetch<{ directive: Directive }>(
+      `/api/projects/${pid(projectId)}/directives/${encodeURIComponent(directiveId)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+  deleteDirective: (projectId: string, directiveId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/directives/${encodeURIComponent(directiveId)}`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE directive failed: ${r.status}`);
     }),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {

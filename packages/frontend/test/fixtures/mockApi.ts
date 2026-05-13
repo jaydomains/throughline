@@ -4,10 +4,14 @@ import type {
   AttachedItemSummary,
   AuditEntry,
   CodeTodoScanResult,
+  CreateDirectiveInput,
   CreateItemInput,
   CreateLibraryEntryInput,
   CreateProjectInput,
   CreateSessionInput,
+  Directive,
+  DirectiveKind,
+  DirectiveParentType,
   DumpZoneProposal,
   InboxQueueEntry,
   InboxStatusSummary,
@@ -25,11 +29,12 @@ import type {
   ReconcileRun,
   ScratchpadJot,
   Session,
+  UpdateDirectiveInput,
   UpdateItemInput,
   UpdateLibraryEntryInput,
   UpdateSessionInput,
 } from '@throughline/shared';
-import { renderPromptBody } from '@throughline/shared';
+import { computeNextFireAt, renderPromptBody } from '@throughline/shared';
 
 interface State {
   projects: Project[];
@@ -44,6 +49,7 @@ interface State {
   inbox: InboxQueueEntry[];
   reconcileRuns: ReconcileRun[];
   driftSignals: Array<{ id: string; category: string }>;
+  directives: Directive[];
 }
 
 const DEFAULT_PROJECT: Project = {
@@ -73,6 +79,7 @@ const state: State = {
   inbox: [],
   reconcileRuns: [],
   driftSignals: [],
+  directives: [],
 };
 
 let counter = 0;
@@ -101,6 +108,7 @@ export function resetMockApi() {
   state.inbox = [];
   state.reconcileRuns = [];
   state.driftSignals = [];
+  state.directives = [];
   counter = 0;
   for (const fn of Object.values(mockApi)) {
     if (typeof fn === 'function' && 'mockClear' in fn) (fn as { mockClear: () => void }).mockClear();
@@ -141,6 +149,24 @@ export function seedSession(s: Partial<Session> & { id: string; project_id: stri
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     ...s,
+  });
+}
+
+export function seedDirective(
+  d: Partial<Directive> & {
+    id: string;
+    project_id: string;
+    parent_type: DirectiveParentType;
+    parent_id: string;
+    kind: DirectiveKind;
+  },
+) {
+  state.directives.push({
+    payload: {},
+    next_fire_at: null,
+    last_fired_at: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    ...d,
   });
 }
 
@@ -295,6 +321,65 @@ export const mockApi = {
   listAudit: vi.fn(async (opts: { entity_id?: string }) => ({
     entries: state.audit.filter((e) => (opts.entity_id ? e.entity_id === opts.entity_id : true)),
   })),
+
+  // Phase 6b — directives.
+  listDirectives: vi.fn(
+    async (
+      projectId: string,
+      opts: { kind?: DirectiveKind; parentType?: DirectiveParentType; parentId?: string } = {},
+    ) => ({
+      directives: state.directives.filter(
+        (d) =>
+          d.project_id === projectId &&
+          (opts.kind ? d.kind === opts.kind : true) &&
+          (opts.parentType ? d.parent_type === opts.parentType : true) &&
+          (opts.parentId ? d.parent_id === opts.parentId : true),
+      ),
+    }),
+  ),
+  listDirectivesForItem: vi.fn(async (_projectId: string, itemId: string) => ({
+    directives: state.directives.filter(
+      (d) => d.parent_type === 'item' && d.parent_id === itemId,
+    ),
+  })),
+  listDirectivesForLibraryEntry: vi.fn(async (_projectId: string, entryId: string) => ({
+    directives: state.directives.filter(
+      (d) => d.parent_type === 'library' && d.parent_id === entryId,
+    ),
+  })),
+  createDirective: vi.fn(
+    async (projectId: string, input: Omit<CreateDirectiveInput, 'project_id'>) => {
+      const payload = input.payload ?? {};
+      const nextFireAt = computeNextFireAt(input.kind, payload, new Date());
+      const directive: Directive = {
+        id: id('dir'),
+        project_id: projectId,
+        parent_type: input.parent_type,
+        parent_id: input.parent_id,
+        kind: input.kind,
+        payload,
+        next_fire_at: nextFireAt,
+        last_fired_at: null,
+        created_at: new Date().toISOString(),
+      };
+      state.directives.push(directive);
+      return { directive };
+    },
+  ),
+  updateDirective: vi.fn(
+    async (_projectId: string, directiveId: string, input: UpdateDirectiveInput) => {
+      const d = state.directives.find((x) => x.id === directiveId);
+      if (!d) throw new Error('not_found');
+      if (input.payload !== undefined) {
+        d.payload = input.payload;
+        d.next_fire_at = computeNextFireAt(d.kind, input.payload, new Date());
+      }
+      return { directive: d };
+    },
+  ),
+  deleteDirective: vi.fn(async (_projectId: string, directiveId: string) => {
+    state.directives = state.directives.filter((d) => d.id !== directiveId);
+  }),
 
   // Phase 4 — capture surfaces.
   proposeDumpZone: vi.fn(async (projectId: string, input: ProposeRequest) => {
