@@ -15,6 +15,11 @@ import type {
   LibraryEntry,
   Project,
   ProposeRequest,
+  ReconcileApplyRequest,
+  ReconcileApplyResult,
+  ReconcileProposeRequest,
+  ReconcileRow,
+  ReconcileRun,
   ScratchpadJot,
   Session,
   UpdateItemInput,
@@ -31,6 +36,8 @@ interface State {
   library: LibraryEntry[];
   jots: ScratchpadJot[];
   inbox: InboxQueueEntry[];
+  reconcileRuns: ReconcileRun[];
+  driftSignals: Array<{ id: string; category: string }>;
 }
 
 const DEFAULT_PROJECT: Project = {
@@ -57,6 +64,8 @@ const state: State = {
   library: [],
   jots: [],
   inbox: [],
+  reconcileRuns: [],
+  driftSignals: [],
 };
 
 let counter = 0;
@@ -82,6 +91,8 @@ export function resetMockApi() {
   state.library = [];
   state.jots = [];
   state.inbox = [];
+  state.reconcileRuns = [];
+  state.driftSignals = [];
   counter = 0;
   for (const fn of Object.values(mockApi)) {
     if (typeof fn === 'function' && 'mockClear' in fn) (fn as { mockClear: () => void }).mockClear();
@@ -420,5 +431,170 @@ export const mockApi = {
       match_count: 3,
     };
     return { result };
+  }),
+
+  // Phase 5 — reconcile engine.
+  proposeReconcile: vi.fn(async (projectId: string, input: ReconcileProposeRequest) => {
+    // Mock heuristic: matches by title-substring against state.items in the same project,
+    // then routes to completed/contradicted/new based on a tiny keyword set. Enough to
+    // exercise the modal end-to-end without standing up the real backend.
+    const blocks = input.text.split(/\n\s*\n+/).map((p) => p.trim()).filter((p) => p.length > 0);
+    const rows: ReconcileRow[] = [];
+    const candidates = state.items.filter((i) => i.project_id === projectId);
+    for (const block of blocks) {
+      const lower = block.toLowerCase();
+      const match = candidates.find((i) => lower.includes(i.title.toLowerCase()));
+      if (match) {
+        if (/(broken|regress|contradicts|reverted)/i.test(block)) {
+          rows.push({
+            category: 'contradicted',
+            row_id: id('rr'),
+            item_id: match.id,
+            current_title: match.title,
+            reason: block.slice(0, 200),
+            evidence: block,
+          });
+        } else if (/(done|finished|shipped|complete)/i.test(block)) {
+          rows.push({
+            category: 'completed',
+            row_id: id('rr'),
+            item_id: match.id,
+            current_status: match.status,
+            next_status: 'done',
+            current_title: match.title,
+            evidence: block,
+          });
+        } else {
+          rows.push({
+            category: 'no_change',
+            row_id: id('rr'),
+            item_id: match.id,
+            current_title: match.title,
+            evidence: block,
+          });
+        }
+      } else {
+        rows.push({
+          category: 'new',
+          row_id: id('rr'),
+          type: 'task',
+          status: 'open',
+          title: block.split('\n')[0]!.slice(0, 80),
+          description: '',
+          tags: [],
+          evidence: block,
+        });
+      }
+    }
+    const run: ReconcileRun = {
+      id: id('rc'),
+      project_id: projectId,
+      session_id: input.session_id ?? null,
+      source: input.source,
+      status: 'pending',
+      raw_text: input.text,
+      diff: {
+        source: input.source,
+        extractor: 'heuristic',
+        session_id: input.session_id ?? null,
+        rows,
+        extractor_note: 'mock reconcile',
+      },
+      created_at: new Date().toISOString(),
+      resolved_at: null,
+    };
+    state.reconcileRuns.push(run);
+    return { run };
+  }),
+  applyReconcile: vi.fn(async (projectId: string, input: ReconcileApplyRequest) => {
+    // Tolerate runs not previously seeded by proposeReconcile — direct ReconcileModal tests
+    // pass a constructed run without going through propose.
+    const run = state.reconcileRuns.find((r) => r.id === input.run_id) ?? null;
+    const decisions = input.decisions ?? {};
+    const result: ReconcileApplyResult = {
+      completed_item_ids: [],
+      new_item_ids: [],
+      edited_item_ids: [],
+      blocker_item_ids: [],
+      no_change_item_ids: [],
+      drift_signal_ids: [],
+      rejected_row_ids: [],
+    };
+    for (const row of input.diff.rows) {
+      if (decisions[row.row_id] === 'reject') {
+        result.rejected_row_ids.push(row.row_id);
+        continue;
+      }
+      switch (row.category) {
+        case 'completed': {
+          const item = state.items.find((i) => i.id === row.item_id);
+          if (item) item.status = row.next_status;
+          result.completed_item_ids.push(row.item_id);
+          break;
+        }
+        case 'new': {
+          const item: Item = {
+            id: id('i'),
+            project_id: projectId,
+            type: row.type,
+            title: row.title,
+            description: row.description,
+            status: row.status,
+            blocker_text: null,
+            parent_id: null,
+            branch_ref: null,
+            tags: row.tags,
+            blockers: [],
+            session_ids: input.diff.session_id ? [input.diff.session_id] : [],
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          };
+          state.items.push(item);
+          result.new_item_ids.push(item.id);
+          break;
+        }
+        case 'edited': {
+          const item = state.items.find((i) => i.id === row.item_id);
+          if (item) {
+            item.title = row.next_title;
+            item.description = row.next_description;
+          }
+          result.edited_item_ids.push(row.item_id);
+          break;
+        }
+        case 'blocker': {
+          const item = state.items.find((i) => i.id === row.item_id);
+          if (item) item.blocker_text = row.next_blocker_text;
+          result.blocker_item_ids.push(row.item_id);
+          break;
+        }
+        case 'no_change':
+          result.no_change_item_ids.push(row.item_id);
+          break;
+        case 'contradicted': {
+          const driftId = id('drift');
+          state.driftSignals.push({ id: driftId, category: 'tier-3' });
+          result.drift_signal_ids.push(driftId);
+          break;
+        }
+      }
+    }
+    if (run) {
+      run.status = 'applied';
+      run.resolved_at = new Date().toISOString();
+    }
+    return { result };
+  }),
+  getReconcileRun: vi.fn(async (_pid: string, runId: string) => {
+    const run = state.reconcileRuns.find((r) => r.id === runId);
+    if (!run) throw new Error('not_found');
+    return { run };
+  }),
+  listReconcileRuns: vi.fn(async (projectId: string) => ({
+    runs: state.reconcileRuns.filter((r) => r.project_id === projectId),
+  })),
+  discardReconcileRun: vi.fn(async (_pid: string, runId: string) => {
+    const r = state.reconcileRuns.find((x) => x.id === runId);
+    if (r && r.status === 'pending') r.status = 'discarded';
   }),
 };

@@ -137,13 +137,13 @@ Phase 1 shipped project create/archive/delete via REST + CLI; Phase 2 left the P
 
 ## Phase 5 — Reconcile engine
 
-- [ ] Reconcile diff produces all six categories
-- [ ] Edited row covers title and description changes under one row
-- [ ] Review modal renders the six-category structure
-- [ ] User can accept / reject per category before applying
-- [ ] Apply mutates state and audit-logs every change
-- [ ] Contradicted spawns code-drift signal (not state revert)
-- [ ] Drift signal tier reflects PR association (tier-2 if associated, tier-3 otherwise)
+- [x] Reconcile diff produces all six categories (`packages/backend/src/reconcile/engine.ts` Anthropic + heuristic engines; `packages/shared/src/reconcile.ts` discriminated `ReconcileRow` union of completed/new/edited/blocker/contradicted/no_change; verified by `packages/backend/test/reconcile.test.ts` per-category cases)
+- [x] Edited row covers title and description changes under one row (`ReconcileRowEdited` carries `next_title`+`next_description`; `reconcile/service.ts` apply path issues a single `items.update({ title, description })`; verified by `packages/backend/test/reconcile.test.ts` "applies edited rows by updating title and description")
+- [x] Review modal renders the six-category structure (`packages/frontend/src/components/ReconcileModal.tsx` fixed `CATEGORY_ORDER` sections; verified by `packages/frontend/test/reconcile.test.tsx` "renders sections for each category present in the diff")
+- [x] User can accept / reject per category before applying (per-row accept checkbox + edit-in-place for new/edited/blocker rows in `ReconcileModal.tsx`; reject routes a `decisions[row_id]='reject'` into the apply request; verified by `packages/frontend/test/reconcile.test.tsx` "unchecking a row routes a reject decision" and backend `respects per-row reject decisions`)
+- [x] Apply mutates state and audit-logs every change (`reconcile/service.ts` dispatches per category via `items.update` / `items.create` so existing audit producers fire; top-level `reconcile_apply` + per-noop `reconcile_review_noop` audit rows; verified by `packages/backend/test/reconcile.test.ts` "applies completed rows by updating item status and audit-logging")
+- [x] Contradicted spawns code-drift signal (not state revert) (`packages/backend/src/drift/service.ts` `createCodeSignal` called from the contradicted branch in `reconcile/service.ts`; item status remains unchanged; verified by `packages/backend/test/reconcile.test.ts` "contradicted rows spawn tier-2 drift signals when item has a PR association" — asserts both signal write and unchanged item status)
+- [x] Drift signal tier reflects PR association (tier-2 if associated, tier-3 otherwise) (`drift.hasPrAssociation(item_id)` decides `category` at apply time; verified by both PR-associated (tier-2) and PR-less (tier-3) backend cases)
 
 ---
 
