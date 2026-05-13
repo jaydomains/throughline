@@ -2,8 +2,9 @@ import { Link } from 'react-router-dom';
 import type { Project } from '@throughline/shared';
 import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
+import { InboxStatus } from './InboxStatus.js';
 import { ProjectSwitcher } from './ProjectSwitcher.js';
-import { ScratchpadPlaceholder } from './ScratchpadPlaceholder.js';
+import { Scratchpad } from './Scratchpad.js';
 import { ViewToggle } from './ViewToggle.js';
 
 interface HeaderProps {
@@ -47,7 +48,9 @@ export function Header({
         live
       </span>
 
-      <ScratchpadPlaceholder />
+      <Scratchpad activeProjectId={activeProjectId} />
+
+      <InboxStatus />
 
       <span className="header-pill" title="Cost meter placeholder; wires up in Phase 15">
         $0.00 today

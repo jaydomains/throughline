@@ -1,9 +1,12 @@
-import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import type { Project } from '@throughline/shared';
-import type { MethodologySummary } from '../api.js';
+import { useEffect, useState } from 'react';
+import { Navigate, useParams } from 'react-router-dom';
+import type { LibraryEntry, Project } from '@throughline/shared';
+import { api, type MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
+import { useItemPolicy } from '../hooks/useItemPolicy.js';
+import { useSessions } from '../hooks/useSessions.js';
 import { NewProjectModal } from '../components/NewProjectModal.js';
+import { DumpZone } from '../components/DumpZone.js';
 
 interface StubProps {
   title: string;
@@ -74,11 +77,65 @@ export function ProjectsView({ projects, bundles, onCreated }: ProjectsViewProps
 }
 
 export function HomeView() {
+  const { id: projectId } = useParams();
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [scanResult, setScanResult] = useState<{ scan_id: string; proposal_id: string; match_count: number } | null>(
+    null,
+  );
+
+  async function runScan() {
+    if (!projectId) return;
+    setScanning(true);
+    setScanError(null);
+    setScanResult(null);
+    try {
+      const r = await api.scanCodeTodos(projectId);
+      setScanResult(r.result);
+    } catch (err) {
+      setScanError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setScanning(false);
+    }
+  }
+
   return (
-    <Stub
-      title="Home"
-      body="Phase 14 fills this with the across-everything surface (recent activity, drift inbox count, scratchpad jots). Phase 2 ships the route as an empty stub."
-    />
+    <div className="view-stub" data-testid="view-home">
+      <h1>Home</h1>
+      <p>
+        Phase 14 fills this with the across-everything surface (recent activity, drift inbox count, scratchpad
+        jots). For now it hosts manual capture entry points.
+      </p>
+      <section className="home-section" aria-label="Code TODO/FIXME import">
+        <h2>Code TODO import</h2>
+        <p className="form-hint">
+          Scans the project's repo for <code>TODO:</code>, <code>FIXME:</code>, <code>XXX:</code> and proposes
+          one item per match. Apply via the dump-zone review modal.
+        </p>
+        <div className="form-actions">
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void runScan()}
+            disabled={scanning || !projectId}
+            data-testid="code-todo-scan"
+          >
+            {scanning ? 'Scanning…' : 'Scan repo for TODOs'}
+          </button>
+        </div>
+        {scanError && (
+          <p className="form-error" role="alert">
+            {scanError}
+          </p>
+        )}
+        {scanResult && (
+          <p className="form-hint" data-testid="code-todo-result">
+            Found {scanResult.match_count} match{scanResult.match_count === 1 ? '' : 'es'}; proposal saved as{' '}
+            <code>{scanResult.proposal_id.slice(0, 8)}</code>. Open the session view for this project to apply.
+          </p>
+        )}
+      </section>
+    </div>
   );
 }
 
@@ -111,11 +168,58 @@ export function GraphView() {
 }
 
 export function LibraryView() {
+  const { id: projectId } = useParams();
+  const { policy } = useItemPolicy(projectId ?? null);
+  const { sessions } = useSessions(projectId ?? null);
+  const [entries, setEntries] = useState<LibraryEntry[]>([]);
+
+  useEffect(() => {
+    if (!projectId) return;
+    api
+      .listLibrary(projectId)
+      .then((r) => setEntries(r.entries))
+      .catch(() => {});
+  }, [projectId]);
+
+  if (!projectId || !policy) {
+    return (
+      <Stub
+        title="Library"
+        body="Notes / prompts / snippets / imported docs land in Phase 6. Phase 4 lands the library dump zone so capture works against the same datastore."
+      />
+    );
+  }
+
   return (
-    <Stub
-      title="Library"
-      body="Notes / prompts / snippets / imported docs land in Phase 6. Phase 2 ships the route as an empty stub."
-    />
+    <div className="view-stub" data-testid="view-library">
+      <h1>Library</h1>
+      <p className="form-hint">
+        Phase 4: capture via the library dump zone. Full library surfaces (attach-to-item, search, four content
+        types editor) land in Phase 6.
+      </p>
+      <DumpZone
+        projectId={projectId}
+        target="library"
+        policy={policy}
+        sessions={sessions}
+        onApplied={() => {
+          api
+            .listLibrary(projectId)
+            .then((r) => setEntries(r.entries))
+            .catch(() => {});
+        }}
+      />
+      <ul className="library-entries" data-testid="library-entries">
+        {entries.length === 0 && <li className="form-hint">No library entries yet.</li>}
+        {entries.map((e) => (
+          <li key={e.id}>
+            <strong>{e.title}</strong>
+            <span className="meta">{e.type}</span>
+            <p>{e.body.slice(0, 240)}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

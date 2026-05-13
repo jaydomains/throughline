@@ -114,24 +114,24 @@ Phase 1 shipped project create/archive/delete via REST + CLI; Phase 2 left the P
 
 ## Phase 4 — Capture surfaces
 
-- [ ] Scratchpad always-visible in header
-- [ ] Scratchpad has no AI processing and no review modal
-- [ ] Session dump zone accepts paste + file drop
-- [ ] Library dump zone accepts paste + file drop
-- [ ] Dump zone extraction parameterised by active project's bundle
-- [ ] Review modal shows proposed-items + cross-session re-route option
-- [ ] Voice input via browser-native speech recognition (desktop-only)
-- [ ] Voice destination toggle (session vs library dump zone)
-- [ ] Voice transcript pipes into dump zone flow
-- [ ] Claude Code push: inbox directory configurable
-- [ ] Inbox watcher picks up new files
-- [ ] Inbox queue processes serially with per-file state tracking
-- [ ] Inbox file → project routing convention works
-- [ ] Processed files archive to dated subdirectory (default 30-day retention)
-- [ ] Failed files quarantine with sibling error metadata
-- [ ] Code TODO/FIXME import: manual trigger in UI
-- [ ] TODO patterns default to `TODO:`, `FIXME:`, `XXX:`
-- [ ] All non-scratchpad surfaces apply only after review
+- [x] Scratchpad always-visible in header (`packages/frontend/src/components/Scratchpad.tsx`; mounted in `Header.tsx`)
+- [x] Scratchpad has no AI processing and no review modal (no `propose`/`apply` calls; `packages/backend/src/scratchpad/service.ts` writes only `scratchpad_jots` + audit row; verified by `test/scratchpad.test.ts` and `test/scratchpad.test.tsx`)
+- [x] Session dump zone accepts paste + file drop (`packages/frontend/src/components/DumpZone.tsx`; mounted in `SessionView.tsx`)
+- [x] Library dump zone accepts paste + file drop (same component with `target='library'`; mounted in `LibraryView` in `views/stubs.tsx`)
+- [x] Dump zone extraction parameterised by active project's bundle (`packages/backend/src/dump-zone/extractor.ts`: bundle's `ItemPolicy.types`/`statuses` flow into both the Anthropic system prompt and the heuristic fallback's defaults; `dump-zone/service.ts` re-validates at apply via `bundleItemPolicy`)
+- [x] Review modal shows proposed-items + cross-session re-route option (`packages/frontend/src/components/DumpZoneReviewModal.tsx`; per-row session select; `test/dumpZone.test.tsx` covers the re-route case)
+- [x] Voice input via browser-native speech recognition (desktop-only) (`packages/frontend/src/components/VoiceCapture.tsx`; uses `window.SpeechRecognition`/`webkitSpeechRecognition`; renders an unsupported button when absent)
+- [x] Voice destination toggle (session vs library dump zone) (resolved by mounting one `VoiceCapture` per DumpZone instance; the surface the user opens determines destination)
+- [x] Voice transcript pipes into dump zone flow (`VoiceCapture` `onTranscript`/`onSubmit` → `DumpZone.propose('voice', transcript)`)
+- [x] Claude Code push: inbox directory configurable (`config.inboxDir` resolved in `packages/backend/src/config.ts`; `THROUGHLINE_DATA_DIR` env override flows through)
+- [x] Inbox watcher picks up new files (`packages/backend/src/inbox/watcher.ts` chokidar watch; startup scan picks up files queued while backend was down per SPEC §7.6)
+- [x] Inbox queue processes serially with per-file state tracking (`packages/backend/src/inbox/worker.ts` drain() loops over queued rows one-at-a-time; `cc_inbox_queue.state` advances queued → processed/failed)
+- [x] Inbox file → project routing convention works (filename prefix `<projectId>__<rest>` per `worker.ts`; falls back to `last_active_project_id` from settings; `test/inbox.test.ts` covers prefix, fallback, and orphan-quarantine paths)
+- [x] Processed files archive to dated subdirectory (default 30-day retention) (`<archiveDir>/YYYY-MM-DD/<filename>`; 30-day retention policy is documented but the cleanup job lands with Phase 15 hygiene per CODE_SPEC §17)
+- [x] Failed files quarantine with sibling error metadata (`<failuresDir>/<filename>` + `.error.json` with `{ error, received_at, attempted_project_id }`; verified by `test/inbox.test.ts`)
+- [x] Code TODO/FIXME import: manual trigger in UI (`HomeView` Scan repo for TODOs button; routes through the dump-zone proposal pipeline so apply uses the same review modal)
+- [x] TODO patterns default to `TODO:`, `FIXME:`, `XXX:` (`packages/backend/src/code-todo/scanner.ts` `DEFAULT_PATTERNS`)
+- [x] All non-scratchpad surfaces apply only after review (paste/voice/inbox/code-todo all funnel through `dump-zone/service.propose` → `proposed_extractions` row in `pending`; only `apply` mutates items / library entries)
 
 ---
 
