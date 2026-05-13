@@ -62,6 +62,7 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
         bundle_id: bundleId,
       };
       const { project } = await api.createProject(input);
+      setSubmitting(false);
       onCreated(project);
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

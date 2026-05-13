@@ -146,8 +146,8 @@ function AppInner() {
               <ProjectsView
                 projects={projects}
                 bundles={bundles}
-                onCreated={(project) => {
-                  refreshProjects();
+                onCreated={async (project) => {
+                  await refreshProjects();
                   void api.switchProject(project.id).catch(() => {});
                   navigate(`/projects/${project.id}`);
                 }}

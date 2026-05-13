@@ -6,7 +6,7 @@ export interface ProjectsState {
   projects: Project[];
   loading: boolean;
   error: Error | null;
-  refresh: () => void;
+  refresh: () => Promise<void>;
 }
 
 export function useProjects(): ProjectsState {
@@ -14,18 +14,21 @@ export function useProjects(): ProjectsState {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
-    api
-      .listProjects()
-      .then((r) => setProjects(r.projects))
-      .catch((e: unknown) => setError(e instanceof Error ? e : new Error(String(e))))
-      .finally(() => setLoading(false));
+    try {
+      const r = await api.listProjects();
+      setProjects(r.projects);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   return { projects, loading, error, refresh };
