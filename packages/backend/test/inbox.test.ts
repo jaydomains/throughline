@@ -88,15 +88,17 @@ describe('inbox worker', () => {
       // original removed from inbox
       expect(existsSync(filePath)).toBe(false);
 
-      // archive subdir created with the file
+      // archive subdir created. Filename is prefixed with the queue row id to prevent
+      // same-name collisions between distinct Claude Code sessions.
       const dayDirs = readdirSync(cfg.archiveDir);
       expect(dayDirs.length).toBeGreaterThan(0);
-      const archived = join(cfg.archiveDir, dayDirs[0]!, filename);
-      expect(existsSync(archived)).toBe(true);
-
-      // queue row marked processed
       const queue = worker.listQueue();
       expect(queue[0]!.state).toBe('processed');
+      const archived = join(cfg.archiveDir, dayDirs[0]!, `${queue[0]!.id}__${filename}`);
+      expect(existsSync(archived)).toBe(true);
+      // Original (un-prefixed) name does NOT appear in the archive — proves the prefix
+      // is doing its work.
+      expect(existsSync(join(cfg.archiveDir, dayDirs[0]!, filename))).toBe(false);
 
       // audit-log carries inbox_worker actor
       const audit = backend.db
@@ -118,14 +120,14 @@ describe('inbox worker', () => {
       await worker.drain();
 
       expect(existsSync(filePath)).toBe(false);
-      const quarantined = join(cfg.failuresDir, filename);
+      const queue = worker.listQueue();
+      const prefixed = `${queue[0]!.id}__${filename}`;
+      const quarantined = join(cfg.failuresDir, prefixed);
       expect(existsSync(quarantined)).toBe(true);
       const errorPath = quarantined + '.error.json';
       expect(existsSync(errorPath)).toBe(true);
       const err = JSON.parse(readFileSync(errorPath, 'utf8')) as { error: string };
       expect(err.error).toBe('empty_file');
-
-      const queue = worker.listQueue();
       expect(queue[0]!.state).toBe('failed');
     } finally {
       await backend.cleanup();
@@ -184,6 +186,40 @@ describe('inbox worker', () => {
       const id1 = worker.enqueue(filePath);
       const id2 = worker.enqueue(filePath);
       expect(id2).toBe(id1);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('two files with the same basename from different sessions both land — no collision', async () => {
+    const { backend, cfg, project, worker } = await setup();
+    try {
+      // Simulate two Claude Code sessions both producing `transcript.md`. The inbox watcher
+      // would normally never see two files with the exact same path, but a second session
+      // can write the same basename after the first has been moved out. To trigger the
+      // collision deterministically: process file 1, then write a second file with the
+      // same name + enqueue + drain. Without the row-ID prefix, the second archive write
+      // would overwrite the first.
+      const filename = `${project.id}__transcript.md`;
+      const filePath = join(cfg.inboxDir, filename);
+
+      writeFileSync(filePath, 'session 1 content', 'utf8');
+      worker.enqueue(filePath);
+      await worker.drain();
+
+      writeFileSync(filePath, 'session 2 content', 'utf8');
+      worker.enqueue(filePath);
+      await worker.drain();
+
+      const queue = worker.listQueue();
+      expect(queue).toHaveLength(2);
+      const dayDirs = readdirSync(cfg.archiveDir);
+      const archived = readdirSync(join(cfg.archiveDir, dayDirs[0]!));
+      // Two distinct archive entries, both with the queue row id prefix.
+      expect(archived).toHaveLength(2);
+      for (const a of archived) {
+        expect(a.endsWith(`__${filename}`)).toBe(true);
+      }
     } finally {
       await backend.cleanup();
     }

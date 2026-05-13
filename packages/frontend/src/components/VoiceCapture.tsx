@@ -37,15 +37,24 @@ function getRecognitionCtor(): SpeechRecognitionCtor | null {
 }
 
 interface VoiceCaptureProps {
-  // Called incrementally as the recognizer returns partial transcripts.
+  // Fires once when recording starts, before the first onTranscript. The consumer uses this
+  // to snapshot any pre-voice state (e.g., a typed-in textarea value) so subsequent
+  // onTranscript calls can be treated as authoritative replacements of the streamed portion
+  // rather than appends. Speech recognition emits cumulative interim transcripts, not deltas.
+  onStart?: () => void;
+  // Called as the recognizer streams transcripts. Each call carries the full transcript so
+  // far, not a delta — the consumer replaces, never appends.
   onTranscript: (text: string) => void;
   // Called once when the user clicks "Submit" on a final transcript so the dump zone can
   // route directly into propose() without an extra click.
   onSubmit?: (text: string) => void;
+  // Fires when the user stops recording without submitting (no final transcript, or
+  // dismissed). Consumers use this to clear any pre-voice snapshot they were holding.
+  onCancel?: () => void;
   lang?: string;
 }
 
-export function VoiceCapture({ onTranscript, onSubmit, lang = 'en-US' }: VoiceCaptureProps) {
+export function VoiceCapture({ onStart, onTranscript, onSubmit, onCancel, lang = 'en-US' }: VoiceCaptureProps) {
   const [supported] = useState(() => getRecognitionCtor() !== null);
   const [recording, setRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -71,6 +80,7 @@ export function VoiceCapture({ onTranscript, onSubmit, lang = 'en-US' }: VoiceCa
     if (!Ctor) return;
     setError(null);
     setTranscript('');
+    onStart?.();
     const r = new Ctor();
     r.lang = lang;
     r.interimResults = true;
@@ -124,13 +134,25 @@ export function VoiceCapture({ onTranscript, onSubmit, lang = 'en-US' }: VoiceCa
       </button>
       {recording && <span className="form-hint">listening…</span>}
       {transcript && !recording && onSubmit && (
-        <button
-          type="button"
-          onClick={() => onSubmit(transcript)}
-          data-testid="voice-capture-submit"
-        >
-          Send to dump zone
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => onSubmit(transcript)}
+            data-testid="voice-capture-submit"
+          >
+            Send to dump zone
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setTranscript('');
+              onCancel?.();
+            }}
+            data-testid="voice-capture-discard"
+          >
+            Discard
+          </button>
+        </>
       )}
       {error && (
         <span className="form-error" role="alert">

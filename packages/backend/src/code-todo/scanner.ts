@@ -116,30 +116,39 @@ export function scanRepo(repoPath: string, options: ScanOptions = {}): ScanResul
       truncated = true;
       return;
     }
-    let entries: string[];
+    // withFileTypes returns Dirents in one syscall and gives us isDirectory / isFile /
+    // isSymbolicLink directly. Convention: filesystem scanners use withFileTypes and skip
+    // symlinks by default unless there's a specific reason to follow them — guards against
+    // infinite recursion on symlinks pointing to ancestor directories (real risk in
+    // monorepos, including Throughline's own repo if scanned via Phase 4 code-todo).
+    let entries: import('node:fs').Dirent[];
     try {
-      entries = readdirSync(dir);
+      entries = readdirSync(dir, { withFileTypes: true });
     } catch {
       return;
     }
-    for (const entry of entries) {
+    for (const dirent of entries) {
       if (truncated) return;
+      if (dirent.isSymbolicLink()) continue;
+      const entry = dirent.name;
       const full = join(dir, entry);
-      let stat;
-      try {
-        stat = statSync(full);
-      } catch {
-        continue;
-      }
-      if (stat.isDirectory()) {
-        if (IGNORED_DIR_NAMES.has(entry) || entry.startsWith('.git/')) continue;
+      if (dirent.isDirectory()) {
+        if (IGNORED_DIR_NAMES.has(entry)) continue;
         walk(full);
         continue;
       }
-      if (!stat.isFile()) continue;
+      if (!dirent.isFile()) continue;
       const ext = extOf(entry);
       if (!TEXT_FILE_EXTS.has(ext)) continue;
-      if (stat.size > maxFileBytes) continue;
+      // stat only for the files we'd otherwise read, so the size pre-filter still gates
+      // readFileSync — big binaries with text-like extensions don't get slurped into memory.
+      let size: number;
+      try {
+        size = statSync(full).size;
+      } catch {
+        continue;
+      }
+      if (size > maxFileBytes) continue;
       filesScanned++;
       let content: string;
       try {

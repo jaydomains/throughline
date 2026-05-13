@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -59,6 +59,22 @@ describe('code-todo scanner', () => {
     expect(result.matches.filter((m) => m.pattern === 'TODO:')).toHaveLength(1);
     expect(result.matches.filter((m) => m.pattern === 'FIXME:')).toHaveLength(1);
     expect(result.matches.filter((m) => m.pattern === 'XXX:')).toHaveLength(1);
+  });
+
+  it('skips symlinks rather than following them (no infinite recursion on ancestor links)', () => {
+    const repo = plantRepo();
+    // Create a directory symlink pointing back at the repo root. A naive walk that follows
+    // this link will recurse forever; the scanner must skip symbolic entries.
+    symlinkSync(repo, join(repo, 'self-link'), 'dir');
+    // Also a file-targeted symlink: should be skipped (we don't follow files into the
+    // symlink target either, since the source-of-truth path is what matters for matches).
+    symlinkSync(join(repo, 'a.ts'), join(repo, 'a-alias.ts'));
+    const result = scanRepo(repo);
+    // Only the original a.ts contributes a TODO; the alias is skipped.
+    expect(result.matches.filter((m) => m.pattern === 'TODO:')).toHaveLength(1);
+    expect(result.matches.find((m) => m.path === 'a-alias.ts')).toBeUndefined();
+    // Self-link did not cause runaway recursion: result returned in finite time.
+    expect(result.matches.find((m) => m.path.startsWith('self-link'))).toBeUndefined();
   });
 });
 

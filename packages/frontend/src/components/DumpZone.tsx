@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import type { DumpZoneProposal, ProposalTarget, ItemPolicy, Session } from '@throughline/shared';
 import { api } from '../api.js';
 import { DumpZoneReviewModal } from './DumpZoneReviewModal.js';
@@ -28,6 +28,12 @@ export function DumpZone({
 }: DumpZoneProps) {
   const [text, setText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  // Pre-voice text snapshot. Speech recognition streams cumulative interim transcripts —
+  // each onTranscript carries the full utterance so far, not a delta. Appending each update
+  // would duplicate. Convention: when an external input source streams interim updates into
+  // an existing text field, snapshot the pre-update state and treat incoming updates as
+  // authoritative replacements of the streamed portion.
+  const preVoiceTextRef = useRef<string | null>(null);
   const [proposal, setProposal] = useState<DumpZoneProposal | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -95,10 +101,24 @@ export function DumpZone({
         </button>
         {enableVoice && (
           <VoiceCapture
-            onTranscript={(transcript) => {
-              setText((t) => (t.length > 0 ? `${t}\n\n${transcript}` : transcript));
+            onStart={() => {
+              preVoiceTextRef.current = text;
             }}
-            onSubmit={(transcript) => void propose('voice', transcript)}
+            onTranscript={(transcript) => {
+              const base = preVoiceTextRef.current;
+              if (base === null) {
+                setText(transcript);
+                return;
+              }
+              setText(base.length > 0 ? `${base}\n\n${transcript}` : transcript);
+            }}
+            onSubmit={(transcript) => {
+              preVoiceTextRef.current = null;
+              void propose('voice', transcript);
+            }}
+            onCancel={() => {
+              preVoiceTextRef.current = null;
+            }}
           />
         )}
         <button

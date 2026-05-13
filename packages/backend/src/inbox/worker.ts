@@ -82,7 +82,12 @@ export function createInboxWorker(opts: InboxWorkerOptions): InboxWorker {
 
   function quarantine(row: QueueRow, error: string, attemptedProjectId: string | null): void {
     if (!existsSync(failuresDir)) mkdirSync(failuresDir, { recursive: true });
-    const targetName = basename(row.original_path);
+    // Prefix with the queue row ID so two inbox files with the same basename (e.g., two
+    // Claude Code sessions both producing transcript.md) don't overwrite each other.
+    // Audit bonus: the row ID in the filename makes reconstruction straight from the
+    // archive directory possible without consulting the cc_inbox_queue table.
+    const originalName = basename(row.original_path);
+    const targetName = `${row.id}__${originalName}`;
     const targetPath = join(failuresDir, targetName);
     try {
       if (existsSync(row.original_path)) {
@@ -118,14 +123,18 @@ export function createInboxWorker(opts: InboxWorkerOptions): InboxWorker {
       actor: 'inbox_worker',
       field: 'inbox_failed',
       newValue: error.slice(0, 200),
-      triggerContext: { inbox_file_id: row.id, original_filename: targetName },
+      triggerContext: { inbox_file_id: row.id, original_filename: originalName, quarantined_as: targetName },
     });
   }
 
   function archive(row: QueueRow, projectId: string): void {
     const dayDir = join(archiveDir, dateSubdir());
     if (!existsSync(dayDir)) mkdirSync(dayDir, { recursive: true });
-    const targetPath = join(dayDir, basename(row.original_path));
+    // See quarantine() — same row-ID prefix protects against same-named files from
+    // distinct Claude Code sessions clobbering each other in the dated archive subdir.
+    const originalName = basename(row.original_path);
+    const targetName = `${row.id}__${originalName}`;
+    const targetPath = join(dayDir, targetName);
     try {
       if (existsSync(row.original_path)) {
         copyFileSync(row.original_path, targetPath);
@@ -145,8 +154,8 @@ export function createInboxWorker(opts: InboxWorkerOptions): InboxWorker {
       entityId: projectId,
       actor: 'inbox_worker',
       field: 'inbox_processed',
-      newValue: basename(row.original_path),
-      triggerContext: { inbox_file_id: row.id },
+      newValue: originalName,
+      triggerContext: { inbox_file_id: row.id, archived_as: targetName },
     });
   }
 
