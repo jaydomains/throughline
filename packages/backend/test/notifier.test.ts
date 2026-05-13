@@ -36,4 +36,18 @@ describe('notifier capability layer (Phase 6b — T-D32)', () => {
     await notifier.notify({ title: 'hi', body: 'b' });
     expect(calls).toEqual([{ title: 'hi' }]);
   });
+
+  it('propagates errors from the underlying notifier (callback err must reject)', async () => {
+    // Gitar review fix — a backend that surfaces an error via its callback / promise
+    // must reject `notifier.notify` so the scheduler can leave the directive armed for
+    // retry rather than marking it fired on a silent failure.
+    const notifier = createOsNotifier({
+      factory: () => ({
+        async notify() {
+          throw new Error('permission_denied');
+        },
+      }),
+    });
+    await expect(notifier.notify({ title: 't', body: 'b' })).rejects.toThrow('permission_denied');
+  });
 });

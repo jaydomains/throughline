@@ -118,7 +118,12 @@ export function LibraryView() {
     () => allVisibleEntries.filter((e) => !isPinned(directivesFor(directivesByParent, 'library', e.id))),
     [allVisibleEntries, directivesByParent],
   );
-  const visibleEntries = [...pinnedEntries, ...unpinnedEntries];
+  // Memoise so downstream `useMemo`s (e.g., `selected`) don't invalidate on every
+  // render. Spread-into-new-array would otherwise return a fresh reference each call.
+  const visibleEntries = useMemo(
+    () => [...pinnedEntries, ...unpinnedEntries],
+    [pinnedEntries, unpinnedEntries],
+  );
   const selected = useMemo(
     () => visibleEntries.find((e) => e.id === selectedId) ?? null,
     [visibleEntries, selectedId],

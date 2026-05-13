@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Directive, DirectiveKind, DirectiveParentType } from '@throughline/shared';
 import { api } from '../api.js';
 
@@ -38,15 +38,27 @@ export function useDirectives(projectId: string | null): DirectivesData {
     void refresh();
   }, [refresh]);
 
-  const byParent = new Map<string, Directive[]>();
-  const countByKind: Record<DirectiveKind, number> = { pin: 0, reminder: 0, include_prompt: 0 };
-  for (const d of directives) {
-    const key = parentKey(d.parent_type, d.parent_id);
-    const arr = byParent.get(key) ?? [];
-    arr.push(d);
-    byParent.set(key, arr);
-    countByKind[d.kind] += 1;
-  }
+  // Memoise the derived index + counts so downstream consumers' `useMemo` blocks that
+  // depend on these don't invalidate on every render. The directives array reference is
+  // already stable across renders that don't refetch, so this also serves as a barrier
+  // against incidental re-derivation when an unrelated parent state changes.
+  const byParent = useMemo(() => {
+    const map = new Map<string, Directive[]>();
+    for (const d of directives) {
+      const key = parentKey(d.parent_type, d.parent_id);
+      const arr = map.get(key) ?? [];
+      arr.push(d);
+      map.set(key, arr);
+    }
+    return map;
+  }, [directives]);
+
+  const countByKind = useMemo(() => {
+    const out: Record<DirectiveKind, number> = { pin: 0, reminder: 0, include_prompt: 0 };
+    for (const d of directives) out[d.kind] += 1;
+    return out;
+  }, [directives]);
+
   return { directives, byParent, countByKind, refresh };
 }
 

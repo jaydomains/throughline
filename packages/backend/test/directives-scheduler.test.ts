@@ -108,6 +108,62 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
     }
   });
 
+  it('notifier failure leaves the directive armed for the next tick (no silent loss)', async () => {
+    // Gitar review fix — if the notifier surfaces an error, the scheduler must not
+    // mark the directive fired. Otherwise a transient permission-denied / daemon-down
+    // drops the reminder entirely.
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const directives = createDirectivesService(backend.db, projects, items, library, {
+        now: () => FIXED_NOW,
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+      const item = items.create({ project_id: project.id, title: 'Track item' });
+      let attempts = 0;
+      const flaky = {
+        async notify() {
+          attempts += 1;
+          throw new Error('daemon_offline');
+        },
+      };
+      const errors: string[] = [];
+      const scheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: flaky,
+        items,
+        library,
+        now: () => FIXED_NOW,
+        logger: {
+          info: () => {},
+          warn: () => {},
+          error: (m) => errors.push(m),
+        },
+      });
+      const d = directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
+      });
+      await scheduler.tick();
+      await scheduler.tick();
+      expect(attempts).toBe(2);
+      expect(errors.length).toBeGreaterThan(0);
+      const refreshed = directives.get(d.id);
+      expect(refreshed?.last_fired_at).toBeNull();
+      expect(refreshed?.next_fire_at).toBe('2026-05-13T11:00:00.000Z');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('pin and include_prompt directives are never picked up by the scheduler', async () => {
     const { backend, directives, notifier, scheduler, project, item } = await setup();
     try {

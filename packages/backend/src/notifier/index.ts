@@ -86,14 +86,21 @@ function defaultProbe(): Notifier | null {
     const handle = 'default' in mod ? mod.default : mod;
     return {
       async notify(n: Notification): Promise<void> {
-        await new Promise<void>((resolve) => {
+        // Propagate node-notifier callback errors so callers (the reminder scheduler)
+        // can log + leave the directive armed for retry. Swallowing the err parameter
+        // would mark a failed fire as delivered — permission denied, daemon offline,
+        // etc. would silently drop reminders.
+        await new Promise<void>((resolve, reject) => {
           handle.notify(
             {
               title: n.title,
               message: n.body,
               ...(n.url !== undefined ? { open: n.url } : {}),
             },
-            () => resolve(),
+            (err) => {
+              if (err) reject(err);
+              else resolve();
+            },
           );
         });
       },
