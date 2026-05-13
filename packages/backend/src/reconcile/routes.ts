@@ -5,6 +5,7 @@ import {
   type ReconcileSource,
 } from '@throughline/shared';
 import {
+  CrossProjectMutationError,
   ProjectNotFoundError,
   ReconcileRunNotFoundError,
   ReconcileRunStateError,
@@ -105,6 +106,12 @@ export function registerReconcileRoutes(
         if (err instanceof ReconcileRunNotFoundError) return reply.code(404).send({ error: 'not_found' });
         if (err instanceof ReconcileRunStateError)
           return reply.code(409).send({ error: 'run_not_pending', message: err.message });
+        if (err instanceof CrossProjectMutationError)
+          return reply.code(422).send({
+            error: 'cross_project_mutation',
+            message: err.message,
+            item_ids: err.itemIds,
+          });
         if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'project_not_found' });
         throw err;
       }

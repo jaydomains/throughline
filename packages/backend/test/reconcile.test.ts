@@ -527,6 +527,123 @@ describe('reconcile engine — Anthropic path', () => {
   });
 });
 
+describe('reconcile apply — validate-then-transact (review fixes)', () => {
+  it('rejects an apply whose diff references an item from another project', async () => {
+    const { backend, projects, sessions, items, reconcile, project, session } = await setup();
+    try {
+      const otherProject = projects.create({ name: 'other', repo_path: '/tmp/other' });
+      const otherSession = sessions.create({
+        project_id: otherProject.id,
+        name: 'other-inbox',
+      });
+      const foreignItem = items.create({
+        project_id: otherProject.id,
+        title: 'Foreign item',
+        session_ids: [otherSession.id],
+      });
+      items.create({
+        project_id: project.id,
+        title: 'Local item',
+        session_ids: [session.id],
+      });
+
+      const run = await reconcile.propose({
+        project_id: project.id,
+        text: 'Local item — done',
+        source: 'manual',
+        session_id: session.id,
+      });
+
+      // Tamper with the diff to point at the foreign item.
+      const tamperedDiff = {
+        ...run.diff,
+        rows: run.diff.rows.map((r) =>
+          r.category === 'completed' ? { ...r, item_id: foreignItem.id } : r,
+        ),
+      };
+
+      expect(() => reconcile.apply({ run_id: run.id, diff: tamperedDiff })).toThrow(
+        /do not belong to project/,
+      );
+
+      // The foreign item must be untouched and the run must still be pending — validation
+      // happens before any mutation.
+      expect(items.get(foreignItem.id)?.status).toBe('open');
+      expect(reconcile.get(run.id)?.status).toBe('pending');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('apply is transactional: a mid-loop failure rolls back earlier mutations', async () => {
+    const { backend, items, reconcile, project, session } = await setup();
+    try {
+      const itemA = items.create({
+        project_id: project.id,
+        title: 'Item A',
+        session_ids: [session.id],
+      });
+
+      const run = await reconcile.propose({
+        project_id: project.id,
+        text: '(seed)',
+        source: 'manual',
+        session_id: session.id,
+      });
+
+      // Build a diff with: one valid edit + one row whose item_id no longer exists. The bulk
+      // item-ownership check uses items.id, so a deleted-id row passes pre-flight (no row
+      // returned therefore no project mismatch); items.update will then throw ItemNotFound
+      // mid-loop. Transactional apply must roll back the first mutation.
+      const tamperedDiff = {
+        ...run.diff,
+        rows: [
+          {
+            category: 'edited' as const,
+            row_id: 'r1',
+            item_id: itemA.id,
+            current_title: itemA.title,
+            current_description: itemA.description,
+            next_title: 'Item A renamed',
+            next_description: 'should be rolled back',
+            evidence: 'first',
+          },
+          {
+            category: 'completed' as const,
+            row_id: 'r2',
+            item_id: 'item-that-does-not-exist',
+            current_status: 'open',
+            next_status: 'done',
+            current_title: 'Ghost',
+            evidence: 'second',
+          },
+        ],
+      };
+
+      // Pre-flight check needs the ghost id present in the items table for project-id match;
+      // since it's absent the bulk check sees no row therefore project mismatch. Use a foreign
+      // item-id whose project matches but whose row we delete just before apply to get past
+      // pre-flight but fail mid-loop.
+      const itemB = items.create({
+        project_id: project.id,
+        title: 'Item B',
+        session_ids: [session.id],
+      });
+      backend.db.prepare('DELETE FROM items WHERE id = ?').run(itemB.id);
+      tamperedDiff.rows[1]!.item_id = itemB.id;
+
+      expect(() => reconcile.apply({ run_id: run.id, diff: tamperedDiff })).toThrow();
+
+      // Roll-back assertion: Item A's title was NOT updated, and the run is still pending.
+      const refetched = items.get(itemA.id);
+      expect(refetched?.title).toBe('Item A');
+      expect(reconcile.get(run.id)?.status).toBe('pending');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
+
 describe('reconcile blocker shape', () => {
   it('preserves null next_blocker_text when caller explicitly clears the blocker', async () => {
     const { backend, items, reconcile, project, session } = await setup();

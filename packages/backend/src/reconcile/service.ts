@@ -67,6 +67,14 @@ export class ReconcileRunStateError extends Error {
   }
 }
 
+export class CrossProjectMutationError extends Error {
+  constructor(public itemIds: string[], public projectId: string) {
+    super(
+      `reconcile apply rejected: items ${itemIds.join(', ')} do not belong to project ${projectId}`,
+    );
+  }
+}
+
 export interface ProposeReconcileInput {
   project_id: string;
   text: string;
@@ -225,6 +233,35 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
       const project = projects.get(row.project_id);
       if (!project) throw new ProjectNotFoundError(row.project_id);
 
+      // Validate-then-transact (Phase 5 convention). Apply-style endpoints that operate on a
+      // list of entity IDs supplied by the client must validate ownership-against-the-route-
+      // context *before* mutating, then perform mutations inside a transaction so partial
+      // failure rolls back. A run's diff_json is round-tripped through the client; a malicious
+      // or buggy client could pass row.item_id values pointing at items in another project,
+      // which would otherwise let one project's reconcile mutate another's items + spawn
+      // misattributed drift signals. The same pattern recurs in Phase 9 (discipline-drift
+      // apply), Phase 10 (GitHub auto-reconcile), Phase 14 (RAG-proposed mutations).
+      const itemIdsToCheck: string[] = [];
+      const itemIdSeen = new Set<string>();
+      for (const r of req.diff.rows) {
+        if (decisionFor(req.decisions, r.row_id) === 'reject') continue;
+        if (r.category === 'new') continue;
+        if (itemIdSeen.has(r.item_id)) continue;
+        itemIdSeen.add(r.item_id);
+        itemIdsToCheck.push(r.item_id);
+      }
+      if (itemIdsToCheck.length > 0) {
+        const placeholders = itemIdsToCheck.map(() => '?').join(',');
+        const found = db
+          .prepare(`SELECT id, project_id FROM items WHERE id IN (${placeholders})`)
+          .all(...itemIdsToCheck) as Array<{ id: string; project_id: string }>;
+        const foundById = new Map(found.map((r) => [r.id, r.project_id]));
+        const offenders = itemIdsToCheck.filter(
+          (id) => foundById.get(id) !== project.id,
+        );
+        if (offenders.length > 0) throw new CrossProjectMutationError(offenders, project.id);
+      }
+
       const result: ReconcileApplyResult = {
         completed_item_ids: [],
         new_item_ids: [],
@@ -235,97 +272,105 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
         rejected_row_ids: [],
       };
 
-      for (const r of req.diff.rows) {
-        const decision = decisionFor(req.decisions, r.row_id);
-        if (decision === 'reject') {
-          result.rejected_row_ids.push(r.row_id);
-          continue;
+      // All-or-nothing. Reconcile rows are coupled — a partial apply leaves Throughline's
+      // view of project state subtly wrong (some items updated, some not; drift signals fire
+      // for half a diff). better-sqlite3 transactions are synchronous; every mutation in the
+      // loop (items.update, items.create, drift.createCodeSignal, appendAudit) is synchronous
+      // already.
+      const applyTx = db.transaction(() => {
+        for (const r of req.diff.rows) {
+          const decision = decisionFor(req.decisions, r.row_id);
+          if (decision === 'reject') {
+            result.rejected_row_ids.push(r.row_id);
+            continue;
+          }
+          switch (r.category) {
+            case 'completed': {
+              items.update(r.item_id, { status: r.next_status });
+              result.completed_item_ids.push(r.item_id);
+              break;
+            }
+            case 'new': {
+              const created = items.create({
+                project_id: project.id,
+                type: r.type,
+                status: r.status,
+                title: r.title,
+                description: r.description,
+                tags: r.tags,
+                session_ids: req.diff.session_id ? [req.diff.session_id] : [],
+              });
+              result.new_item_ids.push(created.id);
+              break;
+            }
+            case 'edited': {
+              items.update(r.item_id, {
+                title: r.next_title,
+                description: r.next_description,
+              });
+              result.edited_item_ids.push(r.item_id);
+              break;
+            }
+            case 'blocker': {
+              items.update(r.item_id, { blocker_text: r.next_blocker_text });
+              result.blocker_item_ids.push(r.item_id);
+              break;
+            }
+            case 'no_change': {
+              // Log only — surfaces in periodic-review hygiene that a row was reviewed and
+              // intentionally not mutated. Helps avoid the "did anyone ever look at this?" gap.
+              appendAudit(db, {
+                projectId: project.id,
+                entityType: 'item',
+                entityId: r.item_id,
+                actor: 'user',
+                field: 'reconcile_review_noop',
+                triggerContext: { run_id: row.id, row_id: r.row_id },
+              });
+              result.no_change_item_ids.push(r.item_id);
+              break;
+            }
+            case 'contradicted': {
+              // T-D35 + T-D21: spawn a code-drift signal rather than reverting state. Tier
+              // depends on whether the item has a PR association recorded.
+              const category = drift.hasPrAssociation(r.item_id) ? 'tier-2' : 'tier-3';
+              const driftId = drift.createCodeSignal({
+                projectId: project.id,
+                itemId: r.item_id,
+                category,
+                reason: r.reason,
+                payload: {
+                  reconcile_run_id: row.id,
+                  row_id: r.row_id,
+                  evidence: r.evidence,
+                  source: req.diff.source,
+                },
+              });
+              result.drift_signal_ids.push(driftId);
+              break;
+            }
+          }
         }
-        switch (r.category) {
-          case 'completed': {
-            items.update(r.item_id, { status: r.next_status });
-            result.completed_item_ids.push(r.item_id);
-            break;
-          }
-          case 'new': {
-            const created = items.create({
-              project_id: project.id,
-              type: r.type,
-              status: r.status,
-              title: r.title,
-              description: r.description,
-              tags: r.tags,
-              session_ids: req.diff.session_id ? [req.diff.session_id] : [],
-            });
-            result.new_item_ids.push(created.id);
-            break;
-          }
-          case 'edited': {
-            items.update(r.item_id, {
-              title: r.next_title,
-              description: r.next_description,
-            });
-            result.edited_item_ids.push(r.item_id);
-            break;
-          }
-          case 'blocker': {
-            items.update(r.item_id, { blocker_text: r.next_blocker_text });
-            result.blocker_item_ids.push(r.item_id);
-            break;
-          }
-          case 'no_change': {
-            // Log only — surfaces in periodic-review hygiene that a row was reviewed and
-            // intentionally not mutated. Helps avoid the "did anyone ever look at this?" gap.
-            appendAudit(db, {
-              projectId: project.id,
-              entityType: 'item',
-              entityId: r.item_id,
-              actor: 'user',
-              field: 'reconcile_review_noop',
-              triggerContext: { run_id: row.id, row_id: r.row_id },
-            });
-            result.no_change_item_ids.push(r.item_id);
-            break;
-          }
-          case 'contradicted': {
-            // T-D35 + T-D21: spawn a code-drift signal rather than reverting state. Tier
-            // depends on whether the item has a PR association recorded.
-            const category = drift.hasPrAssociation(r.item_id) ? 'tier-2' : 'tier-3';
-            const driftId = drift.createCodeSignal({
-              projectId: project.id,
-              itemId: r.item_id,
-              category,
-              reason: r.reason,
-              payload: {
-                reconcile_run_id: row.id,
-                row_id: r.row_id,
-                evidence: r.evidence,
-                source: req.diff.source,
-              },
-            });
-            result.drift_signal_ids.push(driftId);
-            break;
-          }
-        }
-      }
 
-      const now = new Date().toISOString();
-      db.prepare(
-        `UPDATE reconcile_runs
-          SET status = 'applied', resolved_at = ?, diff_json = ?
-          WHERE id = ?`,
-      ).run(now, JSON.stringify(req.diff), row.id);
+        const now = new Date().toISOString();
+        db.prepare(
+          `UPDATE reconcile_runs
+            SET status = 'applied', resolved_at = ?, diff_json = ?
+            WHERE id = ?`,
+        ).run(now, JSON.stringify(req.diff), row.id);
 
-      appendAudit(db, {
-        projectId: project.id,
-        entityType: 'project',
-        entityId: project.id,
-        actor: 'user',
-        field: 'reconcile_apply',
-        oldValue: row.id,
-        newValue: JSON.stringify(summariseResult(result)),
-        triggerContext: { run_id: row.id, source: row.source },
+        appendAudit(db, {
+          projectId: project.id,
+          entityType: 'project',
+          entityId: project.id,
+          actor: 'user',
+          field: 'reconcile_apply',
+          oldValue: row.id,
+          newValue: JSON.stringify(summariseResult(result)),
+          triggerContext: { run_id: row.id, source: row.source },
+        });
       });
+      applyTx();
 
       return result;
     },
