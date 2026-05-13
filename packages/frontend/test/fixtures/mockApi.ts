@@ -2,22 +2,40 @@ import { vi } from 'vitest';
 import type {
   AuditEntry,
   CreateItemInput,
+  CreateProjectInput,
   CreateSessionInput,
   Item,
   ItemPolicy,
+  Project,
   Session,
   UpdateItemInput,
   UpdateSessionInput,
 } from '@throughline/shared';
 
 interface State {
+  projects: Project[];
   sessions: Session[];
   items: Item[];
   audit: AuditEntry[];
   settings: Record<string, unknown>;
 }
 
+const DEFAULT_PROJECT: Project = {
+  id: 'p1',
+  name: 'demo',
+  repo_path: '/tmp/demo',
+  github_owner: null,
+  github_repo: null,
+  bundle_id: 'freeform',
+  state: 'active',
+  settings_json: {},
+  created_at: '',
+  updated_at: '',
+  archived_at: null,
+};
+
 const state: State = {
+  projects: [DEFAULT_PROJECT],
   sessions: [],
   items: [],
   audit: [],
@@ -38,6 +56,7 @@ const FREEFORM_POLICY: ItemPolicy = {
 };
 
 export function resetMockApi() {
+  state.projects = [DEFAULT_PROJECT];
   state.sessions = [];
   state.items = [];
   state.audit = [];
@@ -78,23 +97,24 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
 
 export const mockApi = {
   health: vi.fn(async () => ({ ok: true, version: 'test' })),
-  listProjects: vi.fn(async () => ({
-    projects: [
-      {
-        id: 'p1',
-        name: 'demo',
-        repo_path: '/tmp/demo',
-        github_owner: null,
-        github_repo: null,
-        bundle_id: 'freeform',
-        state: 'active' as const,
-        settings_json: {},
-        created_at: '',
-        updated_at: '',
-        archived_at: null,
-      },
-    ],
-  })),
+  listProjects: vi.fn(async () => ({ projects: [...state.projects] })),
+  createProject: vi.fn(async (input: CreateProjectInput) => {
+    const project: Project = {
+      id: id('p'),
+      name: input.name,
+      repo_path: input.repo_path,
+      github_owner: input.github_owner ?? null,
+      github_repo: input.github_repo ?? null,
+      bundle_id: input.bundle_id ?? 'freeform',
+      state: 'active',
+      settings_json: input.settings ?? {},
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      archived_at: null,
+    };
+    state.projects.push(project);
+    return { project };
+  }),
   listMethodologies: vi.fn(async () => ({ methodologies: [] })),
   switchProject: vi.fn(async () => ({ ok: true as const })),
   getSettings: vi.fn(async () => ({ settings: state.settings })),

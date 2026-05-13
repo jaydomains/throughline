@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { ModalStackProvider } from '../src/keyboard/modalStack.js';
 import {
   DirectivesView,
   GraphView,
@@ -70,11 +71,14 @@ describe('View stubs', () => {
     ];
     render(
       <MemoryRouter>
-        <ProjectsView projects={projects} />
+        <ModalStackProvider>
+          <ProjectsView projects={projects} bundles={[]} onCreated={() => {}} />
+        </ModalStackProvider>
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Projects' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
+    expect(screen.getByTestId('new-project-button')).toBeInTheDocument();
   });
 
   it('ModulesView redirects when the bundle declares no primary unit', () => {
