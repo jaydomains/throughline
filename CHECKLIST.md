@@ -149,26 +149,28 @@ Phase 1 shipped project create/archive/delete via REST + CLI; Phase 2 left the P
 
 ## Phase 6 — Library, directives, repo `.md` ingestion
 
-- [ ] Library entries scoped per project
-- [ ] Library entries: notes, prompts, snippets, imported docs all functional
-- [ ] Notes attachable to multiple items; many-to-many table populated
-- [ ] Prompts support `{{var_name}}` placeholders with fill-in modal
-- [ ] Snippet quick-copy button always visible
-- [ ] Imported docs: AI generates summary + tag suggestions on import
-- [ ] Library entry full-text search
-- [ ] Library entry semantic search routed (Semble for code-related queries — placeholder until Phase 11; local embeddings for text queries — placeholder until Phase 14)
-- [ ] Cross-project library toggle
-- [ ] Pin directive: parent view shows pinned item sticky
-- [ ] Reminder directive: relative + absolute + recurrence rules
-- [ ] Reminder fires OS notification regardless of browser tab state
-- [ ] Recurring reminders persist until directive removed
-- [ ] Include-in-prompt directive: session-start prompt auto-prepends flagged items (placeholder hook until Phase 13)
-- [ ] Directives view groups by type (pinned / reminders / include-in-prompt)
-- [ ] Directives view shows count per group, each collapsible
-- [ ] Reminders sorted by next firing within their group
-- [ ] Repo `.md` ingestion: folder-opt-in selector
-- [ ] `.md` re-ingest: snapshot by default with per-entry track-source toggle
-- [ ] Library entries audit-logged
+Sliced into three sub-PRs at the session author's direction: **6a** library content, **6b** directives + reminders + notifier, **6c** repo `.md` ingestion. The CHECKLIST rows ticked in each sub-PR carry the slice label inline.
+
+- [x] **(6a)** Library entries scoped per project (`packages/backend/src/library/service.ts` `list({ projectId })` filters by project; `listLibrary(projectId, { scope: 'project' })` is the default in `packages/frontend/src/api.ts`; verified by `packages/backend/test/library.test.ts` "filters list by type" and "returns global-scope list across projects when projectId is null")
+- [x] **(6a)** Library entries: notes, prompts, snippets, imported docs all functional (full CRUD via `packages/backend/src/library/routes.ts` `GET / POST / PATCH / DELETE`; per-type renderer in `packages/frontend/src/views/LibraryView.tsx` `EntryEditor`; verified by `packages/backend/test/library.test.ts` "creates entries of each of the four types" + `packages/frontend/test/library.test.tsx` "renders entries from the API")
+- [x] **(6a)** Notes attachable to multiple items; many-to-many table populated (`packages/backend/src/library/service.ts` `attach / detach / listAttachedItems / listAttachedNotes`; T-D9 type='note' guard via `AttachNotANoteError`; cross-project guard via `CrossProjectAttachError`; `packages/frontend/src/components/{AttachItemModal,AttachNoteToItemModal}.tsx` multi-select UI; verified by backend tests "attach a note to an item happy path", "attach is idempotent on duplicates", "attach rejects when the entry is not a note", "attach rejects cross-project pairs", and frontend test "attach modal applies attach/detach diffs through the API")
+- [x] **(6a)** Prompts support `{{var_name}}` placeholders with fill-in modal (shared helpers `extractPromptVariables` + `renderPromptBody` in `packages/shared/src/library.ts`; backend `fillPrompt` in `library/service.ts`; UI in `packages/frontend/src/components/PromptFillModal.tsx`; verified by backend "prompt-fill substitutes placeholders and reports missing variables" + "prompt-fill rejects non-prompt entries" and frontend "renders the prompt fill modal and copies the rendered output")
+- [x] **(6a)** Snippet quick-copy button always visible (`packages/frontend/src/views/LibraryView.tsx` `EntryEditor` renders the Copy button for `type='snippet'`; uses `navigator.clipboard.writeText(entry.body)`; verified by frontend "snippet quick-copy writes the body to clipboard")
+- [ ] **(6c)** Imported docs: AI generates summary + tag suggestions on import
+- [x] **(6a)** Library entry full-text search (FTS5 virtual table `library_entries_fts` in `packages/backend/src/db/migrations/0004_library_extensions.sql` + sync triggers; `library/service.ts` `search()` returns `via: 'fts'`; UI debounced search in `LibraryView.tsx`; verified by backend "FTS search returns matches scoped per project" + "FTS search finds matches in body and tags" and frontend "search input debounces and routes to the FTS endpoint")
+- [x] **(6a)** Library entry semantic search routed (Semble for code-related queries — placeholder until Phase 11; local embeddings for text queries — placeholder until Phase 14) (`library/service.ts` `semanticSearch()` returns `via: 'semantic-stub'`; `POST /api/projects/:id/library/semantic-search` route exists; verified by backend "semantic-search returns the stub envelope")
+- [x] **(6a)** Cross-project library toggle (`LibraryView.tsx` `library-scope-toggle` checkbox switches `scope` between `'project'` and `'global'`; `listLibrary(projectId, { scope: 'global' })` and `search({ scope: 'global' })` both pass through; verified by backend "returns global-scope list across projects when projectId is null" + frontend "cross-project toggle issues a global-scope search")
+- [ ] **(6b)** Pin directive: parent view shows pinned item sticky
+- [ ] **(6b)** Reminder directive: relative + absolute + recurrence rules
+- [ ] **(6b)** Reminder fires OS notification regardless of browser tab state
+- [ ] **(6b)** Recurring reminders persist until directive removed
+- [ ] **(6b)** Include-in-prompt directive: session-start prompt auto-prepends flagged items (placeholder hook until Phase 13)
+- [ ] **(6b)** Directives view groups by type (pinned / reminders / include-in-prompt)
+- [ ] **(6b)** Directives view shows count per group, each collapsible
+- [ ] **(6b)** Reminders sorted by next firing within their group
+- [ ] **(6c)** Repo `.md` ingestion: folder-opt-in selector
+- [ ] **(6c)** `.md` re-ingest: snapshot by default with per-entry track-source toggle
+- [x] **(6a)** Library entries audit-logged (`appendAudit` called on every `create / update / delete / attach / detach` in `library/service.ts`; per-field audit rows on update; verified by backend "update mutates fields and audit-logs each change" + "attach a note to an item happy path + audit row")
 
 ---
 

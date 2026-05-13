@@ -1,12 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import type { LibraryEntry, Project } from '@throughline/shared';
+import type { Project } from '@throughline/shared';
 import { api, type MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
-import { useItemPolicy } from '../hooks/useItemPolicy.js';
-import { useSessions } from '../hooks/useSessions.js';
 import { NewProjectModal } from '../components/NewProjectModal.js';
-import { DumpZone } from '../components/DumpZone.js';
 
 interface StubProps {
   title: string;
@@ -164,62 +161,6 @@ export function GraphView() {
       title="Graph"
       body="Cytoscape-rendered node/edge graph lands after items + sessions (Phase 3). Communication-model edges arrive with the SiteMesh bundle (Phase 7). Phase 2 ships the route as an empty stub."
     />
-  );
-}
-
-export function LibraryView() {
-  const { id: projectId } = useParams();
-  const { policy } = useItemPolicy(projectId ?? null);
-  const { sessions } = useSessions(projectId ?? null);
-  const [entries, setEntries] = useState<LibraryEntry[]>([]);
-
-  useEffect(() => {
-    if (!projectId) return;
-    api
-      .listLibrary(projectId)
-      .then((r) => setEntries(r.entries))
-      .catch(() => {});
-  }, [projectId]);
-
-  if (!projectId || !policy) {
-    return (
-      <Stub
-        title="Library"
-        body="Notes / prompts / snippets / imported docs land in Phase 6. Phase 4 lands the library dump zone so capture works against the same datastore."
-      />
-    );
-  }
-
-  return (
-    <div className="view-stub" data-testid="view-library">
-      <h1>Library</h1>
-      <p className="form-hint">
-        Phase 4: capture via the library dump zone. Full library surfaces (attach-to-item, search, four content
-        types editor) land in Phase 6.
-      </p>
-      <DumpZone
-        projectId={projectId}
-        target="library"
-        policy={policy}
-        sessions={sessions}
-        onApplied={() => {
-          api
-            .listLibrary(projectId)
-            .then((r) => setEntries(r.entries))
-            .catch(() => {});
-        }}
-      />
-      <ul className="library-entries" data-testid="library-entries">
-        {entries.length === 0 && <li className="form-hint">No library entries yet.</li>}
-        {entries.map((e) => (
-          <li key={e.id}>
-            <strong>{e.title}</strong>
-            <span className="meta">{e.type}</span>
-            <p>{e.body.slice(0, 240)}</p>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
 

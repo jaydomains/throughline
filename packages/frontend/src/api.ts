@@ -1,6 +1,7 @@
 import type {
   ApplyRequest,
   ApplyResult,
+  AttachedItemSummary,
   AuditEntry,
   CodeTodoScanResult,
   CreateItemInput,
@@ -13,7 +14,12 @@ import type {
   Item,
   ItemPolicy,
   LibraryEntry,
+  LibraryEntryType,
+  LibrarySearchRequest,
+  LibrarySearchResult,
   Project,
+  PromptFillRequest,
+  PromptFillResult,
   ProposeRequest,
   ReconcileApplyRequest,
   ReconcileApplyResult,
@@ -22,6 +28,7 @@ import type {
   ScratchpadJot,
   Session,
   UpdateItemInput,
+  UpdateLibraryEntryInput,
   UpdateSessionInput,
 } from '@throughline/shared';
 
@@ -174,13 +181,72 @@ export const api = {
       if (!r.ok) throw new Error(`DELETE proposal failed: ${r.status}`);
     }),
 
-  listLibrary: (projectId: string) =>
-    jsonFetch<{ entries: LibraryEntry[] }>(`/api/projects/${pid(projectId)}/library`),
+  listLibrary: (projectId: string, opts?: { type?: LibraryEntryType; scope?: 'project' | 'global' }) => {
+    const params = new URLSearchParams();
+    if (opts?.type) params.set('type', opts.type);
+    if (opts?.scope === 'global') params.set('scope', 'global');
+    const qs = params.toString();
+    return jsonFetch<{ entries: LibraryEntry[] }>(
+      `/api/projects/${pid(projectId)}/library${qs ? `?${qs}` : ''}`,
+    );
+  },
+  getLibraryEntry: (projectId: string, entryId: string) =>
+    jsonFetch<{ entry: LibraryEntry }>(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}`,
+    ),
   createLibraryEntry: (projectId: string, input: Omit<CreateLibraryEntryInput, 'project_id'>) =>
     jsonFetch<{ entry: LibraryEntry }>(`/api/projects/${pid(projectId)}/library`, {
       method: 'POST',
       body: JSON.stringify(input),
     }),
+  updateLibraryEntry: (projectId: string, entryId: string, input: UpdateLibraryEntryInput) =>
+    jsonFetch<{ entry: LibraryEntry }>(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}`,
+      { method: 'PATCH', body: JSON.stringify(input) },
+    ),
+  deleteLibraryEntry: (projectId: string, entryId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE library entry failed: ${r.status}`);
+    }),
+  attachLibraryNote: (projectId: string, entryId: string, itemId: string) =>
+    fetch(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}/attach/${encodeURIComponent(itemId)}`,
+      { method: 'POST' },
+    ).then((r) => {
+      if (!r.ok) throw new Error(`attach failed: ${r.status}`);
+    }),
+  detachLibraryNote: (projectId: string, entryId: string, itemId: string) =>
+    fetch(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}/attach/${encodeURIComponent(itemId)}`,
+      { method: 'DELETE' },
+    ).then((r) => {
+      if (!r.ok) throw new Error(`detach failed: ${r.status}`);
+    }),
+  listAttachedItems: (projectId: string, entryId: string) =>
+    jsonFetch<{ items: AttachedItemSummary[] }>(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}/attached-items`,
+    ),
+  listAttachedNotes: (projectId: string, itemId: string) =>
+    jsonFetch<{ notes: LibraryEntry[] }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/attached-notes`,
+    ),
+  fillPrompt: (projectId: string, entryId: string, input: PromptFillRequest) =>
+    jsonFetch<{ result: PromptFillResult }>(
+      `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}/prompt-fill`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  searchLibrary: (projectId: string, input: LibrarySearchRequest) =>
+    jsonFetch<{ result: LibrarySearchResult }>(
+      `/api/projects/${pid(projectId)}/library/search`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  semanticSearchLibrary: (projectId: string, input: LibrarySearchRequest) =>
+    jsonFetch<{ result: LibrarySearchResult }>(
+      `/api/projects/${pid(projectId)}/library/semantic-search`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
 
   listScratchpadJots: (projectId: string, limit?: number) => {
     const qs = limit ? `?limit=${limit}` : '';

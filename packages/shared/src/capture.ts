@@ -1,7 +1,9 @@
 // Phase 4 — capture surfaces (SPEC §7.6; T-D5, T-D16, T-D20, T-D37).
 // Shared types span the dump-zone proposal contract (paste/voice/inbox/code-todo all funnel
-// through one extraction → review modal pathway), scratchpad jots, inbox queue rows, and
-// minimal library entries (library UI lands in Phase 6; capture only needs create + list).
+// through one extraction → review modal pathway), scratchpad jots, inbox queue rows.
+// Library entry shapes moved to library.ts at Phase 6a slice open.
+
+import type { LibraryEntryType } from './library.js';
 
 export type ProposalSource = 'paste' | 'voice' | 'inbox' | 'code_todo';
 export type ProposalTarget = 'session' | 'library';
@@ -29,7 +31,7 @@ export interface ProposedItem {
 
 export interface ProposedLibraryEntry {
   proposal_item_id: string;
-  type: 'note' | 'prompt' | 'snippet' | 'imported_doc';
+  type: LibraryEntryType;
   title: string;
   body: string;
   tags: string[];
@@ -94,29 +96,6 @@ export interface ScratchpadJot {
 export interface CreateScratchpadJotInput {
   project_id: string | null;
   body: string;
-}
-
-// Library — Phase 6 owns the full surface, but the library dump zone in Phase 4 needs to
-// create/list entries. Update / delete / attach-to-item / search land in Phase 6.
-export type LibraryEntryType = 'note' | 'prompt' | 'snippet' | 'imported_doc';
-
-export interface LibraryEntry {
-  id: string;
-  project_id: string;
-  type: LibraryEntryType;
-  title: string;
-  body: string;
-  tags: string[];
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CreateLibraryEntryInput {
-  project_id: string;
-  type: LibraryEntryType;
-  title: string;
-  body?: string;
-  tags?: string[];
 }
 
 // Claude Code inbox (T-D16, T-D37). Status reflects worker state, not user state.

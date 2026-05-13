@@ -146,7 +146,7 @@ describe('dump zone service', () => {
       expect(proposal.payload.library).toHaveLength(2);
       const result = dumpZone.apply({ proposal_id: proposal.id, payload: proposal.payload });
       expect(result.applied_library_entry_ids).toHaveLength(2);
-      const list = library.list(project.id);
+      const list = library.list({ projectId: project.id });
       expect(list.map((e) => e.title)).toContain('Note about deployment');
     } finally {
       await backend.cleanup();

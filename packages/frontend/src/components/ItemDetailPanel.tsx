@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AuditEntry, Item, ItemPolicy } from '@throughline/shared';
+import type { AuditEntry, Item, ItemPolicy, LibraryEntry } from '@throughline/shared';
 import { api } from '../api.js';
 import { isStale } from '../hooks/useStaleThreshold.js';
 import { useModalRegistration } from '../keyboard/modalStack.js';
 import { useHotkey } from '../keyboard/useHotkey.js';
+import { AttachNoteToItemModal } from './AttachNoteToItemModal.js';
 
 interface Props {
   projectId: string;
@@ -28,12 +29,14 @@ export function ItemDetailPanel({
 }: Props) {
   const [item, setItem] = useState<Item | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
+  const [attachedNotes, setAttachedNotes] = useState<LibraryEntry[]>([]);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
   const [editingDesc, setEditingDesc] = useState<string | null>(null);
   const [editingBlockerText, setEditingBlockerText] = useState<string | null>(null);
   const [editingBranchRef, setEditingBranchRef] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [blockerDraft, setBlockerDraft] = useState('');
+  const [attachNoteOpen, setAttachNoteOpen] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -47,6 +50,12 @@ export function ItemDetailPanel({
       setAuditEntries(a.entries);
     } catch {
       setAuditEntries([]);
+    }
+    try {
+      const n = await api.listAttachedNotes(projectId, itemId);
+      setAttachedNotes(n.notes);
+    } catch {
+      setAttachedNotes([]);
     }
   }, [projectId, itemId]);
 
@@ -303,10 +312,47 @@ export function ItemDetailPanel({
         </p>
       </section>
 
+      <section className="detail-section" data-testid="item-attached-notes">
+        <h3>Attached notes (T-D9)</h3>
+        {attachedNotes.length === 0 && (
+          <p className="muted">No notes attached.</p>
+        )}
+        {attachedNotes.length > 0 && (
+          <ul className="attached-notes-list">
+            {attachedNotes.map((n) => (
+              <li key={n.id} data-testid={`attached-note-${n.id}`}>
+                <strong>{n.title}</strong>
+                {n.tags.length > 0 && (
+                  <span className="meta"> {n.tags.join(', ')}</span>
+                )}
+                <button
+                  type="button"
+                  aria-label={`Detach note ${n.title}`}
+                  onClick={async () => {
+                    await api.detachLibraryNote(projectId, n.id, itemId);
+                    await refresh();
+                  }}
+                  data-testid={`detach-note-${n.id}`}
+                >
+                  Detach
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button
+          type="button"
+          onClick={() => setAttachNoteOpen(true)}
+          data-testid="attach-note-button"
+        >
+          Attach note…
+        </button>
+      </section>
+
       <section className="detail-section">
         <h3>Code refs · verifier rules · directives · git context</h3>
         <p className="muted">
-          Code refs land in Phase 11 (Semble); verifier rules in Phase 10; directives in Phase 6;
+          Code refs land in Phase 11 (Semble); verifier rules in Phase 10; directives in Phase 6b;
           PR/git context in Phase 10.
         </p>
       </section>
@@ -332,6 +378,15 @@ export function ItemDetailPanel({
           parent: {item.parent_id ?? '—'} · sessions: {item.session_ids.join(', ') || '—'}
         </p>
       </section>
+
+      <AttachNoteToItemModal
+        open={attachNoteOpen}
+        onClose={() => setAttachNoteOpen(false)}
+        projectId={projectId}
+        itemId={itemId}
+        currentAttached={attachedNotes}
+        onChanged={() => void refresh()}
+      />
     </aside>
   );
 }
