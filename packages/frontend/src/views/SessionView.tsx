@@ -8,6 +8,7 @@ import { useStaleThreshold } from '../hooks/useStaleThreshold.js';
 import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
 import { Board } from '../components/Board.js';
 import { DumpZone } from '../components/DumpZone.js';
+import { ReconcileComposer } from '../components/ReconcileComposer.js';
 
 export function SessionView() {
   const { id, sessionId } = useParams();
@@ -79,7 +80,11 @@ export function SessionView() {
           onApplied={() => refresh()}
         />
       )}
+      <ReconcileComposer
+        projectId={projectId}
+        sessionId={sessionId}
+        onApplied={() => refresh()}
+      />
     </div>
   );
 }
-

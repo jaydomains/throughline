@@ -44,3 +44,12 @@ export function bundleItemPolicy(bundle: LoadedBundle): ItemPolicy {
     boards: [{ id: type, label: type, type }],
   };
 }
+
+// "Done"-equivalent status for the policy. v1 convention: the last status in the bundle's
+// declared list. Works for freeform (`['open','done']`) and the SiteMesh todo lifecycle
+// whose terminal state is `done`. Flagged in the Phase 5 handover so a future T-D anchor
+// can formalise if bundles emerge with a different terminal-state convention.
+export function bundleDoneStatus(policy: { statuses: string[] }): string {
+  if (policy.statuses.length === 0) return 'done';
+  return policy.statuses[policy.statuses.length - 1]!;
+}

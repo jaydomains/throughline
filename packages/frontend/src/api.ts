@@ -15,6 +15,10 @@ import type {
   LibraryEntry,
   Project,
   ProposeRequest,
+  ReconcileApplyRequest,
+  ReconcileApplyResult,
+  ReconcileProposeRequest,
+  ReconcileRun,
   ScratchpadJot,
   Session,
   UpdateItemInput,
@@ -208,6 +212,30 @@ export const api = {
     jsonFetch<{ result: CodeTodoScanResult }>(`/api/projects/${pid(projectId)}/code-todo/scan`, {
       method: 'POST',
       body: JSON.stringify({ patterns: patterns ?? null }),
+    }),
+
+  // Phase 5 — reconcile engine.
+  proposeReconcile: (projectId: string, input: ReconcileProposeRequest) =>
+    jsonFetch<{ run: ReconcileRun }>(
+      `/api/projects/${pid(projectId)}/reconcile/propose`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  applyReconcile: (projectId: string, input: ReconcileApplyRequest) =>
+    jsonFetch<{ result: ReconcileApplyResult }>(
+      `/api/projects/${pid(projectId)}/reconcile/apply`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  getReconcileRun: (projectId: string, runId: string) =>
+    jsonFetch<{ run: ReconcileRun }>(
+      `/api/projects/${pid(projectId)}/reconcile/runs/${encodeURIComponent(runId)}`,
+    ),
+  listReconcileRuns: (projectId: string) =>
+    jsonFetch<{ runs: ReconcileRun[] }>(`/api/projects/${pid(projectId)}/reconcile/runs`),
+  discardReconcileRun: (projectId: string, runId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/reconcile/runs/${encodeURIComponent(runId)}`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE reconcile run failed: ${r.status}`);
     }),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {

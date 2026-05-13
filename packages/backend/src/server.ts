@@ -34,6 +34,14 @@ import { createInboxWatcher, type InboxWatcher } from './inbox/watcher.js';
 import { registerInboxRoutes } from './inbox/routes.js';
 import { createCodeTodoService } from './code-todo/service.js';
 import { registerCodeTodoRoutes } from './code-todo/routes.js';
+import { createDriftService } from './drift/service.js';
+import {
+  createAnthropicReconcileEngine,
+  createHeuristicReconcileEngine,
+  createRoutingReconcileEngine,
+} from './reconcile/engine.js';
+import { createReconcileService } from './reconcile/service.js';
+import { registerReconcileRoutes } from './reconcile/routes.js';
 
 export interface ServerHandle {
   app: FastifyInstance;
@@ -125,6 +133,21 @@ export async function startServer(
     },
   });
   const codeTodo = createCodeTodoService({ db, projects, dumpZone });
+  const drift = createDriftService(db);
+  const reconcileEngine = createRoutingReconcileEngine({
+    anthropic: createAnthropicReconcileEngine({ client: anthropicClient }),
+    heuristic: createHeuristicReconcileEngine(),
+    client: anthropicClient,
+  });
+  const reconcile = createReconcileService({
+    db,
+    projects,
+    sessions,
+    registry,
+    items,
+    drift,
+    engine: reconcileEngine,
+  });
 
   registerHealthRoute(app);
   registerEventsRoute(app);
@@ -139,6 +162,7 @@ export async function startServer(
   registerScratchpadRoutes(app, projects, scratchpad);
   registerInboxRoutes(app, inboxWorker, inboxWatcher);
   registerCodeTodoRoutes(app, projects, codeTodo);
+  registerReconcileRoutes(app, projects, reconcile);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 
