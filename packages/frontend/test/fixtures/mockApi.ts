@@ -1,6 +1,7 @@
 import { vi } from 'vitest';
 import type {
   ApplyRequest,
+  AttachedItemSummary,
   AuditEntry,
   CodeTodoScanResult,
   CreateItemInput,
@@ -13,6 +14,8 @@ import type {
   Item,
   ItemPolicy,
   LibraryEntry,
+  LibrarySearchRequest,
+  PromptFillRequest,
   Project,
   ProposeRequest,
   ReconcileApplyRequest,
@@ -23,8 +26,10 @@ import type {
   ScratchpadJot,
   Session,
   UpdateItemInput,
+  UpdateLibraryEntryInput,
   UpdateSessionInput,
 } from '@throughline/shared';
+import { renderPromptBody } from '@throughline/shared';
 
 interface State {
   projects: Project[];
@@ -34,6 +39,7 @@ interface State {
   settings: Record<string, unknown>;
   proposals: DumpZoneProposal[];
   library: LibraryEntry[];
+  attachments: Array<{ item_id: string; library_entry_id: string }>;
   jots: ScratchpadJot[];
   inbox: InboxQueueEntry[];
   reconcileRuns: ReconcileRun[];
@@ -62,6 +68,7 @@ const state: State = {
   settings: { stale_threshold_days: 14, last_active_project_id: 'p1' },
   proposals: [],
   library: [],
+  attachments: [],
   jots: [],
   inbox: [],
   reconcileRuns: [],
@@ -89,6 +96,7 @@ export function resetMockApi() {
   state.settings = { stale_threshold_days: 14, last_active_project_id: 'p1' };
   state.proposals = [];
   state.library = [];
+  state.attachments = [];
   state.jots = [];
   state.inbox = [];
   state.reconcileRuns = [];
@@ -97,6 +105,23 @@ export function resetMockApi() {
   for (const fn of Object.values(mockApi)) {
     if (typeof fn === 'function' && 'mockClear' in fn) (fn as { mockClear: () => void }).mockClear();
   }
+}
+
+export function seedLibraryEntry(
+  entry: Partial<LibraryEntry> & { id: string; project_id: string; type: LibraryEntry['type']; title: string },
+) {
+  state.library.push({
+    body: '',
+    tags: [],
+    summary: null,
+    created_at: '2026-01-01T00:00:00.000Z',
+    updated_at: '2026-01-01T00:00:00.000Z',
+    ...entry,
+  });
+}
+
+export function seedAttachment(itemId: string, libraryEntryId: string) {
+  state.attachments.push({ item_id: itemId, library_entry_id: libraryEntryId });
 }
 
 export function seedInbox(entry: Partial<InboxQueueEntry> & { id: string; state: InboxQueueEntry['state'] }) {
@@ -354,6 +379,7 @@ export const mockApi = {
         title: entryProposal.title,
         body: entryProposal.body,
         tags: entryProposal.tags,
+        summary: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -374,9 +400,23 @@ export const mockApi = {
     if (p) p.status = 'discarded';
   }),
 
-  listLibrary: vi.fn(async (projectId: string) => ({
-    entries: state.library.filter((e) => e.project_id === projectId),
-  })),
+  listLibrary: vi.fn(
+    async (
+      projectId: string,
+      opts?: { type?: LibraryEntry['type']; scope?: 'project' | 'global' },
+    ) => {
+      const all = opts?.scope === 'global'
+        ? state.library
+        : state.library.filter((e) => e.project_id === projectId);
+      const filtered = opts?.type ? all.filter((e) => e.type === opts.type) : all;
+      return { entries: filtered };
+    },
+  ),
+  getLibraryEntry: vi.fn(async (_pid: string, entryId: string) => {
+    const entry = state.library.find((e) => e.id === entryId);
+    if (!entry) throw new Error('not_found');
+    return { entry };
+  }),
   createLibraryEntry: vi.fn(
     async (projectId: string, input: Omit<CreateLibraryEntryInput, 'project_id'>) => {
       const entry: LibraryEntry = {
@@ -386,6 +426,7 @@ export const mockApi = {
         title: input.title,
         body: input.body ?? '',
         tags: input.tags ?? [],
+        summary: input.summary ?? null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -393,6 +434,77 @@ export const mockApi = {
       return { entry };
     },
   ),
+  updateLibraryEntry: vi.fn(
+    async (_pid: string, entryId: string, input: UpdateLibraryEntryInput) => {
+      const entry = state.library.find((e) => e.id === entryId);
+      if (!entry) throw new Error('not_found');
+      if (input.title !== undefined) entry.title = input.title;
+      if (input.body !== undefined) entry.body = input.body;
+      if (input.tags !== undefined) entry.tags = input.tags;
+      if (input.summary !== undefined) entry.summary = input.summary;
+      entry.updated_at = new Date().toISOString();
+      return { entry };
+    },
+  ),
+  deleteLibraryEntry: vi.fn(async (_pid: string, entryId: string) => {
+    state.library = state.library.filter((e) => e.id !== entryId);
+    state.attachments = state.attachments.filter((a) => a.library_entry_id !== entryId);
+  }),
+  attachLibraryNote: vi.fn(async (_pid: string, entryId: string, itemId: string) => {
+    const entry = state.library.find((e) => e.id === entryId);
+    if (!entry || entry.type !== 'note') throw new Error('not_a_note');
+    const item = state.items.find((i) => i.id === itemId);
+    if (!item) throw new Error('item_not_found');
+    if (item.project_id !== entry.project_id) throw new Error('cross_project_attach');
+    const exists = state.attachments.find(
+      (a) => a.library_entry_id === entryId && a.item_id === itemId,
+    );
+    if (!exists) state.attachments.push({ item_id: itemId, library_entry_id: entryId });
+  }),
+  detachLibraryNote: vi.fn(async (_pid: string, entryId: string, itemId: string) => {
+    state.attachments = state.attachments.filter(
+      (a) => !(a.library_entry_id === entryId && a.item_id === itemId),
+    );
+  }),
+  listAttachedItems: vi.fn(async (_pid: string, entryId: string) => {
+    const ids = state.attachments
+      .filter((a) => a.library_entry_id === entryId)
+      .map((a) => a.item_id);
+    const items: AttachedItemSummary[] = state.items
+      .filter((i) => ids.includes(i.id))
+      .map((i) => ({ id: i.id, title: i.title, type: i.type, status: i.status }));
+    return { items };
+  }),
+  listAttachedNotes: vi.fn(async (_pid: string, itemId: string) => {
+    const ids = state.attachments
+      .filter((a) => a.item_id === itemId)
+      .map((a) => a.library_entry_id);
+    return { notes: state.library.filter((e) => ids.includes(e.id)) };
+  }),
+  fillPrompt: vi.fn(async (_pid: string, entryId: string, input: PromptFillRequest) => {
+    const entry = state.library.find((e) => e.id === entryId);
+    if (!entry) throw new Error('not_found');
+    if (entry.type !== 'prompt') throw new Error('not_a_prompt');
+    const result = renderPromptBody(entry.body, input.values);
+    return { result };
+  }),
+  searchLibrary: vi.fn(async (projectId: string, input: LibrarySearchRequest) => {
+    const q = input.query.trim().toLowerCase();
+    const scope = input.scope ?? 'project';
+    let pool = scope === 'global' ? state.library : state.library.filter((e) => e.project_id === projectId);
+    if (input.type) pool = pool.filter((e) => e.type === input.type);
+    const entries = q.length === 0 ? [] : pool.filter((e) => {
+      return (
+        e.title.toLowerCase().includes(q) ||
+        e.body.toLowerCase().includes(q) ||
+        e.tags.some((t) => t.toLowerCase().includes(q))
+      );
+    });
+    return { result: { entries, via: 'fts' as const, truncated: false } };
+  }),
+  semanticSearchLibrary: vi.fn(async (_pid: string, _input: LibrarySearchRequest) => ({
+    result: { entries: [], via: 'semantic-stub' as const, truncated: false },
+  })),
 
   listScratchpadJots: vi.fn(async (projectId: string, _limit?: number) => ({
     jots: state.jots

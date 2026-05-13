@@ -6,7 +6,6 @@ import {
   DirectivesView,
   GraphView,
   HomeView,
-  LibraryView,
   ModulesView,
   ProjectsView,
   GatesView,
@@ -40,10 +39,9 @@ describe('View stubs', () => {
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
-  it('renders Graph, Library, Directives stubs (Sessions/Tree are now live views, tested separately)', () => {
+  it('renders Graph and Directives stubs (Sessions/Tree/Library are now live views, tested separately)', () => {
     const cases: Array<[string, React.ReactNode]> = [
       ['Graph', <GraphView />],
-      ['Library', <LibraryView />],
       ['Directives', <DirectivesView />],
     ];
     for (const [label, el] of cases) {

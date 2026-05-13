@@ -375,13 +375,13 @@ main.view {
    scoped to .new-project-modal in Phase 3.5; the dump zone modal now reuses the same
    shape, promoting them to a shared :where(...) block. */
 
-:where(.new-project-modal, .dump-zone-modal, .reconcile-composer-modal, .reconcile-modal) .form-row {
+:where(.new-project-modal, .dump-zone-modal, .reconcile-composer-modal, .reconcile-modal, .prompt-fill-modal, .attach-item-modal) .form-row {
   display: flex;
   flex-direction: column;
   gap: 4px;
   margin-bottom: 12px;
 }
-:where(.new-project-modal, .dump-zone-modal, .reconcile-composer-modal, .reconcile-modal) .form-row > span {
+:where(.new-project-modal, .dump-zone-modal, .reconcile-composer-modal, .reconcile-modal, .prompt-fill-modal, .attach-item-modal) .form-row > span {
   font-size: 12px;
   color: var(--fg-dim);
 }
@@ -669,3 +669,73 @@ main.view {
   white-space: pre-wrap;
   word-break: break-word;
 }
+
+/* Phase 6a — library content surface (SPEC §7.8, T-D9, T-D10). Three-pane layout:
+   sidebar (filter / search / list) + main editor / reader. The .library-entries list
+   from Phase 4 is retired; the new layout replaces it. */
+
+.library-view { display: flex; flex-direction: column; gap: 12px; padding: 16px; height: 100%; }
+.library-view .library-header { display: flex; align-items: center; gap: 12px; }
+.library-view .library-toast { color: var(--ok); font-size: 12px; }
+.library-view .library-body {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+.library-sidebar {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+.library-sidebar .library-filters { display: flex; align-items: center; gap: 8px; }
+.library-sidebar .library-filters select { flex: 1; padding: 4px; }
+.library-sidebar .library-scope { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--fg-dim); }
+.library-sidebar input[type='search'] { padding: 4px 8px; }
+.library-entry-list { list-style: none; padding: 0; margin: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.library-entry-list li { padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; cursor: pointer; }
+.library-entry-list li:hover { background: var(--bg-soft); }
+.library-entry-list li.selected { border-color: var(--accent); background: var(--bg-soft); }
+.library-entry-list li .meta { margin-left: 6px; font-size: 11px; color: var(--fg-dim); text-transform: uppercase; }
+.library-entry-list li .tags-inline { display: flex; gap: 4px; margin-top: 4px; flex-wrap: wrap; }
+.library-entry-list li .tag { font-size: 10px; padding: 1px 4px; background: var(--bg); border-radius: 8px; color: var(--fg-dim); }
+
+.library-detail {
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+  min-height: 0;
+  overflow-y: auto;
+}
+.library-editor-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.library-editor-header input { flex: 1; padding: 6px 8px; font-size: 16px; background: var(--bg-soft); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); }
+.library-editor-header .meta { text-transform: uppercase; color: var(--fg-dim); font-size: 11px; }
+.library-editor-actions { display: flex; gap: 6px; margin-left: auto; }
+.library-editor textarea { width: 100%; min-height: 200px; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+.library-editor-summary { margin: 8px 0; padding: 8px; background: var(--bg); border-radius: 4px; }
+.library-editor-summary h3 { margin: 0 0 4px; font-size: 12px; text-transform: uppercase; color: var(--fg-dim); }
+.library-attached-items { margin-top: 12px; }
+.library-attached-items h3 { font-size: 13px; margin: 0 0 4px; }
+.library-attached-items ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+.library-attached-items li .meta { color: var(--fg-dim); font-size: 11px; }
+
+.prompt-fill-modal, .attach-item-modal { min-width: 480px; }
+.prompt-fill-preview { background: var(--bg); padding: 8px; border-radius: 4px; margin-top: 8px; }
+.prompt-fill-preview pre { white-space: pre-wrap; margin: 0; font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+
+.attach-item-list { list-style: none; padding: 0; margin: 8px 0; max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 4px; }
+.attach-item-list li { padding: 4px 6px; border-radius: 4px; }
+.attach-item-list li:hover { background: var(--bg-soft); }
+.attach-item-list li .meta { color: var(--fg-dim); font-size: 11px; }
+
+.attached-notes-list { list-style: none; padding: 0; margin: 0 0 8px; display: flex; flex-direction: column; gap: 4px; }
+.attached-notes-list li { display: flex; align-items: center; gap: 8px; }
+.attached-notes-list li .meta { color: var(--fg-dim); font-size: 11px; }
+.attached-notes-list li button { margin-left: auto; padding: 2px 8px; font-size: 11px; }

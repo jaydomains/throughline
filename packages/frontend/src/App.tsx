@@ -16,10 +16,10 @@ import {
   GatesView,
   GraphView,
   HomeView,
-  LibraryView,
   ModulesView,
   ProjectsView,
 } from './views/stubs.js';
+import { LibraryView } from './views/LibraryView.js';
 import { SessionsIndex } from './views/SessionsIndex.js';
 import { SessionView } from './views/SessionView.js';
 import { TreeView } from './views/TreeView.js';
