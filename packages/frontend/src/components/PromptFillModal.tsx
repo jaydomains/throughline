@@ -43,8 +43,8 @@ export function PromptFillModal({ open, onClose, entry }: Props) {
 
   if (!open || !entry) return null;
 
-  async function onRender() {
-    if (!entry) return;
+  async function onRender(): Promise<string | null> {
+    if (!entry) return null;
     setSubmitting(true);
     setError(null);
     try {
@@ -52,21 +52,35 @@ export function PromptFillModal({ open, onClose, entry }: Props) {
       setRendered(r.result.rendered);
       setMissing(r.result.missing_vars);
       setCopyState('idle');
+      return r.result.rendered;
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
+      return null;
     } finally {
       setSubmitting(false);
     }
   }
 
-  async function onCopy() {
-    if (rendered === null) return;
+  async function writeToClipboard(text: string) {
     try {
-      await navigator.clipboard.writeText(rendered);
+      await navigator.clipboard.writeText(text);
       setCopyState('copied');
     } catch {
       setCopyState('error');
     }
+  }
+
+  // "Render & copy" must complete both actions in one click. React state updates are
+  // async, so chaining via the `rendered` state would see the stale (null) value in
+  // the same closure — instead, await the render and pass the returned string straight
+  // to the clipboard. Same pattern applies to any composite-action button.
+  async function onPrimaryClick() {
+    let text = rendered;
+    if (text === null) {
+      text = await onRender();
+      if (text === null) return; // render failed; error already surfaced
+    }
+    await writeToClipboard(text);
   }
 
   return (
@@ -131,16 +145,8 @@ export function PromptFillModal({ open, onClose, entry }: Props) {
           <button
             type="button"
             className="primary"
-            disabled={rendered === null && variables.length > 0}
-            onClick={() => {
-              if (rendered === null) {
-                void (async () => {
-                  await onRender();
-                })();
-              } else {
-                void onCopy();
-              }
-            }}
+            disabled={submitting}
+            onClick={() => void onPrimaryClick()}
             data-testid="prompt-fill-copy"
           >
             {rendered === null && variables.length > 0

@@ -114,6 +114,32 @@ describe('LibraryView', () => {
     expect(writeText).toHaveBeenCalledWith('Hello Ada!');
   });
 
+  it('"Render & copy" completes both actions in a single click (composite-action contract)', async () => {
+    seedLibraryEntry({
+      id: 'p2e',
+      project_id: 'p1',
+      type: 'prompt',
+      title: 'greet-2',
+      body: 'Hello {{name}}!',
+    });
+    const user = userEvent.setup();
+    const writeText = vi
+      .spyOn(navigator.clipboard, 'writeText')
+      .mockResolvedValue(undefined);
+    renderLibrary();
+    await user.click(await screen.findByTestId('library-entry-row-p2e'));
+    await user.click(screen.getByTestId('library-prompt-use'));
+    const nameInput = await screen.findByTestId('prompt-var-name');
+    await user.type(nameInput, 'Grace');
+    // The label is "Render & copy" — one click must do both. No prior click on
+    // prompt-fill-render. Confirms the renderAndCopy closure uses the awaited result
+    // directly rather than reading stale `rendered` state.
+    expect(screen.getByTestId('prompt-fill-copy').textContent).toContain('Render & copy');
+    await user.click(screen.getByTestId('prompt-fill-copy'));
+    expect(writeText).toHaveBeenCalledWith('Hello Grace!');
+    expect(mockApi.fillPrompt).toHaveBeenCalled();
+  });
+
   it('snippet quick-copy writes the body to clipboard', async () => {
     seedLibraryEntry({
       id: 'snip',
