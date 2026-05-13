@@ -7,6 +7,7 @@ import { useSessions } from '../hooks/useSessions.js';
 import { useStaleThreshold } from '../hooks/useStaleThreshold.js';
 import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
 import { Board } from '../components/Board.js';
+import { DumpZone } from '../components/DumpZone.js';
 
 export function SessionView() {
   const { id, sessionId } = useParams();
@@ -65,6 +66,17 @@ export function SessionView() {
           onCycle={(nextId) => setSelectedId(nextId)}
           onClose={() => setSelectedId(null)}
           onChanged={refresh}
+        />
+      )}
+
+      {policy && (
+        <DumpZone
+          projectId={projectId}
+          target="session"
+          policy={policy}
+          sessions={sessions}
+          defaultSessionId={sessionId}
+          onApplied={() => refresh()}
         />
       )}
     </div>

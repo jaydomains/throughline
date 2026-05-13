@@ -1,11 +1,21 @@
 import type {
+  ApplyRequest,
+  ApplyResult,
   AuditEntry,
+  CodeTodoScanResult,
   CreateItemInput,
+  CreateLibraryEntryInput,
   CreateProjectInput,
   CreateSessionInput,
+  DumpZoneProposal,
+  InboxQueueEntry,
+  InboxStatusSummary,
   Item,
   ItemPolicy,
+  LibraryEntry,
   Project,
+  ProposeRequest,
+  ScratchpadJot,
   Session,
   UpdateItemInput,
   UpdateSessionInput,
@@ -137,6 +147,68 @@ export const api = {
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/sessions/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
     ),
+
+  // Phase 4 — capture surfaces.
+  proposeDumpZone: (projectId: string, input: ProposeRequest) =>
+    jsonFetch<{ proposal: DumpZoneProposal }>(
+      `/api/projects/${pid(projectId)}/dump-zone/propose`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  applyDumpZone: (projectId: string, input: ApplyRequest) =>
+    jsonFetch<{ result: ApplyResult }>(
+      `/api/projects/${pid(projectId)}/dump-zone/apply`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  getProposal: (projectId: string, proposalId: string) =>
+    jsonFetch<{ proposal: DumpZoneProposal }>(
+      `/api/projects/${pid(projectId)}/dump-zone/proposals/${encodeURIComponent(proposalId)}`,
+    ),
+  discardProposal: (projectId: string, proposalId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/dump-zone/proposals/${encodeURIComponent(proposalId)}`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE proposal failed: ${r.status}`);
+    }),
+
+  listLibrary: (projectId: string) =>
+    jsonFetch<{ entries: LibraryEntry[] }>(`/api/projects/${pid(projectId)}/library`),
+  createLibraryEntry: (projectId: string, input: Omit<CreateLibraryEntryInput, 'project_id'>) =>
+    jsonFetch<{ entry: LibraryEntry }>(`/api/projects/${pid(projectId)}/library`, {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
+
+  listScratchpadJots: (projectId: string, limit?: number) => {
+    const qs = limit ? `?limit=${limit}` : '';
+    return jsonFetch<{ jots: ScratchpadJot[] }>(
+      `/api/projects/${pid(projectId)}/scratchpad/jots${qs}`,
+    );
+  },
+  createScratchpadJot: (projectId: string, body: string) =>
+    jsonFetch<{ jot: ScratchpadJot }>(`/api/projects/${pid(projectId)}/scratchpad/jots`, {
+      method: 'POST',
+      body: JSON.stringify({ body }),
+    }),
+  deleteScratchpadJot: (projectId: string, jotId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/scratchpad/jots/${encodeURIComponent(jotId)}`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE jot failed: ${r.status}`);
+    }),
+
+  getInboxQueue: (limit?: number) => {
+    const qs = limit ? `?limit=${limit}` : '';
+    return jsonFetch<{ summary: InboxStatusSummary; entries: InboxQueueEntry[] }>(
+      `/api/inbox/queue${qs}`,
+    );
+  },
+  scanInbox: () => jsonFetch<{ ok: true }>('/api/inbox/scan', { method: 'POST' }),
+
+  scanCodeTodos: (projectId: string, patterns?: string[]) =>
+    jsonFetch<{ result: CodeTodoScanResult }>(`/api/projects/${pid(projectId)}/code-todo/scan`, {
+      method: 'POST',
+      body: JSON.stringify({ patterns: patterns ?? null }),
+    }),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {
     const params = new URLSearchParams();
