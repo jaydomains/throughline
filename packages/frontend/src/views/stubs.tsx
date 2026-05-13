@@ -164,15 +164,6 @@ export function GraphView() {
   );
 }
 
-export function DirectivesView() {
-  return (
-    <Stub
-      title="Directives"
-      body="Pin / reminder / include-in-prompt directives land in Phase 6. Phase 2 ships the route as an empty stub."
-    />
-  );
-}
-
 export function GatesView({
   bundles,
   projectBundleId,

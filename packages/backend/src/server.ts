@@ -42,12 +42,17 @@ import {
 } from './reconcile/engine.js';
 import { createReconcileService } from './reconcile/service.js';
 import { registerReconcileRoutes } from './reconcile/routes.js';
+import { createDirectivesService } from './directives/service.js';
+import { registerDirectiveRoutes } from './directives/routes.js';
+import { createReminderScheduler, type ReminderScheduler } from './directives/scheduler.js';
+import { createOsNotifier } from './notifier/index.js';
 
 export interface ServerHandle {
   app: FastifyInstance;
   db: DB;
   registry: MethodologyRegistry;
   inboxWatcher: InboxWatcher;
+  reminderScheduler: ReminderScheduler;
   url: string;
   close: () => Promise<void>;
 }
@@ -148,6 +153,25 @@ export async function startServer(
     drift,
     engine: reconcileEngine,
   });
+  const directives = createDirectivesService(db, projects, items, library);
+  const notifier = createOsNotifier({
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+    },
+  });
+  const reminderScheduler = createReminderScheduler({
+    db,
+    service: directives,
+    notifier,
+    items,
+    library,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
 
   registerHealthRoute(app);
   registerEventsRoute(app);
@@ -163,8 +187,11 @@ export async function startServer(
   registerInboxRoutes(app, inboxWorker, inboxWatcher);
   registerCodeTodoRoutes(app, projects, codeTodo);
   registerReconcileRoutes(app, projects, reconcile);
+  registerDirectiveRoutes(app, projects, directives);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
+
+  reminderScheduler.start();
 
   await app.listen({ host: config.host, port: config.port });
   // Derive the bound port from the listening socket so callers requesting port 0
@@ -179,8 +206,10 @@ export async function startServer(
     db,
     registry,
     inboxWatcher,
+    reminderScheduler,
     url,
     close: async () => {
+      reminderScheduler.stop();
       await app.close();
       await inboxWatcher.stop();
       await registry.stop();

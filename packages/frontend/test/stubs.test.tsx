@@ -3,7 +3,6 @@ import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { ModalStackProvider } from '../src/keyboard/modalStack.js';
 import {
-  DirectivesView,
   GraphView,
   HomeView,
   ModulesView,
@@ -39,16 +38,13 @@ describe('View stubs', () => {
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
   });
 
-  it('renders Graph and Directives stubs (Sessions/Tree/Library are now live views, tested separately)', () => {
-    const cases: Array<[string, React.ReactNode]> = [
-      ['Graph', <GraphView />],
-      ['Directives', <DirectivesView />],
-    ];
-    for (const [label, el] of cases) {
-      const { unmount } = render(<MemoryRouter>{el}</MemoryRouter>);
-      expect(screen.getByRole('heading', { name: label })).toBeInTheDocument();
-      unmount();
-    }
+  it('renders Graph stub (Sessions/Tree/Library/Directives are now live views, tested separately)', () => {
+    render(
+      <MemoryRouter>
+        <GraphView />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('heading', { name: 'Graph' })).toBeInTheDocument();
   });
 
   it('ProjectsView lists projects passed in', () => {
