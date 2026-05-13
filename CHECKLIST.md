@@ -100,6 +100,18 @@ When a phase completes, leave its section in place so the build-state record is 
 
 ---
 
+## Phase 3.5 — Projects view create UI (hygiene)
+
+Phase 1 shipped project create/archive/delete via REST + CLI; Phase 2 left the Projects view as a stub. This slice wires the create half into the UI. Switch is already wired via the header palette; archive/delete UI remain deferred to a later slice.
+
+- [x] "New project" CTA on the Projects view opens a modal (`packages/frontend/src/views/stubs.tsx` ProjectsView; `packages/frontend/src/components/NewProjectModal.tsx`)
+- [x] Modal collects name, repo path, methodology bundle (dropdown populated from `GET /api/methodologies`; defaults to freeform when loaded, else first loaded bundle)
+- [x] Submit POSTs `/api/projects` via `api.createProject`, refreshes `useProjects`, fire-and-forget `api.switchProject`, navigates to `/projects/:id` (App.tsx onCreated wiring)
+- [x] Cancel button, Esc, and backdrop click all close the modal (`useModalRegistration('new-project')` + click-outside guard mirroring `HelpModal.tsx`)
+- [x] Verified by `packages/frontend/test/newProjectModal.test.tsx` (8 cases) and `packages/frontend/test/stubs.test.tsx` ProjectsView prop update
+
+---
+
 ## Phase 4 — Capture surfaces
 
 - [ ] Scratchpad always-visible in header
@@ -356,7 +368,7 @@ When a phase completes, leave its section in place so the build-state record is 
 
 - [ ] §11 bullet — methodology runtime loads bundles from `methodologies/`; eleven-section parsing; runtime configures validators, sweeps, marker scanners, state-machine transitions (one or more gates per phase moment), review-checklist steps, template parsers
 - [ ] §11 bullet — SiteMesh and freeform bundles both ship and load
-- [ ] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform
+- [ ] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform (**create + switch UI landed in Phase 3.5**; archive/delete UI still outstanding)
 - [ ] §11 bullet — items live in one local datastore per project with stable identifiers; sessions are saved views
 - [ ] §11 bullet — items support infinite nesting, methodology-defined type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log
 - [ ] §11 bullet — nine view modes functional and switchable; modules and methodology-gates hide where bundle declares none

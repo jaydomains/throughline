@@ -38,7 +38,7 @@ function RootRedirect({ lastActiveProjectId }: { lastActiveProjectId: string | n
 function AppInner() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projects } = useProjects();
+  const { projects, refresh: refreshProjects } = useProjects();
   const { bundles } = useMethodologies();
   const { connected } = useSSE();
   const { healthy } = useBackendHealth();
@@ -140,7 +140,20 @@ function AppInner() {
       <main className="view" role="main">
         <Routes>
           <Route path="/" element={<RootRedirect lastActiveProjectId={lastActive} />} />
-          <Route path="/projects" element={<ProjectsView projects={projects} />} />
+          <Route
+            path="/projects"
+            element={
+              <ProjectsView
+                projects={projects}
+                bundles={bundles}
+                onCreated={async (project) => {
+                  await refreshProjects();
+                  void api.switchProject(project.id).catch(() => {});
+                  navigate(`/projects/${project.id}`);
+                }}
+              />
+            }
+          />
           <Route path="/projects/:id" element={<HomeView />} />
           <Route path="/projects/:id/sessions" element={<SessionsIndex />} />
           <Route path="/projects/:id/sessions/:sessionId" element={<SessionView />} />

@@ -1,6 +1,7 @@
 import type {
   AuditEntry,
   CreateItemInput,
+  CreateProjectInput,
   CreateSessionInput,
   Item,
   ItemPolicy,
@@ -40,6 +41,11 @@ function pid(projectId: string): string {
 export const api = {
   health: () => jsonFetch<{ ok: boolean; version: string }>('/health'),
   listProjects: () => jsonFetch<{ projects: Project[] }>('/api/projects'),
+  createProject: (input: CreateProjectInput) =>
+    jsonFetch<{ project: Project }>('/api/projects', {
+      method: 'POST',
+      body: JSON.stringify(input),
+    }),
   listMethodologies: () =>
     jsonFetch<{ methodologies: MethodologySummary[] }>('/api/methodologies'),
   switchProject: (id: string) =>
