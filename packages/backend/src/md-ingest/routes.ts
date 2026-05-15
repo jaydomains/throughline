@@ -9,6 +9,7 @@ import {
   SourceFileMissingError,
   type MdIngestService,
 } from './service.js';
+import type { MdIngestWatcher } from './watcher.js';
 import type { ProjectsService } from '../projects/service.js';
 
 interface AddFolderBody {
@@ -32,6 +33,7 @@ export function registerMdIngestRoutes(
   app: FastifyInstance,
   projects: ProjectsService,
   service: MdIngestService,
+  watcher: MdIngestWatcher,
 ): void {
   function requireProject(id: string): boolean {
     return projects.get(id) !== null;
@@ -58,7 +60,9 @@ export function registerMdIngestRoutes(
         return reply.code(400).send({ error: 'path_required' });
       }
       try {
-        return { folder: service.addFolder(req.params.id, path) };
+        const folder = service.addFolder(req.params.id, path);
+        watcher.refresh();
+        return { folder };
       } catch (err) {
         if (err instanceof FolderOutsideRepoError) {
           return reply.code(400).send({ error: 'folder_outside_repo' });
@@ -82,6 +86,7 @@ export function registerMdIngestRoutes(
       }
       try {
         service.removeFolder(req.params.id, req.params.folderId);
+        watcher.refresh();
         return { ok: true as const };
       } catch (err) {
         if (err instanceof FolderNotFoundError) {

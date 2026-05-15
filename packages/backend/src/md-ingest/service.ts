@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { nanoid } from 'nanoid';
 import type {
@@ -121,6 +121,28 @@ function isInside(root: string, child: string): boolean {
   const r = resolve(root);
   const c = resolve(child);
   return c === r || c.startsWith(r + sep);
+}
+
+// C-D10 threat model relies on a no-symlink path. Scan's directory walk already skips
+// symlinks; ingest takes user-supplied req.paths, so it must re-assert the guarantee at
+// read time (TOCTOU: a symlink could be swapped in between scan and ingest). Returns true
+// if any path component strictly under `baseAbs` (including the target itself) is a
+// symlink — lstat, not stat, so the link itself is observed rather than its target.
+function hasSymlinkComponent(baseAbs: string, targetAbs: string): boolean {
+  const rel = relative(baseAbs, targetAbs);
+  if (rel.length === 0) return false;
+  const parts = rel.split(sep).filter((p) => p.length > 0 && p !== '.');
+  let cur = baseAbs;
+  for (const part of parts) {
+    cur = join(cur, part);
+    try {
+      if (lstatSync(cur).isSymbolicLink()) return true;
+    } catch {
+      // Unreadable component — treat as unsafe so the caller skips it.
+      return true;
+    }
+  }
+  return false;
 }
 
 // Normalises a user-supplied rel_path and confines it to repo_path. Returns the absolute
@@ -328,8 +350,14 @@ export function createMdIngestService(opts: CreateOptions): MdIngestService {
           skipped.push(relPath);
           continue;
         }
-        // Selected paths must live under the scanned folder, not just somewhere in repo.
-        if (!isInside(folderAbs, abs) || !existsSync(abs)) {
+        // Selected paths must live under the scanned folder, not just somewhere in repo,
+        // and must be reachable without traversing a symlink (C-D10 — guards the
+        // scan→ingest TOCTOU window).
+        if (
+          !isInside(folderAbs, abs) ||
+          !existsSync(abs) ||
+          hasSymlinkComponent(folderAbs, abs)
+        ) {
           skipped.push(relPath);
           continue;
         }

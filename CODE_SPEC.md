@@ -305,6 +305,8 @@ SPEC §7.9 / T-D11 specify folder-opt-in ("the user points the backend at a dire
 
 Implementation decision: every opt-in folder path is confined to the project's `repo_path` subtree. Paths are stored *relative* to `repo_path` in `md_ingest_folders`. Confinement is enforced two ways: (1) lexical containment — absolute paths and `..`-escapes are rejected before resolution, and the resolved path must equal or sit strictly under `resolve(repo_path)`; (2) the directory walk skips symlinks (the Phase 4 code-todo scanner's `withFileTypes` no-symlink idiom), so a symlink inside an opted-in folder cannot redirect ingestion outside the subtree. `realpath` is deliberately not used — `repo_path` is itself frequently a symlinked temp dir under test, and lexical containment + no-symlink-walk is sufficient. This mirrors the existing code-todo scanner, which already scopes to `repo_path`.
 
+Because `ingest` accepts user-supplied `req.paths` (not just paths the scan produced), it re-asserts the no-symlink guarantee at read time rather than trusting the scan: every component from the opted-in folder root down to the target file is `lstat`-checked, and a path traversing any symlink is skipped (not read). This closes the scan→ingest TOCTOU window where a symlink could be swapped in after a clean scan.
+
 ---
 
 ## C-D11 — `md_ingest_folders` table; tracked re-ingest re-summarises (cost flows through the meter)

@@ -88,6 +88,47 @@ describe('md-ingest watcher (Phase 6c — tracked re-ingest)', () => {
     }
   });
 
+  it('refresh() picks up folders added after start() without a restart', async () => {
+    const { backend, project, md, repoPath } = await setup();
+    const watcher = createMdIngestWatcher({
+      projects: createProjectsService(backend.db, backend.registry),
+      service: md,
+      watch: true,
+    });
+    try {
+      // No folders yet — start() must still create the chokidar instance so a
+      // later refresh() can attach paths (the finding-1 regression: paths were
+      // computed once and an empty set short-circuited instance creation).
+      watcher.start();
+      writeFileSync(join(repoPath, 'docs', 'late.md'), 'late v1');
+      md.addFolder(project.id, 'docs');
+      // Adding a folder after start() must be observable without a restart.
+      expect(() => watcher.refresh()).not.toThrow();
+      // refresh() is idempotent and safe to call repeatedly.
+      expect(() => watcher.refresh()).not.toThrow();
+    } finally {
+      await watcher.stop();
+      // refresh() after stop() is a safe no-op (watcher instance gone).
+      expect(() => watcher.refresh()).not.toThrow();
+      await backend.cleanup();
+    }
+  });
+
+  it('refresh() before start() is a safe no-op', async () => {
+    const { backend, md } = await setup();
+    const watcher = createMdIngestWatcher({
+      projects: createProjectsService(backend.db, backend.registry),
+      service: md,
+      watch: true,
+    });
+    try {
+      expect(() => watcher.refresh()).not.toThrow();
+    } finally {
+      await watcher.stop();
+      await backend.cleanup();
+    }
+  });
+
   it('syncOnce tolerates a tracked entry whose source file vanished', async () => {
     const { backend, library, project, md, repoPath } = await setup();
     const watcher = createMdIngestWatcher({

@@ -23,6 +23,10 @@ export interface MdIngestWatcherOptions {
 export interface MdIngestWatcher {
   syncOnce(): Promise<void>;
   start(): void;
+  // Re-derive the watched path set from the current opt-in folders. Called after the
+  // REST surface adds/removes a folder so newly-registered folders receive file-change
+  // events without a server restart; removed folders stop being watched.
+  refresh(): void;
   stop(): Promise<void>;
 }
 
@@ -30,6 +34,7 @@ export function createMdIngestWatcher(opts: MdIngestWatcherOptions): MdIngestWat
   const { projects, service, watch = true, logger } = opts;
   let watcher: FSWatcher | null = null;
   let syncing: Promise<void> = Promise.resolve();
+  const watched = new Set<string>();
 
   async function resyncAll(): Promise<void> {
     for (const project of projects.list()) {
@@ -89,24 +94,48 @@ export function createMdIngestWatcher(opts: MdIngestWatcherOptions): MdIngestWat
     return paths;
   }
 
+  // Diff the desired path set against what chokidar is currently watching and apply the
+  // delta. Idempotent — safe to call on every folder add/remove.
+  function applyWatchDelta(): void {
+    if (!watcher) return;
+    const desired = new Set(watchPaths());
+    for (const p of desired) {
+      if (!watched.has(p)) {
+        watcher.add(p);
+        watched.add(p);
+      }
+    }
+    for (const p of [...watched]) {
+      if (!desired.has(p)) {
+        watcher.unwatch(p);
+        watched.delete(p);
+      }
+    }
+  }
+
   return {
     async syncOnce() {
       await scheduleSync();
     },
     start() {
       if (!watch || watcher) return;
-      const paths = watchPaths();
-      if (paths.length === 0) return;
-      watcher = chokidar.watch(paths, { ignoreInitial: true });
+      // Always create the instance, even with zero folders, so folders added later via
+      // refresh() start receiving events without a restart.
+      watcher = chokidar.watch([], { ignoreInitial: true });
       watcher.on('add', () => void scheduleSync());
       watcher.on('change', () => void scheduleSync());
       watcher.on('unlink', () => void scheduleSync());
+      applyWatchDelta();
+    },
+    refresh() {
+      applyWatchDelta();
     },
     async stop() {
       if (watcher) {
         await watcher.close();
         watcher = null;
       }
+      watched.clear();
       await syncing;
     },
   };

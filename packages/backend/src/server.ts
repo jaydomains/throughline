@@ -221,7 +221,7 @@ export async function startServer(
   registerCodeTodoRoutes(app, projects, codeTodo);
   registerReconcileRoutes(app, projects, reconcile);
   registerDirectiveRoutes(app, projects, directives);
-  registerMdIngestRoutes(app, projects, mdIngest);
+  registerMdIngestRoutes(app, projects, mdIngest, mdIngestWatcher);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 

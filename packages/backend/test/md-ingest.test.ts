@@ -212,6 +212,31 @@ describe('md-ingest service (Phase 6c — repo .md ingestion)', () => {
     }
   });
 
+  it('ingest skips a symlinked file even if it passed scan (C-D10 TOCTOU)', async () => {
+    const { backend, md, project, repoPath } = await setup();
+    try {
+      const { symlinkSync, writeFileSync, mkdirSync } = await import('node:fs');
+      // A real doc plus a symlink pointing at a file outside the opted-in folder.
+      writeFileSync(join(repoPath, 'docs', 'real.md'), '# Real\n\nlegit content');
+      mkdirSync(join(repoPath, 'secret'), { recursive: true });
+      writeFileSync(join(repoPath, 'secret', 'leak.md'), '# Leak\n\nsensitive');
+      symlinkSync(
+        join(repoPath, 'secret', 'leak.md'),
+        join(repoPath, 'docs', 'link.md'),
+      );
+      const folder = md.addFolder(project.id, 'docs');
+
+      const result = await md.ingest(project.id, {
+        folder_id: folder.id,
+        paths: [join('docs', 'real.md'), join('docs', 'link.md')],
+      });
+      expect(result.ingested.map((i) => i.rel_path)).toEqual([join('docs', 'real.md')]);
+      expect(result.skipped).toContain(join('docs', 'link.md'));
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('guards: unknown folder, unknown entry, non-imported-doc entry', async () => {
     const { backend, md, project, library } = await setup();
     try {
