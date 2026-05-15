@@ -317,6 +317,45 @@ Re-ingest semantics: snapshot by default; the per-entry `source_tracked` toggle 
 
 ---
 
+## C-D12 — Bundles declare item types in the State machine section; `ItemPolicy` carries per-type lifecycles
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D42, T-D47, T-D48; SPEC §7.4, §7.5
+
+### Decision
+SPEC §7.4/§7.5 require methodology-defined item types, each with its own status lifecycle, rendered as separate boards (SiteMesh: `todo` with `todo/in-progress/blocked/done`, `decision` with `open/locked/superseded`). The eleven-section bundle structure (T-D42) has no dedicated "item types" section, so item types are declared inside **§5 State machine** via `### Item type: <id>` sub-blocks — mirroring the existing `### Gates: <moment>` sub-heading convention — each carrying `board:`, `statuses:`, and `transitions:` key-value lines. The parser populates `StateMachine.item_types: ItemTypeSpec[]`.
+
+`ItemPolicy` gains `statuses_by_type: Record<string,string[]>` and each `Board` gains a board-scoped `statuses: string[]`. The flat `ItemPolicy.statuses` is retained as the de-duplicated union of every type's statuses for generic, non-item-type-aware consumers (reconcile, dump-zone, tree-by-status). Item create/update validate the status against the **item type's** lifecycle, not the union. Bundles that declare no item types (freeform) yield an empty `item_types` and the runtime infers a single board from the state machine's `phases` — the existing freeform behaviour, unchanged.
+
+### Rationale
+The State machine section already owns lifecycle/transition semantics, so per-type lifecycles belong there rather than in a new section that would break the fixed eleven-section contract (T-D42). Reusing the `### <Label>: <id>` sub-block convention keeps the parser uniform. Retaining the flat union keeps every existing generic consumer working without an item-type-aware rewrite (no per-bundle branch — T-D48). Per-type validation is what makes "todos and decisions are different shapes" real rather than cosmetic.
+
+### Implications
+- `state-machine.ts` parses top-level `phases`/`transitions` from the region before the first `###` so item-type sub-blocks don't bleed into them.
+- `bundleItemPolicy` is the single place that maps a `LoadedBundle` to boards/types/statuses; no consumer hardcodes item-type vocabulary.
+- The four methodology-context join tables (`item_primary_unit_refs`, `item_phase_refs`, `item_anchor_citations`, `item_marker_refs`) round-trip on the `Item` shape and through create/update with audit-logged per-dimension diffs (T-D36).
+
+---
+
+## C-D13 — Modules view endpoint: primary units derived from item refs; tier classification is bundle-rule-driven
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D39, T-D48; SPEC §7.11
+
+### Decision
+`GET /api/projects/:id/modules` returns `{ primary_unit_label, modules: ModuleSummary[] }`. Primary units are the distinct `item_primary_unit_refs` values across the project's items; per unit the endpoint reports item count, distinct phase refs (phase indicators), anchor-citation count, marker-ref count, and a tier label. `primary_unit_label` is the bundle's primary-unit `name` (SiteMesh: "module"), or `null` when the bundle declares no primary unit (freeform) — the view stays hidden via the existing `has_primary_unit` gate, not a freeform code branch.
+
+Tier classification is bundle-driven: the primary unit's `tier_rules` string declares ordered count bands of the form `<tier> <=<n> items; <tier> ><n> items`. The runtime evaluates bands against the unit's item count and the first satisfied band wins; an empty/unparseable rule yields `untiered`. No tier-inference engine — the bundle author owns the thresholds.
+
+### Rationale
+Deriving primary units from item refs (rather than a separate registry) keeps "a module is wherever items say they belong" true to T-D39 and needs no extra authoring surface. A declarative count-band rule in the bundle keeps tier classification methodology-agnostic (T-D48) and v1-simple while still being the bundle author's decision, not the runtime's.
+
+### Implications
+- `ItemsService.modules(projectId)` is the single derivation point; the route is a thin pass-through.
+- The frontend Modules view renders the table generically (label, tier, counts, phases) with no SiteMesh terms — `primary_unit_label` and tier strings come from the bundle.
+
+---
+
 ## 1. Process model
 
 ```

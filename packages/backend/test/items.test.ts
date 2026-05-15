@@ -30,7 +30,10 @@ describe('items service', () => {
       const policy = items.policy(project.id);
       expect(policy.types).toEqual(['task']);
       expect(policy.statuses).toEqual(['open', 'done']);
-      expect(policy.boards).toEqual([{ id: 'tasks', label: 'Tasks', type: 'task' }]);
+      expect(policy.statuses_by_type).toEqual({ task: ['open', 'done'] });
+      expect(policy.boards).toEqual([
+        { id: 'tasks', label: 'Tasks', type: 'task', statuses: ['open', 'done'] },
+      ]);
     } finally {
       await backend.cleanup();
     }

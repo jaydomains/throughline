@@ -17,6 +17,7 @@ import type {
   InboxStatusSummary,
   Item,
   ItemPolicy,
+  ModulesResult,
   LibraryEntry,
   LibraryEntryType,
   LibrarySearchRequest,
@@ -83,6 +84,9 @@ export const api = {
 
   getPolicy: (projectId: string) =>
     jsonFetch<{ policy: ItemPolicy }>(`/api/projects/${pid(projectId)}/policy`),
+
+  getModules: (projectId: string) =>
+    jsonFetch<ModulesResult>(`/api/projects/${pid(projectId)}/modules`),
 
   listSessions: (projectId: string) =>
     jsonFetch<{ sessions: Session[] }>(`/api/projects/${pid(projectId)}/sessions`),

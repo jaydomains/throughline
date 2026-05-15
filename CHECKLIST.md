@@ -176,15 +176,15 @@ Sliced into three sub-PRs at the session author's direction: **6a** library cont
 
 ## Phase 7 — SiteMesh bundle delivery & bundle-aware capture parameterisation
 
-- [ ] `methodologies/sitemesh/bundle.md` authored per the eleven-section structure
-- [ ] SiteMesh bundle parses cleanly through the bundle loader
-- [ ] SiteMesh-bound project: item types `todo` and `decision` declared by bundle and surfaced in UI
-- [ ] SiteMesh-bound project: status lifecycles per bundle (todos 4 states; decisions 3 states)
-- [ ] SiteMesh-bound project: todos and decisions render on separate boards
-- [ ] Methodology-context fields populate on items (primary unit / phase / anchor citations / marker refs)
-- [ ] Modules view renders for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts
-- [ ] No code path uses SiteMesh-specific terminology unmediated by the bundle (verified by review)
-- [ ] Phase 3 UI works for both freeform-bound and SiteMesh-bound projects without per-bundle code branches
+- [x] `methodologies/sitemesh/bundle.md` authored per the eleven-section structure
+- [x] SiteMesh bundle parses cleanly through the bundle loader
+- [x] SiteMesh-bound project: item types `todo` and `decision` declared by bundle and surfaced in UI
+- [x] SiteMesh-bound project: status lifecycles per bundle (todos 4 states; decisions 3 states)
+- [x] SiteMesh-bound project: todos and decisions render on separate boards
+- [x] Methodology-context fields populate on items (primary unit / phase / anchor citations / marker refs)
+- [x] Modules view renders for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts
+- [x] No code path uses SiteMesh-specific terminology unmediated by the bundle (verified by review)
+- [x] Phase 3 UI works for both freeform-bound and SiteMesh-bound projects without per-bundle code branches
 
 ---
 

@@ -4,6 +4,8 @@ import type {
   CreateItemInput,
   Item,
   ItemPolicy,
+  ModulesResult,
+  ModuleSummary,
   UpdateItemInput,
 } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
@@ -58,6 +60,7 @@ export interface ListItemsFilter {
 
 export interface ItemsService {
   policy(projectId: string): ItemPolicy;
+  modules(projectId: string): ModulesResult;
   list(filter: ListItemsFilter): Item[];
   get(id: string): Item | null;
   create(input: CreateItemInput): Item;
@@ -75,7 +78,19 @@ interface ItemChildren {
   tagsById: Map<string, string[]>;
   blockersById: Map<string, string[]>;
   sessionsById: Map<string, string[]>;
+  primaryUnitsById: Map<string, string[]>;
+  phasesById: Map<string, string[]>;
+  anchorsById: Map<string, string[]>;
+  markersById: Map<string, string[]>;
 }
+
+// (table, column) for the four methodology-context join tables (SPEC §7.4, T-D39, C-D12).
+const CONTEXT_TABLES = [
+  { table: 'item_primary_unit_refs', col: 'primary_unit_ref', key: 'primaryUnitsById' },
+  { table: 'item_phase_refs', col: 'phase_id', key: 'phasesById' },
+  { table: 'item_anchor_citations', col: 'anchor_id', key: 'anchorsById' },
+  { table: 'item_marker_refs', col: 'marker_id', key: 'markersById' },
+] as const;
 
 // Batch-fetch all child rows for a set of item ids in three queries total, then index
 // them by item_id. Convention: list-shape methods batch their child queries via
@@ -83,12 +98,37 @@ interface ItemChildren {
 // sessions list / library list / etc. in future phases.
 function loadItemChildren(db: DB, ids: string[]): ItemChildren {
   if (ids.length === 0) {
-    return { tagsById: new Map(), blockersById: new Map(), sessionsById: new Map() };
+    return {
+      tagsById: new Map(),
+      blockersById: new Map(),
+      sessionsById: new Map(),
+      primaryUnitsById: new Map(),
+      phasesById: new Map(),
+      anchorsById: new Map(),
+      markersById: new Map(),
+    };
   }
   const placeholders = ids.map(() => '?').join(',');
   const tagsById = new Map<string, string[]>();
   const blockersById = new Map<string, string[]>();
   const sessionsById = new Map<string, string[]>();
+  const contextMaps: Record<string, Map<string, string[]>> = {
+    primaryUnitsById: new Map(),
+    phasesById: new Map(),
+    anchorsById: new Map(),
+    markersById: new Map(),
+  };
+  for (const { table, col, key } of CONTEXT_TABLES) {
+    const rows = db
+      .prepare(`SELECT item_id, ${col} AS val FROM ${table} WHERE item_id IN (${placeholders}) ORDER BY ${col}`)
+      .all(...ids) as Array<{ item_id: string; val: string }>;
+    const map = contextMaps[key]!;
+    for (const r of rows) {
+      const arr = map.get(r.item_id) ?? [];
+      arr.push(r.val);
+      map.set(r.item_id, arr);
+    }
+  }
   const tagRows = db
     .prepare(`SELECT item_id, tag FROM item_tags WHERE item_id IN (${placeholders}) ORDER BY tag`)
     .all(...ids) as Array<{ item_id: string; tag: string }>;
@@ -113,7 +153,15 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
     arr.push(r.session_id);
     sessionsById.set(r.item_id, arr);
   }
-  return { tagsById, blockersById, sessionsById };
+  return {
+    tagsById,
+    blockersById,
+    sessionsById,
+    primaryUnitsById: contextMaps['primaryUnitsById']!,
+    phasesById: contextMaps['phasesById']!,
+    anchorsById: contextMaps['anchorsById']!,
+    markersById: contextMaps['markersById']!,
+  };
 }
 
 function rowToItemWithChildren(row: ItemRow, children: ItemChildren): Item {
@@ -130,6 +178,12 @@ function rowToItemWithChildren(row: ItemRow, children: ItemChildren): Item {
     tags: children.tagsById.get(row.id) ?? [],
     blockers: children.blockersById.get(row.id) ?? [],
     session_ids: children.sessionsById.get(row.id) ?? [],
+    methodology_context: {
+      primary_unit_refs: children.primaryUnitsById.get(row.id) ?? [],
+      phase_refs: children.phasesById.get(row.id) ?? [],
+      anchor_citations: children.anchorsById.get(row.id) ?? [],
+      marker_refs: children.markersById.get(row.id) ?? [],
+    },
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -153,6 +207,26 @@ function policyFor(registry: MethodologyRegistry, bundleId: string): ItemPolicy 
   return bundleItemPolicy(r.bundle);
 }
 
+// C-D13 — tier classification is bundle-driven. The primary unit's `tier_rules` string
+// declares ordered bands of the form `<tier> <=<n> items; <tier> ><n> items`. The first
+// satisfied band (by member-item count) wins; an unparseable / empty rule yields 'untiered'.
+function classifyTier(tierRules: string, itemCount: number): string {
+  for (const part of tierRules.split(';')) {
+    const m = /^\s*(.+?)\s*(<=|>=|<|>|=)\s*(\d+)\s*items?\s*$/i.exec(part.trim());
+    if (!m) continue;
+    const [, name, op, nRaw] = m;
+    const n = Number(nRaw);
+    const ok =
+      op === '<=' ? itemCount <= n
+      : op === '>=' ? itemCount >= n
+      : op === '<' ? itemCount < n
+      : op === '>' ? itemCount > n
+      : itemCount === n;
+    if (ok) return name!.trim();
+  }
+  return 'untiered';
+}
+
 export function createItemsService(
   db: DB,
   projects: ProjectsService,
@@ -167,11 +241,96 @@ export function createItemsService(
     return row ?? null;
   }
 
+  // Methodology-context join tables (C-D12). Each provided field fully replaces that
+  // dimension's rows; an undefined field is left untouched (PATCH semantics).
+  function writeContext(
+    itemId: string,
+    ctx:
+      | Partial<{
+          primary_unit_refs: string[];
+          phase_refs: string[];
+          anchor_citations: string[];
+          marker_refs: string[];
+        }>
+      | undefined,
+  ): void {
+    if (!ctx) return;
+    const dims = [
+      { table: 'item_primary_unit_refs', col: 'primary_unit_ref', values: ctx.primary_unit_refs },
+      { table: 'item_phase_refs', col: 'phase_id', values: ctx.phase_refs },
+      { table: 'item_anchor_citations', col: 'anchor_id', values: ctx.anchor_citations },
+      { table: 'item_marker_refs', col: 'marker_id', values: ctx.marker_refs },
+    ] as const;
+    for (const { table, col, values } of dims) {
+      if (values === undefined) continue;
+      db.prepare(`DELETE FROM ${table} WHERE item_id = ?`).run(itemId);
+      for (const v of values) {
+        if (v.trim().length === 0) continue;
+        db.prepare(`INSERT OR IGNORE INTO ${table} (item_id, ${col}) VALUES (?, ?)`).run(itemId, v);
+      }
+    }
+  }
+
   return {
     policy(projectId) {
       const project = projects.get(projectId);
       if (!project) throw new ProjectNotFoundError(projectId);
       return policyFor(registry, project.bundle_id);
+    },
+
+    modules(projectId) {
+      const project = projects.get(projectId);
+      if (!project) throw new ProjectNotFoundError(projectId);
+      const loaded = bundleFor(registry, project.bundle_id);
+      if (loaded.status !== 'loaded') throw new Error(`bundle "${project.bundle_id}" failed to load`);
+      const primaryUnit = loaded.bundle.project_layout.primary_unit;
+      if (!primaryUnit) {
+        return { primary_unit_label: null, modules: [] };
+      }
+      const counts = db
+        .prepare(
+          `SELECT r.primary_unit_ref AS ref, COUNT(DISTINCT r.item_id) AS item_count
+             FROM item_primary_unit_refs r
+             JOIN items i ON i.id = r.item_id
+            WHERE i.project_id = ?
+            GROUP BY r.primary_unit_ref
+            ORDER BY r.primary_unit_ref`,
+        )
+        .all(projectId) as Array<{ ref: string; item_count: number }>;
+      // One grouped query per context dimension (not per primary unit) — same WHERE-grouped
+      // batching convention as Phase 3's loadItemChildren. Total: 1 counts + 3 dimension
+      // queries, independent of the number of primary units.
+      const distinctByRef = (table: string, col: string): Map<string, string[]> => {
+        const rows = db
+          .prepare(
+            `SELECT DISTINCT r.primary_unit_ref AS ref, t.${col} AS val
+               FROM ${table} t
+               JOIN items i ON i.id = t.item_id
+               JOIN item_primary_unit_refs r ON r.item_id = i.id
+              WHERE i.project_id = ?
+              ORDER BY r.primary_unit_ref, t.${col}`,
+          )
+          .all(projectId) as Array<{ ref: string; val: string }>;
+        const map = new Map<string, string[]>();
+        for (const row of rows) {
+          const arr = map.get(row.ref) ?? [];
+          arr.push(row.val);
+          map.set(row.ref, arr);
+        }
+        return map;
+      };
+      const phasesByRef = distinctByRef('item_phase_refs', 'phase_id');
+      const anchorsByRef = distinctByRef('item_anchor_citations', 'anchor_id');
+      const markersByRef = distinctByRef('item_marker_refs', 'marker_id');
+      const modules: ModuleSummary[] = counts.map((c) => ({
+        ref: c.ref,
+        item_count: c.item_count,
+        phases: phasesByRef.get(c.ref) ?? [],
+        anchor_count: (anchorsByRef.get(c.ref) ?? []).length,
+        marker_count: (markersByRef.get(c.ref) ?? []).length,
+        tier: classifyTier(primaryUnit.tier_rules, c.item_count),
+      }));
+      return { primary_unit_label: primaryUnit.name, modules };
     },
 
     list({ project_id, session_id, parent_id }) {
@@ -207,9 +366,13 @@ export function createItemsService(
       if (type === undefined || !policy.types.includes(type)) {
         throw new ItemPolicyError(`item type "${input.type}" not allowed by bundle ${policy.bundle_id}`, 'type');
       }
-      const status = input.status ?? policy.statuses[0];
-      if (status === undefined || !policy.statuses.includes(status)) {
-        throw new ItemPolicyError(`item status "${input.status}" not allowed by bundle ${policy.bundle_id}`, 'status');
+      const typeStatuses = policy.statuses_by_type[type] ?? policy.statuses;
+      const status = input.status ?? typeStatuses[0];
+      if (status === undefined || !typeStatuses.includes(status)) {
+        throw new ItemPolicyError(
+          `item status "${input.status}" not allowed for type "${type}" by bundle ${policy.bundle_id}`,
+          'status',
+        );
       }
       if (input.parent_id !== undefined && input.parent_id !== null) {
         const parent = getRow(input.parent_id);
@@ -242,6 +405,7 @@ export function createItemsService(
         for (const sid of input.session_ids ?? []) {
           db.prepare('INSERT OR IGNORE INTO item_session_memberships (item_id, session_id) VALUES (?, ?)').run(id, sid);
         }
+        writeContext(id, input.methodology_context);
       });
       tx();
       appendAudit(db, {
@@ -278,8 +442,12 @@ export function createItemsService(
       if (!policy.types.includes(next.type)) {
         throw new ItemPolicyError(`item type "${next.type}" not allowed by bundle ${policy.bundle_id}`, 'type');
       }
-      if (!policy.statuses.includes(next.status)) {
-        throw new ItemPolicyError(`item status "${next.status}" not allowed by bundle ${policy.bundle_id}`, 'status');
+      const nextTypeStatuses = policy.statuses_by_type[next.type] ?? policy.statuses;
+      if (!nextTypeStatuses.includes(next.status)) {
+        throw new ItemPolicyError(
+          `item status "${next.status}" not allowed for type "${next.type}" by bundle ${policy.bundle_id}`,
+          'status',
+        );
       }
       if (next.parent_id !== null && next.parent_id !== before.parent_id) {
         const parent = getRow(next.parent_id);
@@ -312,6 +480,32 @@ export function createItemsService(
         next.updated_at,
         id,
       );
+
+      if (input.methodology_context !== undefined) {
+        const beforeCtx = rowToItem(db, before).methodology_context;
+        writeContext(id, input.methodology_context);
+        const afterCtx = rowToItem(db, getRow(id)!).methodology_context;
+        for (const dim of [
+          'primary_unit_refs',
+          'phase_refs',
+          'anchor_citations',
+          'marker_refs',
+        ] as const) {
+          const oldV = beforeCtx[dim].join(',');
+          const newV = afterCtx[dim].join(',');
+          if (oldV !== newV) {
+            appendAudit(db, {
+              projectId: before.project_id,
+              entityType: 'item',
+              entityId: id,
+              actor: 'user',
+              field: dim,
+              oldValue: oldV,
+              newValue: newV,
+            });
+          }
+        }
+      }
 
       for (const [field, oldV, newV] of [
         ['type', before.type, next.type],

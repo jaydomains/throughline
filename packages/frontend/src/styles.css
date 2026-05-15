@@ -801,3 +801,11 @@ button.directive-badge { cursor: pointer; }
 .library-editor-source { margin-top: 12px; }
 .library-editor-source h3 { font-size: 13px; margin: 0 0 4px; }
 .library-editor-source label { display: flex; align-items: center; gap: 6px; margin: 4px 0; }
+
+/* Phase 7 — Modules view (primary-unit-grouped table) + item methodology-context editor. */
+.view-modules { padding: 16px; }
+.view-modules h1 { margin: 0 0 4px; font-size: 20px; }
+.modules-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+.modules-table th,
+.modules-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
+.modules-table th { color: var(--fg-dim); font-weight: 600; font-size: 12px; text-transform: uppercase; }
