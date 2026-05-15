@@ -297,25 +297,37 @@ export function createItemsService(
             ORDER BY r.primary_unit_ref`,
         )
         .all(projectId) as Array<{ ref: string; item_count: number }>;
-      const distinct = (table: string, col: string, ref: string): string[] =>
-        (
-          db
-            .prepare(
-              `SELECT DISTINCT t.${col} AS val
-                 FROM ${table} t
-                 JOIN items i ON i.id = t.item_id
-                 JOIN item_primary_unit_refs r ON r.item_id = i.id
-                WHERE i.project_id = ? AND r.primary_unit_ref = ?
-                ORDER BY t.${col}`,
-            )
-            .all(projectId, ref) as Array<{ val: string }>
-        ).map((x) => x.val);
+      // One grouped query per context dimension (not per primary unit) — same WHERE-grouped
+      // batching convention as Phase 3's loadItemChildren. Total: 1 counts + 3 dimension
+      // queries, independent of the number of primary units.
+      const distinctByRef = (table: string, col: string): Map<string, string[]> => {
+        const rows = db
+          .prepare(
+            `SELECT DISTINCT r.primary_unit_ref AS ref, t.${col} AS val
+               FROM ${table} t
+               JOIN items i ON i.id = t.item_id
+               JOIN item_primary_unit_refs r ON r.item_id = i.id
+              WHERE i.project_id = ?
+              ORDER BY r.primary_unit_ref, t.${col}`,
+          )
+          .all(projectId) as Array<{ ref: string; val: string }>;
+        const map = new Map<string, string[]>();
+        for (const row of rows) {
+          const arr = map.get(row.ref) ?? [];
+          arr.push(row.val);
+          map.set(row.ref, arr);
+        }
+        return map;
+      };
+      const phasesByRef = distinctByRef('item_phase_refs', 'phase_id');
+      const anchorsByRef = distinctByRef('item_anchor_citations', 'anchor_id');
+      const markersByRef = distinctByRef('item_marker_refs', 'marker_id');
       const modules: ModuleSummary[] = counts.map((c) => ({
         ref: c.ref,
         item_count: c.item_count,
-        phases: distinct('item_phase_refs', 'phase_id', c.ref),
-        anchor_count: distinct('item_anchor_citations', 'anchor_id', c.ref).length,
-        marker_count: distinct('item_marker_refs', 'marker_id', c.ref).length,
+        phases: phasesByRef.get(c.ref) ?? [],
+        anchor_count: (anchorsByRef.get(c.ref) ?? []).length,
+        marker_count: (markersByRef.get(c.ref) ?? []).length,
         tier: classifyTier(primaryUnit.tier_rules, c.item_count),
       }));
       return { primary_unit_label: primaryUnit.name, modules };

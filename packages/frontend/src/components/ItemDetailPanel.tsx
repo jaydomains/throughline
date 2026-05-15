@@ -515,6 +515,11 @@ function MethodologyContextField({
 }) {
   const joined = value.join(', ');
   const [draft, setDraft] = useState<string | null>(null);
+  // Drop any in-progress draft when the external value changes (post-refresh, or the panel
+  // reused for a different item) so the field never shows another item's stale draft.
+  useEffect(() => {
+    setDraft(null);
+  }, [joined]);
   return (
     <label className="block">
       <span className="muted">{label}</span>
