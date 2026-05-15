@@ -1,5 +1,49 @@
-import type { BundleStructuralError, GateSpec, PhaseMoment, StateMachine } from '@throughline/shared';
+import type {
+  BundleStructuralError,
+  GateSpec,
+  ItemTypeSpec,
+  PhaseMoment,
+  StateMachine,
+} from '@throughline/shared';
 import { isNoneBody, parseBulletList, parseKeyValueLines } from './sections.js';
+
+function parseTransitionList(raw: string | undefined): Array<{ from: string; to: string }> {
+  return (raw?.split(',') ?? [])
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((expr) => {
+      const [from, to] = expr.split('->').map((s) => s.trim());
+      return from && to ? { from, to } : null;
+    })
+    .filter((t): t is { from: string; to: string } => t !== null);
+}
+
+// C-D12 — sub-heading shape `### Item type: <id>` followed by `board:` / `statuses:` /
+// `transitions:` key-value lines. Mirrors the `### Gates: <moment>` convention. Bundles
+// that declare none (freeform) yield [] and the runtime infers a single board.
+function extractItemTypes(body: string): ItemTypeSpec[] {
+  const headingPattern = /^###\s+Item type:\s+(.+?)\s*$/gim;
+  const headings: Array<{ id: string; index: number }> = [];
+  let match: RegExpExecArray | null;
+  while ((match = headingPattern.exec(body)) !== null) {
+    const id = match[1]?.trim();
+    if (id) headings.push({ id, index: match.index });
+  }
+  const out: ItemTypeSpec[] = [];
+  for (let i = 0; i < headings.length; i++) {
+    const start = headings[i]!.index;
+    const end = headings[i + 1]?.index ?? body.length;
+    const slice = body.slice(start, end);
+    const kv = parseKeyValueLines(slice.slice(slice.indexOf('\n') + 1));
+    out.push({
+      id: headings[i]!.id,
+      board_label: kv['board']?.trim() || headings[i]!.id,
+      statuses: kv['statuses']?.split(',').map((s) => s.trim()).filter(Boolean) ?? [],
+      transitions: parseTransitionList(kv['transitions']),
+    });
+  }
+  return out;
+}
 
 export interface StateMachineParseResult {
   value?: StateMachine;
@@ -54,26 +98,25 @@ export function parseStateMachine(_bundleId: string, body: string): StateMachine
         phases: [],
         transitions: [],
         gates_by_moment: {},
+        item_types: [],
       },
       errors: [],
     };
   }
-  const kv = parseKeyValueLines(body);
-  const phases = kv['phases']?.split(',').map((s) => s.trim()).filter(Boolean) ?? parseBulletList(body);
-  const transitions = (kv['transitions']?.split(',') ?? [])
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((expr) => {
-      const [from, to] = expr.split('->').map((s) => s.trim());
-      return from && to ? { from, to } : null;
-    })
-    .filter((t): t is { from: string; to: string } => t !== null);
+  // Top-level phases/transitions are read from the region before the first `###` sub-heading
+  // so item-type sub-blocks (which also carry `transitions:`) don't bleed into them.
+  const firstSub = body.search(/^###\s+/m);
+  const headerBody = firstSub >= 0 ? body.slice(0, firstSub) : body;
+  const kv = parseKeyValueLines(headerBody);
+  const phases =
+    kv['phases']?.split(',').map((s) => s.trim()).filter(Boolean) ?? parseBulletList(headerBody);
   return {
     value: {
       status: 'declared',
       phases,
-      transitions,
+      transitions: parseTransitionList(kv['transitions']),
       gates_by_moment: extractGatesByMoment(body),
+      item_types: extractItemTypes(body),
     },
     errors: [],
   };

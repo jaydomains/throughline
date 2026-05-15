@@ -98,7 +98,8 @@ const FREEFORM_POLICY: ItemPolicy = {
   bundle_id: 'freeform',
   types: ['task'],
   statuses: ['open', 'done'],
-  boards: [{ id: 'tasks', label: 'Tasks', type: 'task' }],
+  statuses_by_type: { task: ['open', 'done'] },
+  boards: [{ id: 'tasks', label: 'Tasks', type: 'task', statuses: ['open', 'done'] }],
 };
 
 export function resetMockApi() {
@@ -203,6 +204,12 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
     tags: [],
     blockers: [],
     session_ids: [],
+    methodology_context: {
+      primary_unit_refs: [],
+      phase_refs: [],
+      anchor_citations: [],
+      marker_refs: [],
+    },
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: new Date().toISOString(),
     ...i,
@@ -233,6 +240,17 @@ export const mockApi = {
   switchProject: vi.fn(async () => ({ ok: true as const })),
   getSettings: vi.fn(async () => ({ settings: state.settings })),
   getPolicy: vi.fn(async (_projectId: string) => ({ policy: FREEFORM_POLICY })),
+  getModules: vi.fn(async (_projectId: string) => ({
+    primary_unit_label: null as string | null,
+    modules: [] as Array<{
+      ref: string;
+      item_count: number;
+      phases: string[];
+      anchor_count: number;
+      marker_count: number;
+      tier: string;
+    }>,
+  })),
 
   listSessions: vi.fn(async (projectId: string) => ({
     sessions: state.sessions.filter((s) => s.project_id === projectId),
@@ -287,6 +305,12 @@ export const mockApi = {
       tags: input.tags ?? [],
       blockers: [],
       session_ids: input.session_ids ?? [],
+      methodology_context: {
+        primary_unit_refs: input.methodology_context?.primary_unit_refs ?? [],
+        phase_refs: input.methodology_context?.phase_refs ?? [],
+        anchor_citations: input.methodology_context?.anchor_citations ?? [],
+        marker_refs: input.methodology_context?.marker_refs ?? [],
+      },
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -296,7 +320,9 @@ export const mockApi = {
   updateItem: vi.fn(async (_pid: string, itemId: string, input: UpdateItemInput) => {
     const item = state.items.find((x) => x.id === itemId);
     if (!item) throw new Error('not found');
-    Object.assign(item, input);
+    const { methodology_context: ctx, ...rest } = input;
+    Object.assign(item, rest);
+    if (ctx) item.methodology_context = { ...item.methodology_context, ...ctx };
     item.updated_at = new Date().toISOString();
     return { item };
   }),
@@ -471,6 +497,7 @@ export const mockApi = {
         tags: itemProposal.tags,
         blockers: [],
         session_ids: itemProposal.target_session_id ? [itemProposal.target_session_id] : [],
+        methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -776,6 +803,7 @@ export const mockApi = {
             tags: row.tags,
             blockers: [],
             session_ids: input.diff.session_id ? [input.diff.session_id] : [],
+            methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

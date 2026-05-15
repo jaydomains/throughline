@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import type { Project } from '@throughline/shared';
+import type { ModulesResult, Project } from '@throughline/shared';
 import { api, type MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
 import { NewProjectModal } from '../components/NewProjectModal.js';
@@ -143,15 +143,84 @@ export function ModulesView({
   bundles: MethodologySummary[];
   projectBundleId: string;
 }) {
+  const { id } = useParams<{ id: string }>();
   const bundle = findBundle(bundles, projectBundleId);
-  if (bundle && (bundle.status !== 'loaded' || bundle.has_primary_unit !== true)) {
+  const hidden = bundle && (bundle.status !== 'loaded' || bundle.has_primary_unit !== true);
+
+  const [result, setResult] = useState<ModulesResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (hidden || !id) return;
+    let cancelled = false;
+    api
+      .getModules(id)
+      .then((r) => {
+        if (!cancelled) setResult(r);
+      })
+      .catch(() => {
+        if (!cancelled) setError('Failed to load modules.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [hidden, id]);
+
+  if (hidden) {
     return <Navigate to=".." relative="path" replace />;
   }
+
+  const unitLabel = result?.primary_unit_label ?? 'primary unit';
+
   return (
-    <Stub
-      title="Modules"
-      body="Phase 7 brings this alive for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts. Phase 2 ships the route as an empty stub."
-    />
+    <div className="view-modules" data-testid="view-modules">
+      <h1>Modules</h1>
+      <p className="muted">
+        Items grouped by {unitLabel}, with tier classification, phase indicators, and
+        anchor / marker counts (SPEC §7.11).
+      </p>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      {result && result.modules.length === 0 && (
+        <p className="muted" data-testid="modules-empty">
+          No {unitLabel}s yet — set an item's primary unit in its detail panel to populate this
+          view.
+        </p>
+      )}
+      {result && result.modules.length > 0 && (
+        <table className="modules-table" data-testid="modules-table">
+          <thead>
+            <tr>
+              <th>{unitLabel}</th>
+              <th>tier</th>
+              <th>items</th>
+              <th>phase(s)</th>
+              <th>anchors</th>
+              <th>markers</th>
+            </tr>
+          </thead>
+          <tbody>
+            {result.modules.map((m) => (
+              <tr key={m.ref} data-testid={`module-row-${m.ref}`}>
+                <td>{m.ref}</td>
+                <td>
+                  <span className="tag" data-testid={`module-tier-${m.ref}`}>
+                    {m.tier}
+                  </span>
+                </td>
+                <td>{m.item_count}</td>
+                <td>{m.phases.length > 0 ? m.phases.join(', ') : '—'}</td>
+                <td>{m.anchor_count}</td>
+                <td>{m.marker_count}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
   );
 }
 

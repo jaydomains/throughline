@@ -34,6 +34,11 @@ export function registerItemRoutes(
     return { policy: items.policy(req.params.id) };
   });
 
+  app.get<{ Params: { id: string } }>('/api/projects/:id/modules', async (req, reply) => {
+    if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+    return items.modules(req.params.id);
+  });
+
   app.get<{ Params: { id: string; itemId: string } }>(
     '/api/projects/:id/items/:itemId',
     async (req, reply) => {
@@ -55,6 +60,7 @@ export function registerItemRoutes(
       branch_ref?: string | null;
       tags?: string[];
       session_ids?: string[];
+      methodology_context?: Parameters<ItemsService['create']>[0]['methodology_context'];
     };
   }>('/api/projects/:id/items', async (req, reply) => {
     if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
@@ -76,6 +82,7 @@ export function registerItemRoutes(
       if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
       if (body.tags !== undefined) input.tags = body.tags;
       if (body.session_ids !== undefined) input.session_ids = body.session_ids;
+      if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
       const item = items.create(input);
       return reply.code(201).send({ item });
     } catch (err) {
@@ -99,12 +106,23 @@ export function registerItemRoutes(
       blocker_text?: string | null;
       parent_id?: string | null;
       branch_ref?: string | null;
+      methodology_context?: Parameters<ItemsService['update']>[1]['methodology_context'];
     };
   }>('/api/projects/:id/items/:itemId', async (req, reply) => {
     const existing = items.get(req.params.itemId);
     if (!existing || existing.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
+    const body = req.body ?? {};
     try {
-      const item = items.update(req.params.itemId, req.body ?? {});
+      const input: Parameters<ItemsService['update']>[1] = {};
+      if (body.title !== undefined) input.title = body.title;
+      if (body.type !== undefined) input.type = body.type;
+      if (body.status !== undefined) input.status = body.status;
+      if (body.description !== undefined) input.description = body.description;
+      if (body.blocker_text !== undefined) input.blocker_text = body.blocker_text;
+      if (body.parent_id !== undefined) input.parent_id = body.parent_id;
+      if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
+      if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
+      const item = items.update(req.params.itemId, input);
       return { item };
     } catch (err) {
       if (err instanceof ItemPolicyError) {

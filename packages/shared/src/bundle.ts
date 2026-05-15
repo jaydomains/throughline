@@ -48,11 +48,22 @@ export interface GateSpec {
 
 export type PhaseMoment = 'pre-write' | 'per-commit' | 'plan-mode' | 'post-commit' | 'pr-open';
 
+// C-D12 — a bundle's State machine section may declare one or more item types, each with its
+// own board label and status lifecycle. Bundles that declare none (freeform) leave this empty
+// and the runtime infers a single board (see backend items/policy.ts).
+export interface ItemTypeSpec {
+  id: string;
+  board_label: string;
+  statuses: string[];
+  transitions: Array<{ from: string; to: string }>;
+}
+
 export interface StateMachine {
   status: BundleSectionStatus;
   phases: string[];
   transitions: Array<{ from: string; to: string }>;
   gates_by_moment: Partial<Record<PhaseMoment, GateSpec[]>>;
+  item_types: ItemTypeSpec[];
 }
 
 export interface CommunicationModel {

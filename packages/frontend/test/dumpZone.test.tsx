@@ -18,7 +18,8 @@ const freeformPolicy: ItemPolicy = {
   bundle_id: 'freeform',
   types: ['task'],
   statuses: ['open', 'done'],
-  boards: [{ id: 'tasks', label: 'Tasks', type: 'task' }],
+  statuses_by_type: { task: ['open', 'done'] },
+  boards: [{ id: 'tasks', label: 'Tasks', type: 'task', statuses: ['open', 'done'] }],
 };
 
 const sessions: Session[] = [

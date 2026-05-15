@@ -116,8 +116,9 @@ export function ItemDetailPanel({
 
   async function cycleStatus() {
     if (!item) return;
-    const idx = policy.statuses.indexOf(item.status);
-    const next = policy.statuses[(idx + 1) % policy.statuses.length];
+    const lifecycle = policy.statuses_by_type[item.type] ?? policy.statuses;
+    const idx = lifecycle.indexOf(item.status);
+    const next = lifecycle[(idx + 1) % lifecycle.length];
     if (!next || next === item.status) return;
     await api.updateItem(projectId, item.id, { status: next });
     await refresh();
@@ -173,6 +174,16 @@ export function ItemDetailPanel({
     await refresh();
     onChanged();
   }
+
+  const persistContext = useCallback(
+    async (dim: keyof Item['methodology_context'], refs: string[]) => {
+      if (!item) return;
+      await api.updateItem(projectId, item.id, { methodology_context: { [dim]: refs } });
+      await refresh();
+      onChanged();
+    },
+    [item, projectId, refresh, onChanged],
+  );
 
   if (!item) {
     return (
@@ -315,12 +326,36 @@ export function ItemDetailPanel({
         />
       </section>
 
-      <section className="detail-section">
+      <section className="detail-section" data-testid="item-methodology-context">
         <h3>Methodology context</h3>
         <p className="muted">
-          Primary unit, phase, anchors, markers — populated when the project's bundle declares them
-          (Phase 7).
+          Primary unit / phase / anchor citations / marker refs (SPEC §7.4). Comma-separated;
+          bundle-defined identifiers. Empty for bundles that declare none.
         </p>
+        <MethodologyContextField
+          label="Primary unit(s)"
+          dim="primary_unit_refs"
+          value={item.methodology_context.primary_unit_refs}
+          onSave={persistContext}
+        />
+        <MethodologyContextField
+          label="Phase(s)"
+          dim="phase_refs"
+          value={item.methodology_context.phase_refs}
+          onSave={persistContext}
+        />
+        <MethodologyContextField
+          label="Anchor citations"
+          dim="anchor_citations"
+          value={item.methodology_context.anchor_citations}
+          onSave={persistContext}
+        />
+        <MethodologyContextField
+          label="Marker refs"
+          dim="marker_refs"
+          value={item.methodology_context.marker_refs}
+          onSave={persistContext}
+        />
       </section>
 
       <section className="detail-section" data-testid="item-attached-notes">
@@ -464,5 +499,40 @@ export function ItemDetailPanel({
         />
       )}
     </aside>
+  );
+}
+
+function MethodologyContextField({
+  label,
+  dim,
+  value,
+  onSave,
+}: {
+  label: string;
+  dim: keyof Item['methodology_context'];
+  value: string[];
+  onSave: (dim: keyof Item['methodology_context'], refs: string[]) => Promise<void>;
+}) {
+  const joined = value.join(', ');
+  const [draft, setDraft] = useState<string | null>(null);
+  return (
+    <label className="block">
+      <span className="muted">{label}</span>
+      <input
+        aria-label={label}
+        value={draft ?? joined}
+        placeholder="comma-separated…"
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={async () => {
+          if (draft === null) return;
+          const next = draft
+            .split(',')
+            .map((s) => s.trim())
+            .filter((s) => s.length > 0);
+          setDraft(null);
+          if (next.join(',') !== value.join(',')) await onSave(dim, next);
+        }}
+      />
+    </label>
   );
 }

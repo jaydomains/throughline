@@ -33,7 +33,7 @@ export function Board({
     <section className="board" aria-label={`Board: ${board.label}`} data-testid={`board-${board.id}`}>
       <h2 className="board-heading">{board.label}</h2>
       <div className="board-columns">
-        {policy.statuses.map((status) => {
+        {(board.statuses.length > 0 ? board.statuses : policy.statuses).map((status) => {
           const columnItems = items.filter((i) => i.status === status);
           return (
             <BoardColumn
