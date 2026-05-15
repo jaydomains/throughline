@@ -21,6 +21,9 @@ import type {
   LibraryEntryType,
   LibrarySearchRequest,
   LibrarySearchResult,
+  MdIngestFolder,
+  MdIngestResult,
+  MdScanResult,
   Project,
   PromptFillRequest,
   PromptFillResult,
@@ -347,6 +350,44 @@ export const api = {
     }).then((r) => {
       if (!r.ok) throw new Error(`DELETE directive failed: ${r.status}`);
     }),
+
+  // Phase 6c — repo `.md` ingestion (T-D11).
+  listMdFolders: (projectId: string) =>
+    jsonFetch<{ folders: MdIngestFolder[] }>(
+      `/api/projects/${pid(projectId)}/md-ingest/folders`,
+    ),
+  addMdFolder: (projectId: string, path: string) =>
+    jsonFetch<{ folder: MdIngestFolder }>(
+      `/api/projects/${pid(projectId)}/md-ingest/folders`,
+      { method: 'POST', body: JSON.stringify({ path }) },
+    ),
+  removeMdFolder: (projectId: string, folderId: string) =>
+    fetch(
+      `/api/projects/${pid(projectId)}/md-ingest/folders/${encodeURIComponent(folderId)}`,
+      { method: 'DELETE' },
+    ).then((r) => {
+      if (!r.ok) throw new Error(`DELETE md folder failed: ${r.status}`);
+    }),
+  scanMdFolder: (projectId: string, folderId: string) =>
+    jsonFetch<{ result: MdScanResult }>(
+      `/api/projects/${pid(projectId)}/md-ingest/scan`,
+      { method: 'POST', body: JSON.stringify({ folder_id: folderId }) },
+    ),
+  ingestMd: (projectId: string, folderId: string, paths: string[]) =>
+    jsonFetch<{ result: MdIngestResult }>(
+      `/api/projects/${pid(projectId)}/md-ingest/ingest`,
+      { method: 'POST', body: JSON.stringify({ folder_id: folderId, paths }) },
+    ),
+  setMdTracked: (projectId: string, entryId: string, tracked: boolean) =>
+    jsonFetch<{ entry: LibraryEntry }>(
+      `/api/projects/${pid(projectId)}/md-ingest/entries/${encodeURIComponent(entryId)}/track`,
+      { method: 'PATCH', body: JSON.stringify({ tracked }) },
+    ),
+  reingestMd: (projectId: string, entryId: string) =>
+    jsonFetch<{ entry: LibraryEntry; changed: boolean }>(
+      `/api/projects/${pid(projectId)}/md-ingest/entries/${encodeURIComponent(entryId)}/reingest`,
+      { method: 'POST' },
+    ),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {
     const params = new URLSearchParams();

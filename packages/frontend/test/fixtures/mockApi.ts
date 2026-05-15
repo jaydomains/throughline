@@ -19,6 +19,8 @@ import type {
   ItemPolicy,
   LibraryEntry,
   LibrarySearchRequest,
+  MdIngestFolder,
+  MdScanResult,
   PromptFillRequest,
   Project,
   ProposeRequest,
@@ -50,6 +52,8 @@ interface State {
   reconcileRuns: ReconcileRun[];
   driftSignals: Array<{ id: string; category: string }>;
   directives: Directive[];
+  mdFolders: MdIngestFolder[];
+  mdScans: Record<string, MdScanResult>;
 }
 
 const DEFAULT_PROJECT: Project = {
@@ -80,6 +84,8 @@ const state: State = {
   reconcileRuns: [],
   driftSignals: [],
   directives: [],
+  mdFolders: [],
+  mdScans: {},
 };
 
 let counter = 0;
@@ -109,6 +115,8 @@ export function resetMockApi() {
   state.reconcileRuns = [];
   state.driftSignals = [];
   state.directives = [];
+  state.mdFolders = [];
+  state.mdScans = {};
   counter = 0;
   for (const fn of Object.values(mockApi)) {
     if (typeof fn === 'function' && 'mockClear' in fn) (fn as { mockClear: () => void }).mockClear();
@@ -122,10 +130,24 @@ export function seedLibraryEntry(
     body: '',
     tags: [],
     summary: null,
+    source_path: null,
+    source_tracked: false,
+    source_hash: null,
+    ingested_at: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-01-01T00:00:00.000Z',
     ...entry,
   });
+}
+
+export function seedMdFolder(
+  f: Partial<MdIngestFolder> & { id: string; project_id: string; rel_path: string },
+) {
+  state.mdFolders.push({ created_at: '2026-01-01T00:00:00.000Z', ...f });
+}
+
+export function seedMdScan(folderId: string, result: MdScanResult) {
+  state.mdScans[folderId] = result;
 }
 
 export function seedAttachment(itemId: string, libraryEntryId: string) {
@@ -465,6 +487,10 @@ export const mockApi = {
         body: entryProposal.body,
         tags: entryProposal.tags,
         summary: null,
+        source_path: null,
+        source_tracked: false,
+        source_hash: null,
+        ingested_at: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -512,6 +538,10 @@ export const mockApi = {
         body: input.body ?? '',
         tags: input.tags ?? [],
         summary: input.summary ?? null,
+        source_path: input.source_path ?? null,
+        source_tracked: input.source_tracked ?? false,
+        source_hash: input.source_hash ?? null,
+        ingested_at: input.ingested_at ?? null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -527,6 +557,9 @@ export const mockApi = {
       if (input.body !== undefined) entry.body = input.body;
       if (input.tags !== undefined) entry.tags = input.tags;
       if (input.summary !== undefined) entry.summary = input.summary;
+      if (input.source_tracked !== undefined) entry.source_tracked = input.source_tracked;
+      if (input.source_hash !== undefined) entry.source_hash = input.source_hash;
+      if (input.ingested_at !== undefined) entry.ingested_at = input.ingested_at;
       entry.updated_at = new Date().toISOString();
       return { entry };
     },
@@ -793,5 +826,77 @@ export const mockApi = {
   discardReconcileRun: vi.fn(async (_pid: string, runId: string) => {
     const r = state.reconcileRuns.find((x) => x.id === runId);
     if (r && r.status === 'pending') r.status = 'discarded';
+  }),
+
+  // Phase 6c — repo `.md` ingestion.
+  listMdFolders: vi.fn(async (projectId: string) => ({
+    folders: state.mdFolders.filter((f) => f.project_id === projectId),
+  })),
+  addMdFolder: vi.fn(async (projectId: string, path: string) => {
+    const existing = state.mdFolders.find(
+      (f) => f.project_id === projectId && f.rel_path === path,
+    );
+    if (existing) return { folder: existing };
+    const folder: MdIngestFolder = {
+      id: id('mdf'),
+      project_id: projectId,
+      rel_path: path,
+      created_at: new Date().toISOString(),
+    };
+    state.mdFolders.push(folder);
+    return { folder };
+  }),
+  removeMdFolder: vi.fn(async (_pid: string, folderId: string) => {
+    state.mdFolders = state.mdFolders.filter((f) => f.id !== folderId);
+    delete state.mdScans[folderId];
+  }),
+  scanMdFolder: vi.fn(async (_pid: string, folderId: string) => {
+    const result = state.mdScans[folderId] ?? {
+      folder_id: folderId,
+      candidates: [],
+      truncated: false,
+    };
+    return { result };
+  }),
+  ingestMd: vi.fn(async (projectId: string, _folderId: string, paths: string[]) => {
+    const ingested = paths.map((relPath) => {
+      const existing = state.library.find(
+        (e) => e.project_id === projectId && e.source_path === relPath,
+      );
+      if (existing) {
+        existing.ingested_at = new Date().toISOString();
+        return { entry_id: existing.id, rel_path: relPath, status: 'reingested' as const };
+      }
+      const entry: LibraryEntry = {
+        id: id('le'),
+        project_id: projectId,
+        type: 'imported_doc',
+        title: relPath.split('/').pop() ?? relPath,
+        body: `body of ${relPath}`,
+        tags: ['imported-doc'],
+        summary: `summary of ${relPath}`,
+        source_path: relPath,
+        source_tracked: false,
+        source_hash: 'hash-' + relPath,
+        ingested_at: new Date().toISOString(),
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      state.library.push(entry);
+      return { entry_id: entry.id, rel_path: relPath, status: 'created' as const };
+    });
+    return { result: { ingested, skipped: [] } };
+  }),
+  setMdTracked: vi.fn(async (_pid: string, entryId: string, tracked: boolean) => {
+    const entry = state.library.find((e) => e.id === entryId);
+    if (!entry) throw new Error('not_found');
+    entry.source_tracked = tracked;
+    return { entry };
+  }),
+  reingestMd: vi.fn(async (_pid: string, entryId: string) => {
+    const entry = state.library.find((e) => e.id === entryId);
+    if (!entry) throw new Error('not_found');
+    entry.ingested_at = new Date().toISOString();
+    return { entry, changed: true };
   }),
 };

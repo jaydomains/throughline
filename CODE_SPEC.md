@@ -299,6 +299,22 @@ Bundle-driven template selection keeps Throughline methodology-agnostic — Site
 
 ---
 
+## C-D10 — Repo `.md` ingestion folders are confined to the project's `repo_path` subtree
+
+SPEC §7.9 / T-D11 specify folder-opt-in ("the user points the backend at a directory") without bounding *where* on disk. The REST surface (`POST /api/projects/:id/md-ingest/folders`, `…/scan`, `…/ingest`) takes a user-supplied path; an unbounded path would let any client read arbitrary filesystem locations through the API.
+
+Implementation decision: every opt-in folder path is confined to the project's `repo_path` subtree. Paths are stored *relative* to `repo_path` in `md_ingest_folders`. Confinement is enforced two ways: (1) lexical containment — absolute paths and `..`-escapes are rejected before resolution, and the resolved path must equal or sit strictly under `resolve(repo_path)`; (2) the directory walk skips symlinks (the Phase 4 code-todo scanner's `withFileTypes` no-symlink idiom), so a symlink inside an opted-in folder cannot redirect ingestion outside the subtree. `realpath` is deliberately not used — `repo_path` is itself frequently a symlinked temp dir under test, and lexical containment + no-symlink-walk is sufficient. This mirrors the existing code-todo scanner, which already scopes to `repo_path`.
+
+---
+
+## C-D11 — `md_ingest_folders` table; tracked re-ingest re-summarises (cost flows through the meter)
+
+T-D11 says "Settings carries a list of opted-in directories." Implementation shape: a dedicated `md_ingest_folders(id, project_id, rel_path, created_at)` table with a unique `(project_id, rel_path)` index, rather than a blob in `projects.settings_json`. Rationale: it matches the table-per-feature convention already used for `code_todo_scans` / `proposed_extractions`, makes folder add/remove individually auditable (T-D36), and keeps the opt-in list project-scoped and FK-cascaded with the project. Imported-doc source tracking lives on `library_entries` (new columns `source_path`, `source_tracked`, `source_hash`, `ingested_at`) so re-ingest reuses the library service's create/update path (FTS triggers + audit stay uniform).
+
+Re-ingest semantics: snapshot by default; the per-entry `source_tracked` toggle (§13 adopted default) makes an entry mirror its source file. **Tracked re-ingest re-summarises via AI** — "re-ingest" is "re-import" per §7.9, and tracking is an explicit per-entry opt-in, so the AI cost is user-chosen and flows through `cost_telemetry` (T-D29) with a prompt fingerprint in the audit trigger context (T-D24), exactly like the dump-zone extractor. Re-ingest is hash-gated: an unchanged file is a no-op (no AI call, no cost), and the summariser degrades to the heuristic path when no API key is configured (SPEC §15).
+
+---
+
 ## 1. Process model
 
 ```

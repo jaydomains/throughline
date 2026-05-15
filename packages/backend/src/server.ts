@@ -46,6 +46,14 @@ import { createDirectivesService } from './directives/service.js';
 import { registerDirectiveRoutes } from './directives/routes.js';
 import { createReminderScheduler, type ReminderScheduler } from './directives/scheduler.js';
 import { createOsNotifier } from './notifier/index.js';
+import {
+  createAnthropicSummariser,
+  createHeuristicSummariser,
+  createRoutingSummariser,
+} from './md-ingest/summariser.js';
+import { createMdIngestService } from './md-ingest/service.js';
+import { registerMdIngestRoutes } from './md-ingest/routes.js';
+import { createMdIngestWatcher, type MdIngestWatcher } from './md-ingest/watcher.js';
 
 export interface ServerHandle {
   app: FastifyInstance;
@@ -53,6 +61,7 @@ export interface ServerHandle {
   registry: MethodologyRegistry;
   inboxWatcher: InboxWatcher;
   reminderScheduler: ReminderScheduler;
+  mdIngestWatcher: MdIngestWatcher;
   url: string;
   close: () => Promise<void>;
 }
@@ -160,6 +169,30 @@ export async function startServer(
       warn: (m) => app.log.warn(m),
     },
   });
+  // Phase 6c — repo `.md` ingestion. Summariser routes to Sonnet when the key is present
+  // (heuristic fallback otherwise), same as the dump-zone extractor. The watcher mirrors
+  // tracked-source entries on file change.
+  const mdSummariser = createRoutingSummariser({
+    anthropic: createAnthropicSummariser({ client: anthropicClient }),
+    heuristic: createHeuristicSummariser(),
+    client: anthropicClient,
+  });
+  const mdIngest = createMdIngestService({
+    db,
+    projects,
+    library,
+    summariser: mdSummariser,
+  });
+  const mdIngestWatcher = createMdIngestWatcher({
+    projects,
+    service: mdIngest,
+    watch: watchInbox,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
   const reminderScheduler = createReminderScheduler({
     db,
     service: directives,
@@ -188,10 +221,12 @@ export async function startServer(
   registerCodeTodoRoutes(app, projects, codeTodo);
   registerReconcileRoutes(app, projects, reconcile);
   registerDirectiveRoutes(app, projects, directives);
+  registerMdIngestRoutes(app, projects, mdIngest);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 
   reminderScheduler.start();
+  mdIngestWatcher.start();
 
   await app.listen({ host: config.host, port: config.port });
   // Derive the bound port from the listening socket so callers requesting port 0
@@ -207,11 +242,13 @@ export async function startServer(
     registry,
     inboxWatcher,
     reminderScheduler,
+    mdIngestWatcher,
     url,
     close: async () => {
       reminderScheduler.stop();
       await app.close();
       await inboxWatcher.stop();
+      await mdIngestWatcher.stop();
       await registry.stop();
       db.close();
     },
