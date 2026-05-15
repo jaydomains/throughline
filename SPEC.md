@@ -68,7 +68,7 @@ Single user — Jay. No multi-user model. No auth. No sharing. Everything runs o
 - No background work outside the local backend process. If the backend isn't running, nothing fires.
 - No binary asset storage — text and structured data only.
 - No replacement for Git, GitHub, Claude Code, or any IDE. Throughline observes, aggregates, and applies methodology rules.
-- No autonomous code execution, external API mutations, or repo file writes without explicit human review. Internal file movements within Throughline-managed directories (Claude Code inbox archiving, failure quarantine, datastore housekeeping) are not user-facing writes and run autonomously.
+- No autonomous code execution, external API mutations, or repo file writes without explicit human review. Internal file movements within Throughline-managed directories (Claude Code inbox archiving, failure quarantine, datastore housekeeping) are not user-facing writes and run autonomously. Installing methodology-gate git hooks into a project's repository is a repo write that runs autonomously only after explicit user consent (§7.12); absent consent, no hook is written.
 - No silent state changes. Done items are auto-marked done by AI only with confidence-thresholded auto-apply, audit log entry, and one-click undo. Methodology gates fire as proposals to the user, never as enforced blocks on the underlying repo.
 - No standalone code architecture viewer. Throughline visualises work and methodology state; code architecture lives in tools designed for that purpose (Semble for search, Semgrep for rule verification).
 - No in-app authoring of methodology bundles in v1. v1 ships with SiteMesh and freeform bundles; any others Jay drafts manually as markdown files. In-app bundle authoring is a v2 concern.
@@ -276,13 +276,21 @@ The methodology bundle's gate definitions (per its state machine and validation 
 
 **Pre-write gates** — when a session is about to write to project docs, Throughline runs the bundle's pre-write checks. (SiteMesh example: cited anchors must resolve; sub-agent line numbers verified; confident-sounding patterns flagged for ground-truth check.)
 
-**Per-commit gates** — when an item transitions state or a commit is being prepared, Throughline runs the bundle's per-commit checks. SiteMesh's per-commit moment declares two gates: `verify-structure.sh` (9 code architecture rules) and `sitemesh-pre-commit` (docs banned-string sweep). Two independent gates at the same moment.
+**Per-commit gates** — when an item transitions state (internal to Throughline, no external detection required) or a commit is being prepared in the project's repository (detected via a git pre-commit hook), Throughline runs the bundle's per-commit checks. Both triggers fire the same gate. SiteMesh's per-commit moment declares two gates: `verify-structure.sh` (9 code architecture rules) and `sitemesh-pre-commit` (docs banned-string sweep). Two independent gates at the same moment.
 
 **Plan-mode gates** — when Claude Code is operating in plan mode, Throughline can validate the proposed plan against the bundle's plan-mode rules.
 
 **Post-commit gates** — after a commit lands, Throughline re-scans and confirms the bundle's post-commit conditions. (SiteMesh example: no banned strings introduced; all citations still resolve; no markers regressed into wrong phases.)
 
 Gate failures surface as proposals: "this commit would introduce two banned strings; review here." Throughline never silently blocks. The user can override (with audit log entry) or fix and retry.
+
+**Gate-trigger transport.** All four gate moments — plan-mode, pre-write, per-commit, and post-commit — are triggered over a single local-loopback HTTP channel on Throughline's backend. Claude Code sends the plan-mode and pre-write messages. Git hooks installed in the project's repository send the per-commit and post-commit messages. The channel is loopback-only (T-D31); nothing on it crosses the machine boundary.
+
+**Hook collision policy.** Throughline's git hooks are advisory and non-blocking (T-D44). When a repository already has hooks installed, Throughline's hooks chain with the existing hooks rather than replacing them. Throughline never blocks a commit regardless of gate outcome; gate findings surface in the methodology-gates view as proposals.
+
+**Hook installation and consent.** Installing methodology-gate hooks into a project's repository requires explicit user consent. The new-project flow surfaces a default-checked checkbox to install the hooks; existing projects without hooks can opt in later from project settings. Once consented, installation is idempotent. A failed installation is recorded in the audit log and does not block project function — only the git-side per-commit and post-commit triggers are unavailable until installation succeeds. This consented hook installation is the carve-out extension recorded under §5 / T-D37.
+
+**Delivery guarantees.** Claude Code gate-trigger messages (plan-mode, pre-write) are best-effort: if the backend is not running when Claude Code sends one, the message is lost and no error is raised. Git hook events (per-commit, post-commit) are durable: if a hook fires while the backend is unreachable, the event is queued and the backend drains the queue on its next startup, firing the corresponding gates retroactively.
 
 ### 7.13 GitHub integration
 
@@ -619,7 +627,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D34 | Manual item-to-PR linking via auto-detect from active git branch + user override + skip-acceptable. Items without PR association lose tier-2 drift coverage but retain tiers 1, 3, 4. | 7.14 |
 | T-D35 | Reconcile diff has six categories: completed, new, edited (covers title and description changes under one row), blocker changes, contradicted (spawns drift signal rather than auto-revert), no-change | 7.7 |
 | T-D36 | Audit log scope covers items, sessions, library entries, projects, methodology bindings, and gate firings | 7.22, 8 |
-| T-D37 | Internal file movements within Throughline-managed directories (inbox archiving, failure quarantine) are not user-facing writes and run autonomously; carve-out from the no-autonomous-writes principle | 5, 7.6 |
+| T-D37 | Internal file movements within Throughline-managed directories (inbox archiving, failure quarantine) are not user-facing writes and run autonomously; carve-out from the no-autonomous-writes principle. Extended: consented methodology-gate git-hook installation into a project repo (§7.12) is a permitted autonomous write under this carve-out. | 5, 7.6, 7.12 |
 | T-D38 | Items carry optional branch and PR references, populated automatically from session context or set manually; branches remain free-text strings, not first-class entities; items reference PRs (not branches as first-class fields) | 7.4, 8 |
 | T-D39 | Methodology runtime as the product core. Throughline is methodology-agnostic; bundles configure all methodology-specific concepts (primary unit, anchor format, marker rules, state machine, review patterns, validation). Tracker, library, and intelligence layer are surfaces over the runtime. | 2, 7.1 |
 | T-D40 | Projects as first-class entities, multiple projects coexist, each binds to a methodology bundle. v1 multi-project from day one. | 7.2, 8 |

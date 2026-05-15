@@ -520,10 +520,10 @@ Per C-D6. Phase-moment triggers in v1:
 
 | Moment | Trigger mechanism (v1 implementation) |
 |---|---|
-| `pre-write` | Explicit UI action ("Run pre-write checks on this slice") + signal-file convention in the Throughline-managed inbox written by Claude Code when about to write. Trigger details flagged for the spec author. |
-| `per-commit` | Watch `<repo>/.git/COMMIT_EDITMSG` for activity; alternatively a git pre-commit hook the user installs that touches a signal file in the Throughline inbox. Both flagged for the spec author. |
-| `plan-mode` | A plan-mode marker file convention in the Claude Code inbox; trigger details flagged for the spec author. |
-| `post-commit` | Git log poll on the active branch during GitHub polling cadence; alternatively a git post-commit hook touching a signal file. Both flagged for the spec author. |
+| `pre-write` | Claude Code POSTs a pre-write message to the local-loopback gate-trigger channel (SPEC §7.12), plus an explicit UI action ("Run pre-write checks on this slice"). Best-effort delivery. |
+| `per-commit` | Either an item state transition (internal) or a git pre-commit hook POSTing to the loopback channel (SPEC §7.12). Both fire the same gate. Durable delivery via the hook event queue. |
+| `plan-mode` | Claude Code POSTs a plan-mode message to the loopback channel (SPEC §7.12). Best-effort delivery. |
+| `post-commit` | A git post-commit hook POSTs to the loopback channel (SPEC §7.12). Durable delivery via the hook event queue. |
 | `pr-open` | GitHub poller detects a newly opened PR on a tracked branch; dispatches to the gate runtime with `moment='pr-open'`. |
 
 Each moment resolves the bundle's `gates_by_moment[moment]` (zero or more `GateSpec`). Gates run independently per C-D6.
@@ -533,6 +533,12 @@ Mechanical gate execution: scripts execute via `child_process.spawn` with stdout
 Judgement gates: Anthropic call with the gate's spec-declared prompt template (from the bundle's templates section), parameterised by the project's current state. Default model Sonnet per SPEC §9.
 
 Findings surface in the methodology-gates view; UI shows per-gate pass/fail with override + fix-and-retry actions (T-D44).
+
+**Hook path resolution.** Throughline resolves the active hooks directory via git's canonical path-resolution mechanism (`git rev-parse --git-path hooks`) rather than joining `repo_path` with `.git/hooks`. This correctly handles linked worktrees, submodules whose `.git` is a gitdir pointer file, and `core.hooksPath` overrides (e.g., Husky). `simple-git` — already named as a planned dependency in §12 — provides the git invocation surface for this resolution.
+
+**Port stability for hook scripts.** The backend's bound port can change between runs (configurable; tests bind ephemeral ports). Installed hook scripts therefore do not embed the port. The backend writes its current bound URL to a fixed runtime location under the data directory on startup; hook scripts read that location at fire time. A port change requires no hook reinstall.
+
+**Hook event queue.** When a hook fires and the backend is unreachable, the hook appends the event to a durable on-disk queue: one file per event under `<dataDir>/gate-hook-queue/`, named `<timestamp>-<nanoid>.json`, containing `{ moment, repo_path, head_sha?, fired_at }`. On startup the backend drains this directory before serving — reading each file, resolving the repo to a project, dispatching the corresponding gate, then deleting the file on success or moving it to a sibling `failures/` subdirectory with an `.error.json` companion on failure. This mirrors the Phase 4 inbox watcher's queue-drain-on-startup and quarantine-on-failure pattern (`packages/backend/src/inbox/`), reusing its serial-drain and dated-archive idioms where they apply.
 
 ---
 
@@ -758,10 +764,7 @@ Settings UI exposes (mirrors §7.25):
 
 These are SPEC.md v5.1 gaps that came up during this regeneration. Each is too thin to derive from with confidence; the recommended action is a short SPEC.md amendment.
 
-1. **Pre-write gate trigger** (§7.12). How does a session "signal it is about to write to project docs"? Candidates: signal file in the Throughline inbox written by Claude Code; explicit UI action; some other convention. v1 implementation plans to support both signal file and UI action, but the canonical Claude-Code-side convention is the spec author's call.
-2. **Per-commit gate detection** (§7.12). How does Throughline detect a commit is being prepared? Candidates: watch `.git/COMMIT_EDITMSG`; user-installed git pre-commit hook touching a signal file; some other mechanism. The choice has UX implications (the hook approach requires the user to install a hook per repo).
-3. **Plan-mode gate detection** (§7.12). How does Throughline know Claude Code is in plan mode? Candidates: a plan-mode marker file in the inbox; a Claude Code → Throughline push event with a plan-mode annotation. The spec assumes the integration but doesn't specify the protocol.
-4. **Post-commit detection** (§7.12). Candidates: git log poll on the active branch (cheap, slightly lagged); user-installed git post-commit hook (immediate but requires per-repo install). The choice mirrors the per-commit gate.
+1–4. **Gate trigger mechanisms** — resolved per SPEC §7.12 amendments: single local-loopback transport; Claude Code sends plan-mode/pre-write, git hooks send per-commit/post-commit; consented idempotent hook install; best-effort (Claude Code) vs durable (hook queue) delivery.
 5. **Bundle markdown convention** (§7.1, §11). SPEC.md says bundles are "markdown files following the eleven-section structure" without committing to a per-section heading convention. CODE_SPEC.md C-D3 picks H2 headings (`## 1. Identity`, etc.) with a single `bundle.md` per directory; confirm the convention or specify the alternative.
 6. **Companion modes ↔ review patterns relationship** (§7.1 bundle structure §8; §7.18 session-start reference). §7.1's bundle §8 says "review patterns" includes "companion modes"; §7.18 references "the methodology's appropriate companion mode" without a worked example. Confirm: are companion modes a fixed list per bundle (e.g., SiteMesh's "doc-readiness", "code-PR"), parameterised by phase, or something else? CODE_SPEC.md C-D9 treats them as a bundle-declared enum with a default; spec confirmation would unblock the assembly pipeline's contract.
 7. **Verifier-tool plurality** (§7.16; T-D26 wording). §7.16 still discusses Semgrep specifically as the verifier tool while T-D26 references "the methodology bundle defines rule conventions" implying methodology bundles could declare a different verifier tool entirely. Clarify: in v1, is Semgrep the only supported verifier tool (with bundles only varying naming/storage conventions), or can a bundle declare a different verifier-tool integration?
