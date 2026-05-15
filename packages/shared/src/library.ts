@@ -19,6 +19,12 @@ export interface LibraryEntry {
   tags: string[];
   // Phase 6c populates this for imported docs; Phase 6a renders it read-only when set.
   summary: string | null;
+  // Phase 6c — imported-doc source tracking (T-D11, §7.9). Populated only for
+  // `imported_doc` entries that came from repo `.md` ingestion; NULL/false otherwise.
+  source_path: string | null; // rel_path under the project's repo_path
+  source_tracked: boolean; // snapshot (false) by default; true = mirror file on change
+  source_hash: string | null; // sha256 of file content at last ingest
+  ingested_at: string | null; // last ingest timestamp (initial import or re-ingest)
   created_at: string;
   updated_at: string;
 }
@@ -30,6 +36,11 @@ export interface CreateLibraryEntryInput {
   body?: string;
   tags?: string[];
   summary?: string | null;
+  // Phase 6c — set by the md-ingest service when creating imported-doc entries.
+  source_path?: string | null;
+  source_tracked?: boolean;
+  source_hash?: string | null;
+  ingested_at?: string | null;
 }
 
 // PATCH for partial updates with optional fields in the body — Throughline REST convention.
@@ -39,6 +50,10 @@ export interface UpdateLibraryEntryInput {
   body?: string;
   tags?: string[];
   summary?: string | null;
+  // Phase 6c — track-source toggle + re-ingest writes these on imported docs.
+  source_tracked?: boolean;
+  source_hash?: string | null;
+  ingested_at?: string | null;
 }
 
 // Light shape for the attach modal + reverse lookup ("which items does this note attach to?").

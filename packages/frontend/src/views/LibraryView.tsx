@@ -17,6 +17,7 @@ import { PromptFillModal } from '../components/PromptFillModal.js';
 import { AttachItemModal } from '../components/AttachItemModal.js';
 import { DirectiveModal } from '../components/DirectiveModal.js';
 import { DirectiveBadge } from '../components/DirectiveBadge.js';
+import { MdFolderManager } from '../components/MdFolderManager.js';
 
 const TYPE_LABEL: Record<LibraryEntryType, string> = {
   note: 'Notes',
@@ -174,6 +175,16 @@ export function LibraryView() {
     await refresh();
   }
 
+  async function onSetTracked(entry: LibraryEntry, tracked: boolean) {
+    await api.setMdTracked(entry.project_id, entry.id, tracked);
+    await refresh();
+  }
+
+  async function onReingest(entry: LibraryEntry) {
+    await api.reingestMd(entry.project_id, entry.id);
+    await refresh();
+  }
+
   return (
     <div className="library-view" data-testid="view-library">
       <header className="library-header">
@@ -191,6 +202,7 @@ export function LibraryView() {
         sessions={sessions}
         onApplied={() => void refresh()}
       />
+      <MdFolderManager projectId={projectId} onIngested={() => void refresh()} />
       <div className="library-body">
         <aside className="library-sidebar" data-testid="library-sidebar">
           <div className="library-filters">
@@ -297,6 +309,8 @@ export function LibraryView() {
               attachedItems={attachedItems}
               directives={directivesFor(directivesByParent, 'library', selected.id)}
               onPatch={(p) => void onPatchEntry(selected, p)}
+              onSetTracked={(t) => void onSetTracked(selected, t)}
+              onReingest={() => void onReingest(selected)}
               onDelete={() => void onDeleteEntry(selected)}
               onCopySnippet={() => void onCopySnippet(selected)}
               onUsePrompt={() => setPromptFillFor(selected)}
@@ -356,6 +370,8 @@ interface EditorProps {
   attachedItems: { id: string; title: string; type: string; status: string }[];
   directives: Directive[];
   onPatch: (patch: { title?: string; body?: string; tags?: string[] }) => void;
+  onSetTracked: (tracked: boolean) => void;
+  onReingest: () => void;
   onDelete: () => void;
   onCopySnippet: () => void;
   onUsePrompt: () => void;
@@ -370,6 +386,8 @@ function EntryEditor({
   attachedItems,
   directives,
   onPatch,
+  onSetTracked,
+  onReingest,
   onDelete,
   onCopySnippet,
   onUsePrompt,
@@ -427,6 +445,36 @@ function EntryEditor({
         <section className="library-editor-summary">
           <h3>Summary</h3>
           <p>{entry.summary}</p>
+        </section>
+      )}
+      {entry.type === 'imported_doc' && entry.source_path && (
+        <section className="library-editor-source" data-testid="library-editor-source">
+          <h3>Source</h3>
+          <p>
+            <code>{entry.source_path}</code>
+            {entry.ingested_at && (
+              <span className="meta">
+                {' '}
+                · ingested {new Date(entry.ingested_at).toLocaleString()}
+              </span>
+            )}
+          </p>
+          <label>
+            <input
+              type="checkbox"
+              checked={entry.source_tracked}
+              onChange={(e) => onSetTracked(e.target.checked)}
+              data-testid="library-source-track-toggle"
+            />
+            Track source (re-ingest on file change)
+          </label>
+          <button
+            type="button"
+            onClick={onReingest}
+            data-testid="library-source-reingest"
+          >
+            Re-ingest now
+          </button>
         </section>
       )}
       <TagChipsEditor

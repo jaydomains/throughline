@@ -30,6 +30,10 @@ interface LibraryRow {
   body: string;
   tags_json: string;
   summary: string | null;
+  source_path: string | null;
+  source_tracked: number;
+  source_hash: string | null;
+  ingested_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -43,6 +47,10 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
     body: row.body,
     tags: (JSON.parse(row.tags_json) as string[]) ?? [],
     summary: row.summary,
+    source_path: row.source_path,
+    source_tracked: row.source_tracked === 1,
+    source_hash: row.source_hash,
+    ingested_at: row.ingested_at,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -149,8 +157,10 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
       const id = nanoid();
       const now = new Date().toISOString();
       db.prepare(
-        `INSERT INTO library_entries (id, project_id, type, title, body, tags_json, summary, created_at, updated_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO library_entries
+           (id, project_id, type, title, body, tags_json, summary,
+            source_path, source_tracked, source_hash, ingested_at, created_at, updated_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       ).run(
         id,
         project.id,
@@ -159,6 +169,10 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
         input.body ?? '',
         JSON.stringify(input.tags ?? []),
         input.summary ?? null,
+        input.source_path ?? null,
+        input.source_tracked ? 1 : 0,
+        input.source_hash ?? null,
+        input.ingested_at ?? null,
         now,
         now,
       );
@@ -184,13 +198,34 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
         tags_json:
           input.tags === undefined ? before.tags_json : JSON.stringify(input.tags),
         summary: input.summary === undefined ? before.summary : input.summary,
+        source_tracked:
+          input.source_tracked === undefined
+            ? before.source_tracked
+            : input.source_tracked
+              ? 1
+              : 0,
+        source_hash:
+          input.source_hash === undefined ? before.source_hash : input.source_hash,
+        ingested_at:
+          input.ingested_at === undefined ? before.ingested_at : input.ingested_at,
         updated_at: new Date().toISOString(),
       };
       db.prepare(
         `UPDATE library_entries
-           SET title = ?, body = ?, tags_json = ?, summary = ?, updated_at = ?
+           SET title = ?, body = ?, tags_json = ?, summary = ?,
+               source_tracked = ?, source_hash = ?, ingested_at = ?, updated_at = ?
          WHERE id = ?`,
-      ).run(next.title, next.body, next.tags_json, next.summary, next.updated_at, id);
+      ).run(
+        next.title,
+        next.body,
+        next.tags_json,
+        next.summary,
+        next.source_tracked,
+        next.source_hash,
+        next.ingested_at,
+        next.updated_at,
+        id,
+      );
 
       const fields: Array<{ field: string; oldVal: string | null; newVal: string | null }> = [];
       if (input.title !== undefined && input.title !== before.title) {
@@ -204,6 +239,16 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
       }
       if (input.summary !== undefined && input.summary !== before.summary) {
         fields.push({ field: 'summary', oldVal: before.summary, newVal: input.summary });
+      }
+      if (
+        input.source_tracked !== undefined &&
+        (input.source_tracked ? 1 : 0) !== before.source_tracked
+      ) {
+        fields.push({
+          field: 'source_tracked',
+          oldVal: String(before.source_tracked === 1),
+          newVal: String(input.source_tracked),
+        });
       }
       for (const f of fields) {
         appendAudit(db, {
