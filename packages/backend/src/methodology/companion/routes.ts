@@ -34,6 +34,20 @@ export function registerCompanionRoutes(
   projects: ProjectsService,
   engine: CompanionEngine,
 ): void {
+  // Cross-project guard: a run id from project A must not be mutated via project B's
+  // path. Returns true when the run belongs to the path's project; otherwise replies 404
+  // (same not-found shape used for an unknown run) and returns false. Mirrors the Phase-5
+  // cross-project apply guard.
+  function ownsRun(
+    reply: import('fastify').FastifyReply,
+    runId: string,
+    projectId: string,
+  ): boolean {
+    if (engine.runProjectId(runId) === projectId) return true;
+    void reply.code(404).send({ error: 'not_found' });
+    return false;
+  }
+
   app.get<{ Params: { id: string } }>(
     '/api/projects/:id/companion/checklists',
     async (req, reply) => {
@@ -76,6 +90,7 @@ export function registerCompanionRoutes(
   app.post<{ Params: { id: string; runId: string; stepId: string } }>(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/mechanical',
     async (req, reply) => {
+      if (!ownsRun(reply, req.params.runId, req.params.id)) return;
       try {
         return { run: await engine.runMechanicalStep(req.params.runId, req.params.stepId) };
       } catch (err) {
@@ -87,6 +102,7 @@ export function registerCompanionRoutes(
   app.post<{ Params: { id: string; runId: string; stepId: string } }>(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/ai-judge',
     async (req, reply) => {
+      if (!ownsRun(reply, req.params.runId, req.params.id)) return;
       try {
         return { run: await engine.aiJudgeStep(req.params.runId, req.params.stepId) };
       } catch (err) {
@@ -101,6 +117,7 @@ export function registerCompanionRoutes(
   }>(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/judgement',
     async (req, reply) => {
+      if (!ownsRun(reply, req.params.runId, req.params.id)) return;
       const decision = req.body?.decision;
       if (decision !== 'pass' && decision !== 'fail' && decision !== 'skip') {
         return reply.code(400).send({ error: 'invalid_decision' });
@@ -125,6 +142,7 @@ export function registerCompanionRoutes(
   }>(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/override',
     async (req, reply) => {
+      if (!ownsRun(reply, req.params.runId, req.params.id)) return;
       const reason = req.body?.reason;
       if (typeof reason !== 'string' || reason.trim().length === 0) {
         return reply.code(400).send({ error: 'reason_required' });
@@ -143,6 +161,7 @@ export function registerCompanionRoutes(
     Params: { id: string; runId: string };
     Body: { summary?: string; item_ids?: string[] };
   }>('/api/projects/:id/companion/runs/:runId/complete', async (req, reply) => {
+    if (!ownsRun(reply, req.params.runId, req.params.id)) return;
     try {
       const completeInput: { summary?: string; itemIds?: string[] } = {
         itemIds: Array.isArray(req.body?.item_ids) ? req.body!.item_ids : [],

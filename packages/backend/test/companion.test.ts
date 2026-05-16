@@ -265,6 +265,52 @@ describe('Phase 12 — companion review runtime (C-D8, T-D45)', () => {
     }
   });
 
+  it('runProjectId resolves run ownership for the cross-project route guard', async () => {
+    const { engine, projects, project, cleanup } = await withCleanup(setup());
+    try {
+      const other = projects.create({
+        name: 'other',
+        repo_path: project.repo_path,
+        bundle_id: 'test-bundle',
+      });
+      const run = engine.startRun(project.id, 'review');
+      expect(engine.runProjectId(run.id)).toBe(project.id);
+      // A run from project A does not belong to project B (guard denies the mutation).
+      expect(engine.runProjectId(run.id)).not.toBe(other.id);
+      expect(engine.runProjectId('does-not-exist')).toBeNull();
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('listRuns batch-assembles every run newest-first with recovered mode + summary', async () => {
+    const { engine, project, cleanup } = await withCleanup(setup());
+    try {
+      const first = engine.startRun(project.id, 'review', 'standard');
+      engine.completeRun(first.id, { summary: 'first run notes' });
+      const second = engine.startRun(project.id, 'review', 'strict');
+
+      const runs = engine.listRuns(project.id);
+      expect(runs.map((r) => r.id)).toEqual([second.id, first.id]);
+      const f = runs.find((r) => r.id === first.id)!;
+      const s = runs.find((r) => r.id === second.id)!;
+      expect(f.state).toBe('completed');
+      expect(f.companion_mode).toBe('standard');
+      expect(f.summary_entry_id).toBeTruthy();
+      expect(s.state).toBe('running');
+      expect(s.companion_mode).toBe('strict');
+      expect(s.summary_entry_id).toBeNull();
+      // Steps are still re-derived from the bundle ChecklistSpec in the batched path.
+      expect(s.steps.map((x) => x.step_id)).toEqual([
+        'anchor-citation-validation',
+        'scope-assessment',
+      ]);
+      expect(s.steps.map((x) => x.kind)).toEqual(['mechanical', 'judgement']);
+    } finally {
+      await cleanup();
+    }
+  });
+
   it('freeform-bound project declares no checklists (verified no-op)', async () => {
     const { engine, project, cleanup } = await withCleanup(setup('freeform'));
     try {

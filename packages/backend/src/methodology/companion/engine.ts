@@ -72,6 +72,8 @@ export interface CompanionEngine {
   startRun(projectId: string, checklistId: string, companionMode?: string | null): ChecklistRun;
   listRuns(projectId: string): ChecklistRun[];
   getRun(runId: string): ChecklistRun | null;
+  // Cheap single-query ownership lookup for the route-layer cross-project guard.
+  runProjectId(runId: string): string | null;
   runMechanicalStep(runId: string, stepId: string): Promise<ChecklistRun>;
   aiJudgeStep(runId: string, stepId: string): Promise<ChecklistRun>;
   resolveJudgementStep(
@@ -168,29 +170,35 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
     }
   }
 
-  function loadRun(runId: string): ChecklistRun {
-    const row = db.prepare(`SELECT * FROM checklist_runs WHERE id = ?`).get(runId) as
-      | RunRow
-      | undefined;
-    if (!row) throw new RunNotFoundError(runId);
-    const bundle = bundleFor(row.project_id);
-    const spec = bundle?.review_patterns.checklists.find((c) => c.id === row.checklist_id);
-    const order = new Map<string, { ordinal: number; kind: ChecklistStepKind; description: string }>();
+  type StepMeta = Map<string, { ordinal: number; kind: ChecklistStepKind; description: string }>;
+
+  // Step kind/description/order live in the bundle's ChecklistSpec (the source of truth),
+  // not the minimal persisted row — build the lookup once per checklist.
+  function stepMeta(bundle: LoadedBundle | null, checklistId: string): StepMeta {
+    const order: StepMeta = new Map();
+    const spec = bundle?.review_patterns.checklists.find((c) => c.id === checklistId);
     (spec?.steps ?? []).forEach((s, i) => {
       order.set(s.id, { ordinal: i, kind: s.kind, description: s.description });
     });
-    const stepRows = db
-      .prepare(`SELECT * FROM checklist_run_steps WHERE run_id = ? ORDER BY rowid`)
-      .all(runId) as StepRow[];
+    return order;
+  }
+
+  function assembleRun(
+    row: RunRow,
+    stepRows: StepRow[],
+    meta: StepMeta,
+    companionMode: string | null,
+    summaryEntryId: string | null,
+  ): ChecklistRun {
     const steps: ChecklistRunStep[] = stepRows
       .map((r) => {
-        const meta = order.get(r.step_id);
+        const m = meta.get(r.step_id);
         return {
           run_id: r.run_id,
           step_id: r.step_id,
-          kind: (meta?.kind ?? 'mechanical') as ChecklistStepKind,
-          description: meta?.description ?? '',
-          ordinal: meta?.ordinal ?? Number.MAX_SAFE_INTEGER,
+          kind: (m?.kind ?? 'mechanical') as ChecklistStepKind,
+          description: m?.description ?? '',
+          ordinal: m?.ordinal ?? Number.MAX_SAFE_INTEGER,
           state: r.state as ChecklistStepState,
           findings: r.findings_json
             ? (JSON.parse(r.findings_json) as ChecklistStepFindings)
@@ -203,13 +211,30 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
       id: row.id,
       project_id: row.project_id,
       checklist_id: row.checklist_id,
-      companion_mode: auditValue(row.id, 'run_started', 'companion_mode'),
+      companion_mode: companionMode,
       state: row.state as ChecklistRun['state'],
-      summary_entry_id: auditValue(row.id, 'run_completed', 'summary_entry_id'),
+      summary_entry_id: summaryEntryId,
       started_at: row.started_at,
       completed_at: row.completed_at,
       steps,
     };
+  }
+
+  function loadRun(runId: string): ChecklistRun {
+    const row = db.prepare(`SELECT * FROM checklist_runs WHERE id = ?`).get(runId) as
+      | RunRow
+      | undefined;
+    if (!row) throw new RunNotFoundError(runId);
+    const stepRows = db
+      .prepare(`SELECT * FROM checklist_run_steps WHERE run_id = ? ORDER BY rowid`)
+      .all(runId) as StepRow[];
+    return assembleRun(
+      row,
+      stepRows,
+      stepMeta(bundleFor(row.project_id), row.checklist_id),
+      auditValue(row.id, 'run_started', 'companion_mode'),
+      auditValue(row.id, 'run_completed', 'summary_entry_id'),
+    );
   }
 
   function requireStep(runId: string, stepId: string): { run: RunRow; step: StepRow } {
@@ -318,10 +343,75 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
     },
 
     listRuns(projectId) {
+      // Batched assembly: a constant number of queries regardless of run count
+      // (runs + steps + run-level audits), not the 1+4N that per-run loadRun would cost.
       const rows = db
-        .prepare(`SELECT id FROM checklist_runs WHERE project_id = ? ORDER BY started_at DESC`)
-        .all(projectId) as Array<{ id: string }>;
-      return rows.map((r) => loadRun(r.id));
+        .prepare(`SELECT * FROM checklist_runs WHERE project_id = ? ORDER BY started_at DESC`)
+        .all(projectId) as RunRow[];
+      if (rows.length === 0) return [];
+      const runIds = rows.map((r) => r.id);
+      const placeholders = runIds.map(() => '?').join(',');
+
+      const stepsByRun = new Map<string, StepRow[]>();
+      for (const s of db
+        .prepare(
+          `SELECT * FROM checklist_run_steps WHERE run_id IN (${placeholders}) ORDER BY run_id, rowid`,
+        )
+        .all(...runIds) as StepRow[]) {
+        const list = stepsByRun.get(s.run_id);
+        if (list) list.push(s);
+        else stepsByRun.set(s.run_id, [s]);
+      }
+
+      // companion_mode / summary_entry_id are recovered from the run-level audit rows
+      // (entity_id = runId). Rows arrive timestamp-ascending so the last write wins,
+      // matching the single-run auditValue's `ORDER BY timestamp DESC LIMIT 1`.
+      const modeByRun = new Map<string, string | null>();
+      const summaryByRun = new Map<string, string | null>();
+      for (const a of db
+        .prepare(
+          `SELECT entity_id, field, trigger_context_json FROM audit_log
+             WHERE entity_type = 'checklist_step'
+               AND field IN ('run_started','run_completed')
+               AND entity_id IN (${placeholders})
+             ORDER BY timestamp`,
+        )
+        .all(...runIds) as Array<{
+        entity_id: string;
+        field: string;
+        trigger_context_json: string;
+      }>) {
+        let parsed: Record<string, unknown>;
+        try {
+          parsed = JSON.parse(a.trigger_context_json) as Record<string, unknown>;
+        } catch {
+          continue;
+        }
+        if (a.field === 'run_started') {
+          const v = parsed['companion_mode'];
+          modeByRun.set(a.entity_id, typeof v === 'string' ? v : null);
+        } else {
+          const v = parsed['summary_entry_id'];
+          summaryByRun.set(a.entity_id, typeof v === 'string' ? v : null);
+        }
+      }
+
+      const bundle = bundleFor(projectId);
+      const metaByChecklist = new Map<string, StepMeta>();
+      return rows.map((row) => {
+        let meta = metaByChecklist.get(row.checklist_id);
+        if (!meta) {
+          meta = stepMeta(bundle, row.checklist_id);
+          metaByChecklist.set(row.checklist_id, meta);
+        }
+        return assembleRun(
+          row,
+          stepsByRun.get(row.id) ?? [],
+          meta,
+          modeByRun.get(row.id) ?? null,
+          summaryByRun.get(row.id) ?? null,
+        );
+      });
     },
 
     getRun(runId) {
@@ -331,6 +421,13 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
         if (e instanceof RunNotFoundError) return null;
         throw e;
       }
+    },
+
+    runProjectId(runId) {
+      const row = db
+        .prepare(`SELECT project_id FROM checklist_runs WHERE id = ?`)
+        .get(runId) as { project_id: string } | undefined;
+      return row?.project_id ?? null;
     },
 
     async runMechanicalStep(runId, stepId) {
