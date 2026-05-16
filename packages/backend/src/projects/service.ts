@@ -1,10 +1,35 @@
 import { nanoid } from 'nanoid';
+import { isAbsolute, normalize } from 'node:path';
 import type { CreateProjectInput, Project, UpdateProjectInput } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 
 const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
+
+export class InvalidBundlePathError extends Error {
+  constructor(public bundlePath: string) {
+    super(`invalid bundle_path "${bundlePath}"`);
+  }
+}
+
+// C-D14 — `bundle_path` is an arbitrary string from the API body that the loader
+// feeds to readFileSync. Constrain it to a normalized absolute path with no
+// parent-directory traversal so an authenticated caller cannot point the loader
+// at relative or `..`-escaped locations. Returns the canonical path to persist.
+function validateBundlePath(bundlePath: string | null | undefined): string | null {
+  if (bundlePath === null || bundlePath === undefined) return null;
+  if (typeof bundlePath !== 'string' || bundlePath.trim().length === 0) {
+    throw new InvalidBundlePathError(String(bundlePath));
+  }
+  // Check the raw input for `..` before normalizing — normalize() collapses
+  // traversal (e.g. `/a/b/../../etc` → `/etc`), which would otherwise smuggle a
+  // traversal-derived path past the check.
+  if (!isAbsolute(bundlePath) || bundlePath.split(/[/\\]/).includes('..')) {
+    throw new InvalidBundlePathError(bundlePath);
+  }
+  return normalize(bundlePath);
+}
 
 interface ProjectRow {
   id: string;
@@ -69,7 +94,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
 
     create(input) {
       const bundleId = input.bundle_id ?? DEFAULT_BUNDLE_ID;
-      const bundlePath = input.bundle_path ?? null;
+      const bundlePath = validateBundlePath(input.bundle_path);
       if (!registry.hasBundle(bundleId, bundlePath)) {
         throw new BundleNotLoadedError(bundleId);
       }
@@ -109,7 +134,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       if (!before) throw new Error(`project ${id} not found`);
 
       const nextBundlePath =
-        input.bundle_path === undefined ? before.bundle_path : input.bundle_path;
+        input.bundle_path === undefined ? before.bundle_path : validateBundlePath(input.bundle_path);
       const bundlePathChanged = nextBundlePath !== before.bundle_path;
       if (bundlePathChanged && !registry.hasBundle(before.bundle_id, nextBundlePath)) {
         throw new BundleNotLoadedError(before.bundle_id);

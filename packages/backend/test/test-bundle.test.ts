@@ -4,7 +4,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseBundle } from '../src/methodology/bundle-parser/index.js';
 import { createItemsService, ItemPolicyError } from '../src/items/service.js';
-import { createProjectsService } from '../src/projects/service.js';
+import {
+  BundleNotLoadedError,
+  createProjectsService,
+  InvalidBundlePathError,
+} from '../src/projects/service.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const TEST_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'test-bundle', 'bundle.md');
@@ -178,6 +182,69 @@ describe('test-bundle fixture', () => {
       const res = items.modules(project.id);
       expect(res.primary_unit_label).toBeNull();
       expect(res.modules).toEqual([]);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
+
+describe('bundle_path hardening (C-D14)', () => {
+  it('rejects a relative bundle_path', async () => {
+    const cfg = makeTmpConfig();
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      expect(() =>
+        projects.create({
+          name: 'rel',
+          repo_path: '/tmp/rel',
+          bundle_id: 'test-bundle',
+          bundle_path: 'relative/dir',
+        }),
+      ).toThrow(InvalidBundlePathError);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('rejects an absolute bundle_path containing parent traversal', async () => {
+    const cfg = makeTmpConfig();
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      expect(() =>
+        projects.create({
+          name: 'trav',
+          repo_path: '/tmp/trav',
+          bundle_id: 'test-bundle',
+          bundle_path: '/var/data/../../etc',
+        }),
+      ).toThrow(InvalidBundlePathError);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('surfaces an unreadable external bundle dir as a load error, not a throw', async () => {
+    const cfg = makeTmpConfig();
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const emptyDir = mkdtempSync(join(tmpdir(), 'throughline-nobundle-'));
+      try {
+        // Absolute, no traversal — passes validation; the dir has no bundle.md,
+        // so loadExternalFile must return an error result (ENOENT) without throwing.
+        expect(() =>
+          projects.create({
+            name: 'nb',
+            repo_path: '/tmp/nb',
+            bundle_id: 'test-bundle',
+            bundle_path: emptyDir,
+          }),
+        ).toThrow(BundleNotLoadedError);
+      } finally {
+        rmSync(emptyDir, { recursive: true, force: true });
+      }
     } finally {
       await backend.cleanup();
     }

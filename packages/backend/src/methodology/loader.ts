@@ -130,26 +130,36 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
   function loadExternalFile(file: string, bundleId: string): BundleLoadResult {
     const prev = externalCache.get(file);
     let result: BundleLoadResult;
-    if (!existsSync(file)) {
+    // No existsSync pre-check: it is TOCTOU-prone and misses EACCES/EIO. Attempt
+    // the read directly and turn any fs failure (ENOENT, EACCES, EIO, …) into a
+    // normal bundle-load error so neither the chokidar watcher nor resolveBundle
+    // can throw an unhandled exception.
+    let md: string;
+    try {
+      md = readFileSync(file, 'utf8');
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code ?? 'EUNKNOWN';
       result = {
         status: 'error',
         bundle_id: bundleId,
-        errors: [{ bundle_id: bundleId, message: `bundle.md missing at ${file}` }],
+        errors: [{ bundle_id: bundleId, message: `cannot read bundle.md at ${file} (${code})` }],
       };
-      logger?.error(`external bundle "${bundleId}" missing at ${file}`);
+      logger?.error(`external bundle "${bundleId}" unreadable at ${file} (${code})`);
+      externalCache.set(file, result);
+      writeLoadAudit(bundleId, projectsBoundToPath(dirname(file)), result, previousVersion(prev));
+      return result;
+    }
+    result = parseBundle(bundleId, md);
+    if (result.status === 'error') {
+      logger?.error(
+        `external bundle "${bundleId}" (${file}) failed to load: ${result.errors
+          .map((e) => e.message)
+          .join('; ')}`,
+      );
     } else {
-      result = parseBundle(bundleId, readFileSync(file, 'utf8'));
-      if (result.status === 'error') {
-        logger?.error(
-          `external bundle "${bundleId}" (${file}) failed to load: ${result.errors
-            .map((e) => e.message)
-            .join('; ')}`,
-        );
-      } else {
-        logger?.info(
-          `external bundle "${bundleId}" loaded from ${file} (version ${result.bundle.identity.version}).`,
-        );
-      }
+      logger?.info(
+        `external bundle "${bundleId}" loaded from ${file} (version ${result.bundle.identity.version}).`,
+      );
     }
     externalCache.set(file, result);
     writeLoadAudit(bundleId, projectsBoundToPath(dirname(file)), result, previousVersion(prev));

@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { BundleNotLoadedError, type ProjectsService } from './service.js';
+import { BundleNotLoadedError, InvalidBundlePathError, type ProjectsService } from './service.js';
 import type { SettingsService } from '../settings/service.js';
 
 export function registerProjectRoutes(
@@ -50,6 +50,9 @@ export function registerProjectRoutes(
       const project = projects.create(input);
       return reply.code(201).send({ project });
     } catch (err) {
+      if (err instanceof InvalidBundlePathError) {
+        return reply.code(400).send({ error: 'invalid_bundle_path' });
+      }
       if (err instanceof BundleNotLoadedError) {
         return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
       }
@@ -75,6 +78,9 @@ export function registerProjectRoutes(
       const project = projects.update(req.params.id, req.body ?? {});
       return { project };
     } catch (err) {
+      if (err instanceof InvalidBundlePathError) {
+        return reply.code(400).send({ error: 'invalid_bundle_path' });
+      }
       if (err instanceof BundleNotLoadedError) {
         return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
       }

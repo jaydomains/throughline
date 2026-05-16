@@ -374,7 +374,8 @@ A per-project path with install-fallback is the minimum mechanism that lets a us
 
 ### Implications
 - The registry holds a second cache keyed by absolute external `bundle.md` path, alongside the install cache keyed by bundle id; both are populated/refreshed by load and by the watcher.
-- A missing or malformed external `bundle.md` yields a normal bundle-load error result (surfaced like any other), so project create/update with an unresolvable `bundle_path` is rejected with `bundle_not_loaded`.
+- `bundle_path` is validated at project create/update to a normalized absolute path with no `..` traversal (the canonical form is what gets persisted); an invalid value is rejected with `invalid_bundle_path` before it reaches the loader.
+- The external read is attempted directly (no `existsSync` pre-check — TOCTOU-prone and blind to `EACCES`/`EIO`); any fs failure becomes a normal bundle-load error result, so neither the chokidar watcher nor `resolveBundle` can throw. A missing/malformed/unreadable external `bundle.md` therefore rejects create/update with `bundle_not_loaded`.
 - Backup still never copies `methodologies/` (C-D3); a user's external bundle directory is likewise their own to back up — it is not part of the datastore.
 - No bundle-authoring UI in v1 (T-D41); `bundle_path` is set via the project create/update API.
 
