@@ -188,6 +188,20 @@ Sliced into three sub-PRs at the session author's direction: **6a** library cont
 
 ---
 
+## Refactor — Bundle externalisation (public-repo readiness)
+
+Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from the repo and add a configurable mechanism for user-owned bundles to live outside Throughline. C-D14.
+
+- [x] `bundle_path` added to the project model (nullable) + schema migration `0007_project_bundle_path.sql`
+- [x] Bundle loader resolves external `bundle_path/bundle.md` first, falls back to install-shipped `methodologies/<bundle_id>/`
+- [x] External bundles get `chokidar` watch parity (refcounted by project binding; registered on create/`bundle_path` change, unregistered on delete; re-registered for existing projects on backend start)
+- [x] Generic `methodologies/test-bundle/bundle.md` fixture authored (two item types w/ per-type lifecycles, multi-gate moment, anchors, markers); parses cleanly
+- [x] Phase 7 tests retargeted from `methodologies/sitemesh/` to `methodologies/test-bundle/`; frontend mock ids de-business-named; all suites green (backend 132, frontend 70)
+- [x] `methodologies/sitemesh/` deleted from the repo
+- [x] CODE_SPEC.md (C-D3, C-D5 updated; C-D14 minted; bundle-loading section + tables) and README.md (user-owned-bundle guide) documented
+
+---
+
 ## Phase 8 — Methodology gate runtime (four phase moments + PR-open)
 
 - [ ] Gate dispatcher implemented per C-D6

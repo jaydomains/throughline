@@ -13,6 +13,7 @@ interface ProjectRow {
   github_owner: string | null;
   github_repo: string | null;
   bundle_id: string;
+  bundle_path: string | null;
   state: 'active' | 'archived';
   settings_json: string;
   created_at: string;
@@ -28,6 +29,7 @@ function rowToProject(row: ProjectRow): Project {
     github_owner: row.github_owner,
     github_repo: row.github_repo,
     bundle_id: row.bundle_id,
+    bundle_path: row.bundle_path,
     state: row.state,
     settings_json: JSON.parse(row.settings_json) as Record<string, unknown>,
     created_at: row.created_at,
@@ -67,15 +69,16 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
 
     create(input) {
       const bundleId = input.bundle_id ?? DEFAULT_BUNDLE_ID;
-      if (!registry.has(bundleId)) {
+      const bundlePath = input.bundle_path ?? null;
+      if (!registry.hasBundle(bundleId, bundlePath)) {
         throw new BundleNotLoadedError(bundleId);
       }
       const now = new Date().toISOString();
       const id = nanoid();
       db.prepare(
         `INSERT INTO projects
-          (id, name, repo_path, github_owner, github_repo, bundle_id, state, settings_json, created_at, updated_at, archived_at)
-          VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, NULL)`,
+          (id, name, repo_path, github_owner, github_repo, bundle_id, bundle_path, state, settings_json, created_at, updated_at, archived_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?, NULL)`,
       ).run(
         id,
         input.name,
@@ -83,10 +86,12 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         input.github_owner ?? null,
         input.github_repo ?? null,
         bundleId,
+        bundlePath,
         JSON.stringify(input.settings ?? {}),
         now,
         now,
       );
+      registry.registerProjectBundle(id, bundleId, bundlePath);
       appendAudit(db, {
         projectId: id,
         entityType: 'project',
@@ -94,7 +99,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         actor: 'user',
         field: 'create',
         newValue: input.name,
-        triggerContext: { bundle_id: bundleId, repo_path: input.repo_path },
+        triggerContext: { bundle_id: bundleId, bundle_path: bundlePath, repo_path: input.repo_path },
       });
       return this.get(id)!;
     },
@@ -103,10 +108,18 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       const before = this.get(id);
       if (!before) throw new Error(`project ${id} not found`);
 
+      const nextBundlePath =
+        input.bundle_path === undefined ? before.bundle_path : input.bundle_path;
+      const bundlePathChanged = nextBundlePath !== before.bundle_path;
+      if (bundlePathChanged && !registry.hasBundle(before.bundle_id, nextBundlePath)) {
+        throw new BundleNotLoadedError(before.bundle_id);
+      }
+
       const next: Project = {
         ...before,
         name: input.name ?? before.name,
         repo_path: input.repo_path ?? before.repo_path,
+        bundle_path: nextBundlePath,
         github_owner: input.github_owner === undefined ? before.github_owner : input.github_owner,
         github_repo: input.github_repo === undefined ? before.github_repo : input.github_repo,
         state: input.state ?? before.state,
@@ -117,11 +130,12 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
 
       db.prepare(
         `UPDATE projects
-           SET name = ?, repo_path = ?, github_owner = ?, github_repo = ?, state = ?, settings_json = ?, updated_at = ?, archived_at = ?
+           SET name = ?, repo_path = ?, bundle_path = ?, github_owner = ?, github_repo = ?, state = ?, settings_json = ?, updated_at = ?, archived_at = ?
          WHERE id = ?`,
       ).run(
         next.name,
         next.repo_path,
+        next.bundle_path,
         next.github_owner,
         next.github_repo,
         next.state,
@@ -131,9 +145,15 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         id,
       );
 
+      if (bundlePathChanged) {
+        registry.unregisterProjectBundle(id);
+        registry.registerProjectBundle(id, next.bundle_id, next.bundle_path);
+      }
+
       for (const [field, oldV, newV] of [
         ['name', before.name, next.name],
         ['repo_path', before.repo_path, next.repo_path],
+        ['bundle_path', before.bundle_path ?? '', next.bundle_path ?? ''],
         ['github_owner', before.github_owner ?? '', next.github_owner ?? ''],
         ['github_repo', before.github_repo ?? '', next.github_repo ?? ''],
         ['state', before.state, next.state],
@@ -159,6 +179,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       if (!before) return;
       // FK ON DELETE CASCADE handles per-project entity tables (C-D5).
       db.prepare('DELETE FROM projects WHERE id = ?').run(id);
+      registry.unregisterProjectBundle(id);
       appendAudit(db, {
         projectId: null,
         entityType: 'project',

@@ -80,15 +80,15 @@ Methodology bundles live at `<install-root>/methodologies/<bundle-id>/bundle.md`
 ## 11. Authority hierarchy
 ```
 
-Throughline v1 ships with `methodologies/sitemesh/bundle.md` and `methodologies/freeform/bundle.md`. Additional bundles are dropped into the same directory.
+Throughline ships only two bundles under `methodologies/`: `freeform/bundle.md` (the minimum-spec default, T-D47) and `test-bundle/bundle.md` (a generic, business-neutral grammar fixture for the runtime and tests). User-specific, business-internal bundles do **not** live in this repo — they are kept outside Throughline and bound per-project via `bundle_path` (C-D14), so the public repository ships no proprietary discipline.
 
 ### Rationale
 Single-user, install-shipped bundles do not need a per-user authoring path in v1 (T-D41). Install-root `methodologies/` keeps bundles co-located with the artefact they configure and makes them a first-class deployable. A fixed H2-heading convention lets the parser dispatch each section to a typed handler without negotiating ordering or hierarchy. A single bundle.md per directory keeps reasoning about "what is a bundle" trivial; future bundles that want to split content across files can do so under their directory with the bundle.md as the index.
 
 ### Implications
-- Bundle discovery is `fs.readdir('methodologies/')`.
+- Bundle discovery is `fs.readdir('methodologies/')` for install-shipped bundles; per-project external bundles resolve through `bundle_path` (C-D14) and are not part of that scan.
 - The parser walks H2 headings in order; out-of-order or missing headings produce structural-validation errors at load time.
-- User-authored bundles drop into the same directory; in-app authoring (T-D41 deferred to v2) would write here.
+- In-app authoring (T-D41 deferred to v2) would write a user bundle to that user's external `bundle_path` directory, not into the repo's `methodologies/`.
 - Backup never copies the `methodologies/` directory — bundles ship with the install, not with the datastore (T-D3).
 
 ---
@@ -142,7 +142,8 @@ projects (
   repo_path TEXT NOT NULL,
   github_owner TEXT,
   github_repo TEXT,
-  bundle_id TEXT NOT NULL,     -- references methodologies/<bundle_id>/bundle.md
+  bundle_id TEXT NOT NULL,     -- references methodologies/<bundle_id>/bundle.md (or external dir, see bundle_path)
+  bundle_path TEXT,            -- C-D14: optional external bundle dir; when set, resolves <bundle_path>/bundle.md
   state TEXT NOT NULL,         -- 'active' | 'archived'
   settings_json TEXT NOT NULL, -- per-project overrides
   created_at TIMESTAMP NOT NULL,
@@ -151,7 +152,7 @@ projects (
 )
 ```
 
-`bundle_id` is non-nullable per T-D47. Default at project create is `'freeform'`.
+`bundle_id` is non-nullable per T-D47. Default at project create is `'freeform'`. `bundle_path` is the optional escape hatch for user-owned bundles that live outside the repo (C-D14): when set it points at a directory containing `bundle.md`, which the loader resolves in preference to `methodologies/<bundle_id>/`; `bundle_id` stays non-null and remains the project's declared bundle identifier either way.
 
 All per-project entity tables (`items`, `sessions`, `library_entries`, `directives`, `drift_signals`, `orphaned_rules`, `chat_history`, `gate_firings`, `discipline_drift_categories_state`) carry a `project_id` foreign key. Cross-project tables — `audit_log`, `cost_telemetry`, `github_state_cache`, `cc_inbox_queue`, `settings` — record `project_id` where relevant but are queried globally by default.
 
@@ -356,6 +357,29 @@ Deriving primary units from item refs (rather than a separate registry) keeps "a
 
 ---
 
+## C-D14 — Per-project `bundle_path` externalises user bundles; loader resolves external-first with watch parity
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D41, T-D47; C-D3, C-D4, C-D5
+
+### Decision
+Projects carry an optional `bundle_path` column (nullable; migration `0007_project_bundle_path.sql`). Resolution for a project's bundle is: if `bundle_path` is set, load `<bundle_path>/bundle.md`; otherwise load the install-shipped `methodologies/<bundle_id>/bundle.md`. `bundle_id` stays non-nullable (T-D47) and remains the declared identifier in both cases.
+
+The methodology registry exposes `resolveBundle(bundle_id, bundle_path?)` / `hasBundle(bundle_id, bundle_path?)`; all per-project consumers (project create/update validation, item policy, reconcile, dump-zone) resolve through these rather than the install-only `get`/`has`. External bundles get the same `chokidar` hot-reload as install-shipped ones: each distinct external `bundle.md` is an additional watch target, refcounted by the projects bound to it — registered on project create (and on `bundle_path` change), unregistered on project delete or when the last referencing project drops it. On backend start the registry re-registers watch targets for every project already carrying a `bundle_path`.
+
+This is what keeps proprietary discipline out of the public repo: `methodologies/` ships only `freeform` and the generic `test-bundle` fixture; business-internal bundles live in a user-owned directory referenced by `bundle_path` (C-D3).
+
+### Rationale
+A per-project path with install-fallback is the minimum mechanism that lets a user keep a private bundle outside Throughline without forking the repo, while leaving the freeform default and the single-non-null-`bundle_id` invariant (C-D5) untouched. Watch parity removes the asymmetry where canonical bundles hot-reload but user bundles would not; refcounting the watch target keeps the watcher set exactly as large as the live project bindings require.
+
+### Implications
+- The registry holds a second cache keyed by absolute external `bundle.md` path, alongside the install cache keyed by bundle id; both are populated/refreshed by load and by the watcher.
+- A missing or malformed external `bundle.md` yields a normal bundle-load error result (surfaced like any other), so project create/update with an unresolvable `bundle_path` is rejected with `bundle_not_loaded`.
+- Backup still never copies `methodologies/` (C-D3); a user's external bundle directory is likewise their own to back up — it is not part of the datastore.
+- No bundle-authoring UI in v1 (T-D41); `bundle_path` is set via the project create/update API.
+
+---
+
 ## 1. Process model
 
 ```
@@ -397,9 +421,10 @@ Bundle discovery on backend start:
 1. `fs.readdir('methodologies/')` — for each directory, look for `bundle.md`.
 2. Parse each `bundle.md` per C-D4.
 3. Store `LoadedBundle` objects in an in-memory registry keyed by bundle directory name.
-4. For each project in `projects`, resolve its `bundle_id` against the registry; if missing or malformed, project state goes to `bundle-error` and the UI surfaces a banner with the error.
+4. For each project in `projects`, resolve its bundle (C-D14: `bundle_path/bundle.md` if set, else `methodologies/<bundle_id>/bundle.md`) against the registry; if missing or malformed, project state goes to `bundle-error` and the UI surfaces a banner with the error.
+5. Re-register external-bundle watch targets for every project already carrying a `bundle_path` (C-D14).
 
-Live bundle reload: `chokidar` watches `methodologies/**/bundle.md`. On change:
+Live bundle reload: `chokidar` watches `methodologies/**/bundle.md` plus every project's external `bundle_path/bundle.md` (C-D14, refcounted by binding). On change:
 - Re-parse the bundle.
 - If parse succeeds, swap the registry entry, re-instantiate all project-bound scanners (C-D7) and re-resolve gates (C-D6), and write an audit-log entry per affected project recording the bundle change.
 - If parse fails, leave the old `LoadedBundle` in place and surface the validation error in the UI.
@@ -416,7 +441,7 @@ Tables (one row per record unless noted):
 
 | Table | Notes |
 |---|---|
-| `projects` | C-D5 — `id`, `name`, `repo_path`, `github_owner`, `github_repo`, `bundle_id` (non-nullable, T-D47), `state`, `settings_json`, timestamps. |
+| `projects` | C-D5 — `id`, `name`, `repo_path`, `github_owner`, `github_repo`, `bundle_id` (non-nullable, T-D47), `bundle_path` (nullable, C-D14), `state`, `settings_json`, timestamps. |
 | `items` | per §7.4; `id`, `project_id`, `type` (bundle-defined), `title`, `description`, `status` (bundle-defined), `blocker_text`, `parent_id`, timestamps. |
 | `item_tags` | join: `item_id`, `tag`. |
 | `item_blockers` | structured blocker refs (T-D8): `item_id`, `blocked_by_item_id`. |
@@ -743,8 +768,8 @@ Settings UI exposes (mirrors §7.25):
 
 | Template | Location | Purpose |
 |---|---|---|
-| SiteMesh methodology bundle | `methodologies/sitemesh/bundle.md` | T-D41 — rich-discipline reference bundle. |
-| Freeform methodology bundle | `methodologies/freeform/bundle.md` | T-D41, T-D47 — minimum-spec bundle. |
+| Freeform methodology bundle | `methodologies/freeform/bundle.md` | T-D41, T-D47 — minimum-spec default bundle. |
+| Test-bundle fixture | `methodologies/test-bundle/bundle.md` | Generic, business-neutral grammar fixture (multiple item types, per-type lifecycles, multi-gate moment, anchors, markers). Not a real methodology; ships for runtime/tests only. User bundles live outside the repo via `bundle_path` (C-D14). |
 | Semgrep GitHub Actions workflow | `templates/github-actions/throughline-semgrep.yml` | T-D26 — recommended workflow for users to add to their repo. |
 | Claude Code session-start prompt template | `templates/claude-code/session-start.md` | §16 — starter prompt for new sessions. |
 

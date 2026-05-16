@@ -14,6 +14,7 @@ const proj = (id: string, name: string, bundle_id = 'freeform'): Project => ({
   github_owner: null,
   github_repo: null,
   bundle_id,
+  bundle_path: null,
   state: 'active',
   settings_json: {},
   created_at: '2026-01-01',

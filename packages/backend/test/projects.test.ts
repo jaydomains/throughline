@@ -37,7 +37,7 @@ describe('projects service', () => {
     const backend = await makeBackend(cfg);
     try {
       const projects = createProjectsService(backend.db, backend.registry);
-      expect(() => projects.create({ name: 'X', repo_path: '/tmp/x', bundle_id: 'sitemesh' })).toThrow(
+      expect(() => projects.create({ name: 'X', repo_path: '/tmp/x', bundle_id: 'no-such-bundle' })).toThrow(
         BundleNotLoadedError,
       );
     } finally {

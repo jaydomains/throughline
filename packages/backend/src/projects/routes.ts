@@ -24,6 +24,7 @@ export function registerProjectRoutes(
       name?: string;
       repo_path?: string;
       bundle_id?: string;
+      bundle_path?: string | null;
       github_owner?: string;
       github_repo?: string;
       settings?: Record<string, unknown>;
@@ -42,6 +43,7 @@ export function registerProjectRoutes(
         repo_path: body.repo_path,
       };
       if (body.bundle_id !== undefined) input.bundle_id = body.bundle_id;
+      if (body.bundle_path !== undefined) input.bundle_path = body.bundle_path;
       if (body.github_owner !== undefined) input.github_owner = body.github_owner;
       if (body.github_repo !== undefined) input.github_repo = body.github_repo;
       if (body.settings !== undefined) input.settings = body.settings;
@@ -60,6 +62,7 @@ export function registerProjectRoutes(
     Body: {
       name?: string;
       repo_path?: string;
+      bundle_path?: string | null;
       github_owner?: string | null;
       github_repo?: string | null;
       state?: 'active' | 'archived';
@@ -68,8 +71,15 @@ export function registerProjectRoutes(
   }>('/api/projects/:id', async (req, reply) => {
     const existing = projects.get(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
-    const project = projects.update(req.params.id, req.body ?? {});
-    return { project };
+    try {
+      const project = projects.update(req.params.id, req.body ?? {});
+      return { project };
+    } catch (err) {
+      if (err instanceof BundleNotLoadedError) {
+        return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
+      }
+      throw err;
+    }
   });
 
   app.delete<{ Params: { id: string } }>('/api/projects/:id', async (req, reply) => {

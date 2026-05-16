@@ -97,6 +97,10 @@ export async function startServer(
     },
   });
   const projects = createProjectsService(db, registry);
+  // C-D14 — re-attach external bundle watch targets for projects already on disk.
+  for (const p of projects.list({ includeArchived: true })) {
+    if (p.bundle_path) registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path);
+  }
   const settings = createSettingsService(db);
   const sessions = createSessionsService(db, projects);
   const items = createItemsService(db, projects, registry);

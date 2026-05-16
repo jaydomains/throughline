@@ -20,10 +20,10 @@ const freeform: MethodologySummary = {
   has_gates: false,
 };
 
-const sitemesh: MethodologySummary = {
+const rich: MethodologySummary = {
   status: 'loaded',
-  bundle_id: 'sitemesh',
-  identity: { name: 'sitemesh', version: '1.0.0', authority_precedence: [] },
+  bundle_id: 'rich',
+  identity: { name: 'rich', version: '1.0.0', authority_precedence: [] },
   has_primary_unit: true,
   has_gates: true,
 };
@@ -56,6 +56,7 @@ describe('View stubs', () => {
         github_owner: null,
         github_repo: null,
         bundle_id: 'freeform',
+        bundle_path: null,
         state: 'active',
         settings_json: {},
         created_at: '',
@@ -96,7 +97,7 @@ describe('View stubs', () => {
         <Routes>
           <Route
             path="/projects/:id/modules"
-            element={<ModulesView bundles={[sitemesh]} projectBundleId="sitemesh" />}
+            element={<ModulesView bundles={[rich]} projectBundleId="rich" />}
           />
         </Routes>
       </MemoryRouter>,
