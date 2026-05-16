@@ -14,7 +14,9 @@ import { createGateRuntime } from '../src/methodology/gates/runtime.js';
 import { createAnthropicJudgementGate } from '../src/methodology/gates/judgement.js';
 import { createGateHookQueue } from '../src/methodology/gates/hook-queue.js';
 import { installGateHooks } from '../src/methodology/gates/hook-installer.js';
+import { runMechanicalCheck, type CheckContext } from '../src/methodology/gates/checks.js';
 import { readRuntimeUrl, writeRuntimeFile } from '../src/methodology/gates/runtime-file.js';
+import { chmodSync } from 'node:fs';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
@@ -253,6 +255,62 @@ describe('Phase 8 — hook transport', () => {
         queueDir: cfg.gateHookQueueDir,
       });
       expect(r2.installed).toBe(true);
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('never overwrites a user-replaced custom hook when .local is occupied (T-D37)', async () => {
+    const { cfg, repoPath, cleanup } = await withCleanup(setup());
+    try {
+      execFileSync('git', ['-C', repoPath, 'init', '-q'], { timeout: 10_000 });
+      const r1 = installGateHooks({
+        repoPath,
+        runtimeFilePath: cfg.runtimeFilePath,
+        queueDir: cfg.gateHookQueueDir,
+      });
+      const hooksDir = r1.hooksDir!;
+      const preCommit = join(hooksDir, 'pre-commit');
+      const preLocal = join(hooksDir, 'pre-commit.local');
+      // First install with no pre-existing hook → no .local created. Simulate the
+      // collision precondition: a preserved original AND a user-authored replacement.
+      const userCustom = '#!/bin/sh\necho "user-owned custom hook"\nexit 0\n';
+      writeFileSync(preLocal, '#!/bin/sh\n# original\nexit 0\n', 'utf8');
+      chmodSync(preLocal, 0o755);
+      writeFileSync(preCommit, userCustom, 'utf8');
+      chmodSync(preCommit, 0o755);
+
+      const r2 = installGateHooks({
+        repoPath,
+        runtimeFilePath: cfg.runtimeFilePath,
+        queueDir: cfg.gateHookQueueDir,
+      });
+      // The user's custom hook is preserved byte-for-byte; the skip is reported.
+      expect(readFileSync(preCommit, 'utf8')).toBe(userCustom);
+      expect(r2.installed).toBe(false);
+      expect(r2.reason).toContain('pre-commit');
+    } finally {
+      await cleanup();
+    }
+  });
+});
+
+describe('Phase 8 — script-spawn containment (C-D15, defence-in-depth)', () => {
+  it('refuses a script token that escapes the repo via traversal', async () => {
+    const { backend, repoPath, cleanup } = await withCleanup(setup());
+    try {
+      const loaded = backend.registry.resolveBundle('test-bundle');
+      expect(loaded.status).toBe('loaded');
+      if (loaded.status !== 'loaded') return;
+      const ctx: CheckContext = { bundle: loaded.bundle, repoPath, citedAnchors: [] };
+      const res = await runMechanicalCheck(
+        'script-spawn',
+        ctx,
+        'verify-structure',
+        'runs ../../../../tmp/evil.sh',
+      );
+      expect(res.status).toBe('skipped');
+      expect(res.findings.summary).toContain('escapes the repo');
     } finally {
       await cleanup();
     }

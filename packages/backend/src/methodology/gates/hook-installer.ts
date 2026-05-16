@@ -96,7 +96,7 @@ function installOne(
   moment: 'per-commit' | 'post-commit',
   runtimeFilePath: string,
   queueDir: string,
-): void {
+): 'installed' | 'skipped_custom_hook' {
   const hookPath = join(hooksDir, hookName);
   const localPath = join(hooksDir, `${hookName}.local`);
   if (existsSync(hookPath)) {
@@ -108,10 +108,18 @@ function installOne(
       // hook as <hook>.local and invoke it from ours.
       renameSync(hookPath, localPath);
       chmodSync(localPath, 0o755);
+    } else {
+      // A non-Throughline hook exists AND the .local chain slot is already occupied
+      // (the user replaced our installed hook with their own custom one). Overwriting
+      // here would permanently destroy a user-owned file in a user-owned repo —
+      // forbidden under T-D37. Leave it untouched and report the skip; the git-side
+      // trigger for this hook stays unavailable until the user resolves the collision.
+      return 'skipped_custom_hook';
     }
   }
   writeFileSync(hookPath, hookScript(moment, runtimeFilePath, queueDir), 'utf8');
   chmodSync(hookPath, 0o755);
+  return 'installed';
 }
 
 export function installGateHooks(input: InstallHooksInput): InstallHooksResult {
@@ -125,8 +133,20 @@ export function installGateHooks(input: InstallHooksInput): InstallHooksResult {
   }
   try {
     if (!existsSync(hooksDir)) mkdirSync(hooksDir, { recursive: true });
-    installOne(hooksDir, 'pre-commit', 'per-commit', runtimeFilePath, queueDir);
-    installOne(hooksDir, 'post-commit', 'post-commit', runtimeFilePath, queueDir);
+    const skipped: string[] = [];
+    if (installOne(hooksDir, 'pre-commit', 'per-commit', runtimeFilePath, queueDir) === 'skipped_custom_hook')
+      skipped.push('pre-commit');
+    if (installOne(hooksDir, 'post-commit', 'post-commit', runtimeFilePath, queueDir) === 'skipped_custom_hook')
+      skipped.push('post-commit');
+    if (skipped.length > 0) {
+      // Non-fatal (SPEC §7.12): nothing destroyed, the skip is surfaced and audit-logged
+      // by the caller; the un-skipped hook (if any) was still installed.
+      return {
+        installed: false,
+        hooksDir,
+        reason: `custom hook preserved, not overwritten: ${skipped.join(', ')}`,
+      };
+    }
     return { installed: true, hooksDir };
   } catch (e) {
     return { installed: false, reason: e instanceof Error ? e.message : String(e) };

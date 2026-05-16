@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
-import { isAbsolute, join } from 'node:path';
+import { isAbsolute, join, relative as relPath, resolve as resolvePath, sep } from 'node:path';
 import type { GateFindings, GateFiringStatus, LoadedBundle } from '@throughline/shared';
 
 // C-D15 — built-in generic mechanical-check catalogue. The bundle grammar carries no
@@ -240,7 +240,18 @@ async function scriptSpawnCheck(
       findings: findings('script-spawn', `repo path unreadable; ${script} not run`),
     };
   }
-  const scriptPath = join(repoPath, script);
+  // Bundle content is effectively user-controlled (bundles load from a user-specified
+  // bundle_path), so the script token is untrusted. Resolve and require containment
+  // within repoPath — a traversal segment or absolute token must never escape the repo
+  // and execute an arbitrary host script (defence-in-depth).
+  const scriptPath = resolvePath(repoPath, script);
+  const rel = relPath(repoPath, scriptPath);
+  if (rel === '' || rel === '..' || rel.split(sep)[0] === '..' || isAbsolute(rel)) {
+    return {
+      status: 'skipped',
+      findings: findings('script-spawn', `${script} escapes the repo; refused`),
+    };
+  }
   if (!existsSync(scriptPath)) {
     return {
       status: 'skipped',
