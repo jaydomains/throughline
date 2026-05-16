@@ -12,6 +12,7 @@ import { appendAudit } from '../audit/log.js';
 import {
   disciplineCountsByPrimaryUnit,
   disciplineDriftItemIds,
+  itemHasDisciplineDrift,
 } from '../drift/service.js';
 import type { DB } from '../db/index.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
@@ -199,11 +200,10 @@ function rowToItemWithChildren(
 }
 
 function rowToItem(db: DB, row: ItemRow): Item {
-  return rowToItemWithChildren(
-    row,
-    loadItemChildren(db, [row.id]),
-    disciplineDriftItemIds(db, row.project_id),
-  );
+  // Single-item path: targeted EXISTS, not the whole-project drift set (the list path
+  // still batches via disciplineDriftItemIds).
+  const drifted = itemHasDisciplineDrift(db, row.id) ? new Set([row.id]) : new Set<string>();
+  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]), drifted);
 }
 
 function bundleFor(

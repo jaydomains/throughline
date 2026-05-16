@@ -105,6 +105,31 @@ export function disciplineCountsByPrimaryUnit(db: DB, projectId: string): Map<st
   return new Map(rows.map((r) => [r.ref, r.n]));
 }
 
+// Single-item variant of disciplineDriftItemIds: the get/create/update item paths only
+// need a yes/no for one row, so a targeted EXISTS avoids building (and joining) the whole
+// project drift set on every single-item fetch (e.g. detail-panel arrow-key cycling).
+export function itemHasDisciplineDrift(db: DB, itemId: string): boolean {
+  const row = db
+    .prepare(
+      `SELECT 1 AS hit
+        WHERE EXISTS (
+          SELECT 1 FROM drift_signals ds
+           WHERE ds.stream = 'discipline' AND ds.dismissed_at IS NULL
+             AND ds.item_id = @itemId
+        )
+        OR EXISTS (
+          SELECT 1 FROM drift_signals ds
+            JOIN item_primary_unit_refs r ON r.primary_unit_ref = ds.primary_unit_ref
+            JOIN items i ON i.id = r.item_id AND i.project_id = ds.project_id
+           WHERE ds.stream = 'discipline' AND ds.dismissed_at IS NULL
+             AND ds.primary_unit_ref IS NOT NULL AND r.item_id = @itemId
+        )
+        LIMIT 1`,
+    )
+    .get({ itemId }) as { hit: number } | undefined;
+  return row !== undefined;
+}
+
 export function createDriftService(db: DB): DriftService {
   return {
     hasPrAssociation(itemId) {

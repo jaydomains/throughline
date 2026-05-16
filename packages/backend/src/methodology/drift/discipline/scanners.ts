@@ -3,6 +3,7 @@ import { isAbsolute, join } from 'node:path';
 import type { DisciplineDriftCategory, LoadedBundle } from '@throughline/shared';
 import type { DB } from '../../../db/index.js';
 import { resolveDocSurface } from '../../gates/checks.js';
+import { escapeRegExp, safeCompile, safeTest } from './safe-regex.js';
 
 // C-D7 — discipline-drift scanners. One scanner per bundle-declared category
 // (validation-rules section); the category's `check_kind` selects a generic primitive,
@@ -96,14 +97,22 @@ function crossReferenceScan(
   if (anchors.length === 0) return [];
   const files = resolveDocSurface(repoPath, bundle);
   if (files === null) return [];
+  // format_regex is bundle-authored (untrusted). A refused/invalid pattern → no format
+  // constraint rather than failing every anchor on a broken bundle (skip spirit, T-D44).
   const formatRe = bundle.anchor_system.format_regex
-    ? new RegExp(bundle.anchor_system.format_regex)
+    ? safeCompile(bundle.anchor_system.format_regex)
     : null;
   // status_vocabulary convention (same as the Phase-8 anchor-resolution gate): first term
   // is "live", the rest are non-live. A cited anchor that does not resolve, or resolves to
-  // a non-live status, is a cross-reference failure (SPEC §7.14).
+  // a non-live status, is a cross-reference failure (SPEC §7.14). Vocab terms are constant
+  // for the bundle: compile the non-live matchers once (not N anchors × M terms) and
+  // escape each term so a metacharacter in a vocab word can't malform the pattern.
   const vocab = bundle.anchor_system.status_vocabulary ?? [];
   const liveStatus = vocab[0];
+  const nonLiveMatchers = vocab.slice(1).map((term) => ({
+    term,
+    re: new RegExp(`status[:\\s]+${escapeRegExp(term.toLowerCase())}`),
+  }));
   const corpus = files.map((f) => readFileSync(f, 'utf8')).join('\n');
   const out: ScanFinding[] = [];
   for (const anchor of anchors) {
@@ -116,11 +125,9 @@ function crossReferenceScan(
         problem = `cited anchor "${anchor}" does not resolve to any doc heading`;
       } else if (liveStatus) {
         const block = corpus.slice(headingIdx, headingIdx + 600).toLowerCase();
-        const nonLive = vocab
-          .slice(1)
-          .find((s) => new RegExp(`status[:\\s]+${s.toLowerCase()}`).test(block));
+        const nonLive = nonLiveMatchers.find((m) => m.re.test(block));
         if (nonLive) {
-          problem = `cited anchor "${anchor}" resolves but is ${nonLive} (not acknowledged)`;
+          problem = `cited anchor "${anchor}" resolves but is ${nonLive.term} (not acknowledged)`;
         }
       }
     }
@@ -144,21 +151,18 @@ function regexScan(
 ): ScanFinding[] {
   const pattern = category.details.trim();
   if (!pattern) return [];
-  let re: RegExp;
-  try {
-    re = new RegExp(pattern);
-  } catch {
-    // An unparseable pattern is a bundle-authoring issue, not a repo drift — skip
-    // silently rather than fail (never-blocks spirit, T-D44).
-    return [];
-  }
+  // An unparseable OR catastrophic-backtracking pattern is a bundle-authoring issue,
+  // not a repo drift — skip silently rather than hang the scanner / event loop or
+  // fail (never-blocks spirit, T-D44).
+  const re = safeCompile(pattern);
+  if (re === null) return [];
   const files = resolveDocSurface(repoPath, bundle);
   if (files === null) return [];
   const out: ScanFinding[] = [];
   for (const file of files) {
     const lines = readFileSync(file, 'utf8').split('\n');
     lines.forEach((line, i) => {
-      if (re.test(line)) {
+      if (safeTest(re, line)) {
         out.push({
           message: `/${pattern}/ matched at line ${i + 1}`,
           ref: file,
