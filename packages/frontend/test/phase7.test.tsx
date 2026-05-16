@@ -72,8 +72,8 @@ describe('Phase 7 — rich-bundle-bound UI', () => {
     mockApi.getModules.mockResolvedValue({
       primary_unit_label: 'module',
       modules: [
-        { ref: 'auth', item_count: 2, phases: ['drafting'], anchor_count: 3, marker_count: 1, tier: 'tier-1' },
-        { ref: 'billing', item_count: 6, phases: [], anchor_count: 0, marker_count: 0, tier: 'tier-3' },
+        { ref: 'auth', item_count: 2, phases: ['drafting'], anchor_count: 3, marker_count: 1, tier: 'tier-1', drift_signal_count: 0 },
+        { ref: 'billing', item_count: 6, phases: [], anchor_count: 0, marker_count: 0, tier: 'tier-3', drift_signal_count: 0 },
       ],
     });
 
@@ -92,5 +92,29 @@ describe('Phase 7 — rich-bundle-bound UI', () => {
     expect(screen.getByTestId('module-row-auth')).toBeInTheDocument();
     expect(screen.getByTestId('module-tier-auth')).toHaveTextContent('tier-1');
     expect(screen.getByTestId('module-tier-billing')).toHaveTextContent('tier-3');
+  });
+
+  it('Phase 9 — badges primary units with open discipline drift (C-D7, §7.14)', async () => {
+    mockApi.getModules.mockResolvedValue({
+      primary_unit_label: 'module',
+      modules: [
+        { ref: 'auth', item_count: 2, phases: [], anchor_count: 0, marker_count: 0, tier: 'tier-1', drift_signal_count: 2 },
+        { ref: 'billing', item_count: 1, phases: [], anchor_count: 0, marker_count: 0, tier: 'tier-1', drift_signal_count: 0 },
+      ],
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/projects/p1/modules']}>
+        <Routes>
+          <Route
+            path="/projects/:id/modules"
+            element={<ModulesView bundles={[richSummary]} projectBundleId="rich" />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId('module-drift-auth')).toHaveTextContent('2');
+    expect(screen.queryByTestId('module-drift-billing')).not.toBeInTheDocument();
   });
 });

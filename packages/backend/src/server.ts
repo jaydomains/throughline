@@ -41,6 +41,8 @@ import { registerInboxRoutes } from './inbox/routes.js';
 import { createCodeTodoService } from './code-todo/service.js';
 import { registerCodeTodoRoutes } from './code-todo/routes.js';
 import { createDriftService } from './drift/service.js';
+import { createDisciplineDriftEngine } from './methodology/drift/discipline/engine.js';
+import { registerDisciplineDriftRoutes } from './methodology/drift/routes.js';
 import {
   createAnthropicReconcileEngine,
   createHeuristicReconcileEngine,
@@ -94,10 +96,16 @@ export async function startServer(
   runMigrations(db);
 
   const app = Fastify({ logger: true });
+  // Late-bound so the registry's reload hook can reach the discipline-drift engine, which
+  // is constructed after the registry (C-D7). The registry's initial scan runs before any
+  // project exists, so the optional-chained no-op is correct there.
+  let disciplineEngine: ReturnType<typeof createDisciplineDriftEngine> | undefined;
   const registry = createMethodologyRegistry({
     db,
     methodologiesDir: config.methodologiesDir,
     watch: true,
+    onBundleReloaded: (bundleId, projectIds) =>
+      disciplineEngine?.reloadForBundle(bundleId, projectIds),
     logger: {
       info: (m) => app.log.info(m),
       warn: (m) => app.log.warn(m),
@@ -111,6 +119,23 @@ export async function startServer(
   }
   const settings = createSettingsService(db);
   const sessions = createSessionsService(db, projects);
+  const drift = createDriftService(db);
+
+  // Phase 9 — discipline-drift engine (C-D7). Constructed before the gate runtime so the
+  // pre-write moment's onMoment hook can fire write-time scanners (SPEC §7.14).
+  disciplineEngine = createDisciplineDriftEngine({
+    db,
+    projects,
+    registry,
+    drift,
+    watch: watchInbox,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+  const disciplineDrift = disciplineEngine;
 
   // AI / dump-zone: Anthropic client routes to the real Sonnet extractor when the secrets
   // file holds a key; heuristic fallback runs otherwise. Read availability per call so a
@@ -124,6 +149,11 @@ export async function startServer(
     projects,
     registry,
     judgement: createAnthropicJudgementGate({ client: anthropicClient }),
+    // C-D7 — the pre-write moment also fires write-time discipline-drift scanners,
+    // reusing the Phase-8 dispatch rather than duplicating trigger logic.
+    onMoment: (projectId, moment) => {
+      if (moment === 'pre-write') disciplineDrift.runScan(projectId, new Set(['pre-write']));
+    },
     logger: {
       info: (m) => app.log.info(m),
       warn: (m) => app.log.warn(m),
@@ -175,7 +205,6 @@ export async function startServer(
     },
   });
   const codeTodo = createCodeTodoService({ db, projects, dumpZone });
-  const drift = createDriftService(db);
   const reconcileEngine = createRoutingReconcileEngine({
     anthropic: createAnthropicReconcileEngine({ client: anthropicClient }),
     heuristic: createHeuristicReconcileEngine(),
@@ -244,6 +273,7 @@ export async function startServer(
     runtimeFilePath: config.runtimeFilePath,
     queueDir: config.gateHookQueueDir,
   });
+  registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
   registerProjectRoutes(app, projects, settings);
   registerSessionRoutes(app, projects, sessions);
   registerItemRoutes(app, projects, items);
@@ -262,6 +292,7 @@ export async function startServer(
 
   reminderScheduler.start();
   mdIngestWatcher.start();
+  disciplineDrift.start();
 
   await app.listen({ host: config.host, port: config.port });
   // Derive the bound port from the listening socket so callers requesting port 0
@@ -315,6 +346,7 @@ export async function startServer(
       await app.close();
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();
+      await disciplineDrift.stop();
       await registry.stop();
       db.close();
     },

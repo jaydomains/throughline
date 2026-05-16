@@ -9,6 +9,11 @@ import type {
   UpdateItemInput,
 } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
+import {
+  disciplineCountsByPrimaryUnit,
+  disciplineDriftItemIds,
+  itemHasDisciplineDrift,
+} from '../drift/service.js';
 import type { DB } from '../db/index.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -164,7 +169,11 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
   };
 }
 
-function rowToItemWithChildren(row: ItemRow, children: ItemChildren): Item {
+function rowToItemWithChildren(
+  row: ItemRow,
+  children: ItemChildren,
+  drifted: Set<string>,
+): Item {
   return {
     id: row.id,
     project_id: row.project_id,
@@ -184,13 +193,17 @@ function rowToItemWithChildren(row: ItemRow, children: ItemChildren): Item {
       anchor_citations: children.anchorsById.get(row.id) ?? [],
       marker_refs: children.markersById.get(row.id) ?? [],
     },
+    methodology_drift: drifted.has(row.id),
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
 }
 
 function rowToItem(db: DB, row: ItemRow): Item {
-  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]));
+  // Single-item path: targeted EXISTS, not the whole-project drift set (the list path
+  // still batches via disciplineDriftItemIds).
+  const drifted = itemHasDisciplineDrift(db, row.id) ? new Set([row.id]) : new Set<string>();
+  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]), drifted);
 }
 
 function bundleFor(
@@ -335,6 +348,7 @@ export function createItemsService(
       const phasesByRef = distinctByRef('item_phase_refs', 'phase_id');
       const anchorsByRef = distinctByRef('item_anchor_citations', 'anchor_id');
       const markersByRef = distinctByRef('item_marker_refs', 'marker_id');
+      const driftByRef = disciplineCountsByPrimaryUnit(db, projectId);
       const modules: ModuleSummary[] = counts.map((c) => ({
         ref: c.ref,
         item_count: c.item_count,
@@ -342,6 +356,7 @@ export function createItemsService(
         anchor_count: (anchorsByRef.get(c.ref) ?? []).length,
         marker_count: (markersByRef.get(c.ref) ?? []).length,
         tier: classifyTier(primaryUnit.tier_rules, c.item_count),
+        drift_signal_count: driftByRef.get(c.ref) ?? 0,
       }));
       return { primary_unit_label: primaryUnit.name, modules };
     },
@@ -363,7 +378,8 @@ export function createItemsService(
       const sql = `SELECT i.* FROM items i${joins} WHERE ${filters.join(' AND ')} ORDER BY i.created_at ASC`;
       const rows = db.prepare(sql).all(...joinParams, ...filterParams) as ItemRow[];
       const children = loadItemChildren(db, rows.map((r) => r.id));
-      return rows.map((r) => rowToItemWithChildren(r, children));
+      const drifted = disciplineDriftItemIds(db, project_id);
+      return rows.map((r) => rowToItemWithChildren(r, children, drifted));
     },
 
     get(id) {

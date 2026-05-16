@@ -136,4 +136,36 @@ describe('Phase 8 — methodology-gates view', () => {
       expect(mockApi.runGateMoment).toHaveBeenCalledWith('p1', 'pre-write'),
     );
   });
+
+  it('Phase 9 — renders category-grouped discipline drift and re-scans (C-D7)', async () => {
+    mockApi.getDisciplineDrift.mockResolvedValue({
+      groups: [
+        {
+          category: 'banned-strings',
+          signals: [
+            {
+              id: 'd1',
+              project_id: 'p1',
+              category: 'banned-strings',
+              item_id: null,
+              primary_unit_ref: null,
+              reason: '"TODO" at line 3 — /repo/SPEC.md',
+              created_at: '2026-05-16T00:00:00Z',
+            },
+          ],
+        },
+      ],
+    });
+    mockApi.rescanDisciplineDrift.mockResolvedValue({ groups: [] });
+    renderAt(richSummary, 'rich');
+    await waitFor(() =>
+      expect(screen.getByTestId('drift-category-banned-strings')).toBeInTheDocument(),
+    );
+    expect(screen.getByTestId('drift-signal-d1')).toHaveTextContent('"TODO" at line 3');
+    fireEvent.click(screen.getByTestId('discipline-drift-rescan'));
+    await waitFor(() => expect(mockApi.rescanDisciplineDrift).toHaveBeenCalledWith('p1'));
+    await waitFor(() =>
+      expect(screen.getByTestId('discipline-drift-empty')).toBeInTheDocument(),
+    );
+  });
 });

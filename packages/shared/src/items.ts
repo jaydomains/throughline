@@ -24,6 +24,9 @@ export interface Item {
   blockers: string[]; // structured blocker references — item ids that block this one (T-D8)
   session_ids: string[];
   methodology_context: MethodologyContext;
+  // Phase 9 (C-D7, SPEC §7.14) — true when an open discipline-drift signal is scoped to
+  // this item or to one of its primary units. Derived; never persisted on the item.
+  methodology_drift: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -71,6 +74,9 @@ export interface ModuleSummary {
   anchor_count: number;
   marker_count: number;
   tier: string;
+  // Phase 9 (C-D7) — open discipline-drift signals scoped to this primary unit. 0 when
+  // the bundle declares no drift categories (freeform) or none reproduce.
+  drift_signal_count: number;
 }
 
 export interface ModulesResult {

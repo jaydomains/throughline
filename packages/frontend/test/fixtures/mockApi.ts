@@ -213,6 +213,7 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
       anchor_citations: [],
       marker_refs: [],
     },
+    methodology_drift: false,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: new Date().toISOString(),
     ...i,
@@ -253,6 +254,35 @@ export const mockApi = {
       anchor_count: number;
       marker_count: number;
       tier: string;
+      drift_signal_count: number;
+    }>,
+  })),
+  getDisciplineDrift: vi.fn(async (_projectId: string) => ({
+    groups: [] as Array<{
+      category: string;
+      signals: Array<{
+        id: string;
+        project_id: string;
+        category: string;
+        item_id: string | null;
+        primary_unit_ref: string | null;
+        reason: string;
+        created_at: string;
+      }>;
+    }>,
+  })),
+  rescanDisciplineDrift: vi.fn(async (_projectId: string) => ({
+    groups: [] as Array<{
+      category: string;
+      signals: Array<{
+        id: string;
+        project_id: string;
+        category: string;
+        item_id: string | null;
+        primary_unit_ref: string | null;
+        reason: string;
+        created_at: string;
+      }>;
     }>,
   })),
 
@@ -315,6 +345,7 @@ export const mockApi = {
         anchor_citations: input.methodology_context?.anchor_citations ?? [],
         marker_refs: input.methodology_context?.marker_refs ?? [],
       },
+      methodology_drift: false,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -502,6 +533,7 @@ export const mockApi = {
         blockers: [],
         session_ids: itemProposal.target_session_id ? [itemProposal.target_session_id] : [],
         methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
+        methodology_drift: false,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -808,6 +840,7 @@ export const mockApi = {
             blockers: [],
             session_ids: input.diff.session_id ? [input.diff.session_id] : [],
             methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
+            methodology_drift: false,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

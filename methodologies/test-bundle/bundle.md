@@ -146,6 +146,12 @@ trigger: pre-write
 check: structural
 details: required files present, sections ordered, anchor bodies well-formed
 
+### Drift category: anchor-resolution
+
+trigger: manual
+check: cross_reference
+details: every cited A-D anchor must resolve to a live decision in the docs
+
 ## 11. Authority hierarchy
 
 source_ranking: spec > code > tracker
