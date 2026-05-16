@@ -440,6 +440,31 @@ The alternative — adding a fourth check-binding token to the gate line — is 
 
 ---
 
+## C-D16 — GitHub poller + code-drift pipeline: fetch-idiom client, local-git-first diff seam, confidence-thresholded auto-reconcile
+
+- **Cites:** T-D6, T-D7, T-D18, T-D21 (code stream), T-D26, T-D31, T-D33, T-D34; SPEC §7.13/7.14/7.16; C-D6 (pr-open dispatch), C-D7 (shared `drift_signals`)
+
+### Decision
+The Phase-10 GitHub subsystem (`backend/src/github/`) is built as a thin `fetch`-based REST client (no `@octokit/rest`) plus a local-git diff seam (`child_process git`, no `simple-git`), behind a polling loop that drives PR-state surfacing, the `pr-open` gate, code-drift tiers 1-4, confidence-thresholded auto-reconcile, manual item-to-PR linking, and the orphaned-rule lifecycle.
+
+### Context
+CODE_SPEC §4 named `@octokit/rest` and §12 named `simple-git`. The established repo precedent is the opposite: `ai/anthropic.ts` deliberately talks JSON-over-HTTPS directly with an injectable `fetchImpl` (offline-testable, SDK-free, "promote when the surface grows"), and §7 already records the Phase-8 hook-installer shelling `git` directly rather than adding `simple-git`. Adding the SDKs now would itself be drift against that precedent.
+
+### Rationale
+- **Rate-limit posture.** Authenticated REST conditional GETs that return `304` do **not** count against the primary rate limit, so ETag-cached lifecycle polling (60s active / 5min idle, T-D7) is effectively free. The only expensive payload is a PR's changed-file list / diff-stat.
+- **Hybrid diff seam.** Therefore the *single* expensive seam — changed-file enumeration (tier-3) and diff-stat (auto-reconcile) — goes **local-git-first**: the backend already has `repo_path`; `git diff --name-only base...head` costs no API call, no payload, and is offline-testable with a real temp repo. Base/head SHAs come from the cheap metadata call already made for state. `refs/pull/N/head` lives on the base repo, so fork PRs work; the fetch-on-miss is lazy and best-effort; on any miss the caller falls back to the GitHub `pulls/{n}/files` API. **Tiers 1 (Semgrep check-run annotations) and 2 (revert metadata) are GitHub-only facts and stay API-only** — there is no local-git path for them.
+- **SDK-free.** A `fetch` client with injectable `fetchImpl` keeps the offline/degraded story (no PAT ⇒ inert, mirroring `AnthropicClient.available()`), adds zero dependencies, and matches the in-repo idiom.
+
+### Implications
+- **Layout.** `backend/src/github/`: `api.ts` (fetch/ETag client + the documented `listPullFiles` API fallback), `local-git.ts` (the hybrid seam), `state-cache.ts` (`github_state_cache`; a synthetic `pr_number=0` row holds the repo-level list ETag — schema unchanged from 0001), `poller.ts`, `tiers.ts` (1-3, idempotent), `tier4.ts` (token-cosine dedup + 7-day stale sweep), `auto-reconcile.ts`, `pr-linking.ts`, `orphan-rules.ts`, `reverify.ts`, `routes.ts`. Migration `0009` is index-only (confidence/undo ride in `audit_log.trigger_context_json` per §6/§16).
+- **Auto-reconcile (T-D6/T-D18).** PR description + merge msg + diff-stat → reconcile engine → confidence dispatch: high = auto-apply + toast + in-memory 24h undo (snapshot reversible; provenance + confidence audit-logged as `actor='ai_auto_apply'` **from day 1**, §13 calibration); medium = run left pending, one-click approve = the normal apply; low = modal. The v1 confidence formula (heuristic-extractor never auto-applies; any `contradicted` row forces a human; small all-completed/no-change ⇒ high; completed-dominated ⇒ medium) is a §13 partially-blocking knob, project-overridable via `settings_json.github_auto_reconcile`.
+- **"Active session" approximation (implementation-shape; CODE_SPEC-only per the spec-drift policy).** SPEC §7.13's "pinned or dumped within 2h" has no first-class signal (sessions carry no pin / last-dump column). v1 approximates "active" as *a session or reconcile run touched within 2h*. Surfaced as an Open Question, not silently resolved.
+- **SSE push deferred.** `routes/events.ts` is ping-only and no broadcast bus exists; Phase-10 surfacing stays REST-poll (the Phase-9 precedent). Building a bus is a separate cross-cutting slice.
+- **Verifier-tool plurality (Questions for the spec author #7) is surfaced, not resolved.** Tier-1 matches check-run annotations to `item_verifier_rules` by a convention (rule id ↔ annotation title / message), Semgrep-shaped but not Semgrep-hardcoded.
+- Code-drift signals share the `drift_signals` table with `stream='code'` (C-D7); the drift inbox counts both streams, excludes strong code tiers 1-3 (they badge items via the derived `Item.code_drift_tier`), and reuses one re-verify / reopen / dismiss code path across streams.
+
+---
+
 ## 1. Process model
 
 ```

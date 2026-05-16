@@ -10,6 +10,7 @@ import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
 import { Board } from '../components/Board.js';
 import { DumpZone } from '../components/DumpZone.js';
 import { ReconcileComposer } from '../components/ReconcileComposer.js';
+import { PrBadges } from '../components/PrBadges.js';
 
 export function SessionView() {
   const { id, sessionId } = useParams();
@@ -47,6 +48,7 @@ export function SessionView() {
   return (
     <div className="session-view" data-testid="session-view">
       <h1>{session?.name ?? '…'}</h1>
+      <PrBadges projectId={projectId} />
       {policy && (
         <div className="boards">
           {policy.boards.map((board) => (

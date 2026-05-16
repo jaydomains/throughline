@@ -10,9 +10,11 @@ import type {
 } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import {
+  codeDriftTierByItem,
   disciplineCountsByPrimaryUnit,
   disciplineDriftItemIds,
   itemHasDisciplineDrift,
+  itemStrongestCodeTier,
 } from '../drift/service.js';
 import type { DB } from '../db/index.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
@@ -173,6 +175,7 @@ function rowToItemWithChildren(
   row: ItemRow,
   children: ItemChildren,
   drifted: Set<string>,
+  codeTierById: Map<string, 'tier-1' | 'tier-2' | 'tier-3'>,
 ): Item {
   return {
     id: row.id,
@@ -194,6 +197,7 @@ function rowToItemWithChildren(
       marker_refs: children.markersById.get(row.id) ?? [],
     },
     methodology_drift: drifted.has(row.id),
+    code_drift_tier: codeTierById.get(row.id) ?? null,
     created_at: row.created_at,
     updated_at: row.updated_at,
   };
@@ -203,7 +207,9 @@ function rowToItem(db: DB, row: ItemRow): Item {
   // Single-item path: targeted EXISTS, not the whole-project drift set (the list path
   // still batches via disciplineDriftItemIds).
   const drifted = itemHasDisciplineDrift(db, row.id) ? new Set([row.id]) : new Set<string>();
-  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]), drifted);
+  const tier = itemStrongestCodeTier(db, row.id);
+  const codeTierById = tier ? new Map([[row.id, tier]]) : new Map<string, never>();
+  return rowToItemWithChildren(row, loadItemChildren(db, [row.id]), drifted, codeTierById);
 }
 
 function bundleFor(
@@ -250,6 +256,9 @@ function classifyTier(tierRules: string, itemCount: number): string {
 // (SPEC §7.12); same gate as the git pre-commit hook. Best-effort, never blocks.
 export interface ItemsServiceHooks {
   onStatusTransition?: (projectId: string, itemId: string) => void;
+  // Phase 10 (T-D33) — fired BEFORE the row is deleted (and its item_verifier_rules
+  // cascade away) so the orphan-rule tracker can snapshot the rules. Best-effort.
+  onDelete?: (projectId: string, itemId: string) => void;
 }
 
 export function createItemsService(
@@ -379,7 +388,8 @@ export function createItemsService(
       const rows = db.prepare(sql).all(...joinParams, ...filterParams) as ItemRow[];
       const children = loadItemChildren(db, rows.map((r) => r.id));
       const drifted = disciplineDriftItemIds(db, project_id);
-      return rows.map((r) => rowToItemWithChildren(r, children, drifted));
+      const codeTierById = codeDriftTierByItem(db, project_id);
+      return rows.map((r) => rowToItemWithChildren(r, children, drifted, codeTierById));
     },
 
     get(id) {
@@ -568,6 +578,13 @@ export function createItemsService(
     delete(id) {
       const before = getRow(id);
       if (!before) return;
+      // T-D33 — snapshot verifier rules into the orphan tracker before the FK cascade
+      // removes them. Best-effort; never blocks the delete.
+      try {
+        hooks.onDelete?.(before.project_id, id);
+      } catch {
+        /* orphan-tracking failure must not block item deletion */
+      }
       db.prepare('DELETE FROM items WHERE id = ?').run(id);
       appendAudit(db, {
         projectId: before.project_id,

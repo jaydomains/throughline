@@ -1,0 +1,33 @@
+# Throughline — recommended Semgrep GitHub Actions workflow (T-D26, SPEC §7.16).
+#
+# Throughline does NOT create or manage this file. Copy it into your *target* repo at
+# .github/workflows/throughline-semgrep.yml and point `config` at your methodology
+# bundle's verifier-rule path. Semgrep runs in CI on every PR; Throughline reads the
+# findings back via the GitHub API (check-run annotations) and overlays them on items as
+# code-drift tier-1 signals. The backend warns once at first GitHub-integration use if
+# this workflow file is absent.
+
+name: throughline-semgrep
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+  checks: write
+  pull-requests: read
+
+jobs:
+  semgrep:
+    name: semgrep/ci
+    runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      # Point --config at the verifier-rule directory your methodology bundle declares.
+      # SiteMesh convention (T-D26): one rule file per item, named by the item's stable
+      # identifier, under the repo's Semgrep config area.
+      - run: semgrep ci --config .semgrep/throughline
+        env:
+          SEMGREP_RULES: .semgrep/throughline

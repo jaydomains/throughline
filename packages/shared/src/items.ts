@@ -27,6 +27,10 @@ export interface Item {
   // Phase 9 (C-D7, SPEC §7.14) — true when an open discipline-drift signal is scoped to
   // this item or to one of its primary units. Derived; never persisted on the item.
   methodology_drift: boolean;
+  // Phase 10 (C-D16, SPEC §7.14) — strongest open code-drift tier scoped to this item
+  // (tier-1 red > tier-2 orange > tier-3 yellow). null when none; tier-4 never badges an
+  // item (it routes to the drift inbox). Derived; never persisted.
+  code_drift_tier: 'tier-1' | 'tier-2' | 'tier-3' | null;
   created_at: string;
   updated_at: string;
 }

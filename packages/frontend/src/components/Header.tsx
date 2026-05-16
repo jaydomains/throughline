@@ -3,6 +3,7 @@ import type { Project } from '@throughline/shared';
 import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
 import { useDirectives } from '../hooks/useDirectives.js';
+import { useDriftInbox } from '../hooks/useDriftInbox.js';
 import { InboxStatus } from './InboxStatus.js';
 import { ProjectSwitcher } from './ProjectSwitcher.js';
 import { Scratchpad } from './Scratchpad.js';
@@ -28,6 +29,7 @@ export function Header({
     : null;
   const bundle = activeProject ? findBundle(bundles, activeProject.bundle_id) : undefined;
   const { directives } = useDirectives(activeProjectId);
+  const { inbox } = useDriftInbox(activeProjectId);
 
   return (
     <header className="header" role="banner">
@@ -58,6 +60,17 @@ export function Header({
           data-testid="directives-hint"
         >
           Directives ({directives.length})
+        </Link>
+      )}
+
+      {activeProject && (
+        <Link
+          to={`/projects/${activeProject.id}/drift-inbox`}
+          className="header-pill drift-inbox-hint"
+          title="Drift inbox — code tier-4 + discipline signals (SPEC §7.14)"
+          data-testid="drift-inbox-hint"
+        >
+          Drift ({inbox.total_count})
         </Link>
       )}
 

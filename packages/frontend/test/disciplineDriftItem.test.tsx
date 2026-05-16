@@ -24,6 +24,7 @@ function makeItem(over: Partial<Item>): Item {
       marker_refs: [],
     },
     methodology_drift: false,
+    code_drift_tier: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: '2026-05-16T00:00:00.000Z',
     ...over,

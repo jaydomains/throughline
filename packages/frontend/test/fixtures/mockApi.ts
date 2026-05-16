@@ -214,6 +214,7 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
       marker_refs: [],
     },
     methodology_drift: false,
+    code_drift_tier: null,
     created_at: '2026-01-01T00:00:00.000Z',
     updated_at: new Date().toISOString(),
     ...i,
@@ -286,6 +287,51 @@ export const mockApi = {
     }>,
   })),
 
+  // Phase 10 — GitHub integration & code-drift (C-D16).
+  getProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
+  refreshProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
+  getDriftInbox: vi.fn(async (_projectId: string) => ({
+    signals: [] as Array<{
+      id: string;
+      project_id: string;
+      stream: 'code' | 'discipline';
+      category: string;
+      item_id: string | null;
+      reason: string;
+      created_at: string;
+    }>,
+    total_count: 0,
+    code_count: 0,
+    discipline_count: 0,
+  })),
+  dismissDriftSignal: vi.fn(async () => ({ ok: true })),
+  reopenDriftSignal: vi.fn(async () => ({ ok: true })),
+  reverifyDriftSignal: vi.fn(async (_pid: string, signalId: string) => ({
+    signal_id: signalId,
+    verdict: 'unclear' as const,
+    detail: 'mock',
+    model: null,
+  })),
+  detectPrLink: vi.fn(async (_pid: string, _itemId: string) => ({
+    candidate: null,
+    branch: null,
+  })),
+  setPrLink: vi.fn(async (_pid: string, itemId: string, prNumber: number) => ({
+    item_id: itemId,
+    pr_number: prNumber,
+    repo: 'o/r',
+    auto_detected_at: null,
+  })),
+  clearPrLink: vi.fn(async () => undefined),
+  listOrphanRules: vi.fn(async (_projectId: string) => ({ rules: [] })),
+  dismissOrphanRule: vi.fn(async () => ({ ok: true })),
+  draftOrphanCleanupPr: vi.fn(async () => ({
+    pr_url: 'https://example/pr/1',
+    pr_number: 1,
+  })),
+  undoAutoReconcile: vi.fn(async () => ({ ok: true })),
+  approveAutoReconcile: vi.fn(async () => ({ ok: true })),
+
   listSessions: vi.fn(async (projectId: string) => ({
     sessions: state.sessions.filter((s) => s.project_id === projectId),
   })),
@@ -346,6 +392,7 @@ export const mockApi = {
         marker_refs: input.methodology_context?.marker_refs ?? [],
       },
       methodology_drift: false,
+      code_drift_tier: null,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
@@ -534,6 +581,7 @@ export const mockApi = {
         session_ids: itemProposal.target_session_id ? [itemProposal.target_session_id] : [],
         methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
         methodology_drift: false,
+        code_drift_tier: null,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
@@ -841,6 +889,7 @@ export const mockApi = {
             session_ids: input.diff.session_id ? [input.diff.session_id] : [],
             methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
             methodology_drift: false,
+            code_drift_tier: null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
           };

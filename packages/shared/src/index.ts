@@ -10,3 +10,4 @@ export * from './directives.js';
 export * from './reconcile.js';
 export * from './gate.js';
 export * from './drift.js';
+export * from './github.js';

@@ -835,3 +835,19 @@ button.directive-badge { cursor: pointer; }
 .discipline-drift { margin-top: 24px; }
 .drift-category { margin: 12px 0; }
 .drift-category h3 { margin-bottom: 4px; }
+
+/* Phase 10 — code-drift tier badges (SPEC §7.14): tier-1 red, tier-2 orange,
+   tier-3 yellow. Distinct from the methodology (.drift-badge) indicator. */
+.code-drift-badge { font-size: 12px; margin-right: 4px; }
+.code-drift-badge.tier-1 { color: var(--danger, #d33); }
+.code-drift-badge.tier-2 { color: #e8821e; }
+.code-drift-badge.tier-3 { color: var(--warn, #c8a000); }
+.drift-inbox-hint { text-decoration: none; }
+.pr-badges { display: flex; gap: 8px; align-items: center; margin: 8px 0; font-size: 13px; }
+.pr-badge { text-decoration: none; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--border, #ccc); }
+.pr-badge.merged { opacity: 0.7; }
+.drift-inbox .drift-list { list-style: none; padding: 0; }
+.drift-inbox .drift-row { display: flex; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border, #eee); }
+.drift-inbox .drift-row .reason { flex: 1; }
+.drift-inbox .drift-actions { display: flex; gap: 4px; }
+.pr-link-actions { display: flex; gap: 6px; }

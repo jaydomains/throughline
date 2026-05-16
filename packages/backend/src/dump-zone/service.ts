@@ -97,10 +97,17 @@ interface CreateOptions {
   items: ItemsService;
   library: LibraryService;
   extractor: Extractor;
+  // Phase 10 (T-D21 tier-4) — fired with each proposed item's text at propose time so the
+  // code-drift dedup scanner can flag duplicate-looking entries against done items.
+  // Best-effort; never blocks extraction.
+  onProposedItems?: (
+    projectId: string,
+    items: Array<{ title: string; description: string }>,
+  ) => void;
 }
 
 export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
-  const { db, projects, registry, items, library, extractor } = opts;
+  const { db, projects, registry, items, library, extractor, onProposedItems } = opts;
 
   function getRow(id: string): ProposalRow | null {
     const row = db.prepare('SELECT * FROM proposed_extractions WHERE id = ?').get(id) as
@@ -182,6 +189,19 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
             extraction.telemetry.output_tokens,
           ),
         });
+      }
+      if (onProposedItems && extraction.payload.items.length > 0) {
+        try {
+          onProposedItems(
+            project.id,
+            extraction.payload.items.map((it) => ({
+              title: it.title,
+              description: it.description,
+            })),
+          );
+        } catch {
+          /* tier-4 dedup is best-effort; never block extraction */
+        }
       }
       return rowToProposal(getRow(id)!);
     },

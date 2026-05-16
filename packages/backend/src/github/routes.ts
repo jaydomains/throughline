@@ -1,0 +1,236 @@
+import type { FastifyInstance } from 'fastify';
+import type { ProjectPrsResult } from '@throughline/shared';
+import type { ProjectsService } from '../projects/service.js';
+import type { DriftService } from '../drift/service.js';
+import type { GitHubApi } from './api.js';
+import type { GithubStateCache } from './state-cache.js';
+import type { GitHubPoller } from './poller.js';
+import type { PrLinkingService } from './pr-linking.js';
+import { ItemNotFoundError } from './pr-linking.js';
+import type { OrphanRulesService } from './orphan-rules.js';
+import { GithubNotConfiguredError, OrphanRuleNotFoundError } from './orphan-rules.js';
+import type { AutoReconcileService } from './auto-reconcile.js';
+import { UndoError } from './auto-reconcile.js';
+import type { DriftReverifyService } from './reverify.js';
+import { SignalNotFoundError } from './reverify.js';
+
+// Phase 10 surface (C-D16; SPEC §7.13/7.14/7.16). All project-scoped; everything degrades
+// to an empty/!configured response when github_owner/github_repo or the PAT is absent.
+
+export interface GitHubRoutesDeps {
+  projects: ProjectsService;
+  api: GitHubApi;
+  cache: GithubStateCache;
+  poller: GitHubPoller;
+  drift: DriftService;
+  prLinking: PrLinkingService;
+  orphanRules: OrphanRulesService;
+  autoReconcile: AutoReconcileService;
+  reverify: DriftReverifyService;
+}
+
+export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDeps): void {
+  const { projects, api, cache, poller, drift, prLinking, orphanRules, autoReconcile, reverify } =
+    deps;
+
+  function project(id: string) {
+    return projects.get(id);
+  }
+  function configured(id: string): boolean {
+    const p = project(id);
+    return !!p && !!p.github_owner && !!p.github_repo;
+  }
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/github/prs',
+    async (req, reply) => {
+      const p = project(req.params.id);
+      if (!p) return reply.code(404).send({ error: 'project_not_found' });
+      if (!p.github_owner || !p.github_repo) {
+        return { configured: false, prs: [] } satisfies ProjectPrsResult;
+      }
+      const repo = `${p.github_owner}/${p.github_repo}`;
+      return {
+        configured: true,
+        prs: cache.listSnapshots(repo).map((s) => ({
+          pr_number: s.pr_number,
+          repo: s.repo,
+          state: s.state,
+          url: s.url,
+          title: s.title,
+          activity_at: s.activity_at,
+        })),
+      } satisfies ProjectPrsResult;
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/api/projects/:id/github/refresh',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      const prs = await poller.pollProject(req.params.id);
+      return { configured: configured(req.params.id), prs } satisfies ProjectPrsResult;
+    },
+  );
+
+  // --- Manual item-to-PR linking (T-D34) ---
+
+  app.get<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/items/:itemId/pr-link/detect',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      try {
+        return await prLinking.detect(req.params.itemId);
+      } catch (e) {
+        if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
+        throw e;
+      }
+    },
+  );
+
+  app.post<{
+    Params: { id: string; itemId: string };
+    Body: { pr_number?: number; auto_detected?: boolean };
+  }>('/api/projects/:id/items/:itemId/pr-link', async (req, reply) => {
+    if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+    const prNumber = req.body?.pr_number;
+    if (typeof prNumber !== 'number' || !Number.isInteger(prNumber) || prNumber <= 0) {
+      return reply.code(400).send({ error: 'pr_number_required' });
+    }
+    try {
+      return prLinking.set(req.params.itemId, prNumber, req.body?.auto_detected === true);
+    } catch (e) {
+      if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
+      throw e;
+    }
+  });
+
+  app.delete<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/items/:itemId/pr-link',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      try {
+        prLinking.unset(req.params.itemId);
+        return reply.code(204).send();
+      } catch (e) {
+        if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
+        throw e;
+      }
+    },
+  );
+
+  // --- Drift inbox + per-signal actions (T-D21; SPEC §7.14) ---
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/drift/inbox',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      return drift.inbox(req.params.id);
+    },
+  );
+
+  app.post<{ Params: { id: string; sid: string }; Body: { reason?: string } }>(
+    '/api/projects/:id/drift/signals/:sid/dismiss',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      drift.dismissSignal(req.params.sid, req.body?.reason?.slice(0, 280) || 'user dismissed');
+      return { ok: true };
+    },
+  );
+
+  app.post<{ Params: { id: string; sid: string } }>(
+    '/api/projects/:id/drift/signals/:sid/reopen',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      drift.reopenSignal(req.params.sid);
+      return { ok: true };
+    },
+  );
+
+  app.post<{ Params: { id: string; sid: string } }>(
+    '/api/projects/:id/drift/signals/:sid/reverify',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      try {
+        return await reverify.reverify(req.params.id, req.params.sid);
+      } catch (e) {
+        if (e instanceof SignalNotFoundError)
+          return reply.code(404).send({ error: 'signal_not_found' });
+        throw e;
+      }
+    },
+  );
+
+  // --- Orphaned verifier rules (T-D33) ---
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/orphan-rules',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      return { rules: orphanRules.list(req.params.id) };
+    },
+  );
+
+  app.post<{ Params: { id: string; rid: string } }>(
+    '/api/projects/:id/orphan-rules/:rid/dismiss',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      try {
+        orphanRules.dismiss(req.params.rid);
+        return { ok: true };
+      } catch (e) {
+        if (e instanceof OrphanRuleNotFoundError)
+          return reply.code(404).send({ error: 'orphan_rule_not_found' });
+        throw e;
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string; rid: string } }>(
+    '/api/projects/:id/orphan-rules/:rid/cleanup-pr',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      try {
+        return await orphanRules.draftCleanupPr(req.params.rid);
+      } catch (e) {
+        if (e instanceof OrphanRuleNotFoundError)
+          return reply.code(404).send({ error: 'orphan_rule_not_found' });
+        if (e instanceof GithubNotConfiguredError)
+          return reply.code(409).send({ error: 'github_not_configured' });
+        throw e;
+      }
+    },
+  );
+
+  // --- Auto-reconcile (T-D6/T-D18) ---
+
+  app.post<{ Params: { id: string }; Body: { token?: string } }>(
+    '/api/projects/:id/github/auto-reconcile/undo',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      if (!req.body?.token) return reply.code(400).send({ error: 'token_required' });
+      try {
+        autoReconcile.undo(req.body.token);
+        return { ok: true };
+      } catch (e) {
+        if (e instanceof UndoError) return reply.code(409).send({ error: 'undo_unavailable' });
+        throw e;
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: { run_id?: string } }>(
+    '/api/projects/:id/github/auto-reconcile/approve',
+    async (req, reply) => {
+      if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
+      if (!req.body?.run_id) return reply.code(400).send({ error: 'run_id_required' });
+      try {
+        autoReconcile.approve(req.params.id, req.body.run_id);
+        return { ok: true };
+      } catch (e) {
+        if (e instanceof UndoError) return reply.code(404).send({ error: 'run_not_found' });
+        throw e;
+      }
+    },
+  );
+}
