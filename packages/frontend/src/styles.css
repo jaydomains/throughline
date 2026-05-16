@@ -851,3 +851,14 @@ button.directive-badge { cursor: pointer; }
 .drift-inbox .drift-row .reason { flex: 1; }
 .drift-inbox .drift-actions { display: flex; gap: 4px; }
 .pr-link-actions { display: flex; gap: 6px; }
+
+/* Phase 11 — Semble code intelligence (SPEC §7.15). */
+.code-qa-panel { margin: 16px 0; padding: 12px; border: 1px solid var(--border, #ddd); border-radius: 6px; }
+.code-qa-panel h2 { font-size: 15px; margin: 0 0 8px; }
+.code-qa-input { display: flex; gap: 6px; }
+.code-qa-input input { flex: 1; }
+.code-qa-answer { white-space: pre-wrap; margin: 8px 0; }
+.code-qa-sources, .code-ref-list { list-style: none; padding: 0; margin: 6px 0; }
+.code-qa-sources li, .code-ref-list li { padding: 3px 0; }
+.code-ref-candidates ul { list-style: none; padding: 0; margin: 6px 0; }
+.proposal-code-suggestions .code-suggestion { display: inline-block; margin-right: 6px; font-size: 12px; }

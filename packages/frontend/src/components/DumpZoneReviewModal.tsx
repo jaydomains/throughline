@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type {
   DumpZoneProposal,
   ProposalPayload,
@@ -175,7 +175,8 @@ export function DumpZoneReviewModal({
             </thead>
             <tbody>
               {sessionRows.map((r, i) => (
-                <tr key={r.proposal_item_id} data-testid={`dump-zone-row-${i}`}>
+                <Fragment key={r.proposal_item_id}>
+                <tr data-testid={`dump-zone-row-${i}`}>
                   <td>
                     <input
                       type="checkbox"
@@ -234,6 +235,23 @@ export function DumpZoneReviewModal({
                     </select>
                   </td>
                 </tr>
+                {r.suggested_code_refs && r.suggested_code_refs.length > 0 && (
+                  <tr
+                    className="proposal-code-suggestions"
+                    data-testid={`dump-zone-row-${i}-code-suggestions`}
+                  >
+                    <td />
+                    <td colSpan={4}>
+                      <span className="muted">Suggested code (Semble): </span>
+                      {r.suggested_code_refs.map((c, ci) => (
+                        <code key={`${c.path}:${c.line_start}:${ci}`} className="code-suggestion">
+                          {c.path}:{c.line_start}-{c.line_end}
+                        </code>
+                      ))}
+                    </td>
+                  </tr>
+                )}
+                </Fragment>
               ))}
               {sessionRows.length === 0 && (
                 <tr>

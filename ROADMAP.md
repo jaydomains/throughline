@@ -254,14 +254,14 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 ## Phase 11 — Semble integration
 
-**Scope.** Backend-managed Semble local service (T-D27); auto-link items to code at done-time (§7.15); plain-English code Q&A; item creation enrichment in dump zone review; tier-3 drift signals fire as items accumulate code refs.
+**Scope.** Per-query keyless Semble invocation via `execFile` (T-D27, C-D17 — no backend-managed long-lived service; lifecycle revised at Phase-11 spec clarification); auto-link items to code at done-time (§7.15); plain-English code Q&A; item creation enrichment in dump zone review; tier-3 drift signals fire as items accumulate code refs.
 
-**Cites:** T-D13, T-D27, §7.15.
+**Cites:** T-D13, T-D27, §7.15, C-D17.
 
-**Dependencies.** Phase 4 (dump zone exists for enrichment), Phase 3 (items have code-ref slots), Phase 1 (backend can spawn Semble).
+**Dependencies.** Phase 4 (dump zone exists for enrichment), Phase 3 (items have code-ref slots), Phase 1 (backend can shell one-shot children).
 
 **Done when:**
-- Semble starts and indexes the configured per-project repo.
+- Semble is invoked per query against the configured per-project repo (Semble owns its per-session index cache).
 - Done-time code linking shows top results for confirmation.
 - Code Q&A returns plain-English answer with source links.
 - Dump zone review modal shows code-ref suggestions.

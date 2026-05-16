@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type {
+  CodeQaResult,
   LibraryEntry,
   LibraryEntryType,
   LibrarySearchVia,
@@ -203,6 +204,7 @@ export function LibraryView() {
         onApplied={() => void refresh()}
       />
       <MdFolderManager projectId={projectId} onIngested={() => void refresh()} />
+      <CodeQaPanel projectId={projectId} />
       <div className="library-body">
         <aside className="library-sidebar" data-testid="library-sidebar">
           <div className="library-filters">
@@ -362,6 +364,81 @@ export function LibraryView() {
         />
       )}
     </div>
+  );
+}
+
+// Phase 11 — plain-English code Q&A (SPEC §7.15; C-D17). Semble locates relevant code;
+// Anthropic summarises it. Degrades in place: no Semble ⇒ disabled message; no key ⇒
+// source links without a synthesised answer.
+function CodeQaPanel({ projectId }: { projectId: string }) {
+  const [question, setQuestion] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<CodeQaResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function ask() {
+    const q = question.trim();
+    if (q.length === 0) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.codeQa(projectId, q);
+      setResult(r.result);
+    } catch {
+      setError('Code Q&A failed.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section className="code-qa-panel" data-testid="code-qa-panel">
+      <h2>Ask the code</h2>
+      <div className="code-qa-input">
+        <input
+          type="search"
+          value={question}
+          onChange={(e) => setQuestion(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') void ask();
+          }}
+          placeholder="where is upload validation handled?"
+          data-testid="code-qa-input"
+        />
+        <button type="button" onClick={() => void ask()} disabled={busy}>
+          {busy ? 'Asking…' : 'Ask'}
+        </button>
+      </div>
+      {error && <p className="muted">{error}</p>}
+      {result && !result.semble_available && (
+        <p className="muted">Semble is not configured — code Q&amp;A is unavailable.</p>
+      )}
+      {result && result.semble_available && result.sources.length === 0 && (
+        <p className="muted">No relevant code found.</p>
+      )}
+      {result && result.answer && (
+        <p className="code-qa-answer" data-testid="code-qa-answer">
+          {result.answer}
+        </p>
+      )}
+      {result && result.semble_available && !result.summarised && result.sources.length > 0 && (
+        <p className="muted">
+          Anthropic key not configured — showing located sources without a summary.
+        </p>
+      )}
+      {result && result.sources.length > 0 && (
+        <ul className="code-qa-sources" data-testid="code-qa-sources">
+          {result.sources.map((s, i) => (
+            <li key={`${s.path}:${s.line_start}:${i}`}>
+              <code>
+                {s.path}:{s.line_start}-{s.line_end}
+              </code>
+              {s.snippet && <span className="muted"> — {s.snippet.slice(0, 100)}</span>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

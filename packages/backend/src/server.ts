@@ -35,6 +35,9 @@ import { createLibraryService } from './library/service.js';
 import { registerLibraryRoutes } from './library/routes.js';
 import { createScratchpadService } from './scratchpad/service.js';
 import { registerScratchpadRoutes } from './scratchpad/routes.js';
+import { createSembleClient } from './semble/client.js';
+import { createSembleService } from './semble/service.js';
+import { registerSembleRoutes } from './semble/routes.js';
 import { createInboxWorker } from './inbox/worker.js';
 import { createInboxWatcher, type InboxWatcher } from './inbox/watcher.js';
 import { registerInboxRoutes } from './inbox/routes.js';
@@ -184,6 +187,17 @@ export async function startServer(
   });
   const library = createLibraryService(db, projects);
   const scratchpad = createScratchpadService(db);
+  // Phase 11 — Semble (C-D17, T-D27). Keyless, per-query execFile child; command from
+  // config (THROUGHLINE_SEMBLE_CMD). Capability-gated: absent binary ⇒ code Q&A,
+  // done-time linking, dump-zone enrichment, and tier-3 drift stay inert (SPEC §15).
+  const sembleClient = createSembleClient({ command: config.sembleCmd });
+  const semble = createSembleService({
+    db,
+    projects,
+    items,
+    client: sembleClient,
+    anthropic: anthropicClient,
+  });
   const extractor = createRoutingExtractor({
     anthropic: createAnthropicExtractor({ client: anthropicClient }),
     heuristic: createHeuristicExtractor(),
@@ -227,6 +241,18 @@ export async function startServer(
     onProposedItems: (projectId, proposed) => {
       void tier4.scanCandidates(projectId, proposed);
     },
+    enrichItems: async (projectId, proposed) =>
+      Promise.all(
+        proposed.map(async (it) => {
+          const hits = await semble.searchRepo(projectId, it.title, 3);
+          return hits.map((h) => ({
+            path: h.path,
+            line_start: h.line_start,
+            line_end: h.line_end,
+            snippet: h.snippet,
+          }));
+        }),
+      ),
   });
   const inboxWorker = createInboxWorker({
     db,
@@ -369,6 +395,7 @@ export async function startServer(
   registerDumpZoneRoutes(app, projects, dumpZone);
   registerLibraryRoutes(app, projects, library);
   registerScratchpadRoutes(app, projects, scratchpad);
+  registerSembleRoutes(app, projects, semble);
   registerInboxRoutes(app, inboxWorker, inboxWatcher);
   registerCodeTodoRoutes(app, projects, codeTodo);
   registerReconcileRoutes(app, projects, reconcile);
