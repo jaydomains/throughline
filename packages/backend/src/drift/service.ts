@@ -1,7 +1,55 @@
 import { nanoid } from 'nanoid';
-import type { DisciplineDriftResult, DisciplineDriftSignal } from '@throughline/shared';
+import type {
+  DisciplineDriftResult,
+  DisciplineDriftSignal,
+  DriftInboxResult,
+  DriftInboxSignal,
+} from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
+
+// Strong code-drift tiers (1-3) badge items directly (SPEC §7.14); tier-4 is a weak
+// signal that routes to the drift inbox instead. Ordering = badge precedence.
+const STRONG_TIERS = ['tier-1', 'tier-2', 'tier-3'] as const;
+type StrongTier = (typeof STRONG_TIERS)[number];
+
+// Strongest open code-drift tier per item (SPEC §7.14 badge precedence: t1 > t2 > t3).
+// Exported so the items service can hydrate the derived `code_drift_tier` flag without a
+// DriftService dependency — mirrors the Phase-9 disciplineDriftItemIds idiom.
+export function codeDriftTierByItem(db: DB, projectId: string): Map<string, StrongTier> {
+  const rows = db
+    .prepare(
+      `SELECT item_id, category FROM drift_signals
+        WHERE project_id = ? AND stream = 'code' AND dismissed_at IS NULL
+          AND item_id IS NOT NULL AND category IN ('tier-1','tier-2','tier-3')`,
+    )
+    .all(projectId) as Array<{ item_id: string; category: StrongTier }>;
+  const out = new Map<string, StrongTier>();
+  for (const r of rows) {
+    const cur = out.get(r.item_id);
+    if (!cur || STRONG_TIERS.indexOf(r.category) < STRONG_TIERS.indexOf(cur)) {
+      out.set(r.item_id, r.category);
+    }
+  }
+  return out;
+}
+
+// Single-item variant — the get/create/update item paths only need one row's tier, so a
+// targeted query avoids building the whole-project map on every detail-panel fetch.
+export function itemStrongestCodeTier(db: DB, itemId: string): StrongTier | null {
+  const rows = db
+    .prepare(
+      `SELECT DISTINCT category FROM drift_signals
+        WHERE item_id = ? AND stream = 'code' AND dismissed_at IS NULL
+          AND category IN ('tier-1','tier-2','tier-3')`,
+    )
+    .all(itemId) as Array<{ category: StrongTier }>;
+  let best: StrongTier | null = null;
+  for (const r of rows) {
+    if (!best || STRONG_TIERS.indexOf(r.category) < STRONG_TIERS.indexOf(best)) best = r.category;
+  }
+  return best;
+}
 
 // Drift signals (T-D21). Phase 5 is the first producer (contradicted-as-drift from the
 // reconcile engine per T-D35). Phase 9 adds the discipline-drift stream (C-D7); Phase 10
@@ -43,9 +91,28 @@ export interface OpenDisciplineSignal {
   reason: string;
 }
 
+export interface OpenCodeSignal {
+  id: string;
+  category: CodeDriftCategory;
+  item_id: string | null;
+  reason: string;
+}
+
 export interface DriftService {
   hasPrAssociation(itemId: string): boolean;
   createCodeSignal(input: CodeDriftSignalInput): string;
+  // Idempotent variant for the GitHub poller (C-D16): repeated polls must not pile up
+  // duplicate rows. Returns the existing open signal's id if one with the same
+  // (item, category, reason) is already open; inserts + returns a new id otherwise.
+  createCodeSignalIdempotent(input: CodeDriftSignalInput): string;
+  listOpenCodeSignals(
+    projectId: string,
+    opts?: { category?: CodeDriftCategory; itemId?: string | null },
+  ): OpenCodeSignal[];
+  reopenSignal(id: string): void;
+  // Drift inbox (T-D21): weak signals only — code tier-4 + every open discipline signal.
+  // The header counter spans both streams (CHECKLIST §Phase 10).
+  inbox(projectId: string): DriftInboxResult;
   // Discipline-drift (C-D7). Open = stream='discipline' AND dismissed_at IS NULL.
   createDisciplineSignal(input: DisciplineSignalInput): string;
   listOpenDisciplineSignals(projectId: string, category?: string): OpenDisciplineSignal[];
@@ -244,6 +311,94 @@ export function createDriftService(db: DB): DriftService {
         newValue: id,
         triggerContext: { category: row.category, dismiss_reason: reason },
       });
+    },
+
+    createCodeSignalIdempotent(input) {
+      const existing = db
+        .prepare(
+          `SELECT id FROM drift_signals
+            WHERE project_id = ? AND stream = 'code' AND dismissed_at IS NULL
+              AND category = ? AND reason = ?
+              AND ((item_id IS NULL AND ? IS NULL) OR item_id = ?)
+            LIMIT 1`,
+        )
+        .get(
+          input.projectId,
+          input.category,
+          input.reason,
+          input.itemId,
+          input.itemId,
+        ) as { id: string } | undefined;
+      if (existing) return existing.id;
+      return this.createCodeSignal(input);
+    },
+
+    listOpenCodeSignals(projectId, opts = {}) {
+      const clauses = ["project_id = ?", "stream = 'code'", 'dismissed_at IS NULL'];
+      const params: unknown[] = [projectId];
+      if (opts.category) {
+        clauses.push('category = ?');
+        params.push(opts.category);
+      }
+      if (opts.itemId !== undefined) {
+        if (opts.itemId === null) clauses.push('item_id IS NULL');
+        else {
+          clauses.push('item_id = ?');
+          params.push(opts.itemId);
+        }
+      }
+      const rows = db
+        .prepare(
+          `SELECT id, category, item_id, reason FROM drift_signals
+            WHERE ${clauses.join(' AND ')} ORDER BY created_at`,
+        )
+        .all(...params) as OpenCodeSignal[];
+      return rows;
+    },
+
+    reopenSignal(id) {
+      const row = db
+        .prepare('SELECT project_id, category, dismissed_at FROM drift_signals WHERE id = ?')
+        .get(id) as
+        | { project_id: string; category: string; dismissed_at: string | null }
+        | undefined;
+      if (!row || row.dismissed_at === null) return;
+      db.prepare(
+        'UPDATE drift_signals SET dismissed_at = NULL, dismiss_reason = NULL WHERE id = ?',
+      ).run(id);
+      appendAudit(db, {
+        projectId: row.project_id,
+        entityType: 'project',
+        entityId: row.project_id,
+        actor: 'user',
+        field: 'drift_signal_reopen',
+        newValue: id,
+        triggerContext: { category: row.category },
+      });
+    },
+
+    inbox(projectId) {
+      const rows = db
+        .prepare(
+          `SELECT id, project_id, stream, category, item_id, reason, created_at
+             FROM drift_signals
+            WHERE project_id = ? AND dismissed_at IS NULL
+              AND (stream = 'discipline' OR (stream = 'code' AND category = 'tier-4'))
+            ORDER BY created_at DESC`,
+        )
+        .all(projectId) as DriftInboxSignal[];
+      let code = 0;
+      let discipline = 0;
+      for (const r of rows) {
+        if (r.stream === 'code') code += 1;
+        else discipline += 1;
+      }
+      return {
+        signals: rows,
+        total_count: rows.length,
+        code_count: code,
+        discipline_count: discipline,
+      } satisfies DriftInboxResult;
     },
 
     disciplineGroups(projectId) {

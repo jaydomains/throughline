@@ -244,38 +244,38 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 10 — GitHub integration & code-drift detection
 
-- [ ] GitHub PAT stored in secrets file (not datastore)
-- [ ] Polling at 60s for active sessions, 5min otherwise
-- [ ] ETag caching reduces redundant API calls
-- [ ] Per-project GitHub `owner/repo` configuration
-- [ ] PR badges render (needs review / approved / merged)
-- [ ] Activity timestamps + PR links surface per session
-- [ ] Auto-reconcile on merge with high/medium/low confidence branches
-- [ ] High-confidence: auto-apply with toast + 24h undo
-- [ ] Medium: notification badge + one-click approve
-- [ ] Low: opens reconcile modal as normal
-- [ ] Confidence scores logged to audit history from day 1
-- [ ] Manual item-to-PR linking: auto-detect from active branch
-- [ ] Manual item-to-PR linking: override action
-- [ ] Manual item-to-PR linking: skip path
-- [ ] Re-association possible from item detail panel anytime
-- [ ] Code-drift tier-1: Semgrep findings read via GitHub API and matched to items by rule filename
-- [ ] Tier-1 failure badges item red; passing clears badge
-- [ ] Tier-2 GitHub revert event detection; item badged orange
-- [ ] Tier-3 watches for new PRs touching files in `item_code_refs`; item badged yellow
-- [ ] Tier-4 dedup: cosine ≥ 0.80 trigger, AI confirmation pass for 0.70–0.80
-- [ ] Tier-4 signals route to drift inbox (not item badge)
-- [ ] Tier-4 stale signals auto-dismiss after 7 days with audit-logged reason
-- [ ] Drift inbox count surfaces in header (counts both streams)
-- [ ] Drift signal carries explicit reasoning text
-- [ ] Re-verify-via-AI action available on every signal
-- [ ] Manual re-open action available on every signal
-- [ ] Orphaned rules tracked when item with verifier rule is deleted
-- [ ] Orphaned rules surface in periodic review hygiene list and settings panel
-- [ ] One-click cleanup-PR-draft action constructs PR via API
-- [ ] Dismiss-without-removal supported and audit-logged
-- [ ] Workflow-template warning fires at first GitHub-integration use if expected workflow not present in repo
-- [ ] PR-open methodology gate fires via Phase 8 dispatcher
+- [x] GitHub PAT stored in secrets file (not datastore) — pre-existing `secrets/store.ts`; consumed by the fetch client (C-D16)
+- [x] Polling at 60s for active sessions, 5min otherwise — per-project cadence gate; "active" approximated (C-D16 Open Question)
+- [x] ETag caching reduces redundant API calls — repo-level list ETag + 304 short-circuit (rate-limit-free, C-D16)
+- [x] Per-project GitHub `owner/repo` configuration — pre-existing `projects.github_owner/repo`; subsystem inert without it
+- [x] PR badges render (needs review / approved / merged) — `PrBadges` component (SPEC §7.13)
+- [x] Activity timestamps + PR links surface per session — `PrBadges` (title carries activity_at; href = PR url)
+- [x] Auto-reconcile on merge with high/medium/low confidence branches — `auto-reconcile.ts`
+- [x] High-confidence: auto-apply with toast + 24h undo — in-memory snapshot undo + audit provenance
+- [x] Medium: notification badge + one-click approve — run left pending; `auto-reconcile/approve`
+- [x] Low: opens reconcile modal as normal — disposition `modal`, run left pending
+- [x] Confidence scores logged to audit history from day 1 — `actor='ai_auto_apply'`, every disposition (T-D6)
+- [x] Manual item-to-PR linking: auto-detect from active branch — `pr-linking.ts` (git via child_process)
+- [x] Manual item-to-PR linking: override action — `setPrLink(pr_number)` with explicit number
+- [x] Manual item-to-PR linking: skip path — detect returns null candidate; no association written
+- [x] Re-association possible from item detail panel anytime — detail-panel PR section (detect/clear)
+- [x] Code-drift tier-1: Semgrep findings read via GitHub API and matched to items by rule filename — convention match (verifier-tool plurality gap surfaced, C-D16)
+- [x] Tier-1 failure badges item red; passing clears badge — idempotent; passing dismisses open tier-1
+- [x] Tier-2 GitHub revert event detection; item badged orange — revert-PR detection over `item_pr_associations`
+- [x] Tier-3 watches for new PRs touching files in `item_code_refs`; item badged yellow — wired + tested; dormant until Phase 11 populates refs (per ROADMAP)
+- [x] Tier-4 dedup: cosine ≥ 0.80 trigger, AI confirmation pass for 0.70–0.80 — `tier4.ts` token-cosine (Phase-14 embedding swap point)
+- [x] Tier-4 signals route to drift inbox (not item badge) — inbox excludes strong tiers
+- [x] Tier-4 stale signals auto-dismiss after 7 days with audit-logged reason — `dismissStale` (`stale-no-action`)
+- [x] Drift inbox count surfaces in header (counts both streams) — header pill + `useDriftInbox`
+- [x] Drift signal carries explicit reasoning text — `reason` on every signal; rendered in the inbox
+- [x] Re-verify-via-AI action available on every signal — `reverify.ts` (Sonnet; heuristic 'unclear' fallback)
+- [x] Manual re-open action available on every signal — `reopenSignal`
+- [x] Orphaned rules tracked when item with verifier rule is deleted — items `onDelete` hook → `orphan-rules.ts`
+- [~] Orphaned rules surface in periodic review hygiene list and settings panel — settings/API surface delivered; periodic-review hygiene list is Phase 14 (per ROADMAP)
+- [x] One-click cleanup-PR-draft action constructs PR via API — `draftRuleRemovalPr` (branch+delete+PR)
+- [x] Dismiss-without-removal supported and audit-logged — `orphanRules.dismiss`
+- [x] Workflow-template warning fires at first GitHub-integration use if expected workflow not present in repo — `warnWorkflowIfMissing` (once per project, audit-logged)
+- [x] PR-open methodology gate fires via Phase 8 dispatcher — poller `runMoment(project,'pr-open')` on newly observed open PR
 
 ---
 

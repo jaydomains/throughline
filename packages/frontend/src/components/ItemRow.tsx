@@ -43,6 +43,16 @@ export function ItemRow({ item, staleDays, selected, onSelect }: ItemRowProps) {
           ⚠
         </span>
       )}
+      {item.code_drift_tier && (
+        <span
+          className={`code-drift-badge ${item.code_drift_tier}`}
+          title={`Code drift (${item.code_drift_tier}): tier-1 red / tier-2 orange / tier-3 yellow (SPEC §7.14)`}
+          aria-label={`Code drift ${item.code_drift_tier}`}
+          data-testid={`item-code-drift-${item.id}`}
+        >
+          ▲
+        </span>
+      )}
       <span className="title">{item.title}</span>
       {item.tags.length > 0 && (
         <span className="tags">

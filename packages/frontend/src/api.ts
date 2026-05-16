@@ -10,6 +10,12 @@ import type {
   CreateProjectInput,
   CreateSessionInput,
   DisciplineDriftResult,
+  DriftInboxResult,
+  DriftReverifyResult,
+  ItemPrAssociation,
+  OrphanedRulesResult,
+  PrLinkDetectResult,
+  ProjectPrsResult,
   Directive,
   DirectiveKind,
   DirectiveParentType,
@@ -427,5 +433,67 @@ export const api = {
     jsonFetch<DisciplineDriftResult>(
       `/api/projects/${pid(projectId)}/discipline-drift/rescan`,
       { method: 'POST' },
+    ),
+
+  // Phase 10 — GitHub integration & code-drift (C-D16).
+  getProjectPrs: (projectId: string) =>
+    jsonFetch<ProjectPrsResult>(`/api/projects/${pid(projectId)}/github/prs`),
+  refreshProjectPrs: (projectId: string) =>
+    jsonFetch<ProjectPrsResult>(`/api/projects/${pid(projectId)}/github/refresh`, {
+      method: 'POST',
+    }),
+  getDriftInbox: (projectId: string) =>
+    jsonFetch<DriftInboxResult>(`/api/projects/${pid(projectId)}/drift/inbox`),
+  dismissDriftSignal: (projectId: string, signalId: string, reason?: string) =>
+    jsonFetch<{ ok: boolean }>(
+      `/api/projects/${pid(projectId)}/drift/signals/${encodeURIComponent(signalId)}/dismiss`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+  reopenDriftSignal: (projectId: string, signalId: string) =>
+    jsonFetch<{ ok: boolean }>(
+      `/api/projects/${pid(projectId)}/drift/signals/${encodeURIComponent(signalId)}/reopen`,
+      { method: 'POST' },
+    ),
+  reverifyDriftSignal: (projectId: string, signalId: string) =>
+    jsonFetch<DriftReverifyResult>(
+      `/api/projects/${pid(projectId)}/drift/signals/${encodeURIComponent(signalId)}/reverify`,
+      { method: 'POST' },
+    ),
+  detectPrLink: (projectId: string, itemId: string) =>
+    jsonFetch<PrLinkDetectResult>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/pr-link/detect`,
+    ),
+  setPrLink: (projectId: string, itemId: string, prNumber: number, autoDetected: boolean) =>
+    jsonFetch<ItemPrAssociation>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/pr-link`,
+      { method: 'POST', body: JSON.stringify({ pr_number: prNumber, auto_detected: autoDetected }) },
+    ),
+  clearPrLink: (projectId: string, itemId: string) =>
+    fetch(`/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/pr-link`, {
+      method: 'DELETE',
+    }).then((r) => {
+      if (!r.ok) throw new Error(`DELETE pr-link failed: ${r.status}`);
+    }),
+  listOrphanRules: (projectId: string) =>
+    jsonFetch<OrphanedRulesResult>(`/api/projects/${pid(projectId)}/orphan-rules`),
+  dismissOrphanRule: (projectId: string, ruleId: string) =>
+    jsonFetch<{ ok: boolean }>(
+      `/api/projects/${pid(projectId)}/orphan-rules/${encodeURIComponent(ruleId)}/dismiss`,
+      { method: 'POST' },
+    ),
+  draftOrphanCleanupPr: (projectId: string, ruleId: string) =>
+    jsonFetch<{ pr_url: string; pr_number: number }>(
+      `/api/projects/${pid(projectId)}/orphan-rules/${encodeURIComponent(ruleId)}/cleanup-pr`,
+      { method: 'POST' },
+    ),
+  undoAutoReconcile: (projectId: string, token: string) =>
+    jsonFetch<{ ok: boolean }>(
+      `/api/projects/${pid(projectId)}/github/auto-reconcile/undo`,
+      { method: 'POST', body: JSON.stringify({ token }) },
+    ),
+  approveAutoReconcile: (projectId: string, runId: string) =>
+    jsonFetch<{ ok: boolean }>(
+      `/api/projects/${pid(projectId)}/github/auto-reconcile/approve`,
+      { method: 'POST', body: JSON.stringify({ run_id: runId }) },
     ),
 };

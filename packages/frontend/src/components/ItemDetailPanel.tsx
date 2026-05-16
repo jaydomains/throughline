@@ -35,6 +35,7 @@ export function ItemDetailPanel({
   const [editingDesc, setEditingDesc] = useState<string | null>(null);
   const [editingBlockerText, setEditingBlockerText] = useState<string | null>(null);
   const [editingBranchRef, setEditingBranchRef] = useState<string | null>(null);
+  const [prLinkMsg, setPrLinkMsg] = useState<string | null>(null);
   const [tagDraft, setTagDraft] = useState('');
   const [blockerDraft, setBlockerDraft] = useState('');
   const [attachNoteOpen, setAttachNoteOpen] = useState(false);
@@ -216,6 +217,16 @@ export function ItemDetailPanel({
             ⚠
           </span>
         )}
+        {item.code_drift_tier && (
+          <span
+            className={`code-drift-badge ${item.code_drift_tier}`}
+            title={`Code drift (${item.code_drift_tier}) — SPEC §7.14`}
+            aria-label={`Code drift ${item.code_drift_tier}`}
+            data-testid="detail-code-drift"
+          >
+            ▲
+          </span>
+        )}
         <input
           className="title-edit"
           aria-label="Item title"
@@ -334,6 +345,61 @@ export function ItemDetailPanel({
             setEditingBranchRef(null);
           }}
         />
+      </section>
+
+      <section className="detail-section" data-testid="item-pr-link">
+        <h3>PR association (T-D34)</h3>
+        <p className="muted">
+          Auto-detect from the active branch, override, or skip. Items without a PR
+          association lose code-drift tier-2 coverage but keep tiers 1/3/4.
+        </p>
+        {prLinkMsg && (
+          <p className="muted" data-testid="pr-link-msg">
+            {prLinkMsg}
+          </p>
+        )}
+        <div className="pr-link-actions">
+          <button
+            type="button"
+            data-testid="pr-link-detect"
+            onClick={async () => {
+              setPrLinkMsg('Detecting…');
+              try {
+                const r = await api.detectPrLink(projectId, item.id);
+                if (!r.candidate) {
+                  setPrLinkMsg(
+                    r.branch
+                      ? `No open PR for branch ${r.branch} — skip or paste a number.`
+                      : 'No branch resolved — skip or paste a PR number.',
+                  );
+                  return;
+                }
+                await api.setPrLink(projectId, item.id, r.candidate.pr_number, true);
+                setPrLinkMsg(`Linked to ${r.candidate.repo}#${r.candidate.pr_number}.`);
+                onChanged();
+              } catch {
+                setPrLinkMsg('Detection failed (GitHub not configured?).');
+              }
+            }}
+          >
+            Auto-detect &amp; link
+          </button>
+          <button
+            type="button"
+            data-testid="pr-link-clear"
+            onClick={async () => {
+              try {
+                await api.clearPrLink(projectId, item.id);
+                setPrLinkMsg('Association cleared.');
+                onChanged();
+              } catch {
+                setPrLinkMsg('Clear failed.');
+              }
+            }}
+          >
+            Clear
+          </button>
+        </div>
       </section>
 
       <section className="detail-section" data-testid="item-methodology-context">

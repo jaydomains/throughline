@@ -62,6 +62,16 @@ import {
 import { createMdIngestService } from './md-ingest/service.js';
 import { registerMdIngestRoutes } from './md-ingest/routes.js';
 import { createMdIngestWatcher, type MdIngestWatcher } from './md-ingest/watcher.js';
+import { createGitHubApi } from './github/api.js';
+import { createLocalGit } from './github/local-git.js';
+import { createGithubStateCache } from './github/state-cache.js';
+import { createOrphanRulesService } from './github/orphan-rules.js';
+import { createPrLinkingService } from './github/pr-linking.js';
+import { createTier4Service } from './github/tier4.js';
+import { createAutoReconcileService } from './github/auto-reconcile.js';
+import { createDriftReverifyService } from './github/reverify.js';
+import { createGitHubPoller, type GitHubPoller } from './github/poller.js';
+import { registerGitHubRoutes } from './github/routes.js';
 
 export interface ServerHandle {
   app: FastifyInstance;
@@ -121,6 +131,14 @@ export async function startServer(
   const sessions = createSessionsService(db, projects);
   const drift = createDriftService(db);
 
+  // Phase 10 — GitHub subsystem (C-D16). The API client is fetch-based (no @octokit), the
+  // diff seam is local-git-first (C-D16 hybrid). Orphan-rule tracking is created before
+  // the items service so its onDelete hook can snapshot verifier rules pre-cascade (T-D33).
+  const githubApi = createGitHubApi({ secretsPath: config.secretsPath });
+  const localGit = createLocalGit();
+  const githubCache = createGithubStateCache(db);
+  const orphanRules = createOrphanRulesService({ db, projects, api: githubApi });
+
   // Phase 9 — discipline-drift engine (C-D7). Constructed before the gate runtime so the
   // pre-write moment's onMoment hook can fire write-time scanners (SPEC §7.14).
   disciplineEngine = createDisciplineDriftEngine({
@@ -162,6 +180,7 @@ export async function startServer(
   });
   const items = createItemsService(db, projects, registry, {
     onStatusTransition: (projectId) => gateRuntime.onItemStatusTransition(projectId),
+    onDelete: (projectId, itemId) => orphanRules.captureForItem(projectId, itemId),
   });
   const library = createLibraryService(db, projects);
   const scratchpad = createScratchpadService(db);
@@ -170,6 +189,34 @@ export async function startServer(
     heuristic: createHeuristicExtractor(),
     client: anthropicClient,
   });
+  // Phase 10 (T-D21 tier-4) — semantic-dedup scanner. Borderline 0.70–0.80 pairs get an
+  // Anthropic confirmation pass (§13 adopted); no key ⇒ borderline pairs are not filed.
+  const tier4 = createTier4Service({
+    db,
+    projects,
+    registry,
+    drift,
+    confirm: async (cand, done) => {
+      if (!anthropicClient.available()) return false;
+      try {
+        const r = await anthropicClient.call({
+          model: 'claude-haiku-4-5',
+          system:
+            'Reply with exactly "yes" or "no": are these two software work items duplicates of the same underlying task?',
+          messages: [
+            {
+              role: 'user',
+              content: `A: ${cand.title}\n${cand.description}\n\nB: ${done.title}\n${done.description}`,
+            },
+          ],
+          max_tokens: 8,
+        });
+        return /^\s*yes/i.test(r.text);
+      } catch {
+        return false;
+      }
+    },
+  });
   const dumpZone = createDumpZoneService({
     db,
     projects,
@@ -177,6 +224,9 @@ export async function startServer(
     items,
     library,
     extractor,
+    onProposedItems: (projectId, proposed) => {
+      void tier4.scanCandidates(projectId, proposed);
+    },
   });
   const inboxWorker = createInboxWorker({
     db,
@@ -219,6 +269,32 @@ export async function startServer(
     drift,
     engine: reconcileEngine,
   });
+
+  // Phase 10 — auto-reconcile on merge (T-D6/T-D18), drift re-verify (SPEC §7.14),
+  // manual item-to-PR linking (T-D34), and the GitHub poller (T-D7). The poller drives
+  // PR-state surfacing, the pr-open gate (via the Phase-8 dispatcher), code-drift tiers
+  // 1-3, and the tier-4 stale sweep. Inert without a PAT / github_owner (SPEC §10).
+  const autoReconcile = createAutoReconcileService({ db, projects, items, reconcile });
+  const driftReverify = createDriftReverifyService(db, anthropicClient);
+  const prLinking = createPrLinkingService({ db, projects, api: githubApi });
+  const githubPoller: GitHubPoller = createGitHubPoller({
+    db,
+    projects,
+    api: githubApi,
+    localGit,
+    cache: githubCache,
+    drift,
+    gateRuntime,
+    autoReconcile,
+    tier4,
+    watch: watchInbox,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+
   const directives = createDirectivesService(db, projects, items, library);
   const notifier = createOsNotifier({
     logger: {
@@ -274,6 +350,17 @@ export async function startServer(
     queueDir: config.gateHookQueueDir,
   });
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
+  registerGitHubRoutes(app, {
+    projects,
+    api: githubApi,
+    cache: githubCache,
+    poller: githubPoller,
+    drift,
+    prLinking,
+    orphanRules,
+    autoReconcile,
+    reverify: driftReverify,
+  });
   registerProjectRoutes(app, projects, settings);
   registerSessionRoutes(app, projects, sessions);
   registerItemRoutes(app, projects, items);
@@ -293,6 +380,7 @@ export async function startServer(
   reminderScheduler.start();
   mdIngestWatcher.start();
   disciplineDrift.start();
+  githubPoller.start();
 
   await app.listen({ host: config.host, port: config.port });
   // Derive the bound port from the listening socket so callers requesting port 0
@@ -347,6 +435,7 @@ export async function startServer(
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();
       await disciplineDrift.stop();
+      githubPoller.stop();
       await registry.stop();
       db.close();
     },
