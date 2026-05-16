@@ -9,6 +9,7 @@ import type {
   CreateLibraryEntryInput,
   CreateProjectInput,
   CreateSessionInput,
+  DisciplineDriftResult,
   Directive,
   DirectiveKind,
   DirectiveParentType,
@@ -417,5 +418,14 @@ export const api = {
     jsonFetch<{ firing: GateFiring }>(
       `/api/projects/${pid(projectId)}/gate-firings/${encodeURIComponent(firingId)}/override`,
       { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+
+  // Phase 9 — discipline-drift (C-D7).
+  getDisciplineDrift: (projectId: string) =>
+    jsonFetch<DisciplineDriftResult>(`/api/projects/${pid(projectId)}/discipline-drift`),
+  rescanDisciplineDrift: (projectId: string) =>
+    jsonFetch<DisciplineDriftResult>(
+      `/api/projects/${pid(projectId)}/discipline-drift/rescan`,
+      { method: 'POST' },
     ),
 };

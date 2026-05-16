@@ -40,11 +40,27 @@ export interface CreateRegistryOptions {
   db: DB;
   methodologiesDir: string;
   watch?: boolean;
+  // Phase 9 (C-D7) — invoked after a bundle (re)loads with the project ids bound to it,
+  // so project-bound scanners can tear down and rebuild against the new ruleset.
+  onBundleReloaded?: (bundleId: string, projectIds: string[]) => void;
   logger?: { info: (msg: string) => void; warn: (msg: string) => void; error: (msg: string) => void };
 }
 
 export function createMethodologyRegistry(opts: CreateRegistryOptions): MethodologyRegistry {
-  const { db, methodologiesDir, watch = true, logger } = opts;
+  const { db, methodologiesDir, watch = true, onBundleReloaded, logger } = opts;
+
+  function notifyReloaded(bundleId: string, projectIds: string[]): void {
+    if (!onBundleReloaded) return;
+    try {
+      onBundleReloaded(bundleId, projectIds);
+    } catch (err) {
+      logger?.warn(
+        `onBundleReloaded hook failed for "${bundleId}": ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
   const cache = new Map<string, BundleLoadResult>();
   // C-D14 — external bundles keyed by absolute bundle.md path; `refs` refcounts
   // the projects bound to that path so the watch target lives exactly as long
@@ -111,15 +127,18 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
   function reload(bundleId: string): BundleLoadResult {
     const prev = cache.get(bundleId);
     const result = loadOne(bundleId);
+    const boundProjects = projectsBoundToBundle(bundleId);
     if (result.status === 'error') {
       logger?.error(`bundle "${bundleId}" failed to load: ${result.errors.map((e) => e.message).join('; ')}`);
-      writeLoadAudit(bundleId, projectsBoundToBundle(bundleId), result, previousVersion(prev));
+      writeLoadAudit(bundleId, boundProjects, result, previousVersion(prev));
       cache.set(bundleId, result);
+      notifyReloaded(bundleId, boundProjects);
       return result;
     }
     cache.set(bundleId, result);
-    writeLoadAudit(bundleId, projectsBoundToBundle(bundleId), result, previousVersion(prev));
+    writeLoadAudit(bundleId, boundProjects, result, previousVersion(prev));
     logger?.info(`bundle "${bundleId}" loaded (version ${result.bundle.identity.version}).`);
+    notifyReloaded(bundleId, boundProjects);
     return result;
   }
 
@@ -146,7 +165,9 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
       };
       logger?.error(`external bundle "${bundleId}" unreadable at ${file} (${code})`);
       externalCache.set(file, result);
-      writeLoadAudit(bundleId, projectsBoundToPath(dirname(file)), result, previousVersion(prev));
+      const bound = projectsBoundToPath(dirname(file));
+      writeLoadAudit(bundleId, bound, result, previousVersion(prev));
+      notifyReloaded(bundleId, bound);
       return result;
     }
     result = parseBundle(bundleId, md);
@@ -162,7 +183,9 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
       );
     }
     externalCache.set(file, result);
-    writeLoadAudit(bundleId, projectsBoundToPath(dirname(file)), result, previousVersion(prev));
+    const bound = projectsBoundToPath(dirname(file));
+    writeLoadAudit(bundleId, bound, result, previousVersion(prev));
+    notifyReloaded(bundleId, bound);
     return result;
   }
 

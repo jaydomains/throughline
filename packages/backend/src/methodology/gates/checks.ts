@@ -46,11 +46,12 @@ function findings(check: string, summary: string, items: GateFindings['items'] =
   return { check, summary, items };
 }
 
-// Resolve the bundle's declared doc surface to readable absolute file paths under the
-// project's repo. Returns null when the repo is unreadable so the caller can `skip`
-// rather than `fail` (never-blocks, T-D44).
-function docFiles(ctx: CheckContext): string[] | null {
-  const { repoPath, bundle } = ctx;
+// Resolve the bundle's declared doc surface (project-layout: primary-unit doc_set +
+// runtime-artefact dirs) to readable absolute file paths under the project's repo.
+// Returns null when the repo is unreadable so the caller can `skip` rather than `fail`
+// (never-blocks, T-D44). Shared with the Phase-9 discipline-drift scanners (C-D7), which
+// watch and sweep the same surface.
+export function resolveDocSurface(repoPath: string, bundle: LoadedBundle): string[] | null {
   if (!repoPath || !isAbsolute(repoPath) || !existsSync(repoPath)) return null;
   const out: string[] = [];
   const docSet = bundle.project_layout.primary_unit?.doc_set ?? [];
@@ -64,6 +65,10 @@ function docFiles(ctx: CheckContext): string[] | null {
     walk(base, out, 0);
   }
   return out;
+}
+
+function docFiles(ctx: CheckContext): string[] | null {
+  return resolveDocSurface(ctx.repoPath, ctx.bundle);
 }
 
 function walk(dir: string, out: string[], depth: number): void {

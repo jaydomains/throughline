@@ -229,16 +229,16 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 9 — Discipline-drift engine
 
-- [ ] Discipline-drift scanners instantiate from the loaded bundle's validation-rules section
-- [ ] Scanners watch project doc files via chokidar
-- [ ] Pre-write moment also fires write-time scanners
-- [ ] Signals write to `drift_signals` with `stream='discipline'`
-- [ ] Signals scoped to `item_id` or `primary_unit_ref` where applicable
-- [ ] Methodology-gates view shows category-grouped lists
-- [ ] Modules view shows badges on affected primary units
-- [ ] Items associated with affected primary units inherit a methodology-drift indicator in list rows and detail panel
-- [ ] Freeform-bound projects: scanner instantiation is no-op (verified)
-- [ ] Bundle re-load tears down and rebuilds scanners
+- [x] Discipline-drift scanners instantiate from the loaded bundle's validation-rules section
+- [x] Scanners watch project doc files via chokidar
+- [x] Pre-write moment also fires write-time scanners
+- [x] Signals write to `drift_signals` with `stream='discipline'`
+- [x] Signals scoped to `item_id` or `primary_unit_ref` where applicable — `cross_reference` scopes to the citing item (via `item_anchor_citations`) and its primary units; `banned_string`/`structural`/`regex` are project-scoped (no file→unit linkage in the T-D42 grammar; see CODE_SPEC C-D7 implications + Open Question)
+- [x] Methodology-gates view shows category-grouped lists
+- [x] Modules view shows badges on affected primary units
+- [x] Items associated with affected primary units inherit a methodology-drift indicator in list rows and detail panel
+- [x] Freeform-bound projects: scanner instantiation is no-op (verified — `discipline-drift.test.ts` "freeform-bound projects are a verified no-op")
+- [x] Bundle re-load tears down and rebuilds scanners (re-load reconciles away signals for categories the new bundle no longer declares)
 
 ---
 

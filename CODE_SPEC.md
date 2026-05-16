@@ -237,7 +237,40 @@ For freeform-bound projects (which declare zero discipline-drift categories), th
 A shared `drift_signals` table lets the drift inbox UI and the re-verify-via-AI action reuse one code path across streams. The `stream` discriminator makes per-stream filtering trivial. Wiring discipline-drift to file-system change events keeps the signal stream live without polling, and reusing the pre-write moment's dispatch lets the bundle declare scanners that should fire at gate time without duplicating trigger logic.
 
 ### Implications
-- `backend/src/methodology/drift/discipline-scanners/` instantiates scanners at bundle load (via C-D4 output).
+- `backend/src/methodology/drift/discipline/` hosts the engine (`engine.ts`) and the
+  generic scanner catalogue (`scanners.ts`); scanners are instantiated per scan from the
+  loaded bundle's `validation_rules.discipline_drift_categories` (C-D4 output). Each
+  category's `check_kind` selects a generic primitive — `banned_string` / `structural` /
+  `cross_reference` / `regex` — mirroring the C-D15 built-in-catalogue idea for gates
+  (the grammar carries no scanner→implementation binding).
+- The engine derives its watched doc surface and file-change fan-out from the active
+  project list (the md-ingest watcher convention), so a project created mid-session is
+  covered after the next `refresh()`; bundle re-load (registry `onBundleReloaded` hook)
+  re-runs every trigger so dropped categories' signals are reconciled away.
+- The pre-write moment fires write-time scanners through a methodology-agnostic
+  `onMoment` hook on the gate runtime (C-D6) rather than the runtime importing the drift
+  engine — reuse without a backward dependency.
+- **Signal scoping (implementation-shape; CODE_SPEC-only per the spec-drift policy).**
+  The T-D42 bundle grammar declares no file→primary-unit or file→item mapping. The only
+  file-independent item attribution it affords is `item_anchor_citations` (the linkage
+  the Phase-8 anchor-resolution gate already uses): a `cross_reference` finding on a
+  cited anchor is scoped to every item citing that anchor, and `disciplineCountsByPrimaryUnit`
+  / `disciplineDriftItemIds` expand item-scoped signals to those items' primary units so
+  the modules-view badge and the item-level `methodology_drift` indicator light up.
+  `banned_string`, `structural`, and `regex` findings have no such linkage and stay
+  project-scoped (`item_id` / `primary_unit_ref` NULL). A general file→unit attribution
+  is a spec-author question, surfaced (not silently resolved) — see the handover Open
+  Question.
+- Signal lifecycle is idempotent: each scan reconciles a category's open signals against
+  the current findings (`(category, item_id, primary_unit_ref, reason)` identity; the
+  finding ref is folded into the reason), so a re-scan over unchanged repo state is a
+  no-op, a fix dismisses the signal ("no longer reproduces"), and a re-load that drops a
+  category dismisses its orphans ("category no longer declared by bundle"). Every create
+  and dismiss is audit-logged (T-D36) under `actor='methodology_runtime'`.
+- Surfacing: `GET/POST /api/projects/:id/discipline-drift[/rescan]` (the explicit
+  user-rescan trigger); the methodology-gates view renders a category-grouped section;
+  `ModuleSummary.drift_signal_count` badges units; the derived `Item.methodology_drift`
+  flag (never persisted) drives the list-row + detail-panel indicator.
 - Scanner registration is per-project per-bundle; bundle changes (re-load) tear down and rebuild scanners.
 - Code-drift pipelines (tiers 1–4) write to the same table with `stream='code'`.
 - The drift inbox UI in the header counts both streams together but supports filtering by stream.

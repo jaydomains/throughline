@@ -59,6 +59,10 @@ export interface CreateGateRuntimeOptions {
   projects: ProjectsService;
   registry: MethodologyRegistry;
   judgement: JudgementGate;
+  // Phase 9 (C-D7) — fired after a moment is resolved to a project, before gate firings.
+  // The discipline-drift engine uses it to run write-time scanners at the pre-write
+  // moment without duplicating trigger logic. Best-effort; must never throw into gates.
+  onMoment?: (projectId: string, moment: PhaseMoment) => void;
   logger?: { info: (m: string) => void; warn: (m: string) => void; error: (m: string) => void };
 }
 
@@ -75,7 +79,18 @@ function rowToFiring(row: GateFiringRow): GateFiring {
 }
 
 export function createGateRuntime(opts: CreateGateRuntimeOptions): GateRuntime {
-  const { db, projects, registry, judgement, logger } = opts;
+  const { db, projects, registry, judgement, onMoment, logger } = opts;
+
+  function fireMomentHook(projectId: string, moment: PhaseMoment): void {
+    if (!onMoment) return;
+    try {
+      onMoment(projectId, moment);
+    } catch (e) {
+      logger?.warn(
+        `onMoment hook failed for ${projectId} (${moment}): ${e instanceof Error ? e.message : e}`,
+      );
+    }
+  }
 
   function citedAnchors(projectId: string): string[] {
     const rows = db
@@ -215,6 +230,7 @@ export function createGateRuntime(opts: CreateGateRuntimeOptions): GateRuntime {
       logger?.warn(`gate dispatch ${moment}: no project resolved`);
       return { firings: [] };
     }
+    fireMomentHook(target.id, moment);
     const firings = await runGates(target.id, target.repo_path, moment);
     return { firings };
   }
@@ -222,6 +238,7 @@ export function createGateRuntime(opts: CreateGateRuntimeOptions): GateRuntime {
   async function runMoment(projectId: string, moment: PhaseMoment): Promise<GateRunResult> {
     const p = projects.get(projectId);
     if (!p) return { firings: [] };
+    fireMomentHook(projectId, moment);
     return { firings: await runGates(projectId, p.repo_path, moment) };
   }
 

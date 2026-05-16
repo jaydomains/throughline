@@ -828,3 +828,10 @@ button.directive-badge { cursor: pointer; }
 .gate-status-fail { color: #ff8080; }
 .gate-status-error { color: #ffb86b; }
 .gate-status-skipped { color: var(--fg-dim); }
+
+/* Phase 9 — discipline-drift (SPEC §7.14). Advisory warning tint, consistent with the
+   T-D21 drift-signal semantics; never a blocking-red. */
+.drift-badge { color: var(--warn); font-size: 12px; margin-right: 4px; }
+.discipline-drift { margin-top: 24px; }
+.drift-category { margin: 12px 0; }
+.drift-category h3 { margin-bottom: 4px; }

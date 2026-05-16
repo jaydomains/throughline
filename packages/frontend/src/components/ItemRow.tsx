@@ -33,6 +33,16 @@ export function ItemRow({ item, staleDays, selected, onSelect }: ItemRowProps) {
           ⚑
         </span>
       )}
+      {item.methodology_drift && (
+        <span
+          className="drift-badge"
+          title="Methodology drift on an associated primary unit (SPEC §7.14)"
+          aria-label="Methodology drift"
+          data-testid={`item-drift-${item.id}`}
+        >
+          ⚠
+        </span>
+      )}
       <span className="title">{item.title}</span>
       {item.tags.length > 0 && (
         <span className="tags">

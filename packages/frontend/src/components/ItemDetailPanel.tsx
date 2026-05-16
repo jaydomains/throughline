@@ -206,6 +206,16 @@ export function ItemDetailPanel({
             ⚑
           </span>
         )}
+        {item.methodology_drift && (
+          <span
+            className="drift-badge"
+            title="Methodology drift on an associated primary unit (SPEC §7.14)"
+            aria-label="Methodology drift"
+            data-testid="detail-methodology-drift"
+          >
+            ⚠
+          </span>
+        )}
         <input
           className="title-edit"
           aria-label="Item title"

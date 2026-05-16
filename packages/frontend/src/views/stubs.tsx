@@ -200,6 +200,7 @@ export function ModulesView({
               <th>phase(s)</th>
               <th>anchors</th>
               <th>markers</th>
+              <th>drift</th>
             </tr>
           </thead>
           <tbody>
@@ -215,6 +216,19 @@ export function ModulesView({
                 <td>{m.phases.length > 0 ? m.phases.join(', ') : '—'}</td>
                 <td>{m.anchor_count}</td>
                 <td>{m.marker_count}</td>
+                <td>
+                  {m.drift_signal_count > 0 ? (
+                    <span
+                      className="drift-badge"
+                      title="Discipline drift (SPEC §7.14)"
+                      data-testid={`module-drift-${m.ref}`}
+                    >
+                      ⚠ {m.drift_signal_count}
+                    </span>
+                  ) : (
+                    <span className="muted">—</span>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
