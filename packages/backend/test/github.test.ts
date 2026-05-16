@@ -785,6 +785,17 @@ describe('Phase 10 — robustness fixes', () => {
     ar2.undo(outcome.undo_token!);
     expect(s.items.get(item.id)!.status).toBe('doing');
     expect(() => ar2.undo('bogus')).toThrow();
+    // Consumed-marker: a repeat undo via the audit fallback (another "restart") must NOT
+    // replay the revert over post-undo user edits.
+    s.items.update(item.id, { status: 'done' });
+    const ar3 = createAutoReconcileService({
+      db: s.backend.db,
+      projects: s.projects,
+      items: s.items,
+      reconcile,
+    });
+    expect(() => ar3.undo(outcome.undo_token!)).toThrow();
+    expect(s.items.get(item.id)!.status).toBe('done');
     await s.backend.cleanup();
   });
 

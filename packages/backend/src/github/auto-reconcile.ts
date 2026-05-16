@@ -138,6 +138,17 @@ export function createAutoReconcileService(
   // Restart-recovery path: rebuild the undo snapshot from the persisted audit row when
   // the in-memory token was lost (backend restarted within the 24h window).
   function snapshotFromAudit(token: string): UndoSnapshot | null {
+    // Consumed-marker: undo() writes a `github_auto_reconcile_undo` row with
+    // old_value = token. The in-memory path is single-use via Map.delete; the
+    // persistence fallback must honour the same once-only contract so a repeated call
+    // cannot replay the revert over changes the user made after the first undo.
+    const consumed = db
+      .prepare(
+        `SELECT 1 FROM audit_log
+          WHERE field = 'github_auto_reconcile_undo' AND old_value = ? LIMIT 1`,
+      )
+      .get(token);
+    if (consumed) return null;
     const rows = db
       .prepare(
         `SELECT project_id, trigger_context_json FROM audit_log
