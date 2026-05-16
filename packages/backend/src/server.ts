@@ -7,6 +7,9 @@ import { createMethodologyRegistry, type MethodologyRegistry } from './methodolo
 import { createGateRuntime } from './methodology/gates/runtime.js';
 import { createAnthropicJudgementGate } from './methodology/gates/judgement.js';
 import { registerGateRoutes } from './methodology/gates/routes.js';
+import { createCompanionEngine } from './methodology/companion/engine.js';
+import { createAnthropicCompanionJudge } from './methodology/companion/judgement.js';
+import { registerCompanionRoutes } from './methodology/companion/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
 import { installGateHooks } from './methodology/gates/hook-installer.js';
@@ -186,6 +189,16 @@ export async function startServer(
     onDelete: (projectId, itemId) => orphanRules.captureForItem(projectId, itemId),
   });
   const library = createLibraryService(db, projects);
+  // Phase 12 — companion review runtime (C-D8, T-D45). Mechanical steps reuse the Phase-8
+  // mechanical-check pipeline; judgement steps take a user call or an AI-via-Anthropic
+  // proposal (default Sonnet per SPEC §9). Inert-but-present for freeform (no checklists).
+  const companion = createCompanionEngine({
+    db,
+    projects,
+    registry,
+    library,
+    judge: createAnthropicCompanionJudge({ client: anthropicClient }),
+  });
   const scratchpad = createScratchpadService(db);
   // Phase 11 — Semble (C-D17, T-D27). Keyless, per-query execFile child; command from
   // config (THROUGHLINE_SEMBLE_CMD). Capability-gated: absent binary ⇒ code Q&A,
@@ -376,6 +389,7 @@ export async function startServer(
     queueDir: config.gateHookQueueDir,
   });
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
+  registerCompanionRoutes(app, projects, companion);
   registerGitHubRoutes(app, {
     projects,
     api: githubApi,

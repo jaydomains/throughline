@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
-import type { DisciplineDriftResult, GateFiring, GateFiringsResult } from '@throughline/shared';
+import type {
+  ChecklistRun,
+  ChecklistRunStep,
+  CompanionChecklistsResult,
+  DisciplineDriftResult,
+  GateFiring,
+  GateFiringsResult,
+} from '@throughline/shared';
 import { api, type MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
 
@@ -226,6 +233,309 @@ export function GatesView({
           </div>
         ))}
       </section>
+
+      <CompanionReview projectId={id} />
     </div>
+  );
+}
+
+// Phase 12 — companion review runtime (SPEC §7.18, C-D8, T-D45). Bundle-declared review
+// checklists run as a structured workflow on this same methodology surface (gates and
+// review patterns share UI vocabulary — rows of state, override/retry actions). Hidden
+// when the bundle declares no checklists.
+function stepStateClass(s: ChecklistRunStep['state']): string {
+  return `gate-status gate-status-${s === 'passed' ? 'pass' : s === 'failed' ? 'fail' : s === 'skipped' ? 'skipped' : 'error'}`;
+}
+
+function CompanionReview({ projectId }: { projectId: string | undefined }) {
+  const [catalogue, setCatalogue] = useState<CompanionChecklistsResult | null>(null);
+  const [runs, setRuns] = useState<ChecklistRun[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [pickChecklist, setPickChecklist] = useState('');
+  const [pickMode, setPickMode] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(() => {
+    if (!projectId) return;
+    api
+      .listCompanionChecklists(projectId)
+      .then(setCatalogue)
+      .catch(() => setError('Failed to load review checklists.'));
+    api
+      .listCompanionRuns(projectId)
+      .then((r) => setRuns(r.runs))
+      .catch(() => setError('Failed to load review runs.'));
+  }, [projectId]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  if (!projectId) return null;
+  if (catalogue && catalogue.checklists.length === 0) return null;
+
+  const active = runs.find((r) => r.id === activeId) ?? null;
+  const apply = (p: Promise<{ run: ChecklistRun }>) => {
+    setBusy(true);
+    setError(null);
+    p.then(({ run }) => {
+      setRuns((prev) => {
+        const rest = prev.filter((r) => r.id !== run.id);
+        return [run, ...rest];
+      });
+      setActiveId(run.id);
+    })
+      .catch(() => setError('Action failed.'))
+      .finally(() => setBusy(false));
+  };
+
+  const start = () => {
+    const checklistId = pickChecklist || catalogue?.checklists[0]?.id;
+    if (!checklistId) return;
+    apply(api.startCompanionRun(projectId, checklistId, pickMode || null));
+  };
+
+  const recordJudgement = (step: ChecklistRunStep) => {
+    if (!active) return;
+    const raw = window.prompt(
+      `Judgement for "${step.step_id}" — type pass, fail, or skip, then a rationale (e.g. "pass: scope matches plan"):`,
+    );
+    if (!raw) return;
+    const m = /^\s*(pass|fail|skip)\s*:?\s*(.*)$/i.exec(raw);
+    if (!m) {
+      setError('Enter pass, fail, or skip followed by a rationale.');
+      return;
+    }
+    apply(
+      api.resolveCompanionJudgement(
+        projectId,
+        active.id,
+        step.step_id,
+        m[1]!.toLowerCase() as 'pass' | 'fail' | 'skip',
+        m[2]!.trim(),
+      ),
+    );
+  };
+
+  const override = (step: ChecklistRunStep) => {
+    if (!active) return;
+    const reason = window.prompt(`Override "${step.step_id}" — reason (audit-logged):`);
+    if (!reason || reason.trim().length === 0) return;
+    apply(api.overrideCompanionStep(projectId, active.id, step.step_id, reason.trim()));
+  };
+
+  const complete = () => {
+    if (!active) return;
+    const summary =
+      window.prompt('Optional run-summary note (markdown; leave blank to skip):') ?? '';
+    const itemsRaw = summary.trim()
+      ? window.prompt('Attach to item ids (comma-separated; leave blank for none):') ?? ''
+      : '';
+    const itemIds = itemsRaw
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    apply(
+      api.completeCompanionRun(projectId, active.id, summary.trim() || undefined, itemIds),
+    );
+  };
+
+  return (
+    <section className="companion-review" data-testid="companion-review">
+      <div className="gate-moment-head">
+        <h2>Companion review</h2>
+      </div>
+      <p className="muted">
+        Bundle-declared review checklists run as a structured workflow (SPEC §7.18, C-D8).
+        Mechanical steps execute here; judgement steps take your call or an AI proposal you
+        review before committing. Findings are audit-logged; failures never block (T-D44).
+      </p>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="companion-start gates-actions">
+        <select
+          value={pickChecklist}
+          onChange={(e) => setPickChecklist(e.target.value)}
+          data-testid="companion-checklist-pick"
+        >
+          {catalogue?.checklists.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {catalogue && catalogue.companion_modes.length > 0 && (
+          <select
+            value={pickMode}
+            onChange={(e) => setPickMode(e.target.value)}
+            data-testid="companion-mode-pick"
+          >
+            <option value="">(default mode)</option>
+            {catalogue.companion_modes.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={start}
+          data-testid="companion-start"
+        >
+          Start companion review
+        </button>
+      </div>
+
+      {runs.length > 0 && (
+        <div className="companion-runs gates-actions">
+          {runs.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              className={r.id === activeId ? 'companion-run-active' : ''}
+              onClick={() => setActiveId(r.id)}
+              data-testid={`companion-run-${r.id}`}
+            >
+              {r.checklist_id} · {r.state}
+              {r.companion_mode ? ` · ${r.companion_mode}` : ''}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {active && (
+        <div className="companion-run" data-testid="companion-active-run">
+          <div className="gate-moment-head">
+            <h3>
+              {active.checklist_id}{' '}
+              <span className="muted">
+                ({active.state}
+                {active.companion_mode ? ` · ${active.companion_mode}` : ''})
+              </span>
+            </h3>
+            {active.state === 'running' && (
+              <button
+                type="button"
+                disabled={busy}
+                onClick={complete}
+                data-testid="companion-complete"
+              >
+                Complete run
+              </button>
+            )}
+          </div>
+          {active.summary_entry_id && (
+            <p className="muted">Run summary saved as library note {active.summary_entry_id}.</p>
+          )}
+          {active.steps.map((step) => (
+            <div
+              key={step.step_id}
+              className="gate-firing"
+              data-testid={`companion-step-${step.step_id}`}
+            >
+              <div className="gate-firing-head">
+                <span
+                  className={stepStateClass(step.state)}
+                  data-testid={`companion-step-state-${step.step_id}`}
+                >
+                  {step.state}
+                </span>
+                <strong>{step.step_id}</strong>
+                <span className="muted">{step.kind}</span>
+              </div>
+              <p className="gate-summary">{step.description}</p>
+              {step.findings.summary && (
+                <p className="gate-summary muted">{step.findings.summary}</p>
+              )}
+              {step.findings.items.length > 0 && (
+                <ul className="gate-findings">
+                  {step.findings.items.map((it, i) => (
+                    <li key={i}>
+                      {it.message}
+                      {it.ref ? <span className="muted"> — {it.ref}</span> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {step.findings.ai_proposal && (
+                <p className="muted">
+                  AI proposal ({step.findings.ai_proposal.model}):{' '}
+                  {step.findings.ai_proposal.decision} — review and record your call.
+                </p>
+              )}
+              {step.findings.override && (
+                <p className="muted gate-override">
+                  Overridden: {step.findings.override.reason}
+                </p>
+              )}
+              {active.state === 'running' && (
+                <div className="gates-actions">
+                  {step.kind === 'mechanical' &&
+                    step.state !== 'passed' &&
+                    step.state !== 'skipped' && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          apply(
+                            api.runCompanionMechanicalStep(
+                              projectId,
+                              active.id,
+                              step.step_id,
+                            ),
+                          )
+                        }
+                        data-testid={`companion-run-step-${step.step_id}`}
+                      >
+                        Run check
+                      </button>
+                    )}
+                  {step.kind === 'mechanical' && step.state === 'failed' && (
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => override(step)}
+                      data-testid={`companion-override-${step.step_id}`}
+                    >
+                      Override with reason
+                    </button>
+                  )}
+                  {step.kind === 'judgement' && (
+                    <>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() =>
+                          apply(
+                            api.aiJudgeCompanionStep(projectId, active.id, step.step_id),
+                          )
+                        }
+                        data-testid={`companion-ai-judge-${step.step_id}`}
+                      >
+                        Ask AI
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => recordJudgement(step)}
+                        data-testid={`companion-judge-${step.step_id}`}
+                      >
+                        Record judgement
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }

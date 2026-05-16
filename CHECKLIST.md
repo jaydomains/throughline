@@ -296,17 +296,17 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 12 — Companion review runtime
 
-- [ ] Bundle-declared checklists instantiate as `ChecklistRun` records
-- [ ] Step state machine: pending → in-progress → passed | failed | skipped
-- [ ] Mechanical steps execute via shared mechanical-execution infrastructure
-- [ ] Mechanical step findings write to audit log
-- [ ] Judgement steps open a UI panel
-- [ ] Judgement steps accept user judgement with rationale
-- [ ] Judgement steps optionally hand off to AI-via-Anthropic (default Sonnet)
-- [ ] AI-judgement results carry prompt fingerprint and model in audit log
-- [ ] Step transitions audit-logged
-- [ ] Run completion offers optional library-note summary attached to discussed items
-- [ ] Failed mechanical steps do not halt the run; override audit-logged and run continues
+- [x] Bundle-declared checklists instantiate as `ChecklistRun` records — `methodology/companion/engine.ts` `startRun`; `test/companion.test.ts` "instantiate as a ChecklistRun"
+- [x] Step state machine: pending → in-progress → passed | failed | skipped — `engine.ts` `transition` + `ChecklistStepState` (shared `companion.ts`); test "shared check pipeline … audits each transition"
+- [x] Mechanical steps execute via shared mechanical-execution infrastructure — reuses Phase-8 `gates/checks.ts` `runMechanicalCheck`/`resolveCheckKind`/`CheckContext`; test "mechanical step runs the shared check pipeline"
+- [x] Mechanical step findings write to audit log — `transition` writes `entity_type='checklist_step'` (T-D36); test asserts `mechanical_started`/`mechanical_resolved` rows
+- [x] Judgement steps open a UI panel — `GatesView.tsx` `CompanionReview` ("Ask AI" / "Record judgement" actions on judgement steps)
+- [x] Judgement steps accept user judgement with rationale — `engine.resolveJudgementStep`; route `.../judgement`; test "user call with rationale"
+- [x] Judgement steps optionally hand off to AI-via-Anthropic (default Sonnet) — `companion/judgement.ts` `createAnthropicCompanionJudge` (default `claude-sonnet-4-6`, SPEC §9); `engine.aiJudgeStep`
+- [x] AI-judgement results carry prompt fingerprint and model in audit log — `aiJudgeStep` writes `ai_judgement_model` with `prompt_fingerprint` (T-D24) + cost telemetry; test "records model + fingerprint + cost"
+- [x] Step transitions audit-logged — every `transition` + run-start/complete append an audit row; test assertions across cases
+- [x] Run completion offers optional library-note summary attached to discussed items — `engine.completeRun` → `library.create({type:'note'})` + `library.attach` (T-D10); test "saves an optional library note attached to discussed items"
+- [x] Failed mechanical steps do not halt the run; override audit-logged and run continues — `engine.overrideStep` (T-D44 kin); test "failed mechanical step does not halt the run; override is audit-logged and continues"
 
 ---
 

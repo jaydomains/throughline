@@ -3,6 +3,7 @@ import type {
   ApplyRequest,
   AttachedItemSummary,
   AuditEntry,
+  ChecklistRun,
   CodeTodoScanResult,
   CreateDirectiveInput,
   CreateItemInput,
@@ -286,6 +287,36 @@ export const mockApi = {
       }>;
     }>,
   })),
+
+  // Phase 12 — companion review runtime (C-D8). Default to no declared checklists so the
+  // surface stays hidden unless a test opts in.
+  listCompanionChecklists: vi.fn(async (_projectId: string) => ({
+    checklists: [] as Array<{
+      id: string;
+      name: string;
+      steps: Array<{ id: string; kind: 'mechanical' | 'judgement'; description: string }>;
+    }>,
+    companion_modes: [] as Array<{ id: string; name: string }>,
+  })),
+  listCompanionRuns: vi.fn(async (_projectId: string) => ({ runs: [] as never[] })),
+  startCompanionRun: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
+  runCompanionMechanicalStep: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
+  aiJudgeCompanionStep: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
+  resolveCompanionJudgement: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
+  overrideCompanionStep: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
+  completeCompanionRun: vi.fn(async (): Promise<{ run: ChecklistRun }> => {
+    throw new Error('not mocked');
+  }),
 
   // Phase 10 — GitHub integration & code-drift (C-D16).
   getProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
