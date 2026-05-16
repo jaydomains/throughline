@@ -333,7 +333,7 @@ Discipline drift surfaces in the methodology-gates view and as badges on affecte
 
 ### 7.15 Code intelligence (Semble)
 
-Semble runs locally as a service started by the backend on launch. Indexes the user's repo (project's local path), watches for changes, re-indexes incrementally.
+Throughline invokes Semble on demand for code-search queries, pointing it at the project's local repo path per invocation. Semble caches its index per session so a batch of related queries stays fast; it does not run as a long-lived background service. Throughline's own file watchers do not need to trigger a re-index — Semble re-indexes as needed on its next query invocation.
 
 Three uses inside Throughline:
 
@@ -512,7 +512,7 @@ Cost is the user's responsibility; settings expose model selection per feature c
 |---|---|---|
 | Anthropic API | OUT | Backend HTTPS, key from backend config |
 | GitHub REST API | OUT | Backend polling |
-| Semble | LOCAL | Backend-managed local service |
+| Semble | LOCAL | Backend invokes per query (execFile); keyless |
 | Semgrep | OUT (CI) | GitHub Actions; results read via GitHub API |
 | Local filesystem | IN/OUT | Backend native FS access |
 | OS notifications | OUT | Backend → cross-platform OS notification capability |
@@ -617,7 +617,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D24 | Audit log entries never expose API keys or full prompt content beyond what's needed for trigger reconstruction | 7.22, 8 |
 | T-D25 | Personal RAG has three substrates (text via local embeddings, code via Semble, audit history via structured queries); router uses keyword heuristics with user override; AI classification of query intent deferred | 7.18 |
 | T-D26 | Semgrep runs in GitHub Actions, not in the backend; backend reads findings via GitHub API. Methodology bundle defines rule conventions; SiteMesh bundle declares one-file-per-item named by item identifier. | 7.16 |
-| T-D27 | Semble runs as a backend-managed local service; indexes user's repo, watches for changes, re-indexes incrementally | 7.15 |
+| T-D27 | Semble integrated keyless/local, invoked per query on demand (lifecycle revised Phase 11; see DECISIONS T-D27, CODE_SPEC C-D17) | 7.15 |
 | T-D28 | Backup is a single-file copy of the underlying datastore; optional configurable auto-copy target | 7.23 |
 | T-D29 | Cost meter visible in header at all times; tracks per-feature spend with configurable warning threshold | 7.25 |
 | T-D30 | Home view (not a session, not a project) is the default landing surface, scoped to current project; "this week" semantics rolling 7 days from now, "since last visit" uses persisted last-render timestamp | 7.11 |

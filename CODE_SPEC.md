@@ -22,10 +22,10 @@ Any C-D may be promoted to a T-D later if it crosses the line into a functional 
 - **Browser UI:** React with TypeScript. Build via Vite. Served by the backend as static assets at `http://127.0.0.1:<port>/`.
 - **Datastore:** SQLite via `better-sqlite3`. Single file on disk, satisfying T-D3.
 - **Backend ↔ browser transport:** local HTTP for request/response, Server-Sent Events for backend-pushed updates (drift signals appearing, gate firings, polling state changes, cost meter ticks). WebSocket reserved if SSE proves insufficient under load.
-- **Process boundaries:** Throughline backend, Semble local service (T-D27, lifecycle-managed by backend), browser. No other long-lived processes.
+- **Process boundaries:** Throughline backend (long-lived) and browser; Semble runs only as a short-lived per-query child process (C-D17, T-D27). No other long-lived processes.
 
 ### Rationale
-TypeScript on both ends shares types between API and UI without an IDL layer. Node.js has mature support for filesystem watching, child-process supervision (Semble), and HTTP servers. SQLite is the canonical single-file datastore. Fastify is fast, opinionated about plugins, and ergonomic for the kind of REST + SSE the backend needs.
+TypeScript on both ends shares types between API and UI without an IDL layer. Node.js has mature support for filesystem watching, short-lived child-process spawning (Semble per query, git), and HTTP servers. SQLite is the canonical single-file datastore. Fastify is fast, opinionated about plugins, and ergonomic for the kind of REST + SSE the backend needs.
 
 Python was considered for the AI ecosystem but rejected because:
 - The Anthropic SDK works equally well in TypeScript.
@@ -465,6 +465,30 @@ CODE_SPEC §4 named `@octokit/rest` and §12 named `simple-git`. The established
 
 ---
 
+## C-D17 — Semble integration: per-query `execFile` CLI invocation, keyless, capability-gated
+
+- **Cites:** T-D27 (keyless local Semble), T-D13 (code search delegated to Semble); SPEC §7.15/§15/§10; C-D16 (shared one-shot `execFile` precedent), `ai/anthropic.ts` (`available()` degradation pattern)
+
+### Decision
+Throughline calls Semble as a one-shot `execFile` child process per code-search query — not a long-lived supervised subprocess, MCP-stdio service, or HTTP/socket server. The Semble command resolves from `THROUGHLINE_SEMBLE_CMD`, defaulting to `semble` on `PATH`. "Configured" means the command resolves and executes; there is no secret-presence check (Semble is keyless, T-D27). When the binary is absent or a call fails, code intelligence degrades exactly as the no-API-key path does for Anthropic.
+
+### Context
+SPEC §7.15 / T-D27 / the prior CODE_SPEC §1 diagram and §4 row described Semble as a long-lived backend-started service that watches the repo and re-indexes incrementally, read via a local socket over an "MCP-style or HTTP API." Phase-11 spec analysis against the real tool (MinishLab/semble: Python; stdio-MCP **or** one-shot CLI; on-demand, per-session-cached indexing; no HTTP/socket mode; no API key) showed that framing was inaccurate. SPEC §7.15 and T-D27 were corrected functionally; this anchor records the implementation-shape consequence.
+
+### Rationale
+- **Precedent.** The repo already shells one-shot children via `execFile`/`execFileSync` in `methodology/gates/hook-installer.ts`, `methodology/gates/checks.ts`, `github/local-git.ts`, `github/pr-linking.ts`, with the documented "don't add a dependency for a one-shot binary call" rationale (C-D16, hook-installer header). Per-query Semble is the same idiom: zero new dependencies, no MCP client (none exists in the tree).
+- **No supervisor.** A one-shot process exits per call — no start/restart/health/kill lifecycle, no per-project process registry, no multi-project index-target contention.
+- **Keyless + capability gate.** Mirrors `AnthropicClient.available()` → feature-disable: a resolvable command ⇒ code Q&A / done-time linking / enrichment / code-drift tier-3 active; unresolvable or failing ⇒ those inert, everything else unaffected (SPEC §15 graceful degradation).
+- **Indexing.** Semble's own per-session index cache covers query-batch performance; Throughline's existing `chokidar` watchers do not drive re-index (Semble re-indexes on next invocation).
+
+### Implications
+- A small Semble client (e.g. `backend/src/semble/client.ts`) exposing `available()` + `search(...)`, `execFile`-based, command from config, offline-testable by injecting the exec impl — mirroring `ai/anthropic.ts` shape.
+- `THROUGHLINE_SEMBLE_CMD` joins the `THROUGHLINE_*` env-override family in `config.ts`; surfaced in §19 Settings & config as a non-secret per-install command field (settings store, not `secrets.json` — the settings secret-key guard is satisfied: no key material).
+- Consumers: done-time linking, code Q&A (`library/service.ts` `semanticSearch()` stub plug-point + scratchpad), dump-zone enrichment, dormant code-drift tier-3 (`drift/service.ts`) once `item_code_refs` populate.
+- No new T-D anchor: the underlying decision (use Semble; keyless; local) is unchanged from T-D27; only the shape changed.
+
+---
+
 ## 1. Process model
 
 ```
@@ -478,11 +502,11 @@ CODE_SPEC §4 named `@octokit/rest` and §12 named `simple-git`. The established
                                               │  - Anthropic / GitHub   │
                                               │  - OS notifications     │
                                               └────────────┬────────────┘
-                                                           │ child process
+                                                           │ execFile per query (C-D17)
                                                            ▼
-                                              ┌─────────────────────────┐
-                                              │  Semble local service   │
-                                              └─────────────────────────┘
+                                              ┌──────────────────────────┐
+                                              │  Semble CLI (on demand)   │
+                                              └──────────────────────────┘
 ```
 
 Backend exposes:
@@ -576,7 +600,7 @@ All outbound HTTPS originates from the backend (T-D31).
 |---|---|
 | **Anthropic** | `@anthropic-ai/sdk`. Per-feature model selection (§9). Cost telemetry written per call (T-D29). Prompt fingerprint hashed and recorded; full prompt never persisted (T-D24). |
 | **GitHub** | `@octokit/rest`. ETag-cached polling per T-D7. Cadence: 60s for active sessions, 5min otherwise. PR-open gate enforcement reuses the gate dispatcher (C-D6) with moment `pr-open`. |
-| **Semble** | Backend spawns Semble as a child process (T-D27). MCP-style or HTTP API per Semble's interface; backend reads via local socket. |
+| **Semble** | Backend invokes the `semble` CLI per query via `execFile` (C-D17, T-D27) — same one-shot child-process precedent as `github/local-git.ts`, `github/pr-linking.ts`, `methodology/gates/hook-installer.ts`, `methodology/gates/checks.ts`. No long-lived subprocess, MCP transport, or socket. Keyless (T-D27); command from `THROUGHLINE_SEMBLE_CMD` (default `semble` on `PATH`). |
 | **Semgrep** | No direct integration. Backend reads Semgrep findings from PRs via GitHub API; bundle declares rule conventions (T-D26). |
 | **OS notifications** | Single backend capability layer per T-D32. Implementation: `node-notifier` for the cross-platform path; platform-specific shell-outs as fallback if `node-notifier` falls short on a target OS. |
 

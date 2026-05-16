@@ -281,10 +281,9 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 11 — Semble integration
 
-- [ ] Backend spawns Semble as a child process
-- [ ] Semble lifecycle (start, restart) managed by backend
-- [ ] Semble indexes the configured per-project repo on first connection
-- [ ] Semble re-indexes incrementally on file changes
+- [ ] Throughline invokes Semble via `execFile` per query (C-D17)
+- [ ] Throughline resolves the Semble command via configurable setting (`THROUGHLINE_SEMBLE_CMD`, default `semble`)
+- [ ] Semble indexes the project repo path passed per invocation
 - [ ] Done-time code linking: Semble searches by item title + description
 - [ ] Top results presented to user for confirmation
 - [ ] Confirmed locations stored as `item_code_refs`

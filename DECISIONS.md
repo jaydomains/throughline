@@ -544,23 +544,23 @@ Workflow setup is a one-time user task. Rule path configurable in settings per p
 
 ---
 
-## T-D27 — Semble runs as a backend-managed local service
+## T-D27 — Semble integrated keyless and local, invoked per query on demand
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 7.15
 
 ### Decision
-Semble runs locally as a service started by the backend on launch. It indexes the user's repo on first connection, watches for changes, and re-indexes incrementally. No API key.
+Throughline integrates Semble for code intelligence: keyless, local, invoked on demand. Semble runs on the user's machine with no API key; Throughline points it at the project's repo path per query and consumes the results.
 
 ### Context
 Code search is needed for code-drift tier 3, plain-English code Q&A, and item-creation enrichment.
 
 ### Rationale
-A local-only service avoids the per-call cost and latency of cloud code search. No API key keeps configuration light.
+Local keyless code search avoids the per-call cost and latency of cloud code search and keeps configuration light. **Lifecycle revision (Phase 11):** the original framing — a backend-started long-lived service that watches the repo and re-indexes incrementally — was written before the real Semble interface was confirmed. Phase-11 spec analysis established that Semble is a Python tool offering stdio-MCP or a one-shot CLI with on-demand, per-session-cached indexing and no HTTP/socket or backend-managed daemon. The decision to use Semble (keyless, local) is unchanged; the *how* is now per-query CLI invocation, not service supervision. Implementation shape: CODE_SPEC C-D17.
 
 ### Implications
-Backend manages Semble lifecycle (start, restart, indexing trigger). Semble runs alongside Throughline as a separate process. Per-project repo path drives Semble's index target.
+Throughline invokes Semble per query (no start/restart/indexing-trigger supervision). The per-project repo path is passed per invocation as Semble's index target. Graceful degradation when Semble is absent follows SPEC §15. No new T-D anchor — the underlying decision is unchanged; the shape change is captured in CODE_SPEC C-D17.
 
 ---
 
