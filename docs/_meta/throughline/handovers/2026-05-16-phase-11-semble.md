@@ -80,6 +80,7 @@ _none_
 ## Open Questions
 
 - [ ] Assumed Semble CLI contract (`<cmd> search --json --path <repo> --limit <n> -- <query>`, JSON/JSON-lines output) is based on public docs, not hands-on use. Verify against real MinishLab/semble before this surface is dogfooded; if it differs, the `THROUGHLINE_SEMBLE_CMD` override + a localised tweak to `parseHits`/argv in `semble/client.ts` absorb it — no SPEC change. Landing site: a follow-up verification slice or first dogfood session.
+- [ ] `enrichItems` uses an unbounded `Promise.all` fan-out across Semble child processes (one `execFile` per proposed item). Acceptable at current scale (typical 1–3 items per extraction); flagged by Gitar review as "minor for future scale". Revisit with a concurrency cap if dogfooding surfaces a high-volume extraction case. Landing site: a perf pass or Phase 14.
 - [ ] Dump-zone enrichment currently runs inline within `propose()` (best-effort, capped, never blocking) rather than truly post-return background; SPEC §7.15 says "background". Acceptable for v1 (suggestions are present when the modal opens); revisit if propose latency becomes an issue. Landing site: Phase 14 or a perf pass.
 
 ---

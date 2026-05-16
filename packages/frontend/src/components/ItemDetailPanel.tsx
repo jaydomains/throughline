@@ -243,9 +243,17 @@ export function ItemDetailPanel({
   }
 
   async function removeCodeRef(refId: string) {
-    await api.removeItemCodeRef(projectId, itemId, refId);
-    await refresh();
-    onChanged();
+    setCodeBusy(true);
+    setCodeMsg(null);
+    try {
+      await api.removeItemCodeRef(projectId, itemId, refId);
+      await refresh();
+      onChanged();
+    } catch {
+      setCodeMsg('Removing the code reference failed.');
+    } finally {
+      setCodeBusy(false);
+    }
   }
 
   const persistContext = useCallback(
