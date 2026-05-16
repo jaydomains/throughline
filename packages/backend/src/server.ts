@@ -4,6 +4,12 @@ import type { Config } from './config.js';
 import { openDb, type DB } from './db/index.js';
 import { runMigrations } from './db/migrate.js';
 import { createMethodologyRegistry, type MethodologyRegistry } from './methodology/loader.js';
+import { createGateRuntime } from './methodology/gates/runtime.js';
+import { createAnthropicJudgementGate } from './methodology/gates/judgement.js';
+import { registerGateRoutes } from './methodology/gates/routes.js';
+import { createGateHookQueue } from './methodology/gates/hook-queue.js';
+import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
+import { installGateHooks } from './methodology/gates/hook-installer.js';
 import { createProjectsService } from './projects/service.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { registerSettingsRoutes } from './settings/routes.js';
@@ -81,6 +87,8 @@ export async function startServer(
   mkdirSync(config.inboxDir, { recursive: true });
   mkdirSync(config.archiveDir, { recursive: true });
   mkdirSync(config.failuresDir, { recursive: true });
+  mkdirSync(config.gateHookQueueDir, { recursive: true });
+  mkdirSync(config.gateHookFailuresDir, { recursive: true });
 
   const db = openDb(config.dbPath);
   runMigrations(db);
@@ -103,14 +111,30 @@ export async function startServer(
   }
   const settings = createSettingsService(db);
   const sessions = createSessionsService(db, projects);
-  const items = createItemsService(db, projects, registry);
-  const library = createLibraryService(db, projects);
-  const scratchpad = createScratchpadService(db);
 
   // AI / dump-zone: Anthropic client routes to the real Sonnet extractor when the secrets
   // file holds a key; heuristic fallback runs otherwise. Read availability per call so a
   // settings change doesn't require a backend restart.
   const anthropicClient = createAnthropicClient({ secretsPath: config.secretsPath });
+
+  // Phase 8 — gate runtime is constructed before items so an item state transition can
+  // fire the internal per-commit moment (SPEC §7.12, C-D6).
+  const gateRuntime = createGateRuntime({
+    db,
+    projects,
+    registry,
+    judgement: createAnthropicJudgementGate({ client: anthropicClient }),
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+  const items = createItemsService(db, projects, registry, {
+    onStatusTransition: (projectId) => gateRuntime.onItemStatusTransition(projectId),
+  });
+  const library = createLibraryService(db, projects);
+  const scratchpad = createScratchpadService(db);
   const extractor = createRoutingExtractor({
     anthropic: createAnthropicExtractor({ client: anthropicClient }),
     heuristic: createHeuristicExtractor(),
@@ -213,6 +237,13 @@ export async function startServer(
   registerHealthRoute(app);
   registerEventsRoute(app);
   registerMethodologyRoutes(app, registry);
+  registerGateRoutes(app, {
+    db,
+    projects,
+    runtime: gateRuntime,
+    runtimeFilePath: config.runtimeFilePath,
+    queueDir: config.gateHookQueueDir,
+  });
   registerProjectRoutes(app, projects, settings);
   registerSessionRoutes(app, projects, sessions);
   registerItemRoutes(app, projects, items);
@@ -239,6 +270,37 @@ export async function startServer(
   const boundPort =
     typeof addr === 'object' && addr !== null && 'port' in addr ? addr.port : config.port;
   const url = `http://${config.host}:${boundPort}`;
+
+  // CODE_SPEC §7 — publish the bound URL so port-agnostic hook scripts can find the
+  // backend at fire time (a port change needs no hook reinstall).
+  writeRuntimeFile(config.runtimeFilePath, url);
+
+  // Re-install hooks for projects that consented (settings_json.install_gate_hooks),
+  // keeping the scripts current; failure is non-fatal (SPEC §7.12).
+  for (const p of projects.list({ includeArchived: true })) {
+    if (p.settings_json?.install_gate_hooks === true) {
+      installGateHooks({
+        repoPath: p.repo_path,
+        runtimeFilePath: config.runtimeFilePath,
+        queueDir: config.gateHookQueueDir,
+      });
+    }
+  }
+
+  // CODE_SPEC §7 — drain durable git-hook events that fired while the backend was down,
+  // before serving traffic depends on them. The HTTP server is already listening; the
+  // drain dispatches retroactively and is idempotent per event file.
+  const hookQueue = createGateHookQueue({
+    queueDir: config.gateHookQueueDir,
+    failuresDir: config.gateHookFailuresDir,
+    runtime: gateRuntime,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+  await hookQueue.drain();
 
   return {
     app,

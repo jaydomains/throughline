@@ -809,3 +809,22 @@ button.directive-badge { cursor: pointer; }
 .modules-table th,
 .modules-table td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--border); }
 .modules-table th { color: var(--fg-dim); font-weight: 600; font-size: 12px; text-transform: uppercase; }
+
+/* Phase 8 — Methodology-gates view. Failures are proposals, never blocks (T-D44). */
+.view-gates { padding: 16px; }
+.view-gates h1 { margin: 0 0 4px; font-size: 20px; }
+.gates-actions { margin: 10px 0; }
+.gate-moment { margin-top: 18px; border-top: 1px solid var(--border); padding-top: 10px; }
+.gate-moment-head { display: flex; align-items: center; gap: 10px; }
+.gate-moment-head h2 { margin: 0; font-size: 15px; text-transform: capitalize; }
+.gate-firing { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
+.gate-firing-head { display: flex; align-items: center; gap: 8px; }
+.gate-summary { margin: 6px 0; font-size: 13px; }
+.gate-findings { margin: 4px 0 6px; padding-left: 18px; font-size: 12px; color: var(--fg-dim); }
+.gate-override { margin: 4px 0 0; font-size: 12px; }
+.gate-override-btn { margin-top: 4px; font-size: 12px; }
+.gate-status { padding: 1px 8px; border-radius: 8px; font-size: 11px; text-transform: uppercase; background: var(--bg-soft); color: var(--fg-dim); }
+.gate-status-pass { color: #5fd08a; }
+.gate-status-fail { color: #ff8080; }
+.gate-status-error { color: #ffb86b; }
+.gate-status-skipped { color: var(--fg-dim); }

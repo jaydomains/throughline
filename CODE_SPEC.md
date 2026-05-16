@@ -381,6 +381,32 @@ A per-project path with install-fallback is the minimum mechanism that lets a us
 
 ---
 
+## C-D15 — Mechanical gates dispatch to a built-in generic check catalogue by gate-id keyword
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D42, T-D44, C-D4, C-D6
+
+### Decision
+The bundle grammar parses each gate as `id | kind | description` (C-D4); it carries no field binding a `mechanical` gate to a concrete check. SPEC §7.12 / CODE_SPEC §7 only require mechanical gates to run "scripts or validators". The v1 runtime therefore ships a fixed catalogue of generic mechanical-check primitives, each driven off the bundle's already-typed sections rather than gate-specific configuration:
+
+- **`banned-string`** — sweeps the bundle's declared doc surface (`project_layout.primary_unit.doc_set` + `runtime_artefact_dirs`) for `validation_rules.banned_string_sweeps` ∪ `anchor_system.banned_content_in_bodies`.
+- **`structural`** — required `doc_set` files present under `repo_path`.
+- **`anchor-resolution`** — every anchor in `item_anchor_citations` matches `anchor_system.format_regex` and resolves to a heading in the doc surface; a cited anchor whose nearby `status:` term is non-live (`status_vocabulary[1..]`) fails.
+- **`blocking-marker`** — scans the doc surface for `marker_system.formats` (preferring formats named in the gate description).
+- **`script-spawn`** — `child_process` execution of a `*.sh` named in the gate description (or the gate id), under `repo_path`, non-zero exit = fail.
+
+A `GateSpec` is dispatched to one primitive by a documented gate-id keyword convention (`*banned*`→banned-string, `*structure|structural|conformance*`→structural, `*anchor*`→anchor-resolution, `*marker*`→blocking-marker, `*verify*` or a `.sh` token in the description→script-spawn). An unrecognised mechanical gate, an unreadable `repo_path`, or any check exception records a non-blocking `skipped`/`error` finding — never a repo block (T-D44).
+
+### Rationale
+The alternative — adding a fourth check-binding token to the gate line — is a change to the eleven-section grammar (C-D4) and the shipped `test-bundle` fixture, i.e. a spec-author / Phase-1 change, not a Phase-8 implementation detail. Keeping the binding implicit (gate-id keyword → built-in primitive over the bundle's typed sections) leaves the grammar and fixture untouched, stays methodology-agnostic, and covers the worked example (`test-bundle`'s four mechanical gates) without bundle-specific runtime code. Per the spec-drift policy this is an implementation-shape choice, so it lands as a C-D anchor in CODE_SPEC.md only; no SPEC.md change.
+
+### Implications
+- `backend/src/methodology/gates/checks.ts` holds the catalogue + `resolveCheckKind`.
+- Bundles whose gate ids do not match the keyword convention get `skipped` mechanical firings — visible in the methodology-gates view, never a block. A future grammar extension can supersede the keyword heuristic without changing the dispatch/record path.
+- Judgement gates bypass the catalogue: they call Anthropic (`claude-sonnet-4-6`, hardcoded default-parameter, matching the dump-zone / reconcile / md-ingest factories) with the gate description + a project-state digest; the audit row carries model + prompt fingerprint only (T-D24) and a `cost_telemetry` row is written (T-D29).
+
+---
+
 ## 1. Process model
 
 ```
@@ -554,15 +580,17 @@ Per C-D6. Phase-moment triggers in v1:
 
 Each moment resolves the bundle's `gates_by_moment[moment]` (zero or more `GateSpec`). Gates run independently per C-D6.
 
-Mechanical gate execution: scripts execute via `child_process.spawn` with stdout/stderr captured; banned-string sweeps and regex validators run in-process; structural validators run against parsed project docs cached in the runtime.
+The loopback channel is `POST /api/gate-trigger` (`{ moment, project_id?, repo_path?, head_sha? }`); the server already binds `127.0.0.1` only (T-D31) so the channel is loopback by construction. Each moment resolves `gates_by_moment[moment]` and runs each gate independently, writing one `gate_firings` row + one audit-log entry (`entity_type='gate_firing'`, `actor='methodology_runtime'`) per firing. `pr-open` is exposed as `runMoment(project, 'pr-open')` for the Phase-10 poller to drive.
 
-Judgement gates: Anthropic call with the gate's spec-declared prompt template (from the bundle's templates section), parameterised by the project's current state. Default model Sonnet per SPEC §9.
+Mechanical gate execution: a `GateSpec` is dispatched by gate-id keyword to a built-in generic check primitive (banned-string sweep / structural / anchor-resolution / blocking-marker / script-spawn) driven off the bundle's typed sections — full mechanism and rationale in **C-D15**. Scripts execute via `child_process`; sweeps and validators run in-process over the bundle's declared doc surface under `repo_path`.
 
-Findings surface in the methodology-gates view; UI shows per-gate pass/fail with override + fix-and-retry actions (T-D44).
+Judgement gates: Anthropic call parameterised by the gate description + a project-state digest. Model `claude-sonnet-4-6` as a hardcoded factory default-parameter, matching the existing AI factories (dump-zone extractor, reconcile engine, md-ingest summariser) — no settings/env read. Audit row carries model + prompt fingerprint only (T-D24); a `cost_telemetry` row is written (T-D29).
 
-**Hook path resolution.** Throughline resolves the active hooks directory via git's canonical path-resolution mechanism (`git rev-parse --git-path hooks`) rather than joining `repo_path` with `.git/hooks`. This correctly handles linked worktrees, submodules whose `.git` is a gitdir pointer file, and `core.hooksPath` overrides (e.g., Husky). `simple-git` — already named as a planned dependency in §12 — provides the git invocation surface for this resolution.
+Findings surface in the methodology-gates view; UI shows per-gate pass/fail with override (audit-logged reason + original findings ref) + fix-and-retry (re-run the moment) actions (T-D44).
 
-**Port stability for hook scripts.** The backend's bound port can change between runs (configurable; tests bind ephemeral ports). Installed hook scripts therefore do not embed the port. The backend writes its current bound URL to a fixed runtime location under the data directory on startup; hook scripts read that location at fire time. A port change requires no hook reinstall.
+**Hook path resolution.** Throughline resolves the active hooks directory via git's canonical path-resolution mechanism (`git rev-parse --git-path hooks`) rather than joining `repo_path` with `.git/hooks`. This correctly handles linked worktrees, submodules whose `.git` is a gitdir pointer file, and `core.hooksPath` overrides (e.g., Husky). The Phase-8 implementation invokes `git` directly via `child_process` for this single one-shot path query rather than adding the `simple-git` dependency (still planned for §12's branch-read use); the resolution behaviour is identical. Installed hooks are advisory, non-blocking (always `exit 0`), and chain a pre-existing hook preserved as `<hook>.local` rather than replacing it (SPEC §7.12 hook collision policy). Consent is the per-project `settings_json.install_gate_hooks` flag; install is idempotent and re-applied at startup for consented projects; failure is audit-logged and non-fatal.
+
+**Port stability for hook scripts.** The backend's bound port can change between runs (configurable; tests bind ephemeral ports). Installed hook scripts therefore do not embed the port. The backend writes its current bound URL to `<dataDir>/runtime.json` on startup; hook scripts read that file at fire time (and fall back to the durable queue if it is absent or the POST fails). A port change requires no hook reinstall.
 
 **Hook event queue.** When a hook fires and the backend is unreachable, the hook appends the event to a durable on-disk queue: one file per event under `<dataDir>/gate-hook-queue/`, named `<timestamp>-<nanoid>.json`, containing `{ moment, repo_path, head_sha?, fired_at }`. On startup the backend drains this directory before serving — reading each file, resolving the repo to a project, dispatching the corresponding gate, then deleting the file on success or moving it to a sibling `failures/` subdirectory with an `.error.json` companion on failure. This mirrors the Phase 4 inbox watcher's queue-drain-on-startup and quarantine-on-failure pattern (`packages/backend/src/inbox/`), reusing its serial-drain and dated-archive idioms where they apply.
 

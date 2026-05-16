@@ -204,22 +204,26 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 8 — Methodology gate runtime (four phase moments + PR-open)
 
-- [ ] Gate dispatcher implemented per C-D6
-- [ ] Pre-write moment dispatch (provisional trigger: signal file + UI action)
-- [ ] Per-commit moment dispatch (provisional trigger: `.git/COMMIT_EDITMSG` watch or installed pre-commit hook)
-- [ ] Plan-mode moment dispatch (provisional trigger: plan-mode marker file in Claude Code inbox)
-- [ ] Post-commit moment dispatch (provisional trigger: git log poll or installed post-commit hook)
-- [ ] PR-open moment dispatch via GitHub poller (placeholder until Phase 10 polling lives)
-- [ ] Multi-gate per phase moment supported; gates run independently
-- [ ] Each gate firing writes to `gate_firings`
-- [ ] Each gate firing writes an audit-log entry
-- [ ] Mechanical gates execute scripts and validators via child-process spawn
-- [ ] Judgement gates call Anthropic with bundle-supplied prompt template
-- [ ] Gate failures surface in methodology-gates view as proposals
-- [ ] "Override with reason" action records audit-log row with reason + original findings reference
-- [ ] "Fix and retry" action re-fires the gate
-- [ ] SiteMesh per-commit moment: verify-structure.sh and sitemesh-pre-commit run as two independent gates
-- [ ] Throughline never silently blocks the underlying repo
+<!-- Trigger-mechanism wording below was the pre-resolution provisional (ROADMAP §7.12
+     gap table). SPEC §7.12 (spec-clarification PR) superseded it with a single
+     local-loopback HTTP channel + git hooks + durable hook queue; items ticked against
+     the resolved mechanism, original text struck through for build-state history. -->
+- [x] Gate dispatcher implemented per C-D6 (`methodology/gates/runtime.ts`)
+- [x] Pre-write moment dispatch (~~signal file~~ → loopback `POST /api/gate-trigger` + UI "Run pre-write checks", best-effort)
+- [x] Per-commit moment dispatch (~~`.git/COMMIT_EDITMSG` watch~~ → item state transition OR installed pre-commit hook → loopback; durable hook queue)
+- [x] Plan-mode moment dispatch (~~marker file~~ → Claude Code POSTs to loopback channel, best-effort)
+- [x] Post-commit moment dispatch (~~git log poll~~ → installed post-commit hook → loopback; durable hook queue)
+- [x] PR-open moment dispatch via GitHub poller (`runMoment(project,'pr-open')` seam exposed; poller is Phase 10)
+- [x] Multi-gate per phase moment supported; gates run independently (test-bundle per-commit ×2, verified)
+- [x] Each gate firing writes to `gate_firings`
+- [x] Each gate firing writes an audit-log entry (`entity_type='gate_firing'`, `actor='methodology_runtime'`)
+- [x] Mechanical gates execute scripts and validators via child-process spawn (built-in catalogue, C-D15)
+- [x] Judgement gates call Anthropic with bundle-supplied prompt template (`gates/judgement.ts`)
+- [x] Gate failures surface in methodology-gates view as proposals (`views/GatesView.tsx`)
+- [x] "Override with reason" action records audit-log row with reason + original findings reference
+- [x] "Fix and retry" action re-fires the gate (re-run the moment)
+- [x] Per-commit moment runs the test-bundle's two gates (structure-check + banned-string-sweep) as two independent gates <!-- SiteMesh bundle removed from repo per bundle-externalisation refactor; test-bundle is the worked example -->
+- [x] Throughline never silently blocks the underlying repo (advisory hooks `exit 0`; checks fail as proposals, T-D44)
 
 ---
 

@@ -13,6 +13,8 @@ import type {
   DirectiveKind,
   DirectiveParentType,
   DumpZoneProposal,
+  GateFiring,
+  GateMomentGroup,
   InboxQueueEntry,
   InboxStatusSummary,
   Item,
@@ -929,4 +931,28 @@ export const mockApi = {
     entry.ingested_at = new Date().toISOString();
     return { entry, changed: true };
   }),
+
+  // Phase 8 — methodology gate runtime (C-D6).
+  listGateFirings: vi.fn(async (_projectId: string) => ({ groups: [] as GateMomentGroup[] })),
+  runGateMoment: vi.fn(async (_projectId: string, _moment: string) => ({
+    firings: [] as GateFiring[],
+  })),
+  overrideGateFiring: vi.fn(
+    async (_projectId: string, firingId: string, reason: string) => ({
+      firing: {
+        id: firingId,
+        project_id: 'p',
+        moment: 'pre-write',
+        gate_id: 'g',
+        status: 'fail',
+        findings: {
+          check: 'banned-string',
+          summary: 's',
+          items: [],
+          override: { reason, original_findings_ref: firingId, at: new Date().toISOString() },
+        },
+        created_at: new Date().toISOString(),
+      } as GateFiring,
+    }),
+  ),
 };
