@@ -131,10 +131,14 @@ export function createOrphanRulesService(opts: CreateOrphanRulesOptions): Orphan
       if (!project || !project.github_owner || !project.github_repo) {
         throw new GithubNotConfiguredError();
       }
+      const baseBranch = await api.getDefaultBranch(
+        project.github_owner,
+        project.github_repo,
+      );
       const result = await api.draftRuleRemovalPr({
         owner: project.github_owner,
         repo: project.github_repo,
-        baseBranch: 'main',
+        baseBranch,
         newBranch: `throughline/remove-orphan-rule-${id}`,
         rulePath: row.rule_path,
         itemId: row.original_item_id,

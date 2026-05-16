@@ -37,6 +37,7 @@ function pull(over: Partial<GhPull> = {}): GhPull {
   return {
     number: 1,
     title: 'Add upload validation',
+    body: null,
     html_url: 'https://github.com/o/r/pull/1',
     state: 'open',
     merged_at: null,
@@ -72,6 +73,7 @@ function fakeApi(opts: {
     listReviews: vi.fn(async () => opts.reviews ?? []),
     listAnnotations: vi.fn(async () => opts.annotations ?? []),
     findPullForBranch: vi.fn(async () => opts.branchPull ?? null),
+    getDefaultBranch: vi.fn(async () => 'main'),
     listPullFiles: vi.fn(async () => opts.files ?? []),
     fileExists: vi.fn(async () => true),
     draftRuleRemovalPr: vi.fn(async () => ({
@@ -476,7 +478,9 @@ describe('Phase 10 — auto-reconcile on merge (T-D6/T-D18)', () => {
     expect(ctx.pr_number).toBe(5);
     expect(ctx.undo_token).toBe(outcome.undo_token);
     ar.undo(outcome.undo_token!);
-    expect(() => ar.undo(outcome.undo_token!)).toThrow();
+    // Undo is now restart-safe (persisted to the audit row), so a repeat with the same
+    // token still resolves from the audit snapshot; only an unknown token throws.
+    expect(() => ar.undo('bogus-token')).toThrow();
     await s.backend.cleanup();
   });
 
@@ -666,6 +670,179 @@ describe('Phase 10 — tier-4 dedup + drift inbox', () => {
     expect(inbox.total_count).toBe(2); // tier-4 + discipline; tier-1 badges, excluded
     expect(inbox.code_count).toBe(1);
     expect(inbox.discipline_count).toBe(1);
+    await s.backend.cleanup();
+  });
+});
+
+describe('Phase 10 — robustness fixes', () => {
+  it('in-flight guard prevents a concurrent poll from double-dispatching pr-open', async () => {
+    const s = await setup();
+    const cache = createGithubStateCache(s.backend.db);
+    const runMoment = vi.spyOn(s.gateRuntime, 'runMoment');
+    let release!: () => void;
+    const gate = new Promise<void>((r) => (release = r));
+    const api = fakeApi({ pulls: [pull()] });
+    (api.listPulls as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => {
+      await gate;
+      return { status: 'ok', etag: 'e', data: [pull()] };
+    });
+    const tier4 = createTier4Service({
+      db: s.backend.db,
+      projects: s.projects,
+      registry: s.backend.registry,
+      drift: s.drift,
+    });
+    const poller = createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api,
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4,
+      watch: false,
+    });
+    const p1 = poller.pollProject(s.project.id);
+    const second = await poller.pollProject(s.project.id); // guarded → warm cache
+    expect(second).toEqual([]);
+    release();
+    await p1;
+    expect(runMoment).toHaveBeenCalledTimes(1);
+    expect(api.listPulls).toHaveBeenCalledTimes(1);
+    await s.backend.cleanup();
+  });
+
+  it('auto-reconcile undo survives a "restart" via the persisted audit snapshot', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'x', status: 'doing' });
+    const reconcile = {
+      propose: async () => ({
+        id: 'run1',
+        project_id: s.project.id,
+        session_id: null,
+        source: 'pr-description' as const,
+        status: 'pending' as const,
+        raw_text: '',
+        created_at: new Date().toISOString(),
+        resolved_at: null,
+        diff: {
+          source: 'pr-description' as const,
+          extractor: 'anthropic' as const,
+          session_id: null,
+          extractor_note: null,
+          rows: [
+            {
+              category: 'completed',
+              row_id: 'r0',
+              item_id: item.id,
+              current_status: 'doing',
+              next_status: 'done',
+              current_title: 'x',
+              evidence: 'e',
+            },
+          ] as never,
+        },
+      }),
+      get: () => null,
+      listRecent: () => [],
+      apply: () => {
+        s.items.update(item.id, { status: 'done' });
+        return {
+          completed_item_ids: [item.id],
+          new_item_ids: [],
+          edited_item_ids: [],
+          blocker_item_ids: [],
+          no_change_item_ids: [],
+          drift_signal_ids: [],
+          rejected_row_ids: [],
+        };
+      },
+      discard: () => undefined,
+    } as unknown as ReconcileService;
+    const ar1 = createAutoReconcileService({
+      db: s.backend.db,
+      projects: s.projects,
+      items: s.items,
+      reconcile,
+    });
+    const outcome = await ar1.onMerge(s.project.id, pull(), '');
+    expect(outcome.disposition).toBe('auto-applied');
+    expect(s.items.get(item.id)!.status).toBe('done');
+    // Fresh service instance = simulated restart (empty in-memory undo store).
+    const ar2 = createAutoReconcileService({
+      db: s.backend.db,
+      projects: s.projects,
+      items: s.items,
+      reconcile,
+    });
+    ar2.undo(outcome.undo_token!);
+    expect(s.items.get(item.id)!.status).toBe('doing');
+    expect(() => ar2.undo('bogus')).toThrow();
+    await s.backend.cleanup();
+  });
+
+  it('tier-2 detects a revert mentioned only in the PR body', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'shipped', status: 'done' });
+    s.backend.db
+      .prepare(
+        'INSERT INTO item_pr_associations (item_id, pr_number, repo, auto_detected_at) VALUES (?,?,?,?)',
+      )
+      .run(item.id, 7, 'o/r', null);
+    const cache = createGithubStateCache(s.backend.db);
+    await createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api: fakeApi({
+        pulls: [pull({ number: 30, title: 'Roll back change', body: 'This reverts #7 due to a regression.' })],
+      }),
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4: createTier4Service({
+        db: s.backend.db,
+        projects: s.projects,
+        registry: s.backend.registry,
+        drift: s.drift,
+      }),
+      watch: false,
+    }).pollProject(s.project.id);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-2' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
+  it('orphan cleanup PR targets the repo default branch, not hardcoded main', async () => {
+    const s = await setup();
+    const api = fakeApi();
+    (api.getDefaultBranch as ReturnType<typeof vi.fn>).mockResolvedValue('develop');
+    const orphan = createOrphanRulesService({ db: s.backend.db, projects: s.projects, api });
+    const items = createItemsService(s.backend.db, s.projects, s.backend.registry, {
+      onDelete: (pid, iid) => orphan.captureForItem(pid, iid),
+    });
+    const item = items.create({ project_id: s.project.id, title: 'r' });
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr', item.id, '.semgrep/throughline/itm.yml', 'r');
+    items.delete(item.id);
+    await orphan.draftCleanupPr(orphan.list(s.project.id)[0]!.id);
+    expect(api.getDefaultBranch).toHaveBeenCalledWith('o', 'r');
+    expect(api.draftRuleRemovalPr).toHaveBeenCalledWith(
+      expect.objectContaining({ baseBranch: 'develop' }),
+    );
     await s.backend.cleanup();
   });
 });

@@ -86,7 +86,7 @@ export function runTier2(
   pull: GhPull,
   repo: string,
 ): void {
-  const text = `${pull.title}`;
+  const text = `${pull.title}\n${pull.body ?? ''}`;
   if (!REVERT_RE.test(text)) return;
   const referenced = new Set<number>();
   for (const m of text.matchAll(PR_REF_RE)) referenced.add(Number(m[1]));

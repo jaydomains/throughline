@@ -19,6 +19,7 @@ const UA = 'throughline';
 export interface GhPull {
   number: number;
   title: string;
+  body: string | null;
   html_url: string;
   state: 'open' | 'closed';
   merged_at: string | null;
@@ -66,6 +67,8 @@ export interface GitHubApi {
   listReviews(owner: string, repo: string, n: number): Promise<GhReview[]>;
   listAnnotations(owner: string, repo: string, sha: string): Promise<GhAnnotation[]>;
   findPullForBranch(owner: string, repo: string, branch: string): Promise<GhPull | null>;
+  // The repo's default branch (orphan cleanup PRs must target it, not a hardcoded name).
+  getDefaultBranch(owner: string, repo: string): Promise<string>;
   // Documented C-D16 fallback: the one expensive payload call. Only used when LocalGit
   // cannot resolve the PR refs; the common path never touches it.
   listPullFiles(owner: string, repo: string, n: number): Promise<string[]>;
@@ -167,6 +170,12 @@ export function createGitHubApi({ secretsPath, fetchImpl }: CreateOptions): GitH
         for (const a of (ann.json as GhAnnotation[]) ?? []) out.push(a);
       }
       return out;
+    },
+
+    async getDefaultBranch(owner, repo) {
+      const r = await gh('GET', `/repos/${owner}/${repo}`);
+      const b = (r.json as { default_branch?: string } | null)?.default_branch;
+      return b && b.length > 0 ? b : 'main';
     },
 
     async findPullForBranch(owner, repo, branch) {

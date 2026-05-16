@@ -65,6 +65,10 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
   const logger = opts.logger;
   let timer: NodeJS.Timeout | null = null;
   const lastPolledAt = new Map<string, number>();
+  // In-flight guard: a poll can outlast the tick interval (slow GitHub response, many
+  // PRs with annotations). Without this a second concurrent poll for the same project
+  // would double-dispatch the pr-open gate and re-run auto-reconcile on merge.
+  const inFlight = new Set<string>();
 
   function isActive(projectId: string): boolean {
     const cutoff = new Date(now() - ACTIVE_WINDOW_MS).toISOString();
@@ -115,6 +119,25 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
     const owner = project.github_owner;
     const repoName = project.github_repo;
     const repo = `${owner}/${repoName}`;
+    // A poll already running for this project (tick raced a manual /github/refresh, or
+    // the previous poll outlasted the tick) — return the warm cache rather than starting
+    // a concurrent poll that would double-dispatch pr-open / auto-reconcile.
+    if (inFlight.has(projectId)) return cache.listSnapshots(repo).map(toBadge);
+    inFlight.add(projectId);
+    try {
+      return await doPollProject(projectId, project, owner, repoName, repo);
+    } finally {
+      inFlight.delete(projectId);
+    }
+  }
+
+  async function doPollProject(
+    projectId: string,
+    project: NonNullable<ReturnType<typeof projects.get>>,
+    owner: string,
+    repoName: string,
+    repo: string,
+  ): Promise<PrBadge[]> {
     warnWorkflowIfMissing(projectId);
 
     const prevEtag = cache.getListEtag(repo);

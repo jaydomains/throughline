@@ -135,6 +135,40 @@ export function createAutoReconcileService(
     };
   }
 
+  // Restart-recovery path: rebuild the undo snapshot from the persisted audit row when
+  // the in-memory token was lost (backend restarted within the 24h window).
+  function snapshotFromAudit(token: string): UndoSnapshot | null {
+    const rows = db
+      .prepare(
+        `SELECT project_id, trigger_context_json FROM audit_log
+          WHERE field = 'github_auto_reconcile' AND actor = 'ai_auto_apply'
+            AND trigger_context_json LIKE ?
+          ORDER BY timestamp DESC LIMIT 1`,
+      )
+      .all(`%${token}%`) as Array<{ project_id: string | null; trigger_context_json: string }>;
+    for (const row of rows) {
+      let ctx: {
+        undo_token?: string;
+        undo_expires_at?: string;
+        undo_snapshot?: UndoSnapshot['items'];
+      };
+      try {
+        ctx = JSON.parse(row.trigger_context_json);
+      } catch {
+        continue;
+      }
+      if (ctx.undo_token !== token || !ctx.undo_expires_at || !ctx.undo_snapshot) continue;
+      if (Date.parse(ctx.undo_expires_at) <= now()) return null; // outside the window
+      return {
+        token,
+        project_id: row.project_id ?? '',
+        expires_at: ctx.undo_expires_at,
+        items: ctx.undo_snapshot,
+      };
+    }
+    return null;
+  }
+
   return {
     async onMerge(projectId, pull, diffStat) {
       const project = projects.get(projectId);
@@ -176,6 +210,10 @@ export function createAutoReconcileService(
         reconcile.apply({ run_id: run.id, diff: run.diff });
         undoStore.set(token, snap);
         pruneUndo();
+        // Persist the reversal snapshot in the audit row so the 24h undo survives a
+        // backend restart within the window (CODE_SPEC §6: undo must be re-implementable
+        // from audit-log entries). The in-memory store stays the fast path; undo() falls
+        // back to this entry. Snapshots carry no secrets/prompts (T-D24 unaffected).
         appendAudit(db, {
           projectId,
           entityType: 'project',
@@ -183,7 +221,12 @@ export function createAutoReconcileService(
           actor: 'ai_auto_apply',
           field: 'github_auto_reconcile',
           newValue: 'auto-applied',
-          triggerContext: { ...baseContext, undo_token: token, undo_expires_at: snap.expires_at },
+          triggerContext: {
+            ...baseContext,
+            undo_token: token,
+            undo_expires_at: snap.expires_at,
+            undo_snapshot: snap.items,
+          },
         });
         return {
           pr_number: pull.number,
@@ -217,7 +260,7 @@ export function createAutoReconcileService(
 
     undo(token) {
       pruneUndo();
-      const snap = undoStore.get(token);
+      const snap = undoStore.get(token) ?? snapshotFromAudit(token);
       if (!snap) throw new UndoError('undo token expired or unknown');
       for (const it of snap.items) {
         items.update(it.id, {
