@@ -233,21 +233,3 @@ export function GraphView() {
   );
 }
 
-export function GatesView({
-  bundles,
-  projectBundleId,
-}: {
-  bundles: MethodologySummary[];
-  projectBundleId: string;
-}) {
-  const bundle = findBundle(bundles, projectBundleId);
-  if (bundle && (bundle.status !== 'loaded' || bundle.has_gates !== true)) {
-    return <Navigate to=".." relative="path" replace />;
-  }
-  return (
-    <Stub
-      title="Methodology gates"
-      body="The methodology gate runtime lands in Phase 8 with five phase moments and multi-gate dispatch. Phase 2 ships the route as an empty stub."
-    />
-  );
-}

@@ -8,3 +8,4 @@ export * from './library.js';
 export * from './md-ingest.js';
 export * from './directives.js';
 export * from './reconcile.js';
+export * from './gate.js';

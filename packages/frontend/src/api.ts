@@ -13,6 +13,9 @@ import type {
   DirectiveKind,
   DirectiveParentType,
   DumpZoneProposal,
+  GateFiring,
+  GateFiringsResult,
+  GateRunResult,
   InboxQueueEntry,
   InboxStatusSummary,
   Item,
@@ -401,4 +404,18 @@ export const api = {
     if (opts.limit) params.set('limit', String(opts.limit));
     return jsonFetch<{ entries: AuditEntry[] }>(`/api/audit?${params.toString()}`);
   },
+
+  // Phase 8 — methodology gate runtime (C-D6).
+  listGateFirings: (projectId: string) =>
+    jsonFetch<GateFiringsResult>(`/api/projects/${pid(projectId)}/gate-firings`),
+  runGateMoment: (projectId: string, moment: string) =>
+    jsonFetch<GateRunResult>(
+      `/api/projects/${pid(projectId)}/gates/${encodeURIComponent(moment)}/run`,
+      { method: 'POST' },
+    ),
+  overrideGateFiring: (projectId: string, firingId: string, reason: string) =>
+    jsonFetch<{ firing: GateFiring }>(
+      `/api/projects/${pid(projectId)}/gate-firings/${encodeURIComponent(firingId)}/override`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
 };

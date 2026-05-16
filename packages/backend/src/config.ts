@@ -18,6 +18,10 @@ export interface Config {
   inboxDir: string;
   archiveDir: string;
   failuresDir: string;
+  // Phase 8 — durable git-hook gate-trigger queue + runtime URL file (CODE_SPEC §7).
+  gateHookQueueDir: string;
+  gateHookFailuresDir: string;
+  runtimeFilePath: string;
   installRoot: string;
   methodologiesDir: string;
   port: number;
@@ -37,6 +41,9 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     inboxDir: overrides.inboxDir ?? join(dataDir, 'inbox'),
     archiveDir: overrides.archiveDir ?? join(dataDir, 'inbox-archive'),
     failuresDir: overrides.failuresDir ?? join(dataDir, 'inbox-failures'),
+    gateHookQueueDir: overrides.gateHookQueueDir ?? join(dataDir, 'gate-hook-queue'),
+    gateHookFailuresDir: overrides.gateHookFailuresDir ?? join(dataDir, 'gate-hook-queue', 'failures'),
+    runtimeFilePath: overrides.runtimeFilePath ?? join(dataDir, 'runtime.json'),
     installRoot,
     methodologiesDir,
     port: overrides.port ?? Number(process.env.THROUGHLINE_PORT ?? 47823),

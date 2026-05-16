@@ -7,7 +7,6 @@ import {
   HomeView,
   ModulesView,
   ProjectsView,
-  GatesView,
 } from '../src/views/stubs.js';
 import type { Project } from '@throughline/shared';
 import type { MethodologySummary } from '../src/api.js';
@@ -105,18 +104,4 @@ describe('View stubs', () => {
     expect(screen.getByRole('heading', { name: 'Modules' })).toBeInTheDocument();
   });
 
-  it('GatesView redirects when the bundle declares no gates', () => {
-    render(
-      <MemoryRouter initialEntries={['/projects/p1/methodology-gates']}>
-        <Routes>
-          <Route
-            path="/projects/:id/methodology-gates"
-            element={<GatesView bundles={[freeform]} projectBundleId="freeform" />}
-          />
-          <Route path="/projects/:id" element={<div>home-fallback</div>} />
-        </Routes>
-      </MemoryRouter>,
-    );
-    expect(screen.getByText('home-fallback')).toBeInTheDocument();
-  });
 });

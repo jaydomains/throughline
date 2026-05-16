@@ -233,10 +233,17 @@ function classifyTier(tierRules: string, itemCount: number): string {
   return 'untiered';
 }
 
+// Phase 8 — an item state transition is the internal per-commit gate trigger
+// (SPEC §7.12); same gate as the git pre-commit hook. Best-effort, never blocks.
+export interface ItemsServiceHooks {
+  onStatusTransition?: (projectId: string, itemId: string) => void;
+}
+
 export function createItemsService(
   db: DB,
   projects: ProjectsService,
   registry: MethodologyRegistry,
+  hooks: ItemsServiceHooks = {},
 ): ItemsService {
   function touch(id: string): void {
     db.prepare('UPDATE items SET updated_at = ? WHERE id = ?').run(new Date().toISOString(), id);
@@ -533,6 +540,10 @@ export function createItemsService(
             newValue: String(newV),
           });
         }
+      }
+
+      if (before.status !== next.status) {
+        hooks.onStatusTransition?.(before.project_id, id);
       }
 
       return this.get(id)!;
