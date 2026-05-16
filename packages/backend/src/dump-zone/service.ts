@@ -104,10 +104,21 @@ interface CreateOptions {
     projectId: string,
     items: Array<{ title: string; description: string }>,
   ) => void;
+  // Phase 11 (SPEC §7.15; C-D17) — dump-zone item-creation enrichment. Runs proposed
+  // titles through Semble so the review modal opens with suggested code refs already
+  // attached. Best-effort: aligned by index to the input array, empty on any failure or
+  // when Semble is unconfigured; never blocks extraction.
+  enrichItems?: (
+    projectId: string,
+    items: Array<{ title: string; description: string }>,
+  ) => Promise<
+    Array<Array<{ path: string; line_start: number; line_end: number; snippet: string }>>
+  >;
 }
 
 export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
-  const { db, projects, registry, items, library, extractor, onProposedItems } = opts;
+  const { db, projects, registry, items, library, extractor, onProposedItems, enrichItems } =
+    opts;
 
   function getRow(id: string): ProposalRow | null {
     const row = db.prepare('SELECT * FROM proposed_extractions WHERE id = ?').get(id) as
@@ -134,6 +145,23 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
         policy,
         suggested_session_id: input.session_id,
       });
+      if (enrichItems && extraction.payload.items.length > 0) {
+        try {
+          const suggestions = await enrichItems(
+            project.id,
+            extraction.payload.items.map((it) => ({
+              title: it.title,
+              description: it.description,
+            })),
+          );
+          extraction.payload.items.forEach((it, i) => {
+            const refs = suggestions[i];
+            if (refs && refs.length > 0) it.suggested_code_refs = refs;
+          });
+        } catch {
+          /* enrichment is best-effort; never block extraction (SPEC §7.15) */
+        }
+      }
       const id = nanoid();
       const now = new Date().toISOString();
       db.prepare(

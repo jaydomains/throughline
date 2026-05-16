@@ -404,9 +404,11 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
     },
 
     semanticSearch(_request, _projectScope) {
-      // Stub — semantic substrate lands with Phase 11 (Semble) for code-related queries
-      // and Phase 14 (local embeddings via C-D2) for text queries. The route exists today
-      // so the frontend cross-substrate router has a real surface to bind against.
+      // Text semantic substrate stub — lands Phase 14 (local embeddings via C-D2). The
+      // code substrate (Semble, C-D17) is served by the dedicated `POST .../code-qa`
+      // endpoint, not folded into library-entry results: Semble returns code chunks, not
+      // LibraryEntry rows, so shoehorning them into LibrarySearchResult would misrepresent
+      // the shape. The route stays so the frontend cross-substrate router binds today.
       return { entries: [], via: 'semantic-stub', truncated: false };
     },
 

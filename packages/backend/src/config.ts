@@ -24,6 +24,9 @@ export interface Config {
   runtimeFilePath: string;
   installRoot: string;
   methodologiesDir: string;
+  // Phase 11 (C-D17, T-D27) — Semble command, resolved per query via execFile. Non-secret
+  // (Semble is keyless), so it joins the THROUGHLINE_* env family, not secrets.json.
+  sembleCmd: string;
   port: number;
   host: string;
 }
@@ -46,6 +49,7 @@ export function loadConfig(overrides: Partial<Config> = {}): Config {
     runtimeFilePath: overrides.runtimeFilePath ?? join(dataDir, 'runtime.json'),
     installRoot,
     methodologiesDir,
+    sembleCmd: overrides.sembleCmd ?? process.env.THROUGHLINE_SEMBLE_CMD ?? 'semble',
     port: overrides.port ?? Number(process.env.THROUGHLINE_PORT ?? 47823),
     host: overrides.host ?? '127.0.0.1', // T-D31 — backend mediates external network; bind local only.
   };

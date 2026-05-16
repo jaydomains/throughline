@@ -281,16 +281,16 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 11 — Semble integration
 
-- [ ] Throughline invokes Semble via `execFile` per query (C-D17)
-- [ ] Throughline resolves the Semble command via configurable setting (`THROUGHLINE_SEMBLE_CMD`, default `semble`)
-- [ ] Semble indexes the project repo path passed per invocation
-- [ ] Done-time code linking: Semble searches by item title + description
-- [ ] Top results presented to user for confirmation
-- [ ] Confirmed locations stored as `item_code_refs`
-- [ ] Plain-English code Q&A: scratchpad/library question routes to Semble + Anthropic summarisation
-- [ ] Code Q&A returns answer with source links
-- [ ] Dump zone item creation enrichment: Semble suggestions appear in review modal
-- [ ] Tier-3 code-drift detection begins firing as items accumulate code refs
+- [x] Throughline invokes Semble via `execFile` per query (C-D17) — `semble/client.ts` one-shot child, injectable exec; verified by semble "search() passes the assumed argv"
+- [x] Throughline resolves the Semble command via configurable setting (`THROUGHLINE_SEMBLE_CMD`, default `semble`) — `config.ts` `sembleCmd`; non-secret, not in `secrets.json`
+- [x] Semble indexes the project repo path passed per invocation — client passes `--path <project.repo_path>` per call (Semble owns its per-session index cache; no Throughline-driven re-index, C-D17)
+- [x] Done-time code linking: Semble searches by item title + description — `semble/service.ts` `searchForItem`; `POST /api/projects/:id/items/:itemId/code-search`
+- [x] Top results presented to user for confirmation — `ItemDetailPanel` Code references section (candidate checklist → confirm)
+- [x] Confirmed locations stored as `item_code_refs` — `confirmRefs` writes rows + audit; verified by semble "confirm → item_code_refs row + audit"
+- [x] Plain-English code Q&A: library question routes to Semble + Anthropic summarisation — `codeQa`; surfaced in `LibraryView` "Ask the code" (library surface per spec-author decision; scratchpad stays AI-free per T-D20)
+- [x] Code Q&A returns answer with source links — `CodeQaResult.answer` + `sources[]`; degradation paths tested
+- [x] Dump zone item creation enrichment: Semble suggestions appear in review modal — `dump-zone/service.ts` `enrichItems` hook; `DumpZoneReviewModal` read-only suggestion row
+- [x] Tier-3 code-drift detection begins firing as items accumulate code refs — no tier-3 code change (already wired); verified by semble "tier-3 then fires" after `confirmRefs`
 
 ---
 

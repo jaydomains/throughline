@@ -1,5 +1,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { AuditEntry, Directive, Item, ItemPolicy, LibraryEntry, ReminderPayload } from '@throughline/shared';
+import type {
+  AuditEntry,
+  CodeSearchCandidate,
+  Directive,
+  Item,
+  ItemCodeRef,
+  ItemPolicy,
+  LibraryEntry,
+  ReminderPayload,
+} from '@throughline/shared';
 import { api } from '../api.js';
 import { isStale } from '../hooks/useStaleThreshold.js';
 import { useModalRegistration } from '../keyboard/modalStack.js';
@@ -43,6 +52,12 @@ export function ItemDetailPanel({
   const [directiveModal, setDirectiveModal] = useState<{ existing: Directive | null } | null>(
     null,
   );
+  // Phase 11 — Semble done-time code linking (SPEC §7.15; C-D17).
+  const [codeRefs, setCodeRefs] = useState<ItemCodeRef[]>([]);
+  const [codeCandidates, setCodeCandidates] = useState<CodeSearchCandidate[] | null>(null);
+  const [codeSelected, setCodeSelected] = useState<Set<number>>(new Set());
+  const [codeMsg, setCodeMsg] = useState<string | null>(null);
+  const [codeBusy, setCodeBusy] = useState(false);
 
   const refresh = useCallback(async () => {
     try {
@@ -68,6 +83,12 @@ export function ItemDetailPanel({
       setDirectives(d.directives);
     } catch {
       setDirectives([]);
+    }
+    try {
+      const c = await api.listItemCodeRefs(projectId, itemId);
+      setCodeRefs(c.refs);
+    } catch {
+      setCodeRefs([]);
     }
   }, [projectId, itemId]);
 
@@ -172,6 +193,57 @@ export function ItemDetailPanel({
     if (!item) return;
     if ((item.branch_ref ?? '') === value) return;
     await api.updateItem(projectId, item.id, { branch_ref: value.length === 0 ? null : value });
+    await refresh();
+    onChanged();
+  }
+
+  async function findCodeLinks() {
+    setCodeBusy(true);
+    setCodeMsg(null);
+    try {
+      const { result } = await api.codeSearchItem(projectId, itemId);
+      if (!result.available) {
+        setCodeCandidates([]);
+        setCodeMsg('Semble is not configured — code search is unavailable.');
+      } else {
+        setCodeCandidates(result.candidates);
+        setCodeSelected(new Set());
+        if (result.candidates.length === 0) setCodeMsg('No code matches found.');
+      }
+    } catch {
+      setCodeMsg('Code search failed.');
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function confirmCodeLinks() {
+    if (!codeCandidates) return;
+    const picks = [...codeSelected].map((i) => codeCandidates[i]!).filter(Boolean);
+    if (picks.length === 0) return;
+    setCodeBusy(true);
+    try {
+      await api.confirmItemCodeRefs(projectId, itemId, {
+        refs: picks.map((c) => ({
+          path: c.path,
+          line_start: c.line_start,
+          line_end: c.line_end,
+          summary: c.snippet ? c.snippet.slice(0, 200) : null,
+        })),
+      });
+      setCodeCandidates(null);
+      setCodeSelected(new Set());
+      await refresh();
+      onChanged();
+    } catch {
+      setCodeMsg('Saving code references failed.');
+    } finally {
+      setCodeBusy(false);
+    }
+  }
+
+  async function removeCodeRef(refId: string) {
+    await api.removeItemCodeRef(projectId, itemId, refId);
     await refresh();
     onChanged();
   }
@@ -521,12 +593,67 @@ export function ItemDetailPanel({
         </button>
       </section>
 
-      <section className="detail-section">
-        <h3>Code refs · verifier rules · git context</h3>
-        <p className="muted">
-          Code refs land in Phase 11 (Semble); verifier rules in Phase 10; PR/git context in
-          Phase 10.
-        </p>
+      <section className="detail-section" data-testid="item-code-refs">
+        <h3>Code references (Semble · §7.15)</h3>
+        {codeRefs.length === 0 && (
+          <p className="muted">No code references linked.</p>
+        )}
+        {codeRefs.length > 0 && (
+          <ul className="code-ref-list">
+            {codeRefs.map((r) => (
+              <li key={r.id}>
+                <code>
+                  {r.path}:{r.line_start}-{r.line_end}
+                </code>
+                {r.summary && <span className="muted"> — {r.summary}</span>}{' '}
+                <button type="button" onClick={() => void removeCodeRef(r.id)}>
+                  remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <button type="button" onClick={() => void findCodeLinks()} disabled={codeBusy}>
+          {codeBusy ? 'Searching…' : 'Find code links'}
+        </button>
+        {codeMsg && <p className="muted">{codeMsg}</p>}
+        {codeCandidates && codeCandidates.length > 0 && (
+          <div className="code-ref-candidates">
+            <p className="muted">Select matches to link, then confirm:</p>
+            <ul>
+              {codeCandidates.map((c, i) => (
+                <li key={`${c.path}:${c.line_start}:${i}`}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={codeSelected.has(i)}
+                      onChange={(e) => {
+                        setCodeSelected((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(i);
+                          else next.delete(i);
+                          return next;
+                        });
+                      }}
+                    />{' '}
+                    <code>
+                      {c.path}:{c.line_start}-{c.line_end}
+                    </code>
+                    {c.snippet && <span className="muted"> — {c.snippet.slice(0, 80)}</span>}
+                  </label>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              onClick={() => void confirmCodeLinks()}
+              disabled={codeBusy || codeSelected.size === 0}
+            >
+              Confirm {codeSelected.size} link{codeSelected.size === 1 ? '' : 's'}
+            </button>
+          </div>
+        )}
+        <p className="muted">Verifier rules · PR/git context: Phase 10.</p>
       </section>
 
       <section className="detail-section">

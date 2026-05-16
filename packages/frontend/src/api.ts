@@ -44,6 +44,10 @@ import type {
   ReconcileProposeRequest,
   ReconcileRun,
   ScratchpadJot,
+  CodeSearchResponse,
+  ItemCodeRef,
+  ConfirmCodeRefsRequest,
+  CodeQaResult,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -269,6 +273,34 @@ export const api = {
       `/api/projects/${pid(projectId)}/library/semantic-search`,
       { method: 'POST', body: JSON.stringify(input) },
     ),
+
+  // Phase 11 — Semble code intelligence (SPEC §7.15; C-D17).
+  codeSearchItem: (projectId: string, itemId: string) =>
+    jsonFetch<{ result: CodeSearchResponse }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/code-search`,
+      { method: 'POST', body: '{}' },
+    ),
+  listItemCodeRefs: (projectId: string, itemId: string) =>
+    jsonFetch<{ refs: ItemCodeRef[] }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/code-refs`,
+    ),
+  confirmItemCodeRefs: (projectId: string, itemId: string, input: ConfirmCodeRefsRequest) =>
+    jsonFetch<{ refs: ItemCodeRef[] }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/code-refs`,
+      { method: 'POST', body: JSON.stringify(input) },
+    ),
+  removeItemCodeRef: (projectId: string, itemId: string, refId: string) =>
+    fetch(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/code-refs/${encodeURIComponent(refId)}`,
+      { method: 'DELETE' },
+    ).then((r) => {
+      if (!r.ok) throw new Error(`DELETE code-ref failed: ${r.status}`);
+    }),
+  codeQa: (projectId: string, question: string) =>
+    jsonFetch<{ result: CodeQaResult }>(`/api/projects/${pid(projectId)}/code-qa`, {
+      method: 'POST',
+      body: JSON.stringify({ question }),
+    }),
 
   listScratchpadJots: (projectId: string, limit?: number) => {
     const qs = limit ? `?limit=${limit}` : '';

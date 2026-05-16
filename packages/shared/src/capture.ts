@@ -25,6 +25,14 @@ export interface ProposedItem {
   target_session_id: string | null;
   // Optional code reference surfaced by the code-TODO scanner (file:line). Read-only in v1.
   code_ref?: { path: string; line: number };
+  // Phase 11 — Semble enrichment suggestions (SPEC §7.15; C-D17). Best-effort, read-only
+  // in the review modal; absent when Semble is unavailable or found nothing.
+  suggested_code_refs?: Array<{
+    path: string;
+    line_start: number;
+    line_end: number;
+    snippet: string;
+  }>;
   // Confidence is null for heuristic; a 0..1 score when the AI extractor returns one.
   confidence: number | null;
 }

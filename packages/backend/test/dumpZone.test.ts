@@ -236,3 +236,69 @@ describe('dump zone service', () => {
     }
   });
 });
+
+describe('dump zone — Phase 11 Semble enrichment (SPEC §7.15)', () => {
+  it('attaches suggested_code_refs to proposed items, best-effort, never blocking', async () => {
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const extractor = createRoutingExtractor({
+        anthropic: createAnthropicExtractor({ client: unavailableClient() }),
+        heuristic: createHeuristicExtractor(),
+        client: unavailableClient(),
+      });
+      let throwOnce = true;
+      const dumpZone = createDumpZoneService({
+        db: backend.db,
+        projects,
+        registry: backend.registry,
+        items,
+        library,
+        extractor,
+        enrichItems: async (_projectId, proposed) =>
+          proposed.map((p, i) => {
+            // First proposed item simulates an enrichment failure for *its* slot only by
+            // throwing for the whole batch on the first propose() call — exercised below.
+            if (throwOnce && i === 0) {
+              throwOnce = false;
+              throw new Error('semble blew up');
+            }
+            return [
+              { path: `src/${p.title.replace(/\s+/g, '-')}.ts`, line_start: 1, line_end: 3, snippet: 'x' },
+            ];
+          }),
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+
+      // First propose: enricher throws → extraction still succeeds, no suggestions.
+      const first = await dumpZone.propose({
+        project_id: project.id,
+        text: 'Fix the login bug',
+        target: 'session',
+        source: 'paste',
+        session_id: null,
+      });
+      expect(first.payload.items[0]!.suggested_code_refs).toBeUndefined();
+
+      // Second propose: enricher succeeds → suggestions attached and persisted.
+      const second = await dumpZone.propose({
+        project_id: project.id,
+        text: 'Add upload validation',
+        target: 'session',
+        source: 'paste',
+        session_id: null,
+      });
+      expect(second.payload.items[0]!.suggested_code_refs).toEqual([
+        { path: 'src/Add-upload-validation.ts', line_start: 1, line_end: 3, snippet: 'x' },
+      ]);
+      const refetched = dumpZone.get(second.id);
+      expect(refetched?.payload.items[0]!.suggested_code_refs).toHaveLength(1);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
