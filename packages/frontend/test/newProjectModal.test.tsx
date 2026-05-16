@@ -26,10 +26,10 @@ const freeform: MethodologySummary = {
   has_gates: false,
 };
 
-const sitemesh: MethodologySummary = {
+const rich: MethodologySummary = {
   status: 'loaded',
-  bundle_id: 'sitemesh',
-  identity: { name: 'sitemesh', version: '1.0.0', authority_precedence: [] },
+  bundle_id: 'rich',
+  identity: { name: 'rich', version: '1.0.0', authority_precedence: [] },
   has_primary_unit: true,
   has_gates: true,
 };
@@ -42,7 +42,7 @@ function renderModal(props: {
 }) {
   const onClose = props.onClose ?? vi.fn();
   const onCreated = props.onCreated ?? vi.fn();
-  const bundles = props.bundles ?? [freeform, sitemesh];
+  const bundles = props.bundles ?? [freeform, rich];
   const utils = render(
     <MemoryRouter>
       <ModalStackProvider>
@@ -69,13 +69,13 @@ describe('NewProjectModal', () => {
     const select = screen.getByTestId('new-project-bundle') as HTMLSelectElement;
     expect(select.value).toBe('freeform');
     expect(screen.getByText('freeform (1.0.0)')).toBeInTheDocument();
-    expect(screen.getByText('sitemesh (1.0.0)')).toBeInTheDocument();
+    expect(screen.getByText('rich (1.0.0)')).toBeInTheDocument();
   });
 
   it('falls back to the first loaded bundle when freeform is absent', () => {
-    renderModal({ open: true, bundles: [sitemesh] });
+    renderModal({ open: true, bundles: [rich] });
     const select = screen.getByTestId('new-project-bundle') as HTMLSelectElement;
-    expect(select.value).toBe('sitemesh');
+    expect(select.value).toBe('rich');
   });
 
   it('disables submit until name and repo path are filled', async () => {

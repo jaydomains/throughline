@@ -7,6 +7,9 @@ export interface Project {
   github_owner: string | null;
   github_repo: string | null;
   bundle_id: string;
+  // C-D14 — when set, the bundle loader resolves `<bundle_path>/bundle.md`
+  // instead of the install-shipped `methodologies/<bundle_id>/bundle.md`.
+  bundle_path: string | null;
   state: ProjectState;
   settings_json: Record<string, unknown>;
   created_at: string;
@@ -18,6 +21,7 @@ export interface CreateProjectInput {
   name: string;
   repo_path: string;
   bundle_id?: string;
+  bundle_path?: string | null;
   github_owner?: string;
   github_repo?: string;
   settings?: Record<string, unknown>;
@@ -26,6 +30,7 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   name?: string;
   repo_path?: string;
+  bundle_path?: string | null;
   github_owner?: string | null;
   github_repo?: string | null;
   state?: ProjectState;

@@ -121,8 +121,8 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
     async propose(input) {
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
-      const bundleResult = registry.get(project.bundle_id);
-      if (!bundleResult || bundleResult.status !== 'loaded') {
+      const bundleResult = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      if (bundleResult.status !== 'loaded') {
         throw new Error(`bundle "${project.bundle_id}" not loaded`);
       }
       const policy = bundleItemPolicy(bundleResult.bundle);

@@ -14,8 +14,8 @@ import { ModulesView } from '../src/views/stubs.js';
 import { mockApi, resetMockApi, seedSession, seedItem } from './fixtures/mockApi.js';
 import type { MethodologySummary } from '../src/api.js';
 
-const SITEMESH_POLICY: ItemPolicy = {
-  bundle_id: 'sitemesh',
+const RICH_POLICY: ItemPolicy = {
+  bundle_id: 'rich',
   types: ['todo', 'decision'],
   statuses: ['todo', 'in-progress', 'blocked', 'done', 'open', 'locked', 'superseded'],
   statuses_by_type: {
@@ -28,10 +28,10 @@ const SITEMESH_POLICY: ItemPolicy = {
   ],
 };
 
-const sitemeshSummary: MethodologySummary = {
+const richSummary: MethodologySummary = {
   status: 'loaded',
-  bundle_id: 'sitemesh',
-  identity: { name: 'sitemesh', version: '1.0.0', authority_precedence: [] },
+  bundle_id: 'rich',
+  identity: { name: 'rich', version: '1.0.0', authority_precedence: [] },
   has_primary_unit: true,
   has_gates: true,
 };
@@ -40,9 +40,9 @@ beforeEach(() => {
   resetMockApi();
 });
 
-describe('Phase 7 — SiteMesh-bound UI', () => {
+describe('Phase 7 — rich-bundle-bound UI', () => {
   it('renders separate Todos and Decisions boards with per-type columns (§7.5)', async () => {
-    mockApi.getPolicy.mockResolvedValue({ policy: SITEMESH_POLICY });
+    mockApi.getPolicy.mockResolvedValue({ policy: RICH_POLICY });
     seedSession({ id: 's1', project_id: 'p1', name: 'slice 1' });
     seedItem({ id: 'a', project_id: 'p1', session_ids: ['s1'], title: 'do it', type: 'todo', status: 'in-progress' });
     seedItem({ id: 'b', project_id: 'p1', session_ids: ['s1'], title: 'pick db', type: 'decision', status: 'locked' });
@@ -82,7 +82,7 @@ describe('Phase 7 — SiteMesh-bound UI', () => {
         <Routes>
           <Route
             path="/projects/:id/modules"
-            element={<ModulesView bundles={[sitemeshSummary]} projectBundleId="sitemesh" />}
+            element={<ModulesView bundles={[richSummary]} projectBundleId="rich" />}
           />
         </Routes>
       </MemoryRouter>,

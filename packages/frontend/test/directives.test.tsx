@@ -236,6 +236,7 @@ describe('Header directives hint', () => {
               github_owner: null,
               github_repo: null,
               bundle_id: 'freeform',
+              bundle_path: null,
               state: 'active',
               settings_json: {},
               created_at: '',
