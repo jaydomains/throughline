@@ -25,6 +25,8 @@ import type {
   GateRunResult,
   ChecklistRun,
   CompanionChecklistsResult,
+  SessionStartModesResult,
+  SessionStartPromptResult,
   InboxQueueEntry,
   InboxStatusSummary,
   Item,
@@ -507,6 +509,17 @@ export const api = {
     jsonFetch<{ run: ChecklistRun }>(
       `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/complete`,
       { method: 'POST', body: JSON.stringify({ summary, item_ids: itemIds }) },
+    ),
+
+  // Phase 13 — session-start scaffolding (C-D9, T-D12).
+  getSessionStartModes: (projectId: string) =>
+    jsonFetch<SessionStartModesResult>(
+      `/api/projects/${pid(projectId)}/session-start/modes`,
+    ),
+  generateSessionStartPrompt: (projectId: string, companionMode: string | null) =>
+    jsonFetch<SessionStartPromptResult>(
+      `/api/projects/${pid(projectId)}/session-start-prompt`,
+      { method: 'POST', body: JSON.stringify({ companion_mode: companionMode }) },
     ),
 
   // Phase 9 — discipline-drift (C-D7).

@@ -4,6 +4,8 @@ import type {
   ChecklistRun,
   ChecklistRunStep,
   CompanionChecklistsResult,
+  SessionStartModesResult,
+  SessionStartPromptResult,
   DisciplineDriftResult,
   GateFiring,
   GateFiringsResult,
@@ -235,6 +237,7 @@ export function GatesView({
       </section>
 
       <CompanionReview projectId={id} />
+      <SessionStart projectId={id} />
     </div>
   );
 }
@@ -534,6 +537,134 @@ function CompanionReview({ projectId }: { projectId: string | undefined }) {
               )}
             </div>
           ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// Phase 13 — session-start scaffolding (SPEC §7.18, §9, C-D9, T-D12). Assembles a
+// copy-pasteable session-start prompt for the active project in a bundle-declared
+// companion mode. Shares this methodology surface with gates + companion review; a
+// freeform-bound project still gets a minimum-spec prompt via the synthetic `default`
+// mode, so this panel is always present (uniform with the gates view).
+function SessionStart({ projectId }: { projectId: string | undefined }) {
+  const [modes, setModes] = useState<SessionStartModesResult | null>(null);
+  const [pickMode, setPickMode] = useState('');
+  const [result, setResult] = useState<SessionStartPromptResult | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!projectId) return;
+    api
+      .getSessionStartModes(projectId)
+      .then(setModes)
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  }, [projectId]);
+
+  const generate = useCallback(async () => {
+    if (!projectId) return;
+    setBusy(true);
+    setError(null);
+    setCopied(false);
+    try {
+      setResult(
+        await api.generateSessionStartPrompt(projectId, pickMode === '' ? null : pickMode),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [projectId, pickMode]);
+
+  const copy = useCallback(async () => {
+    if (!result) return;
+    try {
+      await navigator.clipboard.writeText(result.prompt);
+      setCopied(true);
+      setError(null);
+    } catch (e) {
+      // clipboard.writeText rejects on focus loss, denied permission, or a
+      // non-secure context — surface it so the user doesn't believe a failed
+      // copy succeeded.
+      setCopied(false);
+      setError(
+        `Copy failed (${e instanceof Error ? e.message : String(e)}). Select the prompt and copy manually.`,
+      );
+    }
+  }, [result]);
+
+  if (!projectId) return null;
+
+  return (
+    <section className="session-start" data-testid="session-start">
+      <div className="gate-moment-head">
+        <h2>Session-start prompt</h2>
+      </div>
+      <p className="muted">
+        Assembles project context (decisions, anchors, open markers, cross-unit
+        dependencies, include-in-prompt directives) into a copy-pasteable prompt for the
+        bundle&apos;s companion mode (SPEC §7.18, C-D9). Relevance is classified with
+        Anthropic Haiku; an unchanged context re-serves the cached prompt with no AI call.
+      </p>
+      {error && (
+        <p className="form-error" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="session-start-controls gates-actions">
+        {modes && modes.modes.length > 0 && (
+          <select
+            value={pickMode}
+            onChange={(e) => setPickMode(e.target.value)}
+            data-testid="session-start-mode-pick"
+          >
+            <option value="">(default: {modes.default_mode})</option>
+            {modes.modes.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        )}
+        <button
+          type="button"
+          disabled={busy}
+          onClick={generate}
+          data-testid="session-start-generate"
+        >
+          Generate prompt
+        </button>
+      </div>
+
+      {result && (
+        <div className="session-start-result" data-testid="session-start-result">
+          <div className="gate-moment-head">
+            <h3>
+              {result.mode}{' '}
+              <span className="muted">
+                ({result.cached ? 'cached' : 'fresh'}
+                {result.classifier_used_ai ? ' · AI-classified' : ' · citation-only'})
+              </span>
+            </h3>
+            <button
+              type="button"
+              onClick={copy}
+              data-testid="session-start-copy"
+            >
+              {copied ? 'Copied' : 'Copy to clipboard'}
+            </button>
+          </div>
+          <textarea
+            className="session-start-prompt"
+            readOnly
+            value={result.prompt}
+            rows={16}
+            data-testid="session-start-prompt"
+          />
         </div>
       )}
     </section>

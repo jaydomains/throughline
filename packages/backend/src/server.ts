@@ -10,6 +10,9 @@ import { registerGateRoutes } from './methodology/gates/routes.js';
 import { createCompanionEngine } from './methodology/companion/engine.js';
 import { createAnthropicCompanionJudge } from './methodology/companion/judgement.js';
 import { registerCompanionRoutes } from './methodology/companion/routes.js';
+import { createSessionStartEngine } from './methodology/session-start/engine.js';
+import { createAnthropicRelevanceClassifier } from './methodology/session-start/classifier.js';
+import { registerSessionStartRoutes } from './methodology/session-start/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
 import { installGateHooks } from './methodology/gates/hook-installer.js';
@@ -335,6 +338,18 @@ export async function startServer(
   });
 
   const directives = createDirectivesService(db, projects, items, library);
+  // Phase 13 — session-start scaffolding (C-D9, T-D12). Bundle-driven prompt assembly;
+  // relevance classification via Anthropic Haiku (SPEC §9), capability-gated (no key ⇒
+  // citation-only degrade, no cost). Inert-uniform for freeform via a synthetic mode.
+  const sessionStart = createSessionStartEngine({
+    db,
+    projects,
+    registry,
+    items,
+    library,
+    directives,
+    classifier: createAnthropicRelevanceClassifier({ client: anthropicClient }),
+  });
   const notifier = createOsNotifier({
     logger: {
       info: (m) => app.log.info(m),
@@ -390,6 +405,7 @@ export async function startServer(
   });
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
   registerCompanionRoutes(app, projects, companion);
+  registerSessionStartRoutes(app, projects, sessionStart);
   registerGitHubRoutes(app, {
     projects,
     api: githubApi,

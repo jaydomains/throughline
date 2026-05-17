@@ -108,6 +108,22 @@ You are working on a test-bundle-bound component in standard mode. Open items:
 
 {{open_items_list}}
 
+Decisions:
+
+{{decisions_block}}
+
+Anchors:
+
+{{anchors_block}}
+
+Open markers:
+
+{{markers_block}}
+
+Cross-unit dependencies:
+
+{{dependencies_block}}
+
 ### Template: session_start:strict
 
 # Session start — {{project_name}} (strict)
@@ -116,6 +132,14 @@ You are working on a test-bundle-bound component in strict mode. Cited anchors m
 resolve and per-commit gates must pass. Open items:
 
 {{open_items_list}}
+
+Decisions:
+
+{{decisions_block}}
+
+Cross-unit dependencies:
+
+{{dependencies_block}}
 
 ### Template: handover
 

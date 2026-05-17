@@ -203,6 +203,57 @@ describe('Phase 8 — methodology-gates view', () => {
     expect(screen.getByTestId('companion-judge-scope')).toBeInTheDocument();
   });
 
+  it('Phase 13 — session-start surface generates and copies a prompt (C-D9, T-D12)', async () => {
+    mockApi.listGateFirings.mockResolvedValue({ groups: [] });
+    mockApi.getSessionStartModes.mockResolvedValue({
+      modes: [
+        { id: 'standard', name: 'standard' },
+        { id: 'strict', name: 'strict' },
+      ],
+      default_mode: 'standard',
+    });
+    mockApi.generateSessionStartPrompt.mockResolvedValue({
+      mode: 'strict',
+      modes: [
+        { id: 'standard', name: 'standard' },
+        { id: 'strict', name: 'strict' },
+      ],
+      prompt: '# Session start — p1 (strict)\n\nOpen items:\n\n- do the thing',
+      classifications: [{ ref: 'd1', tier: 'high' }],
+      cached: false,
+      classifier_used_ai: true,
+    });
+    const writeText = vi.fn(async () => undefined);
+    Object.assign(navigator, { clipboard: { writeText } });
+
+    renderAt(richSummary, 'rich');
+    await waitFor(() =>
+      expect(screen.getByTestId('session-start')).toBeInTheDocument(),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('session-start-mode-pick')).toBeInTheDocument(),
+    );
+    fireEvent.change(screen.getByTestId('session-start-mode-pick'), {
+      target: { value: 'strict' },
+    });
+    fireEvent.click(screen.getByTestId('session-start-generate'));
+    await waitFor(() =>
+      expect(mockApi.generateSessionStartPrompt).toHaveBeenCalledWith('p1', 'strict'),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('session-start-prompt')).toHaveValue(
+        '# Session start — p1 (strict)\n\nOpen items:\n\n- do the thing',
+      ),
+    );
+    fireEvent.click(screen.getByTestId('session-start-copy'));
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        '# Session start — p1 (strict)\n\nOpen items:\n\n- do the thing',
+      ),
+    );
+    expect(screen.getByTestId('session-start-copy')).toHaveTextContent('Copied');
+  });
+
   it('Phase 9 — renders category-grouped discipline drift and re-scans (C-D7)', async () => {
     mockApi.getDisciplineDrift.mockResolvedValue({
       groups: [

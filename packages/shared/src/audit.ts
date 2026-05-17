@@ -7,6 +7,7 @@ export type AuditEntityType =
   | 'bundle_binding'
   | 'gate_firing'
   | 'checklist_step'
+  | 'session_start'
   | 'settings';
 
 export type AuditActor =

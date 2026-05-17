@@ -312,15 +312,15 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 13 — Session-start scaffolding
 
-- [ ] Endpoint generates session-start prompts for the active project
-- [ ] Companion-mode selection: bundle-declared enum with default
-- [ ] Context-assembly retrieves project spec, decisions, anchors, markers, execution-plan slice, dependencies
-- [ ] Include-in-prompt directives auto-prepend to the generated prompt
-- [ ] Anthropic Haiku call classifies relevance
-- [ ] Bundle templates section provides the prompt template
-- [ ] One-click copy-to-clipboard
-- [ ] Cost telemetry records every assembly call
-- [ ] Freeform-bound project produces a minimum-spec prompt
+- [x] Endpoint generates session-start prompts for the active project (`POST /api/projects/:id/session-start-prompt` + `GET …/session-start/modes` — `methodology/session-start/routes.ts`; engine `generate`/`modes` in `methodology/session-start/engine.ts`; verified by backend "renders the bundle template for the chosen mode and lists open items")
+- [x] Companion-mode selection: bundle-declared enum with default (`resolveMode`/`declaredModes` — first-declared mode is the default; `default` synthetic mode for freeform/none; invalid mode → `InvalidModeError` 400; verified by "lists the bundle-declared companion modes with the first as default" and "rejects a mode the bundle does not declare". The companion-modes ↔ review-patterns relationship is the explicit CODE_SPEC Q#6 spec gap — proceeded with bundle-declared enum + default per ROADMAP §Phase 13, surfaced in the handover, not silently resolved)
+- [x] Context-assembly retrieves project spec, decisions, anchors, markers, execution-plan slice, dependencies (`assemble` — open items, decision-bearing items (boards beyond the first declared type), cited anchors, open markers, cross-primary-unit blocker edges; the bundle's per-mode template is the execution-plan slice (C-D9 step 4); verified by "renders the bundle template…" and "surfaces cross-primary-unit dependencies")
+- [x] Include-in-prompt directives auto-prepend to the generated prompt (`includeBlocks` resolves each `kind:'include_prompt'` directive's parent item title+body or library entry body + optional note; prepended above the rendered template; verified by "auto-prepends include-in-prompt directives (item + library, with note)")
+- [x] Anthropic Haiku call classifies relevance (`session-start/classifier.ts` `createAnthropicRelevanceClassifier` default `claude-haiku-4-5`; high ⇒ full text, medium ⇒ citation, low ⇒ dropped; capability-gated — no key ⇒ all-medium degrade, no call; verified by "classifier tiers drive decision rendering…" and "degrades to citation-only with no AI cost when the classifier is unavailable")
+- [x] Bundle templates section provides the prompt template (`templateFor` reads `bundle.templates.session_start_by_mode[mode]`, falls back to `default` then a built-in minimum template; `{{var}}` substitution with unknown placeholders blanked; verified by "renders the bundle template for the chosen mode")
+- [x] One-click copy-to-clipboard (`SessionStart` panel in `views/GatesView.tsx` — `navigator.clipboard.writeText`; verified by frontend "Phase 13 — session-start surface generates and copies a prompt")
+- [x] Cost telemetry records every assembly call (`recordCost` feature `session_start_assembly` when the classifier used AI with token usage; T-D24 model + salted prompt-fingerprint audit row; verified by "classifier tiers drive decision rendering; AI telemetry is audited + costed" — exactly one cost row per fresh assembly, none on the degrade path or a cached re-render)
+- [x] Freeform-bound project produces a minimum-spec prompt (freeform/none bundles expose the synthetic `default` mode and the freeform `session_start:default` template renders project name + open items; verified by "freeform-bound project produces a minimum-spec prompt via the default mode")
 
 ---
 
