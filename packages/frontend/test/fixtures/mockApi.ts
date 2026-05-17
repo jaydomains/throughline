@@ -224,7 +224,13 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
 
 export const mockApi = {
   health: vi.fn(async () => ({ ok: true, version: 'test' })),
-  listProjects: vi.fn(async () => ({ projects: [...state.projects] })),
+  listProjects: vi.fn(async (includeArchived = false) => ({
+    projects: state.projects.filter((p) => includeArchived || p.state !== 'archived'),
+  })),
+  deleteProject: vi.fn(async (pId: string) => {
+    state.projects = state.projects.filter((x) => x.id !== pId);
+    return { ok: true as const };
+  }),
   createProject: vi.fn(async (input: CreateProjectInput) => {
     const project: Project = {
       id: id('p'),

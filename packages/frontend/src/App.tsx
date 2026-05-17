@@ -154,6 +154,7 @@ function AppInner() {
                   void api.switchProject(project.id).catch(() => {});
                   navigate(`/projects/${project.id}`);
                 }}
+                onChanged={refreshProjects}
               />
             }
           />

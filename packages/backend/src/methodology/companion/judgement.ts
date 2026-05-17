@@ -34,6 +34,7 @@ export interface CompanionJudge {
 export interface AnthropicCompanionJudgeOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
 const SYSTEM =
@@ -44,11 +45,13 @@ const SYSTEM =
 
 export function createAnthropicCompanionJudge({
   client,
-  model = 'claude-sonnet-4-6',
+  model: defaultModel = 'claude-sonnet-4-6',
+  resolveModel,
 }: AnthropicCompanionJudgeOptions): CompanionJudge {
   return {
     available: () => client.available(),
     async judge(ctx) {
+      const model = resolveModel ? resolveModel() : defaultModel;
       const prompt =
         `Checklist: ${ctx.checklistId}\nStep: ${ctx.stepId}\n` +
         `Intent: ${ctx.description}\nProject: ${ctx.projectName}\n\n` +

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Navigate, useParams } from 'react-router-dom';
 import type { ModulesResult, Project } from '@throughline/shared';
 import { api, type MethodologySummary } from '../api.js';
@@ -23,10 +23,51 @@ interface ProjectsViewProps {
   projects: Project[];
   bundles: MethodologySummary[];
   onCreated: (project: Project) => void;
+  // Keeps the header switcher / app-level project list in sync after a
+  // lifecycle change (archive / unarchive / delete) made from this view.
+  onChanged?: () => void | Promise<void>;
 }
 
-export function ProjectsView({ projects, bundles, onCreated }: ProjectsViewProps) {
+export function ProjectsView({ projects, bundles, onCreated, onChanged }: ProjectsViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
+  // The header switcher only carries active projects; this view owns the full
+  // lifecycle (SPEC §11: create / switch / archive / delete all functional), so
+  // it fetches active + archived itself.
+  const [all, setAll] = useState<Project[]>(projects);
+  const [busy, setBusy] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const reload = useCallback(async () => {
+    try {
+      const r = await api.listProjects(true);
+      setAll(r.projects);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    }
+  }, []);
+
+  useEffect(() => {
+    void reload();
+  }, [reload]);
+
+  const act = useCallback(
+    async (id: string, op: 'archive' | 'unarchive' | 'delete') => {
+      setBusy(id);
+      setError(null);
+      try {
+        if (op === 'delete') await api.deleteProject(id);
+        else await api.updateProject(id, { state: op === 'archive' ? 'archived' : 'active' });
+        await reload();
+        await onChanged?.();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setBusy(null);
+      }
+    },
+    [reload, onChanged],
+  );
+
   return (
     <div className="view-stub" data-testid="view-projects">
       <div className="projects-toolbar">
@@ -40,23 +81,68 @@ export function ProjectsView({ projects, bundles, onCreated }: ProjectsViewProps
           New project
         </button>
       </div>
-      <p>
-        Phase 2 lists projects in the header switcher. Phase 3 fills this view with create / archive
-        / delete actions and per-project state at a glance.
-      </p>
+      {error && (
+        <p className="form-error" role="alert" data-testid="projects-error">
+          {error}
+        </p>
+      )}
       <div className="projects-list">
-        {projects.map((p) => (
-          <article key={p.id} className="project-card">
-            <h3>{p.name}</h3>
+        {all.map((p) => (
+          <article key={p.id} className="project-card" data-testid={`project-card-${p.id}`}>
+            <h3>
+              {p.name}{' '}
+              {p.state === 'archived' && (
+                <span className="tag" data-testid={`project-archived-${p.id}`}>
+                  archived
+                </span>
+              )}
+            </h3>
             <div className="meta">
               bundle: <code>{p.bundle_id}</code>
             </div>
             <div className="meta">
               repo: <code>{p.repo_path}</code>
             </div>
+            <div className="form-actions">
+              {p.state === 'archived' ? (
+                <button
+                  type="button"
+                  disabled={busy === p.id}
+                  onClick={() => void act(p.id, 'unarchive')}
+                  data-testid={`project-unarchive-${p.id}`}
+                >
+                  Unarchive
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={busy === p.id}
+                  onClick={() => void act(p.id, 'archive')}
+                  data-testid={`project-archive-${p.id}`}
+                >
+                  Archive
+                </button>
+              )}
+              <button
+                type="button"
+                className="danger"
+                disabled={busy === p.id}
+                onClick={() => {
+                  if (
+                    window.confirm(
+                      `Delete project "${p.name}"? This removes its items, sessions, and history and cannot be undone.`,
+                    )
+                  )
+                    void act(p.id, 'delete');
+                }}
+                data-testid={`project-delete-${p.id}`}
+              >
+                Delete
+              </button>
+            </div>
           </article>
         ))}
-        {projects.length === 0 && (
+        {all.length === 0 && (
           <p>No projects yet — click <strong>New project</strong> to create one.</p>
         )}
       </div>
@@ -66,6 +152,7 @@ export function ProjectsView({ projects, bundles, onCreated }: ProjectsViewProps
         onCreated={(project) => {
           setModalOpen(false);
           onCreated(project);
+          void reload();
         }}
         bundles={bundles}
       />

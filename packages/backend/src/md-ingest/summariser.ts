@@ -149,16 +149,19 @@ function parseAiResponse(text: string): AiShape | null {
 export interface AnthropicSummariserOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
 export function createAnthropicSummariser({
   client,
-  model = 'claude-sonnet-4-6',
+  model: defaultModel = 'claude-sonnet-4-6',
+  resolveModel,
 }: AnthropicSummariserOptions): MdSummariser {
   const heuristic = createHeuristicSummariser();
   return {
     async summarise(input) {
       if (!client.available()) return heuristic.summarise(input);
+      const model = resolveModel ? resolveModel() : defaultModel;
       const system = AI_SYSTEM;
       const userPrompt = buildUserPrompt(input);
       try {

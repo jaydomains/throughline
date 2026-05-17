@@ -54,10 +54,11 @@ interface CreateOptions {
   registry: MethodologyRegistry;
   dumpZone: DumpZoneService;
   anthropic: AnthropicClient;
+  resolveModel?: () => string;
 }
 
 export function createChatService(opts: CreateOptions): ChatService {
-  const { db, projects, items, registry, dumpZone, anthropic } = opts;
+  const { db, projects, items, registry, dumpZone, anthropic, resolveModel } = opts;
 
   function rows(projectId: string, ct: string, ci: string): ChatMessage[] {
     return (
@@ -151,6 +152,7 @@ export function createChatService(opts: CreateOptions): ChatService {
         'AI is not configured — your message is saved. Set an Anthropic API key to get a reply.';
       let usedAi = false;
       if (anthropic.available()) {
+        const model = resolveModel ? resolveModel() : MODEL;
         const system =
           ct === 'session'
             ? 'You are a focused project assistant for one work list. Use the supplied ' +
@@ -165,7 +167,7 @@ export function createChatService(opts: CreateOptions): ChatService {
         ];
         try {
           const res = await anthropic.call({
-            model: MODEL,
+            model,
             system,
             messages,
             max_tokens: MAX_TOKENS,
@@ -178,10 +180,10 @@ export function createChatService(opts: CreateOptions): ChatService {
             recordCost(db, {
               projectId,
               feature: 'chat',
-              model: MODEL,
+              model,
               inputTokens: res.input_tokens,
               outputTokens: res.output_tokens,
-              usdEstimate: usdEstimate(MODEL, res.input_tokens, res.output_tokens),
+              usdEstimate: usdEstimate(model, res.input_tokens, res.output_tokens),
             });
           }
           // T-D24 — model + salted fingerprint, never the message body.
@@ -193,7 +195,7 @@ export function createChatService(opts: CreateOptions): ChatService {
             field: 'chat',
             newValue: `${ct}:${ci}`,
             triggerContext: {
-              model: MODEL,
+              model,
               context_type: ct,
               prompt_fingerprint: promptFingerprint('chat', req.message),
             },

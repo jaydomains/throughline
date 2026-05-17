@@ -339,8 +339,9 @@ function ModelSection({
       <details>
         <summary>Per-feature overrides</summary>
         <p className="settings-hint">
-          Blank uses the per-feature default from SPEC §9. (Override consumption is wired
-          in the Phase-16 DoD pass; values persist here now.)
+          Blank uses the per-feature default from SPEC §9. The global default model
+          applies to Sonnet-tier features; features that are Haiku by design stay Haiku
+          unless overridden here.
         </p>
         {FEATURE_OVERRIDES.map((f) => {
           const key = `model_override_${f}`;

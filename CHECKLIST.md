@@ -385,25 +385,27 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 16 — Definition of Done walkthrough
 
-- [ ] §11 bullet — methodology runtime loads bundles from `methodologies/`; eleven-section parsing; runtime configures validators, sweeps, marker scanners, state-machine transitions (one or more gates per phase moment), review-checklist steps, template parsers
-- [ ] §11 bullet — SiteMesh and freeform bundles both ship and load
-- [ ] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform (**create + switch UI landed in Phase 3.5**; archive/delete UI still outstanding)
-- [ ] §11 bullet — items live in one local datastore per project with stable identifiers; sessions are saved views
-- [ ] §11 bullet — items support infinite nesting, methodology-defined type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log
-- [ ] §11 bullet — nine view modes functional and switchable; modules and methodology-gates hide where bundle declares none
-- [ ] §11 bullet — all capture surfaces functional with consistent review-before-apply where applicable
-- [ ] §11 bullet — reconcile produces structured diffs with all six categories and applies cleanly
-- [ ] §11 bullet — three directive types functional with OS notification integration; directives view groups by type
-- [ ] §11 bullet — four library content types all first-class
-- [ ] §11 bullet — GitHub integration polls at documented cadence, PR state surfaces, auto-reconcile on merge confidence-thresholded; manual item-to-PR linking functional
-- [ ] §11 bullet — methodology gates fire on PR open, transition events, and commit-prep moments; failures surface as proposals; never silently block
-- [ ] §11 bullet — both code-drift (four tiers) and discipline-drift (bundle-defined) streams active and surfacing
-- [ ] §11 bullet — stale yellow flag appears in all list views and detail panel header
-- [ ] §11 bullet — Semble local integration: indexing, code Q&A, item enrichment functional
-- [ ] §11 bullet — Personal RAG with three substrates and router functional
-- [ ] §11 bullet — end-of-session retro, periodic review, dependency sequencing, stakeholder toggle, command palette, companion runtime, session-start scaffolding functional
-- [ ] §11 bullet — cost meter visible in header at all times
-- [ ] §11 bullet — GitHub auto-apply confidence scores logged in audit log from day 1
-- [ ] §11 bullet — single-file backup with optional auto-copy
-- [ ] §11 bullet — settings panel covers all required knobs
-- [ ] §11 bullet — backend installs and runs via documented single-command setup; frontend served from backend
+Walkthrough verified against the full suite (backend 257/257, frontend 99/99, `pnpm -r typecheck` clean) plus a runtime smoke (`pnpm build` + backend `start`).
+
+- [x] §11 bullet — methodology runtime loads bundles from `methodologies/`; eleven-section parsing; runtime configures validators, sweeps, marker scanners, state-machine transitions, review-checklist steps, template parsers — Phases 1/6/7/8; `methodology/loader.ts`, `bundle-parser.ts`, gate runtime; `test/{loader,bundle-parser,gates,companion}.test.ts`
+- [x] §11 bullet — SiteMesh and freeform bundles both ship and load — `methodologies/freeform/bundle.md` + external SiteMesh bundle via `bundle_path` (Phase 7 handover); `test/loader.test.ts`
+- [x] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform — create+switch Phase 3.5; **archive/delete UI closed this phase** (`views/stubs.tsx` `ProjectsView`, `api.ts` `deleteProject`/`listProjects(includeArchived)`, `test/projectsLifecycle.test.tsx`); backend `projects/service.ts`+`routes.ts`
+- [x] §11 bullet — items in one local datastore per project with stable identifiers; sessions are saved views — `items/service.ts`, `sessions/service.ts`; `test/{items,sessions}.test.ts`
+- [x] §11 bullet — items support nesting, type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log — `items/service.ts`, `audit/log.ts`; `test/items.test.ts`
+- [x] §11 bullet — nine view modes functional and switchable; modules/methodology-gates hide where bundle declares none — `components/ViewToggle.tsx`, `App.tsx` routes; `test/viewToggle.test.tsx`
+- [x] §11 bullet — all capture surfaces functional with consistent review-before-apply — dump-zone/scratchpad/voice/Claude-Code-push/code-TODO; `test/{dumpZone,scratchpad,codeTodo}.test.ts(x)`
+- [x] §11 bullet — reconcile produces structured diffs with all six categories and applies cleanly — `reconcile/engine.ts`+`service.ts`; `test/reconcile.test.ts`
+- [x] §11 bullet — three directive types functional with OS notification integration; directives view groups by type — `directives/*`, `notifier/*`; `test/{directives,directives-scheduler,notifier}.test.ts`
+- [x] §11 bullet — four library content types all first-class — `library/service.ts`; `test/library*`
+- [x] §11 bullet — GitHub integration polls at documented cadence, PR state surfaces, auto-reconcile on merge confidence-thresholded; manual item-to-PR linking functional — `github/{poller,auto-reconcile,pr-linking}.ts` (Phase 10 handover)
+- [x] §11 bullet — methodology gates fire on PR open, transition events, commit-prep; failures surface as proposals; never silently block — `methodology/gates/*` (Phase 8 handover)
+- [x] §11 bullet — both code-drift (four tiers) and discipline-drift (bundle-defined) streams active and surfacing — `github/tier*`, `methodology/drift/*`; `test/discipline-drift.test.ts` (Phases 9/10)
+- [x] §11 bullet — stale yellow flag appears in all list views and detail panel header — `components/{ItemRow,ItemDetailPanel}.tsx` (T-D46, Phase 9 handover)
+- [x] §11 bullet — Semble local integration: indexing, code Q&A, item enrichment functional — `semble/service.ts` (Phase 11 handover)
+- [x] §11 bullet — Personal RAG with three substrates and router functional — `intelligence/rag.ts`; `test/rag.test.ts` (now embedder-agnostic — Phase-14/15 open question closed)
+- [x] §11 bullet — end-of-session retro, periodic review, dependency sequencing, stakeholder toggle, command palette, companion runtime, session-start scaffolding functional — `intelligence/*`, `methodology/{companion,session-start}/*`, `components/CommandPalette.tsx`
+- [x] §11 bullet — cost meter visible in header at all times — `components/Header.tsx`, `cost/summary.ts` (Phase 15)
+- [x] §11 bullet — GitHub auto-apply confidence scores logged in audit log from day 1 — `audit/log.ts` (`actor: ai_auto_apply`, CODE_SPEC §16; Phase 10)
+- [x] §11 bullet — single-file backup with optional auto-copy — `backup/*` (Phase 15); `test/backup.test.ts`
+- [x] §11 bullet — settings panel covers all required knobs — `views/SettingsView.tsx`; **per-feature model-override now consumed end-to-end** (`ai/model-resolver.ts`, wired into all live AI callsites; `test/model-resolver.test.ts`, `test/chat.test.ts` override-consumption)
+- [x] §11 bullet — backend installs and runs via documented single-command setup; frontend served from backend — `pnpm build` + `pnpm --filter @throughline/backend start` (now `tsx`-run, resolves the workspace package consistently); smoke-verified: `/health` 200, `/` serves `index.html`, SPA route 200 (`routes/web.ts`)

@@ -44,6 +44,7 @@ import { registerHealthRoute } from './routes/health.js';
 import { registerEventsRoute } from './routes/events.js';
 import { registerWebRoutes } from './routes/web.js';
 import { createAnthropicClient } from './ai/anthropic.js';
+import { createModelResolver } from './ai/model-resolver.js';
 import {
   createAnthropicExtractor,
   createHeuristicExtractor,
@@ -153,6 +154,11 @@ export async function startServer(
     if (p.bundle_path) registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path);
   }
   const settings = createSettingsService(db);
+  // Phase 16 (DoD) — single per-feature model-resolution point. Reads settings per
+  // call so a model override / global-default change takes effect without a backend
+  // restart. Precedence: per-feature override > global default (Sonnet-tier only) >
+  // CODE_SPEC §14 default. See ai/model-resolver.ts.
+  const modelFor = createModelResolver((k) => settings.get(k));
   // Phase 15 — backup (T-D28, CODE_SPEC §17) + cost meter (T-D29, CODE_SPEC §11).
   const backup = createBackupService({
     db,
@@ -208,7 +214,10 @@ export async function startServer(
     db,
     projects,
     registry,
-    judgement: createAnthropicJudgementGate({ client: anthropicClient }),
+    judgement: createAnthropicJudgementGate({
+      client: anthropicClient,
+      resolveModel: () => modelFor('gates', 'claude-sonnet-4-6'),
+    }),
     // C-D7 — the pre-write moment also fires write-time discipline-drift scanners,
     // reusing the Phase-8 dispatch rather than duplicating trigger logic.
     onMoment: (projectId, moment) => {
@@ -233,7 +242,10 @@ export async function startServer(
     projects,
     registry,
     library,
-    judge: createAnthropicCompanionJudge({ client: anthropicClient }),
+    judge: createAnthropicCompanionJudge({
+      client: anthropicClient,
+      resolveModel: () => modelFor('companion', 'claude-sonnet-4-6'),
+    }),
   });
   const scratchpad = createScratchpadService(db);
   // Phase 11 — Semble (C-D17, T-D27). Keyless, per-query execFile child; command from
@@ -246,9 +258,13 @@ export async function startServer(
     items,
     client: sembleClient,
     anthropic: anthropicClient,
+    resolveModel: () => modelFor('code_qa', 'claude-sonnet-4-6'),
   });
   const extractor = createRoutingExtractor({
-    anthropic: createAnthropicExtractor({ client: anthropicClient }),
+    anthropic: createAnthropicExtractor({
+      client: anthropicClient,
+      resolveModel: () => modelFor('dump_zone', 'claude-sonnet-4-6'),
+    }),
     heuristic: createHeuristicExtractor(),
     client: anthropicClient,
   });
@@ -263,7 +279,7 @@ export async function startServer(
       if (!anthropicClient.available()) return false;
       try {
         const r = await anthropicClient.call({
-          model: 'claude-haiku-4-5',
+          model: modelFor('dedup', 'claude-haiku-4-5'),
           system:
             'Reply with exactly "yes" or "no": are these two software work items duplicates of the same underlying task?',
           messages: [
@@ -331,7 +347,10 @@ export async function startServer(
   });
   const codeTodo = createCodeTodoService({ db, projects, dumpZone });
   const reconcileEngine = createRoutingReconcileEngine({
-    anthropic: createAnthropicReconcileEngine({ client: anthropicClient }),
+    anthropic: createAnthropicReconcileEngine({
+      client: anthropicClient,
+      resolveModel: () => modelFor('reconcile', 'claude-sonnet-4-6'),
+    }),
     heuristic: createHeuristicReconcileEngine(),
     client: anthropicClient,
   });
@@ -350,7 +369,9 @@ export async function startServer(
   // PR-state surfacing, the pr-open gate (via the Phase-8 dispatcher), code-drift tiers
   // 1-3, and the tier-4 stale sweep. Inert without a PAT / github_owner (SPEC §10).
   const autoReconcile = createAutoReconcileService({ db, projects, items, reconcile });
-  const driftReverify = createDriftReverifyService(db, anthropicClient);
+  const driftReverify = createDriftReverifyService(db, anthropicClient, () =>
+    modelFor('drift_reverify', 'claude-sonnet-4-6'),
+  );
   const prLinking = createPrLinkingService({ db, projects, api: githubApi });
   const githubPoller: GitHubPoller = createGitHubPoller({
     db,
@@ -381,7 +402,10 @@ export async function startServer(
     items,
     library,
     directives,
-    classifier: createAnthropicRelevanceClassifier({ client: anthropicClient }),
+    classifier: createAnthropicRelevanceClassifier({
+      client: anthropicClient,
+      resolveModel: () => modelFor('session_start', 'claude-haiku-4-5'),
+    }),
   });
   // Phase 14 — personal RAG (T-D25, C-D2; SPEC §7.18). Three substrates, one router:
   // text via local embeddings (Transformers.js when present, deterministic offline
@@ -397,6 +421,7 @@ export async function startServer(
     semble,
     anthropic: anthropicClient,
     embedder: textEmbedder,
+    resolveModel: modelFor,
   });
   // Phase 14 — end-of-session retro (SPEC §7.18, user-initiated) and periodic review
   // (T-D22: hygiene queries with no AI; AI synthesis only on user open). Capability-gated
@@ -408,6 +433,7 @@ export async function startServer(
     items,
     library,
     anthropic: anthropicClient,
+    resolveModel: () => modelFor('retro', 'claude-sonnet-4-6'),
   });
   const periodicReview = createPeriodicReviewService({
     db,
@@ -419,6 +445,7 @@ export async function startServer(
     sessions,
     settings,
     anthropic: anthropicClient,
+    resolveModel: () => modelFor('periodic_review', 'claude-sonnet-4-6'),
   });
   // Phase 14 — dependency-aware sequencing ("Do next", no AI) + stakeholder view
   // (T-D17; cache invalidates on item edit via content fingerprint).
@@ -438,6 +465,7 @@ export async function startServer(
     registry,
     dumpZone,
     anthropic: anthropicClient,
+    resolveModel: () => modelFor('chat', 'claude-sonnet-4-6'),
   });
   const notifier = createOsNotifier({
     logger: {
@@ -449,7 +477,10 @@ export async function startServer(
   // (heuristic fallback otherwise), same as the dump-zone extractor. The watcher mirrors
   // tracked-source entries on file change.
   const mdSummariser = createRoutingSummariser({
-    anthropic: createAnthropicSummariser({ client: anthropicClient }),
+    anthropic: createAnthropicSummariser({
+      client: anthropicClient,
+      resolveModel: () => modelFor('md_ingest', 'claude-sonnet-4-6'),
+    }),
     heuristic: createHeuristicSummariser(),
     client: anthropicClient,
   });

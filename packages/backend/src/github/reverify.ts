@@ -46,9 +46,11 @@ export class SignalNotFoundError extends Error {
 export function createDriftReverifyService(
   db: DB,
   client: AnthropicClient,
+  resolveModel?: () => string,
 ): DriftReverifyService {
   return {
     async reverify(projectId, signalId) {
+      const model = resolveModel ? resolveModel() : MODEL;
       const sig = db
         .prepare(
           `SELECT id, project_id, item_id, reason FROM drift_signals
@@ -84,7 +86,7 @@ export function createDriftReverifyService(
         .join('\n');
       try {
         const res = await client.call({
-          model: MODEL,
+          model,
           system: SYSTEM,
           messages: [{ role: 'user', content: user }],
           max_tokens: 256,
@@ -97,17 +99,17 @@ export function createDriftReverifyService(
           recordCost(db, {
             projectId,
             feature: 'drift_reverify',
-            model: MODEL,
+            model,
             inputTokens: res.input_tokens,
             outputTokens: res.output_tokens,
-            usdEstimate: usdEstimate(MODEL, res.input_tokens, res.output_tokens),
+            usdEstimate: usdEstimate(model, res.input_tokens, res.output_tokens),
           });
         }
         const result: DriftReverifyResult = {
           signal_id: signalId,
           verdict: parsed.verdict,
           detail: parsed.detail,
-          model: MODEL,
+          model,
         };
         audit(result, SYSTEM + '\n\n' + user);
         return result;
@@ -116,7 +118,7 @@ export function createDriftReverifyService(
           signal_id: signalId,
           verdict: 'unclear',
           detail: `AI re-verify failed: ${err instanceof Error ? err.message : 'unknown'}`,
-          model: MODEL,
+          model,
         };
         audit(result);
         return result;

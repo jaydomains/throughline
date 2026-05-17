@@ -33,6 +33,7 @@ export interface RelevanceClassifier {
 export interface AnthropicRelevanceClassifierOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
 const SYSTEM =
@@ -49,7 +50,8 @@ function allMedium(candidates: RelevanceCandidate[]): Record<string, RelevanceTi
 
 export function createAnthropicRelevanceClassifier({
   client,
-  model = 'claude-haiku-4-5',
+  model: defaultModel = 'claude-haiku-4-5',
+  resolveModel,
 }: AnthropicRelevanceClassifierOptions): RelevanceClassifier {
   return {
     available: () => client.available(),
@@ -61,6 +63,7 @@ export function createAnthropicRelevanceClassifier({
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
+      const model = resolveModel ? resolveModel() : defaultModel;
       const prompt =
         `Slice context:\n${slice}\n\nCandidates:\n` +
         candidates.map((c) => `[${c.ref}] ${c.text}`).join('\n');
