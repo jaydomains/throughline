@@ -430,3 +430,22 @@ Not a ROADMAP phase. Closes the v1 pre-launch verification Cat-1 honesty blocker
 - [ ] **Deferred — cross-session-mention edge** (SPEC §7.11): no mention/reference field in the `Item` model. Raised as DECISIONS **WN-1b-a** for spec-author resolution. Not a separate §11 DoD line.
 - [ ] **Deferred — communication-model graph layer** (SPEC §7.11): bundle parser extracts only `communication_model.edge_types`, not the per-unit routing/producer contract. Raised as DECISIONS **WN-1b-b**. Not a separate §11 DoD line.
 - CODE_SPEC §18 graph-view bullet revised to the as-built shape (implementation-shape, CODE_SPEC-only per spec-drift policy). SPEC §7.11 functional text left to the spec author (surfaced via WN-1b-a/b, not silently edited).
+
+---
+
+## UI Redesign — full design-system adoption
+
+Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plumbing, per the design handoff (`docs/_meta/throughline/mockups/THROUGHLINE/design_handoff_throughline_ui/`). One PR, four slice commits, Gitar-reviewed per slice. Offline posture held — fonts self-hosted (no Google Fonts CDN).
+
+### Slice 1 — tokens + GraphView reconciliation
+
+- [x] `packages/frontend/src/styles.css` token layer replaced wholesale with the handoff `theme.css` tokens — 3 directions × 2 themes × 3 densities, plus a `:root` A·dark fallback so the cascade never resolves unstyled
+- [x] v1 default hardcoded `A · dark · comfortable` on `<body>` (`main.tsx`); Slice 4 makes it settings-driven
+- [x] Legacy token names (`--bg-elev` / `--bg-soft` / `--border` / `--fg-dim`) aliased onto the new tokens so the ~25 existing components keep rendering; aliases removed per-component in the Slice 2 declass sweep
+- [x] Fonts self-hosted offline via `@fontsource` (Geist Sans/Mono, Instrument Serif, IBM Plex Sans/Mono, JetBrains Mono — latin subset, theme-used weights); `src/fonts.css`; woff2 bundled by Vite — **no CDN call** (corrects the handoff README's Google Fonts `<link>`)
+- [x] GraphView `--gv-*` scoped token block deleted (`views/graph/graph.css`); every rule repointed to global tokens — GraphView now follows direction/theme/density. **Closes DECISIONS WN-1b-c.**
+- [x] Suite green — frontend 112/112, `pnpm --filter @throughline/frontend typecheck` clean, `build` clean (fonts emitted as offline assets)
+
+### Slice 2 — shell + vocabulary sweep _(pending)_
+### Slice 3 — HomeView build-out + Capture promotion + per-screen polish _(pending)_
+### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density _(pending)_

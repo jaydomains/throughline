@@ -13,6 +13,12 @@
     "lint": "echo 'no lint config' && exit 0"
   },
   "dependencies": {
+    "@fontsource/geist-mono": "^5.2.8",
+    "@fontsource/geist-sans": "^5.2.5",
+    "@fontsource/ibm-plex-mono": "^5.2.7",
+    "@fontsource/ibm-plex-sans": "^5.2.8",
+    "@fontsource/instrument-serif": "^5.2.8",
+    "@fontsource/jetbrains-mono": "^5.2.8",
     "@throughline/shared": "workspace:*",
     "fuse.js": "^7.0.0",
     "react": "^18.3.1",

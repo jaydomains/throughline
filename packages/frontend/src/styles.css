@@ -1,17 +1,279 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — adopted wholesale from the design handoff
+   (docs/_meta/throughline/mockups/.../prototype/theme.css).
+
+   Three directions × two themes × three densities. The app sets
+   data-direction / data-theme / data-density on <body> and CSS resolves the
+   rest. v1 default is hardcoded A · dark · comfortable in main.tsx; Slice 4
+   makes it settings-driven with SSE hot-reload.
+
+   The :root block carries an A·dark fallback so there is never an unstyled
+   state (pre-paint, attribute-less nodes). The [data-direction][data-theme]
+   selectors on <body> have higher specificity and win.
+
+   LEGACY ALIASES: the pre-redesign token names (--bg-elev / --bg-soft /
+   --border / --fg-dim) are mapped onto the new tokens so the ~25 existing
+   components keep rendering through Slices 1–2. The Slice 2 declass sweep
+   removes the aliases as each component migrates to the new vocabulary.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 :root {
-  --bg: #0f1115;
-  --bg-elev: #181b22;
-  --bg-soft: #1f232c;
-  --border: #2a2f3a;
-  --fg: #e6e8ef;
-  --fg-dim: #8a93a6;
-  --accent: #7aa2ff;
-  --danger: #f06464;
-  --warn: #d4a14a;
-  --ok: #5fbf7a;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  --fs-xs: 11px;
+  --fs-sm: 12px;
+  --fs-base: 13px;
+  --fs-md: 15px;
+  --fs-lg: 18px;
+  --fs-xl: 22px;
+  --fs-display: 32px;
+  --radius-sm: 0px;
+  --radius: 0px;
+  --radius-lg: 0px;
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: 0 0 0 1px var(--hairline-2);
+
+  /* A·dark fallback so the cascade always resolves */
+  --font-body: 'Geist Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+  --display-weight: 600;
+  --display-tracking: -0.018em;
+  --rule-style: solid;
+  --bg: #0c0c0e;
+  --surface: #131316;
+  --surface-2: #1a1a1e;
+  --surface-3: #222227;
+  --hairline: #25252b;
+  --hairline-2: #353540;
+  --fg: #ededf0;
+  --fg-2: #cfcfd4;
+  --fg-muted: #84848e;
+  --fg-faint: #5b5b64;
+  --accent: #818cf8;
+  --accent-soft: rgba(129,140,248,0.14);
+  --accent-fg: #0c0c0e;
+  --warn: #f59e0b;
+  --warn-soft: rgba(245,158,11,0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248,113,113,0.14);
+  --ok: #4ade80;
+  --ok-soft: rgba(74,222,128,0.14);
+  --info: #60a5fa;
+  --info-soft: rgba(96,165,250,0.14);
+  --row-h: 32px;
+  --pad: 8px;
+  --gap: 8px;
+  --gap-lg: 14px;
+
+  /* legacy aliases (removed per-component in Slice 2) */
+  --bg-elev: var(--surface);
+  --bg-soft: var(--surface-2);
+  --border: var(--hairline);
+  --fg-dim: var(--fg-muted);
+
   color-scheme: dark;
 }
+
+/* ═══════ DIRECTION A · QUIET RIGOR ═══════ */
+[data-direction="A"] {
+  --font-body: 'Geist Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-display: 'Geist Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, monospace;
+  --display-weight: 600;
+  --display-tracking: -0.018em;
+  --rule-style: solid;
+}
+[data-direction="A"][data-theme="light"] {
+  --bg: #fafaf9;
+  --surface: #ffffff;
+  --surface-2: #f4f4f3;
+  --surface-3: #efefee;
+  --hairline: #e6e6e3;
+  --hairline-2: #d4d4d0;
+  --fg: #0a0a0a;
+  --fg-2: #2a2a2a;
+  --fg-muted: #767672;
+  --fg-faint: #a3a39e;
+  --accent: #4f46e5;
+  --accent-soft: rgba(79,70,229,0.08);
+  --accent-fg: #ffffff;
+  --warn: #d97706;
+  --warn-soft: rgba(217,119,6,0.10);
+  --danger: #dc2626;
+  --danger-soft: rgba(220,38,38,0.08);
+  --ok: #16a34a;
+  --ok-soft: rgba(22,163,74,0.08);
+  --info: #2563eb;
+  --info-soft: rgba(37,99,235,0.08);
+  --shadow-sm: 0 1px 1px rgba(10,10,10,0.04);
+  --shadow: 0 4px 12px rgba(10,10,10,0.06), 0 1px 2px rgba(10,10,10,0.03);
+  --shadow-lg: 0 24px 56px rgba(10,10,10,0.10), 0 8px 16px rgba(10,10,10,0.04);
+  color-scheme: light;
+}
+[data-direction="A"][data-theme="dark"] {
+  --bg: #0c0c0e;
+  --surface: #131316;
+  --surface-2: #1a1a1e;
+  --surface-3: #222227;
+  --hairline: #25252b;
+  --hairline-2: #353540;
+  --fg: #ededf0;
+  --fg-2: #cfcfd4;
+  --fg-muted: #84848e;
+  --fg-faint: #5b5b64;
+  --accent: #818cf8;
+  --accent-soft: rgba(129,140,248,0.14);
+  --accent-fg: #0c0c0e;
+  --warn: #f59e0b;
+  --warn-soft: rgba(245,158,11,0.14);
+  --danger: #f87171;
+  --danger-soft: rgba(248,113,113,0.14);
+  --ok: #4ade80;
+  --ok-soft: rgba(74,222,128,0.14);
+  --info: #60a5fa;
+  --info-soft: rgba(96,165,250,0.14);
+  color-scheme: dark;
+}
+
+/* ═══════ DIRECTION B · EDITORIAL SPEC ═══════ */
+[data-direction="B"] {
+  --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Instrument Serif', ui-serif, Georgia, serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --display-weight: 400;
+  --display-tracking: -0.005em;
+  --rule-style: solid;
+  --fs-display: 36px;
+  --fs-xl: 26px;
+  --fs-lg: 20px;
+}
+[data-direction="B"][data-theme="light"] {
+  --bg: #f3eee5;
+  --surface: #faf6ed;
+  --surface-2: #ede6d6;
+  --surface-3: #e2d9c4;
+  --hairline: #d6cab1;
+  --hairline-2: #b5a684;
+  --fg: #1a1611;
+  --fg-2: #3a3327;
+  --fg-muted: #7a6b54;
+  --fg-faint: #9e8f74;
+  --accent: #b8542a;
+  --accent-soft: rgba(184,84,42,0.10);
+  --accent-fg: #faf6ed;
+  --warn: #b45309;
+  --warn-soft: rgba(180,83,9,0.12);
+  --danger: #991b1b;
+  --danger-soft: rgba(153,27,27,0.10);
+  --ok: #166534;
+  --ok-soft: rgba(22,101,52,0.10);
+  --info: #1e40af;
+  --info-soft: rgba(30,64,175,0.10);
+  --shadow-sm: 0 1px 0 rgba(26,22,17,0.06);
+  --shadow: 0 2px 0 rgba(26,22,17,0.04), 0 8px 24px rgba(26,22,17,0.06);
+  --shadow-lg: 0 32px 64px rgba(26,22,17,0.10);
+  color-scheme: light;
+}
+[data-direction="B"][data-theme="dark"] {
+  --bg: #14110c;
+  --surface: #1c1813;
+  --surface-2: #25201a;
+  --surface-3: #2e2820;
+  --hairline: #3a3327;
+  --hairline-2: #524736;
+  --fg: #ede4d0;
+  --fg-2: #c9bfa8;
+  --fg-muted: #8b806a;
+  --fg-faint: #5f5645;
+  --accent: #e89066;
+  --accent-soft: rgba(232,144,102,0.14);
+  --accent-fg: #14110c;
+  --warn: #f59e0b;
+  --warn-soft: rgba(245,158,11,0.14);
+  --danger: #f47272;
+  --danger-soft: rgba(244,114,114,0.14);
+  --ok: #82b97c;
+  --ok-soft: rgba(130,185,124,0.14);
+  --info: #8bb4e6;
+  --info-soft: rgba(139,180,230,0.14);
+  color-scheme: dark;
+}
+
+/* ═══════ DIRECTION C · TERMINAL ATELIER ═══════ */
+[data-direction="C"] {
+  --font-body: 'IBM Plex Mono', 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-display: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --font-mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+  --display-weight: 500;
+  --display-tracking: -0.01em;
+  --rule-style: solid;
+  --fs-base: 12.5px;
+  --fs-display: 26px;
+  --radius-sm: 0px;
+  --radius: 0px;
+  --radius-lg: 2px;
+}
+[data-direction="C"][data-theme="light"] {
+  --bg: #f1efe7;
+  --surface: #f7f5ed;
+  --surface-2: #e9e6d8;
+  --surface-3: #ddd9c8;
+  --hairline: #c8c3ad;
+  --hairline-2: #9c977f;
+  --fg: #1a1a14;
+  --fg-2: #3a3a30;
+  --fg-muted: #6b6b58;
+  --fg-faint: #9c977f;
+  --accent: #b4521a;
+  --accent-soft: rgba(180,82,26,0.12);
+  --accent-fg: #f7f5ed;
+  --warn: #a16207;
+  --warn-soft: rgba(161,98,7,0.12);
+  --danger: #991b1b;
+  --danger-soft: rgba(153,27,27,0.10);
+  --ok: #4d7c0f;
+  --ok-soft: rgba(77,124,15,0.10);
+  --info: #1e3a8a;
+  --info-soft: rgba(30,58,138,0.08);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: 0 0 0 1px var(--hairline-2);
+  color-scheme: light;
+}
+[data-direction="C"][data-theme="dark"] {
+  --bg: #0a0b08;
+  --surface: #11130d;
+  --surface-2: #181a13;
+  --surface-3: #21241a;
+  --hairline: #2a2d20;
+  --hairline-2: #3f4330;
+  --fg: #d2cfa8;
+  --fg-2: #afac88;
+  --fg-muted: #7f7c60;
+  --fg-faint: #545240;
+  --accent: #f0a235;
+  --accent-soft: rgba(240,162,53,0.14);
+  --accent-fg: #0a0b08;
+  --warn: #facc15;
+  --warn-soft: rgba(250,204,21,0.14);
+  --danger: #ef5350;
+  --danger-soft: rgba(239,83,80,0.12);
+  --ok: #9bc77c;
+  --ok-soft: rgba(155,199,124,0.14);
+  --info: #6db4f0;
+  --info-soft: rgba(109,180,240,0.14);
+  --shadow-sm: none;
+  --shadow: none;
+  --shadow-lg: 0 0 0 1px var(--hairline-2);
+  color-scheme: dark;
+}
+
+/* ───── density ───── */
+[data-density="compact"]     { --row-h: 26px; --pad: 6px;  --gap: 6px;  --gap-lg: 10px; }
+[data-density="comfortable"] { --row-h: 32px; --pad: 8px;  --gap: 8px;  --gap-lg: 14px; }
+[data-density="spacious"]    { --row-h: 38px; --pad: 12px; --gap: 12px; --gap-lg: 20px; }
+[data-density="comfortable"] { --fs-base: 13px; }
+[data-density="spacious"]    { --fs-base: 14px; }
 
 * { box-sizing: border-box; }
 
@@ -21,10 +283,16 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--fg);
-  font-size: 14px;
-  line-height: 1.4;
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
+::selection { background: var(--accent); color: var(--accent-fg); }
 
+/* Legacy base element styles — kept (against aliased tokens) so existing
+   components render until the Slice 2 declass sweep moves them to .btn/.pill. */
 button {
   font: inherit;
   color: inherit;

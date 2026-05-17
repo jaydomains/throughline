@@ -1019,8 +1019,10 @@ Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-se
 
 - **Date:** 2026-05-17
 - **Raised by:** Pass 1b (GraphView)
-- **Status:** informational — implementation-shape (CODE_SPEC §18 updated)
+- **Status:** resolved — UI redesign Slice 1 (2026-05-17) reconciled the scoped tokens into the global system
 
 **Observation.** The design handoff (`docs/_meta/throughline/mockups/.../README.md`) is a whole-app redesign (tokens, sidebar, settings, every screen) and contains **no graph screen** — graph is a `StubScreen` filed under "apply the new vocabulary as those phases get built out". Pass 1b is narrowly GraphView.
 
 **Choice taken.** GraphView adopts the "Direction A · dark" tokens namespaced (`--gv-*`) and confined to `.graph-view`; the rest of the app keeps the current `styles.css`. Full design-system adoption (theme.css swap, `data-direction`/`data-theme`/`data-density`, settings keys, SSE hot-reload) is a separate, larger redesign pass and is out of Pass 1b scope. Recorded as implementation-shape per the spec-drift policy (CODE_SPEC-only); flagged here so the redesign pass reconciles the scoped tokens into the global system.
+
+**Resolution (UI redesign, Slice 1).** The dedicated redesign pass landed. `styles.css` now carries the full handoff token system (3 directions × 2 themes × 3 densities); the `--gv-*` block in `views/graph/graph.css` was deleted and every rule repointed to the global tokens. GraphView now follows `data-direction`/`data-theme`/`data-density` like the rest of the app. No scoped token system remains; nothing further deferred.
