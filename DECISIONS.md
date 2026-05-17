@@ -264,7 +264,7 @@ An architecture view was considered for earlier drafts.
 Static analysis fails on architectures that route through a runtime message bus. Bespoke parsing couples Throughline to a specific codebase. Neither path fits a tool meant to work across many sessions and repos.
 
 ### Implications
-View modes do not include "architecture." Semble and Semgrep are first-class dependencies for SiteMesh-bound projects. Throughline's job is visualising work and methodology state, not code.
+View modes do not include "architecture." Semble and Semgrep are first-class dependencies for rich-discipline-bound projects. Throughline's job is visualising work and methodology state, not code.
 
 ---
 
@@ -426,7 +426,7 @@ Drift detection runs in two parallel streams.
 - **Tier 3** — new PR touches files in a done item's code references (yellow badge).
 - **Tier 4** — duplicate-looking dump zone entry matching a done item, cosine similarity ≥ 0.80 with AI confirmation pass for borderline 0.70–0.80. Routes to drift inbox; auto-dismisses with an audit-logged "stale-no-action" reason after 7 days.
 
-**Discipline-drift, bundle-defined categories:** the methodology bundle declares the categories. Examples from SiteMesh include structural conformance failures, banned-string violations, marker violations in wrong phases, cross-reference failures, and phase-transition violations. The runtime hosts whatever drift categories the bundle declares; freeform declares none, so the discipline-drift stream is a no-op there.
+**Discipline-drift, bundle-defined categories:** the methodology bundle declares the categories. Examples a rich bundle might declare include structural conformance failures, banned-string violations, marker violations in wrong phases, cross-reference failures, and phase-transition violations. The runtime hosts whatever drift categories the bundle declares; freeform declares none, so the discipline-drift stream is a no-op there.
 
 ### Context
 A single-channel drift system either over-alerts (badge fatigue) or under-detects. A code-only drift system misses methodology violations that show up in docs rather than code.
@@ -531,7 +531,7 @@ Each substrate has its own indexer and query path. Router uses keyword heuristic
 - **Sections affected:** 7.16
 
 ### Decision
-Semgrep runs in GitHub Actions on every PR, not in the backend. Backend reads findings via the GitHub API. The methodology bundle defines rule conventions; the SiteMesh bundle declares that rules live in a dedicated subdirectory of the repo's Semgrep config area, with one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions. The GitHub Actions workflow is user-managed; a recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is not present.
+Semgrep runs in GitHub Actions on every PR, not in the backend. Backend reads findings via the GitHub API. The methodology bundle defines rule conventions; a rich bundle might declare that rules live in a dedicated subdirectory of the repo's Semgrep config area, with one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions. The GitHub Actions workflow is user-managed; a recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is not present.
 
 ### Context
 Tier-1 drift requires reliable rule execution. Backend execution would be brittle and tie up local resources. The methodology runtime owns rule conventions so different bundles can declare different verifier-tool conventions over time.
@@ -671,7 +671,7 @@ Notification permission handled once at the backend layer. UI does not call OS n
 - **Sections affected:** 7.16
 
 ### Decision
-When an item with verifier rules is deleted, the rule files in the repo are not auto-removed. The methodology bundle defines verifier-rule type and storage; the SiteMesh bundle declares Semgrep rules living in the repo's Semgrep config area. The rule is orphan-flagged in Throughline and surfaces in the periodic review hygiene list and a dedicated settings panel. A one-click action drafts a cleanup PR for user review and merge. Dismiss-without-removal is also supported and audit-logged.
+When an item with verifier rules is deleted, the rule files in the repo are not auto-removed. The methodology bundle defines verifier-rule type and storage; a rich bundle might declare Semgrep rules living in the repo's Semgrep config area. The rule is orphan-flagged in Throughline and surfaces in the periodic review hygiene list and a dedicated settings panel. A one-click action drafts a cleanup PR for user review and merge. Dismiss-without-removal is also supported and audit-logged.
 
 ### Context
 Deleting items in Throughline must not silently mutate the user's repo (§5).
@@ -799,13 +799,13 @@ No branches table. Sessions and items both reference branches by string. Items h
 The methodology runtime is Throughline's core. Throughline is methodology-agnostic; methodology bundles configure all methodology-specific concepts (primary unit, anchor format, marker rules, state machine, review patterns, validation). The tracker (items, sessions, library, directives, drift, audit) and the intelligence layer (RAG, retro, sequencing, stakeholder, companion review, session-start scaffolding) are surfaces over the runtime, not standalone products.
 
 ### Context
-Earlier framing treated Throughline as a tracker with intelligence features. SiteMesh's authoring discipline was a specific consumer of the tracker; running other projects required mental translation or code branches per project.
+Earlier framing treated Throughline as a tracker with intelligence features. One rich authoring discipline was a specific consumer of the tracker; running other projects required mental translation or code branches per project.
 
 ### Rationale
-The discipline that keeps AI-assisted development honest is currently re-enacted by hand every session. Codifying it as a bundle and applying it as runtime behaviour eliminates the per-session re-work. With a methodology-agnostic runtime, the same Throughline supports any project that declares a bundle binding — SiteMesh, freeform, or whatever ships later — without code-path special-casing per methodology.
+The discipline that keeps AI-assisted development honest is currently re-enacted by hand every session. Codifying it as a bundle and applying it as runtime behaviour eliminates the per-session re-work. With a methodology-agnostic runtime, the same Throughline supports any project that declares a bundle binding — freeform, the `test-bundle`, a user-owned bundle via `bundle_path`, or whatever ships later — without code-path special-casing per methodology.
 
 ### Implications
-Code paths must not hardcode SiteMesh terminology. The runtime calls into the loaded bundle for validators, gates, item-type vocabulary, review patterns, templates, and primary-unit grouping. Tracker and intelligence-layer features parameterise their behaviour on bundle declarations. Adding a new methodology is authoring a bundle, not changing code.
+Code paths must not hardcode any bundle's terminology. The runtime calls into the loaded bundle for validators, gates, item-type vocabulary, review patterns, templates, and primary-unit grouping. Tracker and intelligence-layer features parameterise their behaviour on bundle declarations. Adding a new methodology is authoring a bundle, not changing code.
 
 ---
 
@@ -819,7 +819,7 @@ Code paths must not hardcode SiteMesh terminology. The runtime calls into the lo
 Projects are first-class entities. Multiple projects coexist in one Throughline instance. Each project is a codebase + a methodology bundle binding + Throughline state. Project lifecycle (create, switch, archive, delete) is functional from v1.
 
 ### Context
-Earlier framing scoped Throughline to a single repo. Even single-user work spans multiple projects (SiteMesh, side projects, experiments) over time; serialising them through one tracker instance loses cross-project carry-over.
+Earlier framing scoped Throughline to a single repo. Even single-user work spans multiple projects (a primary project, side projects, experiments) over time; serialising them through one tracker instance loses cross-project carry-over.
 
 ### Rationale
 The same Throughline is meant to support any project that declares a methodology binding. Multi-project is the substrate that makes one tool useful across the user's full work surface rather than being scoped to a single repo. Doing it from v1 avoids a single-project schema becoming retrofitted later.
@@ -829,23 +829,25 @@ Schema carries a `project_id` foreign key on per-project entities (items, sessio
 
 ---
 
-## T-D41 — SiteMesh and freeform bundles ship with v1
+## T-D41 — Repo-shipped bundles: freeform default + generic test-bundle fixture
 
 - **Date:** 2026-05-09
 - **Status:** active
 - **Sections affected:** 7.1, 12
 
+> **Body revised in place (bundle-externalisation refactor, 2026-05).** Anchor ID retained, canonical via SPEC §14. The original decision shipped a rich-discipline reference bundle inside the repo; the externalisation refactor (C-D14) moved proprietary discipline out of the repo and replaced the in-repo reference with a generic, business-neutral `test-bundle` grammar fixture.
+
 ### Decision
-Throughline v1 ships with two concrete methodology bundles: SiteMesh (the rich-discipline reference) and freeform (the minimum-spec bundle). Additional bundles are authored as markdown files following the eleven-section structure (T-D42) and added to Throughline's `methodologies/` directory. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
+Throughline v1 ships two repo-resident methodology bundles: `freeform` (the minimum-spec default) and a generic `test-bundle` grammar fixture that exercises every section of the eleven-section structure (T-D42). Rich user-owned discipline bundles are authored as markdown files following the eleven-section structure and bound per-project via `bundle_path` (C-D14) so proprietary discipline never enters the public repo. Additional repo-shipped bundles may be added under `methodologies/`. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
 
 ### Context
-The methodology runtime is methodology-agnostic, but it must be exercised against real bundles from day one to prove the runtime contract.
+The methodology runtime is methodology-agnostic, but it must be exercised against real bundles from day one to prove the runtime contract. The repo is also public, so the in-repo bundles must contain no business-internal discipline.
 
 ### Rationale
-Freeform proves the runtime can host a minimum-spec methodology and gives "I just want to track some stuff" projects a first-class home (T-D47). SiteMesh proves the runtime can host the rich-discipline reference. Shipping both stress-tests the bundle contract under both ends of the spectrum, surfacing parser and validator gaps a single bundle would miss.
+Freeform proves the runtime can host a minimum-spec methodology and gives "I just want to track some stuff" projects a first-class home (T-D47). The `test-bundle` proves the runtime can host a non-trivial bundle (primary unit with tier rules, anchors, markers, a phase state machine, multiple item types on separate boards, multi-gate moments) without shipping any proprietary discipline. The external `bundle_path` mechanism (C-D14) lets a rich user-owned bundle bind with full watch/hot-reload parity. Shipping freeform + a non-trivial fixture stress-tests the bundle contract under both ends of the spectrum, surfacing parser and validator gaps a single bundle would miss.
 
 ### Implications
-The bundle loader must succeed against both shipped bundles. Both are part of the shipped artefact under the `methodologies/` directory. Freeform is the create-time default binding. Drafting a third bundle is a markdown-authoring task, not a code task.
+The bundle loader must succeed against both repo-shipped bundles and against external bundles resolved via `bundle_path`. The repo-shipped bundles are part of the shipped artefact under the `methodologies/` directory. Freeform is the create-time default binding. Drafting a further bundle is a markdown-authoring task, not a code task.
 
 ---
 
@@ -859,7 +861,7 @@ The bundle loader must succeed against both shipped bundles. Both are part of th
 Every methodology bundle declares eleven sections: identity, project layout, anchor system, marker system, state machine, communication model, gating model, review patterns, templates, validation rules, authority hierarchy. The state-machine section declares one or more gates per phase moment, each with its own check definitions. Gates produce independent findings streams; one gate can pass while another at the same moment fails.
 
 ### Context
-A fixed contract is the only way the runtime can generically parse and apply different bundles. Real-world methodology gating has multiple distinct checks at the same phase moment (SiteMesh per-commit example: `verify-structure.sh` for code architecture rules and `sitemesh-pre-commit` for docs banned-string sweep — two independent gates at the same moment).
+A fixed contract is the only way the runtime can generically parse and apply different bundles. Real-world methodology gating has multiple distinct checks at the same phase moment (the `test-bundle`'s per-commit moment declares two independent gates at the same moment: a structure check for code architecture rules and a banned-string sweep for docs).
 
 ### Rationale
 A fixed-section structure lets the runtime walk known headings and dispatch each to a typed parser. Multi-gate-per-phase-moment captures the actual decomposition of real gating: code architecture checks and docs checks are independent concerns that happen to fire at the same trigger; conflating them under a single per-moment check loses the granularity needed to surface partial pass/fail.
@@ -976,13 +978,13 @@ Settings.bundle is a non-nullable foreign key. Freeform is the create-time defau
 - **Sections affected:** 7.14, 7.18, 7.13
 
 ### Decision
-SPEC.md describes what the runtime expects, not what SiteMesh happens to do. Runtime concepts are introduced first; SiteMesh-specific terms appear only as parenthetical examples.
+SPEC.md describes what the runtime expects, not what any one bundle happens to do. Runtime concepts are introduced first; bundle-specific terms appear only as parenthetical examples.
 
 ### Context
-Earlier spec drafts used SiteMesh vocabulary (module, anchor, marker) as if it were universal Throughline language. Bundle authors reading the spec then had to translate SiteMesh's terms back to runtime concepts.
+Earlier spec drafts used one rich bundle's vocabulary (module, anchor, marker) as if it were universal Throughline language. Bundle authors reading the spec then had to translate that bundle's terms back to runtime concepts.
 
 ### Rationale
-Bundle authors must be able to read the spec and see the runtime contract directly. Using SiteMesh terms as if universal hides the fact that those terms belong to one bundle. The methodology-agnostic core (T-D39) only holds if the spec language reflects it.
+Bundle authors must be able to read the spec and see the runtime contract directly. Using one bundle's terms as if universal hides the fact that those terms belong to that bundle. The methodology-agnostic core (T-D39) only holds if the spec language reflects it.
 
 ### Implications
-Documentation review checks for SiteMesh-only terminology used as if it were universal. New spec sections introduce the runtime concept first (e.g., "primary unit") and the SiteMesh-specific term in parentheses ("module"). The glossary makes the runtime-vs-bundle distinction explicit per term.
+Documentation review checks for bundle-specific terminology used as if it were universal. New spec sections introduce the runtime concept first (e.g., "primary unit") and any bundle-specific term in parentheses ("module"). The glossary makes the runtime-vs-bundle distinction explicit per term.

@@ -329,7 +329,7 @@ export function GraphView() {
   return (
     <Stub
       title="Graph"
-      body="Cytoscape-rendered node/edge graph lands after items + sessions (Phase 3). Communication-model edges arrive with the SiteMesh bundle (Phase 7). Phase 2 ships the route as an empty stub."
+      body="Cytoscape-rendered node/edge graph lands after items + sessions (Phase 3). Communication-model edges arrive with a bundle that declares them. Phase 2 ships the route as an empty stub."
     />
   );
 }

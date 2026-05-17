@@ -76,7 +76,7 @@ _none_
 | `simple-git` not used | `gates/hook-installer.ts` | CODE_SPEC §7 named `simple-git` for hook-path resolution; it is not an installed dependency and adding one risks the sandboxed install. | Used raw `git` via `child_process` for the one-shot `rev-parse --git-path hooks`; behaviour identical. Recorded in CODE_SPEC §7; `simple-git` still planned for §12 branch-read. |
 | Provisional trigger wording | `CHECKLIST.md` §Phase 8 | ROADMAP §7.12 gap table / CHECKLIST said "signal file", "`.git/COMMIT_EDITMSG` watch", "marker file". | Superseded by the resolved SPEC §7.12 single loopback channel (spec-clarification PR #13). Items ticked against the resolved mechanism; old text struck through for history. No SPEC change (already resolved). |
 | `gate-id` → check binding | `gates/checks.ts` | Plan flagged the mechanical-gate→check binding as an open design fork (no covering anchor). | Resolved with user as **C-D15** (built-in catalogue, keyword-dispatched) before coding; surfaced, not silently picked. |
-| SiteMesh checklist line | `CHECKLIST.md` §Phase 8 | Original checklist named SiteMesh's `verify-structure.sh`/`sitemesh-pre-commit`. | SiteMesh bundle removed in the prior refactor; line retargeted to the test-bundle's two per-commit gates. |
+| Rich-bundle checklist line | `CHECKLIST.md` §Phase 8 | Original checklist named the rich bundle's `verify-structure.sh`/`banned-string-sweep`. | The rich bundle was removed in the prior refactor; line retargeted to the test-bundle's two per-commit gates. |
 | `pnpm lint` is a no-op | repo | Carry-forward from 6a–8. | Relied on `pnpm typecheck` + full suites (backend 145, frontend 73). |
 
 ---

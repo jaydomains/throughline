@@ -4,7 +4,7 @@
 
 **Generated:** 2026-05-15 (UTC)
 **Last commit SHA:** e8f51d5 — 2026-05-15 (PR #13 not yet merged; update to merge SHA on merge)
-**Previous handover:** `docs/_meta/throughline/handovers/2026-05-15-phase-7-sitemesh.md` (Phase 7 — SiteMesh bundle delivery)
+**Previous handover:** `docs/_meta/throughline/handovers/2026-05-15-phase-7-bundle-architecture.md` (Phase 7 — rich bundle delivery)
 
 ---
 
@@ -70,7 +70,7 @@ _none_
 
 ## Recently Resolved
 
-- Q1–Q4 gate-trigger detection mechanisms — flagged in `2026-05-15-phase-7-sitemesh.md` lineage and SESSION_START.md "Known spec-author gaps" as surface-do-not-silently-resolve; resolved by SPEC §7.12 amendments + CODE_SPEC §7 code-shape detail in PR #13.
+- Q1–Q4 gate-trigger detection mechanisms — flagged in `2026-05-15-phase-7-bundle-architecture.md` lineage and SESSION_START.md "Known spec-author gaps" as surface-do-not-silently-resolve; resolved by SPEC §7.12 amendments + CODE_SPEC §7 code-shape detail in PR #13.
 
 ---
 

@@ -68,7 +68,7 @@ export interface Board {
   statuses: string[];
 }
 
-// Modules view (SPEC §7.11, C-D13). A "module" is the SiteMesh name for the bundle's
+// Modules view (SPEC §7.11, C-D13). "module" is one example of what a bundle may call its
 // primary unit; the runtime groups items by their primary-unit refs and reports per-unit
 // counts, phase indicators, and a bundle-rule tier classification.
 export interface ModuleSummary {

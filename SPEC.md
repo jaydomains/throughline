@@ -2,7 +2,7 @@
 
 **Code identifier:** `throughline`
 **Tool class:** Local single-user methodology runtime for AI-assisted software development
-**Owner:** Kunda Tech (Jay)
+**Owner:** jaydomains
 **Repo path:** `throughline/`
 **Last updated:** 2026-05-09
 
@@ -10,7 +10,7 @@
 
 ## TL;DR
 
-Throughline is a methodology runtime for AI-assisted software development. It loads a methodology bundle that codifies your documentation discipline (file conventions, anchor format, marker taxonomy, build phases, review patterns, validation rules), then applies that methodology to one or more projects you bring. It tracks outstanding work across parallel AI coding sessions, parses your project's docs and code, surfaces drift between intent and implementation, hosts your review patterns as structured workflows, and scaffolds session handovers. The same Throughline supports any project that has a methodology bundle declared for it. SiteMesh's authoring discipline is the first bundle Throughline ships with, alongside a minimum-spec freeform bundle for lightweight projects.
+Throughline is a methodology runtime for AI-assisted software development. It loads a methodology bundle that codifies your documentation discipline (file conventions, anchor format, marker taxonomy, build phases, review patterns, validation rules), then applies that methodology to one or more projects you bring. It tracks outstanding work across parallel AI coding sessions, parses your project's docs and code, surfaces drift between intent and implementation, hosts your review patterns as structured workflows, and scaffolds session handovers. The same Throughline supports any project that has a methodology bundle declared for it. Throughline ships with a minimum-spec `freeform` bundle (the default) and a generic `test-bundle` grammar fixture; rich user-owned discipline bundles live outside this repo and bind per-project via `bundle_path` (C-D14).
 
 ---
 
@@ -36,7 +36,7 @@ The product has three layers, in order of foundation:
 
 **The intelligence layer (over both).** AI capabilities that operate against the runtime + tracker substrate: dump zone extraction, reconcile, chat mode, RAG over the project's docs and code, end-of-session retros, dependency-aware sequencing, stakeholder view rendering, drift re-verification. Always reviewable before applying; methodology gates apply.
 
-Throughline is single-user. Multi-project from v1 — each project binds to a methodology bundle, and projects can use the same or different bundles. All state lives locally. v1 ships with two bundles: SiteMesh (the rich-discipline reference) and freeform (a minimum-spec bundle for lightweight projects). New methodology bundles can be authored over time as projects need them.
+Throughline is single-user. Multi-project from v1 — each project binds to a methodology bundle, and projects can use the same or different bundles. All state lives locally. v1 ships with the `freeform` default (a minimum-spec bundle for lightweight projects) and a generic `test-bundle` grammar fixture; rich user-owned discipline bundles live outside the repo and bind per-project via `bundle_path` (C-D14, T-D47). New methodology bundles can be authored over time as projects need them.
 
 ---
 
@@ -56,7 +56,7 @@ The split between backend and browser is a functional decision: the UI alone cou
 
 ## 4. Who uses it
 
-Single user — Jay. No multi-user model. No auth. No sharing. Everything runs on Jay's laptop for Jay alone.
+Single user — the owner. No multi-user model. No auth. No sharing. Everything runs on one person's laptop for that person alone.
 
 ---
 
@@ -71,7 +71,7 @@ Single user — Jay. No multi-user model. No auth. No sharing. Everything runs o
 - No autonomous code execution, external API mutations, or repo file writes without explicit human review. Internal file movements within Throughline-managed directories (Claude Code inbox archiving, failure quarantine, datastore housekeeping) are not user-facing writes and run autonomously. Installing methodology-gate git hooks into a project's repository is a repo write that runs autonomously only after explicit user consent (§7.12); absent consent, no hook is written.
 - No silent state changes. Done items are auto-marked done by AI only with confidence-thresholded auto-apply, audit log entry, and one-click undo. Methodology gates fire as proposals to the user, never as enforced blocks on the underlying repo.
 - No standalone code architecture viewer. Throughline visualises work and methodology state; code architecture lives in tools designed for that purpose (Semble for search, Semgrep for rule verification).
-- No in-app authoring of methodology bundles in v1. v1 ships with SiteMesh and freeform bundles; any others Jay drafts manually as markdown files. In-app bundle authoring is a v2 concern.
+- No in-app authoring of methodology bundles in v1. v1 ships with the `freeform` default and a generic `test-bundle` fixture; rich user-owned bundles are authored manually as markdown files and bound via `bundle_path`. In-app bundle authoring is a v2 concern.
 - No whiteboards in v1. Deferred to v1.1 once Throughline is in regular use and the gap is felt empirically.
 
 ---
@@ -82,11 +82,10 @@ Single user — Jay. No multi-user model. No auth. No sharing. Everything runs o
 |---|---|
 | **Methodology bundle** | A configuration file (or set of files) declaring how a methodology works: file conventions, anchor format, marker rules, state machine, review patterns, validation rules. Bundles are loaded by Throughline at project-binding time. |
 | **Project** | A codebase + a methodology bundle binding + Throughline state for tracking work on that codebase. Projects are first-class entities. |
-| **Primary unit** | The methodology's main "thing" — module, component, feature, package, etc. SiteMesh bundle's primary unit is the module. Freeform bundle declares no primary unit. |
-| **Module** *(SiteMesh-specific term, surfaced via the bundle)* | In SiteMesh, a gateable workflow that emits data and consumes data. Defined by the SiteMesh bundle, not by Throughline core. |
+| **Primary unit** | The methodology's main "thing" — module, component, feature, package, etc. The label and tier rules come from the bundle (a rich bundle might call it "module"); the freeform bundle declares no primary unit. |
 | **Item** | A unit of tracked work or decision. Carries identity, lifecycle status, blockers, tags, parent/children, session memberships, code refs, verifier rules, directives, optional branch and PR references, methodology-context references (which primary unit, which phase, which anchor). |
 | **Session** | A saved view that filters items by membership. Roughly one Claude Code session or focused effort. Items can belong to multiple sessions. |
-| **Board** | Within a session view, items split into columns by item type as the methodology defines. SiteMesh: todos and decisions. Freeform: a single board of tasks. |
+| **Board** | Within a session view, items split into columns by item type as the methodology defines. The `test-bundle`: a Tasks board and a Notes board. Freeform: a single board of tasks. |
 | **Library entry** | Non-item reference content: notes, prompts, snippets, imported docs. Notes can attach to one or more items. |
 | **Directive** | An active rule attached to an item or library entry. Three types: pin, reminder, include-in-session-prompt. |
 | **Dump zone** | Capture surface where unstructured text or files are pasted, processed by AI, and routed to items or library entries after human review. |
@@ -95,8 +94,8 @@ Single user — Jay. No multi-user model. No auth. No sharing. Everything runs o
 | **Drift (code)** | The state of an item being marked done but showing signals of regression or wrong-classification in code. Four tiers; strong signals badge items, weak signals collect in the drift inbox. |
 | **Drift (discipline)** | The state of a project's documentation or state violating the methodology bundle's rules: missing required files, malformed anchors, banned strings, unresolved markers in wrong phase, broken cross-references. Surfaced like code drift. Categories are bundle-defined. |
 | **Drift inbox** | Aggregator for weak drift signals. Strong signals badge items directly; weak signals collect here so they don't pollute main views. |
-| **Phase** | A state in the methodology's build state machine. Bundle-defined. SiteMesh example: doc-readiness, code-PR. Freeform: a single open phase. Transitions require gate clearance. |
-| **Gate** | A check or set of checks that must pass for a phase transition or review step. One phase moment can support multiple gates (each producing its own findings stream). SiteMesh per-commit moment example: `verify-structure.sh` for code architecture rules and `sitemesh-pre-commit` for docs banned-string sweep — two independent gates at the same moment. |
+| **Phase** | A state in the methodology's build state machine. Bundle-defined. Example (a rich bundle): doc-readiness, code-PR. Freeform: a single open phase. Transitions require gate clearance. |
+| **Gate** | A check or set of checks that must pass for a phase transition or review step. One phase moment can support multiple gates (each producing its own findings stream). The `test-bundle`'s per-commit moment declares two independent gates at the same moment: a structure check and a banned-string sweep. |
 | **View mode** | The top-level UI mode: home, projects, sessions, modules (when bundle declares primary units), tree, graph, library, directives, methodology gates. |
 
 ---
@@ -107,7 +106,7 @@ Single user — Jay. No multi-user model. No auth. No sharing. Everything runs o
 
 Throughline's core is a runtime that loads and applies methodology bundles. A methodology bundle codifies how a project is documented, built, and reviewed.
 
-**Bundle structure** (eleven sections; see SiteMesh bundle as reference implementation):
+**Bundle structure** (eleven sections; see `methodologies/test-bundle/bundle.md` as a worked reference implementation):
 
 1. **Identity** — name, version, authority precedence
 2. **Project layout** — primary unit definition, tier classification, doc set per unit, fixed-format templates for each doc type, runtime artefact directories
@@ -123,9 +122,9 @@ Throughline's core is a runtime that loads and applies methodology bundles. A me
 
 **Bundle loading.** A project's methodology binding names a bundle. On project open, Throughline parses the bundle and configures the runtime: structural validators, banned-string greps, marker scanners, state-machine transitions, review-checklist steps, template parsers. The same Throughline UI and data model serve any project; behaviour adapts to the bundle.
 
-**Bundle authoring.** v1 ships with two bundles: SiteMesh (rich-discipline reference) and freeform (minimum-spec, no primary units, no anchors, no markers, single board, single item type called "task"). Additional bundles are authored as markdown files following the eleven-section structure and committed to Throughline's `methodologies/` directory. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
+**Bundle authoring.** v1 ships with the `freeform` default (minimum-spec, no primary units, no anchors, no markers, single board, single item type called "task") and a generic `test-bundle` grammar fixture that exercises every section. Rich user-owned bundles are authored as markdown files following the eleven-section structure and bound per-project via `bundle_path` (C-D14) so proprietary discipline stays outside the repo; repo-shipped bundles live in Throughline's `methodologies/` directory. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
 
-**Methodology-agnostic core.** Throughline core has no hardcoded knowledge of modules, anchors, markers, or phases. All those concepts come from bundles. A project bound to the freeform bundle (no primary units, no anchors, no markers, no gates) runs as a lightweight task tracker. A project bound to SiteMesh gets the full methodology-runtime experience. Bundles are not optional — every project binds to one (the freeform bundle exists precisely to support the "I just want to track some stuff" case).
+**Methodology-agnostic core.** Throughline core has no hardcoded knowledge of modules, anchors, markers, or phases. All those concepts come from bundles. A project bound to the freeform bundle (no primary units, no anchors, no markers, no gates) runs as a lightweight task tracker. A project bound to a rich bundle (such as the `test-bundle`, or a user-owned bundle resolved via `bundle_path`) gets the full methodology-runtime experience. Bundles are not optional — every project binds to one (the freeform bundle exists precisely to support the "I just want to track some stuff" case).
 
 ### 7.2 Projects as first-class entities
 
@@ -151,7 +150,7 @@ A project is a codebase + a methodology bundle binding + Throughline state. Mult
 
 ### 7.3 Items as first-class data, sessions as views, primary units as methodology-defined groupings
 
-Items live in a single pool per project with stable identifiers. A session is a saved view that filters items by membership. A primary unit (whatever the methodology's bundle calls it — SiteMesh: module) is a methodology-defined grouping of items.
+Items live in a single pool per project with stable identifiers. A session is a saved view that filters items by membership. A primary unit (whatever the methodology's bundle calls it — a rich bundle might call it "module") is a methodology-defined grouping of items.
 
 **Sessions and items.** A new item created from a session's dump zone is associated with that session by default. Reconcile against another session can add membership without duplicating. Marking an item done in any session view marks it done everywhere it appears. Identity is global; visibility is filtered.
 
@@ -166,10 +165,10 @@ Items live in a single pool per project with stable identifiers. A session is a 
 Each item carries:
 
 - A stable identifier
-- A type — methodology-defined (SiteMesh: `todo` or `decision`; freeform: `task`)
-- A title — short imperative for todos, declarative for decisions (one line)
+- A type — methodology-defined (the `test-bundle`: `task` or `note`; freeform: `task`)
+- A title — one line; phrasing convention per item type (e.g. imperative for task-like types, declarative for decision-like types)
 - A long-form description in markdown
-- A status — methodology-defined lifecycle (SiteMesh: todos use `todo`/`in-progress`/`blocked`/`done`; decisions use `open`/`locked`/`superseded`. Freeform: `open`/`done`.)
+- A status — methodology-defined lifecycle (the `test-bundle`: `task` uses `open`/`doing`/`blocked`/`done`; `note` uses `draft`/`published`. Freeform: `open`/`done`.)
 - A free-text blocker description for external waits
 - Structured blocker references — links to other items that block this one
 - Tags — drawn from the project's tag vocabulary plus custom user tags
@@ -180,14 +179,14 @@ Each item carries:
 - PR associations (optional) — pull requests the item is tied to, used for tier-2 drift detection
 - Attached notes — library notes attached via many-to-many
 - Code references — code locations identified by Semble for this item
-- Verifier rule references — methodology-defined verification rules (SiteMesh: Semgrep rules) that verify this item if marked done
+- Verifier rule references — methodology-defined verification rules (e.g. Semgrep rules, when the bundle declares them) that verify this item if marked done
 - Directives — active behavioural rules
 - Audit history reference
 - Created-at and updated-at timestamps
 
 ### 7.5 Boards
 
-Within a session view, items split into columns determined by the methodology. SiteMesh's bundle declares two boards: todos and decisions. Freeform declares one board ("tasks"). A different methodology might declare three or more.
+Within a session view, items split into columns determined by the methodology. The `test-bundle` declares two boards: Tasks and Notes. Freeform declares one board ("tasks"). A different methodology might declare three or more.
 
 The split exists because item types with different shapes and lifecycles mixed together obscure both. Methodologies that distinguish item types get separate boards; methodologies that don't, don't.
 
@@ -274,13 +273,13 @@ A view mode toggle in the header switches between renderings of the same data:
 
 The methodology bundle's gate definitions (per its state machine and validation rules) execute as Throughline runtime behaviour, not as discipline you enforce manually. Each phase moment supports one or more gates; the bundle declares which gates fire at each moment and what each gate checks. Gates produce independent findings streams; one gate can pass while another at the same moment fails.
 
-**Pre-write gates** — when a session is about to write to project docs, Throughline runs the bundle's pre-write checks. (SiteMesh example: cited anchors must resolve; sub-agent line numbers verified; confident-sounding patterns flagged for ground-truth check.)
+**Pre-write gates** — when a session is about to write to project docs, Throughline runs the bundle's pre-write checks. (Example, a rich bundle: cited anchors must resolve; sub-agent line numbers verified; confident-sounding patterns flagged for ground-truth check.)
 
-**Per-commit gates** — when an item transitions state (internal to Throughline, no external detection required) or a commit is being prepared in the project's repository (detected via a git pre-commit hook), Throughline runs the bundle's per-commit checks. Both triggers fire the same gate. SiteMesh's per-commit moment declares two gates: `verify-structure.sh` (9 code architecture rules) and `sitemesh-pre-commit` (docs banned-string sweep). Two independent gates at the same moment.
+**Per-commit gates** — when an item transitions state (internal to Throughline, no external detection required) or a commit is being prepared in the project's repository (detected via a git pre-commit hook), Throughline runs the bundle's per-commit checks. Both triggers fire the same gate. The `test-bundle`'s per-commit moment declares two independent gates at the same moment: a structure check (code architecture rules) and a banned-string sweep (docs).
 
 **Plan-mode gates** — when Claude Code is operating in plan mode, Throughline can validate the proposed plan against the bundle's plan-mode rules.
 
-**Post-commit gates** — after a commit lands, Throughline re-scans and confirms the bundle's post-commit conditions. (SiteMesh example: no banned strings introduced; all citations still resolve; no markers regressed into wrong phases.)
+**Post-commit gates** — after a commit lands, Throughline re-scans and confirms the bundle's post-commit conditions. (Example, a rich bundle: no banned strings introduced; all citations still resolve; no markers regressed into wrong phases.)
 
 Gate failures surface as proposals: "this commit would introduce two banned strings; review here." Throughline never silently blocks. The user can override (with audit log entry) or fix and retry.
 
@@ -304,7 +303,7 @@ Backend job, polling-based.
   - **High** — auto-apply with toast and 24-hour undo. Audit log captures PR number, AI reasoning, confidence score, and full PR description used.
   - **Medium** — notification badge, one-click approve.
   - **Low** — opens reconcile modal as normal for human review.
-- **Methodology gate enforcement on PR open** — when a PR opens, Throughline runs the methodology's PR-open gates as declared in the bundle (SiteMesh example: live `[UNRESOLVED-(b/c)]` markers in affected SPEC.md files fail the gate). Failures surface as a notification with link to the failing rules. Throughline does not block the PR — the human reviewer decides whether the gate failure is acceptable for this PR.
+- **Methodology gate enforcement on PR open** — when a PR opens, Throughline runs the methodology's PR-open gates as declared in the bundle (example, a rich bundle: live unresolved-decision markers in affected spec files fail the gate). Failures surface as a notification with link to the failing rules. Throughline does not block the PR — the human reviewer decides whether the gate failure is acceptable for this PR.
 
 ### 7.14 Drift detection — code and discipline
 
@@ -317,11 +316,11 @@ Two streams of drift detection running in parallel.
 - **Tier 3** — new PR touches files in a done item's code references. Item badged yellow.
 - **Tier 4** — duplicate-looking dump zone entry matching a done item (cosine similarity ≥ 0.80, with AI confirmation pass for borderline 0.70–0.80). Goes to drift inbox; auto-dismissed with audit-logged "stale-no-action" reason after 7 days.
 
-**Discipline drift (bundle-defined).** Categories are declared by the methodology bundle, not hardcoded in the runtime. The runtime hosts whatever drift categories the bundle declares. SiteMesh examples:
+**Discipline drift (bundle-defined).** Categories are declared by the methodology bundle, not hardcoded in the runtime. The runtime hosts whatever drift categories the bundle declares. Examples a rich bundle might declare:
 
 - Structural conformance failures (missing required files, wrong section ordering, malformed anchor bodies)
 - Banned-string violations (per the bundle's banned-string sweep)
-- Marker violations (markers in inappropriate phases per the bundle's marker rules; SiteMesh example: live `[UNRESOLVED-(b/c)]` markers past doc-readiness)
+- Marker violations (markers in inappropriate phases per the bundle's marker rules; e.g. live unresolved-decision markers past a doc-readiness phase)
 - Cross-reference failures (anchor cited that doesn't exist, anchor cited that's superseded without acknowledgment, doc pointer pointing to a non-existent heading)
 - Phase transition violations (a primary unit attempted to enter a later phase with unresolved blocking markers)
 
@@ -347,7 +346,7 @@ Semble also runs as an MCP server for Claude Code (separate setup; recommended r
 
 Semgrep runs in GitHub Actions on every PR. Findings post to the PR via Semgrep's GitHub integration. The backend reads findings via the GitHub API and overlays them on items via verifier rule references.
 
-**Rule convention** — methodology-defined. The SiteMesh bundle declares: rules live in a dedicated subdirectory of the repo's Semgrep config area, one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions.
+**Rule convention** — methodology-defined. A rich bundle might declare: rules live in a dedicated subdirectory of the repo's Semgrep config area, one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions.
 
 **Workflow setup** — Throughline does not create or manage the GitHub Actions workflow. Users add a one-time workflow file pointing Semgrep at the rules path; recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is not present.
 
@@ -377,7 +376,7 @@ Closes with Esc or click-out. Arrow keys move through items in the parent list w
 ### 7.18 Intelligence layer
 
 - **End-of-session retro.** When a session is marked as wrapping (user-initiated in v1; inactivity-inferred deferred), AI generates a one-page summary using the session's items, audit log entries from the session window, Claude Code transcripts pushed during the session, and methodology-context updates (markers cleared, phases transitioned, gates fired). Saved to library as a note. Optionally attached to items the retro discusses. Optionally appended to a `session-start.md` for the next session.
-- **Periodic review.** Configurable interval (default 2 weeks). Surfaces hygiene questions from both code-drift and discipline-drift streams: items in tier-3 drift state without action, decisions older than 60 days, sessions untouched 30+ days, blockers held longest, orphaned verifier rules awaiting cleanup, primary units in their first non-finalised phase past the configured threshold (SiteMesh example: modules in doc-readiness past threshold), markers live in inappropriate phases per the bundle's rules.
+- **Periodic review.** Configurable interval (default 2 weeks). Surfaces hygiene questions from both code-drift and discipline-drift streams: items in tier-3 drift state without action, decisions older than 60 days, sessions untouched 30+ days, blockers held longest, orphaned verifier rules awaiting cleanup, primary units in their first non-finalised phase past the configured threshold (e.g. modules stuck in a doc-readiness phase past threshold), markers live in inappropriate phases per the bundle's rules.
 - **Dependency-aware sequencing.** Topological sort across open items, weighted by blocker chain depth and number of downstream-unblocked items. "Do next" view surfaces "if you unblock these 3, 17 items become unblocked." Methodology-aware: items in primary units failing methodology gates are deprioritised pending gate clearance.
 - **Personal RAG (three substrates).** AI-assisted search across personal data with three substrates and a router:
   - **Code substrate** (Semble) — for queries about code locations, implementations
@@ -385,7 +384,7 @@ Closes with Esc or click-out. Arrow keys move through items in the parent list w
   - **Audit substrate** — structured queries over the audit log for time/actor/state-transition questions
   Router uses keyword heuristics with user-overridable substrate selection. AI classification of query intent is deferred.
 - **Stakeholder view toggle.** Re-renders item content in plain language, AI-generated. Cached; invalidates on item edit.
-- **Companion runtime.** The methodology's review checklist runs inside Throughline as a structured workflow. The bundle declares which checklist steps are mechanical (Throughline executes) and which are judgement (Throughline surfaces for human or AI reviewer). For SiteMesh: anchor citation validation and marker presence are mechanical; scope, regression, and summary assessments are judgement steps that open a panel for the call. Output lands in the audit log.
+- **Companion runtime.** The methodology's review checklist runs inside Throughline as a structured workflow. The bundle declares which checklist steps are mechanical (Throughline executes) and which are judgement (Throughline surfaces for human or AI reviewer). For a rich bundle: anchor citation validation and marker presence are mechanical; scope, regression, and summary assessments are judgement steps that open a panel for the call. Output lands in the audit log.
 - **Session-start scaffolding.** When opening a slice or session, Throughline assembles the right context (project spec + relevant decisions + active anchors + open markers + execution-plan slice + cross-primary-unit dependencies) and produces a prompt for that session, in the methodology's appropriate companion mode.
 
 All AI features use the Anthropic API key from backend config. Model selection is per-feature: Haiku for cheap classification, Sonnet for default, Opus for harder reasoning.
@@ -442,7 +441,7 @@ Keyboard navigation throughout: tab/shift-tab for indent/outdent in lists, arrow
 - **Claude Code inbox directory** path and processed-archive retention
 - **OS notification permission** (one-time grant, mediated by backend)
 - **Cost meter** — running token spend and dollar estimate for the current day, week, and month, broken down by feature category. Visible in header at all times. Warns when daily threshold (configurable) is exceeded.
-- **Orphaned verifier rules panel** — methodology-defined (SiteMesh: Semgrep rule files); one-click PR-draft cleanup or dismiss-without-removal
+- **Orphaned verifier rules panel** — methodology-defined (e.g. Semgrep rule files, when the bundle declares them); one-click PR-draft cleanup or dismiss-without-removal
 
 ---
 
@@ -530,7 +529,7 @@ No webhook receivers in v1. No outbound emails or messaging.
 Throughline v1 ships when all of the following are true:
 
 - Methodology runtime: bundles load from `methodologies/` directory; bundle structure parsed against the eleven-section spec; runtime configures structural validators, banned-string greps, marker scanners, state-machine transitions (one or more gates per phase moment), review-checklist steps, and template parsers from bundle content
-- SiteMesh and freeform bundles both ship with Throughline as concrete methodologies
+- The `freeform` default and a generic `test-bundle` grammar fixture ship with Throughline and load; rich user-owned discipline bundles resolve via per-project `bundle_path` (C-D14)
 - Multi-project: projects are first-class; create / switch / archive / delete all functional; multiple projects coexist; each project has its own state; default bundle at create is freeform
 - All items live in one local datastore per project with stable identifiers; sessions are saved views with member-by-membership semantics
 - Items support infinite nesting, methodology-defined type lifecycles, free-text and structured blockers, full tag taxonomy, methodology-context references, branch + PR references, code refs, verifier rules, audit log
@@ -566,7 +565,7 @@ Whiteboards as a fifth library content type (canvas-based ideation surface with 
 
 **Future (not committed):**
 
-Bundle ecosystem (multiple methodology bundles authored by Jay or others, available as a library). Embedding components inside SiteMesh or other tools as customer-facing features. Any path requires extracting pure components and is its own project.
+Bundle ecosystem (multiple methodology bundles authored by the owner or others, available as a library). Embedding components inside other tools as customer-facing features. Any path requires extracting pure components and is its own project.
 
 ---
 
@@ -580,8 +579,7 @@ Bundle ecosystem (multiple methodology bundles authored by Jay or others, availa
 - **Code TODO/FIXME patterns** — configurable patterns with sensible defaults (`TODO:`, `FIXME:`, `XXX:`).
 - **Library prompt variable syntax** — `{{var_name}}` (Mustache-conventional).
 - **Cost meter daily threshold default** — pending real usage data.
-- **Bundle versioning** — v1 ships with no bundle-versioning mechanism. Bundles are always-current; changes apply immediately to all bound projects. Acceptable in v1 because Jay is the only user and controls all bundle changes. Bundle change events are audit-logged (per T-D36) so unexpected retroactive effect can be traced if encountered. Revisit when (a) a bundle change has unintended retroactive effect, or (b) Throughline gains a second user authoring their own bundles.
-- **Bundle authoring path for the SiteMesh bundle** — three discipline-doc gaps in flight (PR drafting): `[UNRESOLVED-(a/b/c)]` marker rules in AUTHORING_DISCIPLINE.md §3.F, verify-structure / sitemesh-pre-commit gate split in §9, SESSION_START.md §4 amendment. CODE_SPEC.md outline (lower priority) deferred. None block v1 Throughline build; they affect the SiteMesh bundle's completeness.
+- **Bundle versioning** — v1 ships with no bundle-versioning mechanism. Bundles are always-current; changes apply immediately to all bound projects. Acceptable in v1 because there is a single user who controls all bundle changes. Bundle change events are audit-logged (per T-D36) so unexpected retroactive effect can be traced if encountered. Revisit when (a) a bundle change has unintended retroactive effect, or (b) Throughline gains a second user authoring their own bundles.
 
 ---
 
@@ -616,14 +614,14 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D23 | Chat history persisted per context for retrieval | 7.19 |
 | T-D24 | Audit log entries never expose API keys or full prompt content beyond what's needed for trigger reconstruction | 7.22, 8 |
 | T-D25 | Personal RAG has three substrates (text via local embeddings, code via Semble, audit history via structured queries); router uses keyword heuristics with user override; AI classification of query intent deferred | 7.18 |
-| T-D26 | Semgrep runs in GitHub Actions, not in the backend; backend reads findings via GitHub API. Methodology bundle defines rule conventions; SiteMesh bundle declares one-file-per-item named by item identifier. | 7.16 |
+| T-D26 | Semgrep runs in GitHub Actions, not in the backend; backend reads findings via GitHub API. Methodology bundle defines rule conventions; a rich bundle may declare one-file-per-item named by item identifier. | 7.16 |
 | T-D27 | Semble integrated keyless/local, invoked per query on demand (lifecycle revised Phase 11; see DECISIONS T-D27, CODE_SPEC C-D17) | 7.15 |
 | T-D28 | Backup is a single-file copy of the underlying datastore; optional configurable auto-copy target | 7.23 |
 | T-D29 | Cost meter visible in header at all times; tracks per-feature spend with configurable warning threshold | 7.25 |
 | T-D30 | Home view (not a session, not a project) is the default landing surface, scoped to current project; "this week" semantics rolling 7 days from now, "since last visit" uses persisted last-render timestamp | 7.11 |
 | T-D31 | Backend mediates all external network calls (Anthropic, GitHub). Browser does not access external networks; all outbound HTTPS originates from the backend. Isolates API keys to the backend process and gives a single audit point for external traffic. | 3, 8, 10 |
 | T-D32 | OS notifications are abstracted across platforms via a single capability layer in the backend, not duplicated per platform | 10 |
-| T-D33 | Verifier rule lifecycle on item deletion: orphan-flag, not auto-removal. Methodology bundle defines verifier-rule type and storage; SiteMesh bundle declares Semgrep rules in repo Semgrep config area. Rule files stay until user merges a cleanup PR; orphans surface in periodic review and settings; one-click cleanup-PR-draft action available; dismiss-without-removal also supported. | 7.16 |
+| T-D33 | Verifier rule lifecycle on item deletion: orphan-flag, not auto-removal. Methodology bundle defines verifier-rule type and storage; a rich bundle may declare Semgrep rules in the repo Semgrep config area. Rule files stay until user merges a cleanup PR; orphans surface in periodic review and settings; one-click cleanup-PR-draft action available; dismiss-without-removal also supported. | 7.16 |
 | T-D34 | Manual item-to-PR linking via auto-detect from active git branch + user override + skip-acceptable. Items without PR association lose tier-2 drift coverage but retain tiers 1, 3, 4. | 7.14 |
 | T-D35 | Reconcile diff has six categories: completed, new, edited (covers title and description changes under one row), blocker changes, contradicted (spawns drift signal rather than auto-revert), no-change | 7.7 |
 | T-D36 | Audit log scope covers items, sessions, library entries, projects, methodology bindings, and gate firings | 7.22, 8 |
@@ -631,14 +629,14 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D38 | Items carry optional branch and PR references, populated automatically from session context or set manually; branches remain free-text strings, not first-class entities; items reference PRs (not branches as first-class fields) | 7.4, 8 |
 | T-D39 | Methodology runtime as the product core. Throughline is methodology-agnostic; bundles configure all methodology-specific concepts (primary unit, anchor format, marker rules, state machine, review patterns, validation). Tracker, library, and intelligence layer are surfaces over the runtime. | 2, 7.1 |
 | T-D40 | Projects as first-class entities, multiple projects coexist, each binds to a methodology bundle. v1 multi-project from day one. | 7.2, 8 |
-| T-D41 | SiteMesh and freeform bundles ship with Throughline as the first two concrete methodologies. Additional bundles authored as markdown in `methodologies/` directory; in-app bundle authoring deferred to v2. | 7.1, 12 |
+| T-D41 | The `freeform` default and a generic `test-bundle` grammar fixture ship with Throughline as the repo-shipped bundles. Rich user-owned discipline bundles are authored as markdown and bound per-project via `bundle_path` (C-D14) so proprietary discipline stays outside the repo; additional repo-shipped bundles may be added under `methodologies/`. In-app bundle authoring deferred to v2. | 7.1, 12 |
 | T-D42 | Eleven-section bundle structure: identity, project layout, anchor system, marker system, state machine, communication model, gating model, review patterns, templates, validation rules, authority hierarchy. Bundle structure is the contract; bundle content is methodology-specific. State-machine section declares one or more gates per phase moment, each with its own check definitions. | 7.1, 7.12 |
 | T-D43 | Whiteboards deferred to v1.1. Library has four content types in v1. Whiteboards reconsidered once Throughline is in regular use and the gap is felt empirically. | 7.8, 12 |
 | T-D44 | Methodology gates fire as proposals to the user, never as enforced blocks on the underlying repo. The user can override (with audit log entry) or fix and retry. | 5, 7.12 |
 | T-D45 | Companion review checklist runs inside Throughline as a structured workflow. Methodology bundle defines which steps are mechanical (Throughline runs) vs judgement (Throughline surfaces for human or AI reviewer). | 7.18 |
 | T-D46 | Stale threshold yellow flag appears next to item titles in all list views (session boards, tree view, search results) and in the item detail panel header | 7.17, 7.25 |
-| T-D47 | Throughline ships with SiteMesh and freeform bundles in v1. Every project binds to one bundle; `none` is not a valid binding. The freeform bundle (no markers, no anchors, no gates, single board with single item type called "task") supports the "I just want to track some stuff" case without code-level special-casing. | 7.1, 7.2 |
-| T-D48 | Spec language is methodology-agnostic throughout. Runtime concepts are described first; SiteMesh-specific terms appear only as parenthetical examples. Bundle authors reading the spec see what the runtime expects, not just what SiteMesh happens to do. | 7.14, 7.18, 7.13 |
+| T-D47 | Throughline ships the `freeform` default and a generic `test-bundle` fixture in v1; rich discipline bundles resolve via per-project `bundle_path` (C-D14). Every project binds to one bundle; `none` is not a valid binding. The freeform bundle (no markers, no anchors, no gates, single board with single item type called "task") supports the "I just want to track some stuff" case without code-level special-casing. | 7.1, 7.2 |
+| T-D48 | Spec language is methodology-agnostic throughout. Runtime concepts are described first; bundle-specific terms appear only as parenthetical examples. Bundle authors reading the spec see what the runtime expects, not just what one particular bundle happens to do. | 7.14, 7.18, 7.13 |
 
 ---
 

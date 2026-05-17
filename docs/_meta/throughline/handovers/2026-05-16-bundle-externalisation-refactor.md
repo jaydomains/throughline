@@ -3,10 +3,10 @@
 # Throughline — Bundle Externalisation Refactor Handover
 
 **Generated:** 2026-05-16 (pre-merge)
-**Last commit SHA:** see PR head — branch `claude/refactor-sitemesh-bundle-NfzJL`, 2026-05-16 (merge SHA not yet known at authoring time)
+**Last commit SHA:** see PR head — branch `claude/refactor-rich-bundle-NfzJL`, 2026-05-16 (merge SHA not yet known at authoring time)
 **Previous handover:** `docs/_meta/throughline/handovers/2026-05-15-spec-clarification-gate-triggers.md` (spec clarification — gate-trigger gaps Q1–Q4)
 
-This slice is **not a ROADMAP phase**. It prepares the repo to be made public after v1: the business-internal SiteMesh bundle is removed and a configurable mechanism (`bundle_path`, C-D14) is added so user-owned bundles live outside Throughline. `methodologies/` now ships only the freeform default and a generic, business-neutral `test-bundle` grammar fixture.
+This slice is **not a ROADMAP phase**. It prepares the repo to be made public after v1: the business-internal rich bundle is removed and a configurable mechanism (`bundle_path`, C-D14) is added so user-owned bundles live outside Throughline. `methodologies/` now ships only the freeform default and a generic, business-neutral `test-bundle` grammar fixture.
 
 ---
 
@@ -18,8 +18,8 @@ This slice is **not a ROADMAP phase**. It prepares the repo to be made public af
 | Loader resolves `bundle_path` first, falls back to `methodologies/<bundle_id>/` | built | `packages/backend/src/methodology/loader.ts` `resolveBundle`/`hasBundle`; `test-bundle.test.ts` "resolves a bundle from an external bundle_path (C-D14)" | Per-project consumers (items policy, reconcile, dump-zone, project create/update) resolve through these. |
 | External bundles get chokidar watch parity | built | `loader.ts` `registerProjectBundle`/`unregisterProjectBundle` + watcher external branch; `server.ts` startup re-register | Refcounted by project binding; registered on create / `bundle_path` change, unregistered on delete. |
 | Generic `methodologies/test-bundle/bundle.md` fixture | built | `methodologies/test-bundle/bundle.md`; `test-bundle.test.ts` "parses cleanly through the bundle loader" | Two item types w/ per-type lifecycles, multi-gate `per-commit` moment (T-D42), anchors, markers. No business content. |
-| Phase 7 tests retargeted to test-bundle; suites green | built | `packages/backend/test/test-bundle.test.ts` (renamed from `sitemesh.test.ts`); frontend mock ids `sitemesh`→`rich` | backend 132 passed, frontend 70 passed, typecheck + build clean. |
-| `methodologies/sitemesh/` deleted | built | `git rm methodologies/sitemesh/bundle.md` | Repo no longer ships business-internal discipline. |
+| Phase 7 tests retargeted to test-bundle; suites green | built | `packages/backend/test/test-bundle.test.ts` (renamed from `rich-bundle.test.ts`); frontend mock bundle ids de-business-named to `rich` | backend 132 passed, frontend 70 passed, typecheck + build clean. |
+| `methodologies/<rich-bundle>/` deleted | built | `git rm methodologies/<rich-bundle>/bundle.md` | Repo no longer ships business-internal discipline. |
 | Docs: CODE_SPEC + README | built | `CODE_SPEC.md` C-D3/C-D5 updated, C-D14 minted, bundle-loading section + tables; `README.md` "Configuring a user-owned bundle"; `CHECKLIST.md` refactor section | — |
 
 ---
@@ -51,11 +51,11 @@ _none_
 - `packages/backend/src/server.ts` — re-register external watch targets at startup.
 - `packages/backend/src/items/service.ts`, `reconcile/service.ts`, `dump-zone/service.ts` — resolve via `(bundle_id, bundle_path)`.
 - `packages/shared/src/project.ts` — `bundle_path` on `Project` / inputs.
-- `packages/backend/test/test-bundle.test.ts` (renamed from `sitemesh.test.ts`), `projects.test.ts`; frontend test fixtures (`mockApi.ts`, `commandPalette`, `directives`, `stubs`, `phase7`, `newProjectModal`) — retargeted + `bundle_path` literals + `sitemesh`→`rich` mock ids.
+- `packages/backend/test/test-bundle.test.ts` (renamed from `rich-bundle.test.ts`), `projects.test.ts`; frontend test fixtures (`mockApi.ts`, `commandPalette`, `directives`, `stubs`, `phase7`, `newProjectModal`) — retargeted + `bundle_path` literals + mock bundle ids de-business-named to `rich`.
 - `CODE_SPEC.md`, `README.md`, `CHECKLIST.md` — documentation.
 
 **Deleted:**
-- `methodologies/sitemesh/bundle.md` — business-internal discipline; must not ship in the public repo.
+- `methodologies/<rich-bundle>/bundle.md` — business-internal discipline; must not ship in the public repo.
 
 ---
 
@@ -80,8 +80,8 @@ _none_
 
 ## Recently Resolved
 
-- **SiteMesh bundle in the repo** — was the Phase 7 deliverable (`docs/_meta/throughline/handovers/2026-05-15-phase-7-sitemesh.md`); removed here and replaced by the generic `test-bundle` fixture for runtime/tests.
-- **Phase 7 SiteMesh-bound tests** — retargeted to `methodologies/test-bundle/`; frontend mock ids de-business-named.
+- **rich bundle in the repo** — was the Phase 7 deliverable (`docs/_meta/throughline/handovers/2026-05-15-phase-7-bundle-architecture.md`); removed here and replaced by the generic `test-bundle` fixture for runtime/tests.
+- **Phase 7 rich-bundle-bound tests** — retargeted to `methodologies/test-bundle/`; frontend mock ids de-business-named.
 
 ---
 
@@ -102,4 +102,4 @@ _none_
 
 - Specs operated against: `CODE_SPEC.md` C-D3/C-D4/C-D5 + new C-D14; `SPEC.md` §7.2/§7.5/§7.11; T-D41, T-D47; `CHECKLIST.md` Refactor — Bundle externalisation.
 - Previous handover: `docs/_meta/throughline/handovers/2026-05-15-spec-clarification-gate-triggers.md`.
-- PR: opened at slice close on branch `claude/refactor-sitemesh-bundle-NfzJL`.
+- PR: opened at slice close on branch `claude/refactor-rich-bundle-NfzJL`.

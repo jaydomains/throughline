@@ -6,8 +6,8 @@ import type { Board, ItemPolicy, LoadedBundle } from '@throughline/shared';
 // sub-blocks (parsed into `state_machine.item_types`). Each declared type becomes one board
 // with its own status lifecycle:
 //
-//   - SiteMesh: `todo` (board "Todos", statuses todo/in-progress/blocked/done) and
-//     `decision` (board "Decisions", statuses open/locked/superseded) — two boards.
+//   - test-bundle: `task` (board "Tasks", statuses open/doing/blocked/done) and
+//     `note` (board "Notes", statuses draft/published) — two boards.
 //   - freeform: declares no item types, so the runtime infers a single board "Tasks" with
 //     item type "task" and statuses drawn from the state machine's phases (['open','done']).
 //
@@ -65,9 +65,9 @@ export function bundleItemPolicy(bundle: LoadedBundle): ItemPolicy {
 }
 
 // "Done"-equivalent status for a given item type — the last status in that type's declared
-// lifecycle. Works for freeform (`['open','done']`) and the SiteMesh todo lifecycle whose
-// terminal state is `done`. Decisions have no terminal "done"; callers that need a generic
-// done concept pass the union and get the last overall status.
+// lifecycle. Works for freeform (`['open','done']`) and the test-bundle `task` lifecycle
+// whose terminal state is `done`. A type like `note` has no terminal "done"; callers that
+// need a generic done concept pass the union and get the last overall status.
 export function bundleDoneStatus(policy: { statuses: string[] }): string {
   if (policy.statuses.length === 0) return 'done';
   return policy.statuses[policy.statuses.length - 1]!;

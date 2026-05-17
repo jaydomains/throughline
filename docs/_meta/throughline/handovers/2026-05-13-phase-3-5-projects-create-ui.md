@@ -104,7 +104,7 @@ Provisional / parked items:
 
 **Downstream (consumes this slice's work):**
 - Future projects-view slice (archive/delete UI) — will reuse `NewProjectModal`'s form scaffold, the `.new-project-modal` style block, and the `mockApi.state.projects` test fixture pattern.
-- Any view that wants to spawn a project programmatically (none today; SiteMesh bundle delivery in Phase 7 is the next likely consumer of project-from-template flows).
+- Any view that wants to spawn a project programmatically (none today; rich bundle delivery in Phase 7 is the next likely consumer of project-from-template flows).
 
 ---
 

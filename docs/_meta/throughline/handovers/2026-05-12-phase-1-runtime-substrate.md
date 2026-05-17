@@ -126,7 +126,7 @@ _none_ — first build slice.
 **Downstream (consumes this module):**
 - Phase 2 (UI shell) — consumes `/health`, `/api/methodologies`, `/api/projects`, `/api/settings`.
 - Phase 3 (items + sessions) — consumes the projects + audit-log + bundle-loader services directly.
-- Phase 7 (SiteMesh bundle) — drops `methodologies/sitemesh/bundle.md` into the same loader path.
+- Phase 7 (rich bundle) — drops `methodologies/<rich-bundle>/bundle.md` into the same loader path.
 
 ---
 

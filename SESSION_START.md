@@ -56,6 +56,8 @@ PR opened at phase close (not before); PR description references the phase, the 
 
 Every PR close writes a handover file using `HANDOVER_TEMPLATE.md` to `docs/_meta/throughline/handovers/<merge-date>-<slice-id>-<short-summary>.md`. The next session reads the most recent handover before anything else.
 
+Handovers are immutable once written, with a single carve-out: a change that business confidentiality, privacy, or legal requirements compel (e.g. scrubbing a business-internal name before the repo goes public). Such an edit is itself a slice — make it deliberately, prefer meaning-preserving substitution over deletion, and record it in the slice's own handover. Routine wording or quality fixes do not qualify. See `HANDOVER_TEMPLATE.md` authoring rule 8.
+
 ---
 
 ## Anchor conventions
