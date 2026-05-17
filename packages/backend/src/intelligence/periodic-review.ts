@@ -132,15 +132,18 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
       });
     }
 
+    // One item read serves both the stale-decisions and longest-held-blockers buckets.
+    const allItems = items.list({ project_id: projectId });
+
     // Stale decisions (SPEC §7.18: decisions older than 60 days). Decision-bearing types
     // = the bundle's item types beyond the first (same bundle-agnostic rule as C-D9).
     const policy = items.policy(projectId);
     const decisionTypes = new Set(policy.types.slice(1));
     if (decisionTypes.size > 0) {
       const cutoff = daysAgoIso(STALE_DECISION_DAYS);
-      const stale = items
-        .list({ project_id: projectId })
-        .filter((it) => decisionTypes.has(it.type) && it.created_at < cutoff);
+      const stale = allItems.filter(
+        (it) => decisionTypes.has(it.type) && it.created_at < cutoff,
+      );
       out.push({
         category: 'stale-decisions',
         label: `Decisions older than ${STALE_DECISION_DAYS} days`,
@@ -149,10 +152,12 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
       });
     }
 
+    // "Untouched" means no recent activity — filter on last-activity (updated_at), not
+    // creation time, so a long-lived but actively-edited session is not flagged.
     const untouchedCutoff = daysAgoIso(UNTOUCHED_SESSION_DAYS);
     const untouched = sessions
       .list(projectId)
-      .filter((s) => s.created_at < untouchedCutoff);
+      .filter((s) => s.updated_at < untouchedCutoff);
     out.push({
       category: 'untouched-sessions',
       label: `Sessions untouched ${UNTOUCHED_SESSION_DAYS}+ days`,
@@ -161,9 +166,8 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
     });
 
     // Longest-held blockers: open items carrying a blocker, oldest first.
-    const policyAll = items.list({ project_id: projectId });
     const terminalByType = policy.statuses_by_type;
-    const blocked = policyAll
+    const blocked = allItems
       .filter((it) => {
         const lc = terminalByType[it.type] ?? policy.statuses ?? [];
         const terminal = lc[lc.length - 1];
