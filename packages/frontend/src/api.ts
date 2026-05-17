@@ -23,6 +23,8 @@ import type {
   GateFiring,
   GateFiringsResult,
   GateRunResult,
+  ChecklistRun,
+  CompanionChecklistsResult,
   InboxQueueEntry,
   InboxStatusSummary,
   Item,
@@ -456,6 +458,55 @@ export const api = {
     jsonFetch<{ firing: GateFiring }>(
       `/api/projects/${pid(projectId)}/gate-firings/${encodeURIComponent(firingId)}/override`,
       { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+
+  // Phase 12 — companion review runtime (C-D8, T-D45).
+  listCompanionChecklists: (projectId: string) =>
+    jsonFetch<CompanionChecklistsResult>(
+      `/api/projects/${pid(projectId)}/companion/checklists`,
+    ),
+  listCompanionRuns: (projectId: string) =>
+    jsonFetch<{ runs: ChecklistRun[] }>(`/api/projects/${pid(projectId)}/companion/runs`),
+  startCompanionRun: (projectId: string, checklistId: string, companionMode: string | null) =>
+    jsonFetch<{ run: ChecklistRun }>(`/api/projects/${pid(projectId)}/companion/runs`, {
+      method: 'POST',
+      body: JSON.stringify({ checklist_id: checklistId, companion_mode: companionMode }),
+    }),
+  runCompanionMechanicalStep: (projectId: string, runId: string, stepId: string) =>
+    jsonFetch<{ run: ChecklistRun }>(
+      `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(stepId)}/mechanical`,
+      { method: 'POST' },
+    ),
+  aiJudgeCompanionStep: (projectId: string, runId: string, stepId: string) =>
+    jsonFetch<{ run: ChecklistRun }>(
+      `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(stepId)}/ai-judge`,
+      { method: 'POST' },
+    ),
+  resolveCompanionJudgement: (
+    projectId: string,
+    runId: string,
+    stepId: string,
+    decision: 'pass' | 'fail' | 'skip',
+    rationale: string,
+  ) =>
+    jsonFetch<{ run: ChecklistRun }>(
+      `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(stepId)}/judgement`,
+      { method: 'POST', body: JSON.stringify({ decision, rationale }) },
+    ),
+  overrideCompanionStep: (projectId: string, runId: string, stepId: string, reason: string) =>
+    jsonFetch<{ run: ChecklistRun }>(
+      `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/steps/${encodeURIComponent(stepId)}/override`,
+      { method: 'POST', body: JSON.stringify({ reason }) },
+    ),
+  completeCompanionRun: (
+    projectId: string,
+    runId: string,
+    summary: string | undefined,
+    itemIds: string[],
+  ) =>
+    jsonFetch<{ run: ChecklistRun }>(
+      `/api/projects/${pid(projectId)}/companion/runs/${encodeURIComponent(runId)}/complete`,
+      { method: 'POST', body: JSON.stringify({ summary, item_ids: itemIds }) },
     ),
 
   // Phase 9 — discipline-drift (C-D7).

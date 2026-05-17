@@ -137,6 +137,72 @@ describe('Phase 8 — methodology-gates view', () => {
     );
   });
 
+  it('Phase 12 — companion review surface starts a run and renders steps (C-D8)', async () => {
+    mockApi.listGateFirings.mockResolvedValue({ groups: [] });
+    mockApi.listCompanionChecklists.mockResolvedValue({
+      checklists: [
+        {
+          id: 'review',
+          name: 'review',
+          steps: [
+            { id: 'anchors', kind: 'mechanical', description: 'anchors resolve' },
+            { id: 'scope', kind: 'judgement', description: 'scope matches plan' },
+          ],
+        },
+      ],
+      companion_modes: [{ id: 'standard', name: 'standard' }],
+    });
+    mockApi.startCompanionRun.mockResolvedValue({
+      run: {
+        id: 'r1',
+        project_id: 'p1',
+        checklist_id: 'review',
+        companion_mode: 'standard',
+        state: 'running',
+        summary_entry_id: null,
+        started_at: '2026-05-16T00:00:00Z',
+        completed_at: null,
+        steps: [
+          {
+            run_id: 'r1',
+            step_id: 'anchors',
+            kind: 'mechanical',
+            description: 'anchors resolve',
+            ordinal: 0,
+            state: 'pending',
+            findings: { check: '', summary: '', items: [] },
+            transitioned_at: '2026-05-16T00:00:00Z',
+          },
+          {
+            run_id: 'r1',
+            step_id: 'scope',
+            kind: 'judgement',
+            description: 'scope matches plan',
+            ordinal: 1,
+            state: 'pending',
+            findings: { check: '', summary: '', items: [] },
+            transitioned_at: '2026-05-16T00:00:00Z',
+          },
+        ],
+      },
+    });
+    renderAt(richSummary, 'rich');
+    await waitFor(() =>
+      expect(screen.getByTestId('companion-review')).toBeInTheDocument(),
+    );
+    fireEvent.click(screen.getByTestId('companion-start'));
+    await waitFor(() =>
+      expect(mockApi.startCompanionRun).toHaveBeenCalledWith('p1', 'review', null),
+    );
+    await waitFor(() =>
+      expect(screen.getByTestId('companion-step-anchors')).toBeInTheDocument(),
+    );
+    // Mechanical step exposes "Run check"; judgement step exposes the AI/user panel.
+    expect(screen.getByTestId('companion-run-step-anchors')).toBeInTheDocument();
+    expect(screen.getByTestId('companion-ai-judge-scope')).toBeInTheDocument();
+    expect(screen.getByTestId('companion-judge-scope')).toBeInTheDocument();
+  });
+
   it('Phase 9 — renders category-grouped discipline drift and re-scans (C-D7)', async () => {
     mockApi.getDisciplineDrift.mockResolvedValue({
       groups: [

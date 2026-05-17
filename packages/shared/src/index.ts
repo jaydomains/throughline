@@ -12,3 +12,4 @@ export * from './gate.js';
 export * from './drift.js';
 export * from './github.js';
 export * from './semble.js';
+export * from './companion.js';

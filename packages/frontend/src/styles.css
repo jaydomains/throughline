@@ -836,6 +836,13 @@ button.directive-badge { cursor: pointer; }
 .drift-category { margin: 12px 0; }
 .drift-category h3 { margin-bottom: 4px; }
 
+/* Phase 12 — companion review (SPEC §7.18, C-D8). Same surface vocabulary as gates
+   (status pills, finding rows, override/retry); no new colour semantics. */
+.companion-review { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 10px; }
+.companion-start, .companion-runs { margin: 10px 0; flex-wrap: wrap; }
+.companion-run { margin-top: 12px; }
+.companion-run-active { outline: 2px solid var(--accent); }
+
 /* Phase 10 — code-drift tier badges (SPEC §7.14): tier-1 red, tier-2 orange,
    tier-3 yellow. Distinct from the methodology (.drift-badge) indicator. */
 .code-drift-badge { font-size: 12px; margin-right: 4px; }
