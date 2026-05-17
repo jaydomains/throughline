@@ -1,0 +1,242 @@
+/* GraphView-scoped visual layer (Pass 1b).
+ *
+ * Adopts the design-handoff "Direction A · dark" tokens, but namespaced
+ * (--gv-*) and confined to .graph-view so nothing leaks into the rest of the
+ * app, which still runs the current styles.css. Full design-system adoption
+ * (theme.css swap, sidebar, settings, SSE hot-reload) is deferred to a
+ * dedicated redesign pass — see DECISIONS.md working note. */
+
+.graph-view {
+  --gv-bg: #0c0c0e;
+  --gv-surface: #131316;
+  --gv-surface-2: #1a1a1e;
+  --gv-hairline: #25252b;
+  --gv-hairline-2: #353540;
+  --gv-fg: #ededf0;
+  --gv-fg-2: #cfcfd4;
+  --gv-fg-muted: #84848e;
+  --gv-fg-faint: #5b5b64;
+  --gv-accent: #818cf8;
+  --gv-accent-soft: rgba(129, 140, 248, 0.14);
+  --gv-warn: #f59e0b;
+  --gv-danger: #f87171;
+  --gv-ok: #4ade80;
+  --gv-mono: ui-monospace, SFMono-Regular, 'Geist Mono', monospace;
+
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  background: var(--gv-bg);
+  color: var(--gv-fg);
+}
+
+.graph-view .gv-hero {
+  padding: 20px 24px 14px;
+  border-bottom: 1px solid var(--gv-hairline);
+}
+
+.graph-view .gv-eyebrow {
+  font-family: var(--gv-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gv-fg-muted);
+}
+
+.graph-view .gv-h1 {
+  margin: 4px 0 0;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.018em;
+  color: var(--gv-fg);
+}
+
+.graph-view .gv-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--gv-hairline);
+  font-size: 12px;
+  color: var(--gv-fg-muted);
+}
+
+.graph-view .gv-toolbar button {
+  font: inherit;
+  color: var(--gv-fg-2);
+  background: transparent;
+  border: 1px solid var(--gv-hairline-2);
+  border-radius: 0;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.graph-view .gv-toolbar button:hover {
+  background: var(--gv-surface-2);
+}
+
+.graph-view .gv-toolbar button.on {
+  color: var(--gv-accent);
+  border-color: color-mix(in srgb, var(--gv-accent) 50%, transparent);
+  background: var(--gv-accent-soft);
+}
+
+.graph-view .gv-legend {
+  display: flex;
+  gap: 14px;
+  margin-left: auto;
+  font-family: var(--gv-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.graph-view .gv-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.graph-view .gv-legend i {
+  width: 16px;
+  height: 0;
+  border-top: 2px solid currentColor;
+}
+
+.graph-view .gv-legend i.dashed {
+  border-top-style: dashed;
+}
+
+.graph-view .gv-canvas-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+.graph-view svg.gv-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--gv-bg);
+  cursor: grab;
+}
+
+.graph-view svg.gv-canvas.panning {
+  cursor: grabbing;
+}
+
+.graph-view .gv-edge {
+  stroke: var(--gv-fg-muted);
+  stroke-width: 1.25;
+  fill: none;
+}
+
+.graph-view .gv-edge.blocked {
+  stroke: var(--gv-danger);
+  stroke-dasharray: 5 4;
+}
+
+.graph-view .gv-edge.chain {
+  stroke: var(--gv-accent);
+  stroke-width: 1.75;
+}
+
+.graph-view .gv-edge.dim {
+  opacity: 0.18;
+}
+
+.graph-view .gv-node-box {
+  fill: var(--gv-surface);
+  stroke: var(--gv-hairline-2);
+  stroke-width: 1;
+}
+
+.graph-view .gv-node.selected .gv-node-box {
+  stroke: var(--gv-accent);
+  stroke-width: 1.5;
+}
+
+.graph-view .gv-node.root-blocker .gv-node-box {
+  stroke: var(--gv-accent);
+}
+
+.graph-view .gv-node.dim {
+  opacity: 0.28;
+}
+
+.graph-view .gv-node {
+  cursor: pointer;
+}
+
+.graph-view .gv-node:focus {
+  outline: none;
+}
+
+.graph-view .gv-node:focus-visible .gv-node-box {
+  stroke: var(--gv-accent);
+  stroke-width: 1.5;
+}
+
+.graph-view .gv-node-title {
+  fill: var(--gv-fg);
+  font-size: 12.5px;
+  font-weight: 500;
+}
+
+.graph-view .gv-node-id {
+  fill: var(--gv-fg-muted);
+  font-family: var(--gv-mono);
+  font-size: 10px;
+}
+
+.graph-view .gv-node-status {
+  fill: var(--gv-fg-2);
+  font-size: 10.5px;
+}
+
+/* No-fill bordered pills (handoff vocabulary: colour in text + mixed border,
+ * no fill). Drawn as SVG rect + text. */
+.graph-view .gv-pill-box {
+  fill: transparent;
+  stroke-width: 1;
+}
+
+.graph-view .gv-pill-box.stale {
+  stroke: color-mix(in srgb, var(--gv-warn) 50%, transparent);
+}
+
+.graph-view .gv-pill-box.drift {
+  stroke: color-mix(in srgb, var(--gv-danger) 50%, transparent);
+}
+
+.graph-view .gv-pill-text {
+  font-family: var(--gv-mono);
+  font-size: 9px;
+}
+
+.graph-view .gv-pill-text.stale {
+  fill: var(--gv-warn);
+}
+
+.graph-view .gv-pill-text.drift {
+  fill: var(--gv-danger);
+}
+
+.graph-view .gv-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--gv-fg-muted);
+  font-size: 13px;
+}
+
+.graph-view .gv-empty strong {
+  color: var(--gv-fg);
+  font-size: 15px;
+  font-weight: 600;
+}

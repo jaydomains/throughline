@@ -988,3 +988,39 @@ Bundle authors must be able to read the spec and see the runtime contract direct
 
 ### Implications
 Documentation review checks for bundle-specific terminology used as if it were universal. New spec sections introduce the runtime concept first (e.g., "primary unit") and any bundle-specific term in parentheses ("module"). The glossary makes the runtime-vs-bundle distinction explicit per term.
+
+---
+
+## Working notes (proposals — not yet minted anchors)
+
+Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
+
+### WN-1b-a — Cross-session-mention graph edge has no data model
+
+- **Date:** 2026-05-17
+- **Raised by:** Pass 1b (GraphView)
+- **Status:** open — spec-author decision required
+
+**Observation.** SPEC §7.11 says graph edges show "parent-child, blocked-by, and **cross-session mentions**". The `Item` model (`packages/shared/src/items.ts`) has no mention/reference field — only `parent_id`, `blockers[]` (item-id refs, T-D8), and `session_ids[]` (multi-session membership). There is no captured "item A mentions item B" relation anywhere in the datastore.
+
+**Decision deferred.** Pass 1b ships parent-child + blocked-by + "Show chains" (the two fully-supported edge types) and does **not** invent a cross-session edge. Candidate resolutions for the spec author: (1) add a mention/reference relation to the item model and capture it (capture surfaces / reconcile would need to populate it); (2) redefine the edge as shared-session co-membership (derivable today from `session_ids`); (3) drop the clause from §7.11. The §11 DoD bullet ("nine view modes functional and switchable") is satisfied without it.
+
+### WN-1b-b — Communication-model graph layer needs contract-source parsing
+
+- **Date:** 2026-05-17
+- **Raised by:** Pass 1b (GraphView)
+- **Status:** open — spec-author decision required
+
+**Observation.** SPEC §7.11 calls for "an additional graph layer [showing] primary-unit-level emit/consume edges based on the methodology's contract source" for bundles that declare a communication model. The bundle parser (`bundle-parser/communication-model.ts`) extracts only `edge_types` (e.g. `emit`, `consume`, `depends-on`) and leaves `routing_rules` / `producer_ownership_rules` empty — there is no parsed per-unit producer/consumer contract to draw edges from.
+
+**Decision deferred.** The layer is not built. Candidate resolutions: (1) extend the §6 bundle grammar + parser to capture per-unit routing/producer rules, then draw the layer; (2) approximate by aggregating item-level parent/blocker edges to `methodology_context.primary_unit_refs` (labelled an approximation, not contract-derived); (3) narrow §7.11's wording. Not a separate §11 DoD line.
+
+### WN-1b-c — GraphView adopts design-handoff tokens scoped-only
+
+- **Date:** 2026-05-17
+- **Raised by:** Pass 1b (GraphView)
+- **Status:** informational — implementation-shape (CODE_SPEC §18 updated)
+
+**Observation.** The design handoff (`docs/_meta/throughline/mockups/.../README.md`) is a whole-app redesign (tokens, sidebar, settings, every screen) and contains **no graph screen** — graph is a `StubScreen` filed under "apply the new vocabulary as those phases get built out". Pass 1b is narrowly GraphView.
+
+**Choice taken.** GraphView adopts the "Direction A · dark" tokens namespaced (`--gv-*`) and confined to `.graph-view`; the rest of the app keeps the current `styles.css`. Full design-system adoption (theme.css swap, `data-direction`/`data-theme`/`data-density`, settings keys, SSE hot-reload) is a separate, larger redesign pass and is out of Pass 1b scope. Recorded as implementation-shape per the spec-drift policy (CODE_SPEC-only); flagged here so the redesign pass reconciles the scoped tokens into the global system.
