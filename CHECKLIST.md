@@ -334,13 +334,13 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 - [x] **(14a)** Router: user-overridable per-query toggle (`RagQueryRequest.substrate`; `routed_by` 'override'|'heuristic'; test "an explicit substrate overrides the heuristic and is reported as such")
 - [x] **(14a)** RAG response cites sources across substrates (`RagCitation[]` per substrate with ref/label/snippet; degrades to retrieval-only with no key — test "degrades to retrieval-only with no cost when Anthropic is absent")
 - [x] **(14a)** Queries project-scoped by default with cross-project toggle (`RagQueryRequest.cross_project`; text/audit scope; test "is project-scoped by default and broadens under cross_project")
-- [ ] End-of-session retro: user-initiated trigger only
-- [ ] Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window
-- [ ] Retro saved as library note
-- [ ] Retro optionally attached to discussed items
-- [ ] Retro optionally appended to `session-start.md` for next session
-- [ ] Periodic review: configurable interval (default 2 weeks)
-- [ ] Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories
+- [x] **(14b)** End-of-session retro: user-initiated trigger only (`intelligence/retro.ts` `generate`; `POST /api/projects/:id/intelligence/retro`; no scheduler — test "AI-summarises, saves a library note…")
+- [x] **(14b)** Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window (`retro.ts` window = last-retro-or-session-created; items-in-session + windowed `audit_log` + methodology-event filter + `cc_inbox_queue` transcript refs; AI Sonnet, deterministic fallback — tests "AI-summarises…" / "degrades to a deterministic structured summary…")
+- [x] **(14b)** Retro saved as library note (`library.create({ type:'note' })`; test asserts `note?.type === 'note'`)
+- [x] **(14b)** Retro optionally attached to discussed items (`attach_to_items` → `library.attach`; test asserts `listAttachedNotes` includes the entry)
+- [x] **(14b)** Retro optionally appended to `session-start.md` for next session (`append_to_session_start` → `appendFileSync(<repo>/session-start.md)`; test reads the file back)
+- [x] **(14b)** Periodic review: configurable interval (default 2 weeks) (`periodic-review.ts` `intervalDays`: project settings_json → global setting → `DEFAULT_INTERVAL_DAYS=14`; test "honours a per-project interval override…")
+- [x] **(14b)** Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories (`buckets()` no-AI: code/discipline drift, orphaned rules, bundle discipline-drift categories, stale decisions, untouched sessions, longest-held blockers; T-D22 AI only on `synthesize` — tests "hygiene buckets run with no AI…" / "synthesise records the review-opened event even with no AI key")
 - [ ] Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count
 - [ ] Sequencing deprioritises items in primary units failing methodology gates
 - [ ] "Do next" view surfaces unblock-impact summaries

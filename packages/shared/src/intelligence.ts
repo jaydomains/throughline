@@ -44,3 +44,43 @@ export interface RagReindexResult {
   total: number;
   embedder: 'transformers' | 'fallback';
 }
+
+// End-of-session retro (SPEC §7.18; §13 adopted: user-initiated only). Generates a
+// one-page summary from the session window, saves it as a library note, and optionally
+// attaches it to discussed items / appends it to the repo's session-start.md.
+export interface SessionRetroRequest {
+  session_id: string;
+  attach_to_items?: boolean;
+  append_to_session_start?: boolean;
+}
+
+export interface SessionRetroResult {
+  library_entry_id: string;
+  summary: string;
+  // false ⇒ no Anthropic key; a deterministic structured summary was saved instead.
+  used_ai: boolean;
+  attached_item_ids: string[];
+  appended_to_session_start: boolean;
+}
+
+// Periodic review (T-D22). Hygiene queries run on audit/state data with NO AI; AI
+// synthesis fires only when the user opens the synthesise action. Default interval 2
+// weeks; configurable (project settings_json override → global setting → default).
+export interface HygieneBucket {
+  category: string;
+  label: string;
+  count: number;
+  entries: Array<{ ref: string; detail: string }>;
+}
+
+export interface PeriodicReviewResult {
+  interval_days: number;
+  last_reviewed_at: string | null;
+  due: boolean;
+  buckets: HygieneBucket[];
+}
+
+export interface PeriodicReviewSynthesis {
+  answer: string | null;
+  used_ai: boolean;
+}

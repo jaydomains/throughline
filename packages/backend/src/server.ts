@@ -15,6 +15,8 @@ import { createAnthropicRelevanceClassifier } from './methodology/session-start/
 import { registerSessionStartRoutes } from './methodology/session-start/routes.js';
 import { createTextEmbedder } from './intelligence/embeddings.js';
 import { createRagService } from './intelligence/rag.js';
+import { createRetroService } from './intelligence/retro.js';
+import { createPeriodicReviewService } from './intelligence/periodic-review.js';
 import { registerIntelligenceRoutes } from './intelligence/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
@@ -368,6 +370,28 @@ export async function startServer(
     anthropic: anthropicClient,
     embedder: textEmbedder,
   });
+  // Phase 14 — end-of-session retro (SPEC §7.18, user-initiated) and periodic review
+  // (T-D22: hygiene queries with no AI; AI synthesis only on user open). Capability-gated
+  // like the rest of the intelligence layer.
+  const retro = createRetroService({
+    db,
+    projects,
+    sessions,
+    items,
+    library,
+    anthropic: anthropicClient,
+  });
+  const periodicReview = createPeriodicReviewService({
+    db,
+    projects,
+    registry,
+    drift,
+    orphanRules,
+    items,
+    sessions,
+    settings,
+    anthropic: anthropicClient,
+  });
   const notifier = createOsNotifier({
     logger: {
       info: (m) => app.log.info(m),
@@ -424,7 +448,7 @@ export async function startServer(
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
   registerCompanionRoutes(app, projects, companion);
   registerSessionStartRoutes(app, projects, sessionStart);
-  registerIntelligenceRoutes(app, projects, rag);
+  registerIntelligenceRoutes(app, projects, { rag, retro, periodicReview });
   registerGitHubRoutes(app, {
     projects,
     api: githubApi,

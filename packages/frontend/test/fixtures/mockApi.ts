@@ -1102,4 +1102,26 @@ export const mockApi = {
     total: 0,
     embedder: 'fallback' as const,
   })),
+  sessionRetro: vi.fn(
+    async (_projectId: string, req: { session_id: string; attach_to_items?: boolean; append_to_session_start?: boolean }) => ({
+      library_entry_id: 'lib1',
+      summary: `retro for ${req.session_id}`,
+      used_ai: true,
+      attached_item_ids: req.attach_to_items ? ['i1'] : [],
+      appended_to_session_start: req.append_to_session_start === true,
+    }),
+  ),
+  getPeriodicReview: vi.fn(async (_projectId: string) => ({
+    interval_days: 14,
+    last_reviewed_at: null,
+    due: true,
+    buckets: [
+      { category: 'code-drift', label: 'Open code-drift signals', count: 1, entries: [{ ref: 's1', detail: 'tier-2: drift' }] },
+      { category: 'orphaned-rules', label: 'Orphaned verifier rules awaiting cleanup', count: 0, entries: [] },
+    ],
+  })),
+  synthesizePeriodicReview: vi.fn(async (_projectId: string) => ({
+    answer: 'Clean up the tier-2 signal first.',
+    used_ai: true,
+  })),
 };

@@ -55,6 +55,10 @@ import type {
   RagQueryRequest,
   RagQueryResult,
   RagReindexResult,
+  SessionRetroRequest,
+  SessionRetroResult,
+  PeriodicReviewResult,
+  PeriodicReviewSynthesis,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -605,6 +609,20 @@ export const api = {
   reindexText: (projectId: string) =>
     jsonFetch<RagReindexResult>(
       `/api/projects/${pid(projectId)}/intelligence/reindex`,
+      { method: 'POST' },
+    ),
+  sessionRetro: (projectId: string, req: SessionRetroRequest) =>
+    jsonFetch<SessionRetroResult>(`/api/projects/${pid(projectId)}/intelligence/retro`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  getPeriodicReview: (projectId: string) =>
+    jsonFetch<PeriodicReviewResult>(
+      `/api/projects/${pid(projectId)}/intelligence/periodic-review`,
+    ),
+  synthesizePeriodicReview: (projectId: string) =>
+    jsonFetch<PeriodicReviewSynthesis>(
+      `/api/projects/${pid(projectId)}/intelligence/periodic-review/synthesize`,
       { method: 'POST' },
     ),
 };

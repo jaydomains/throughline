@@ -70,4 +70,30 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
     await waitFor(() => expect(screen.getByTestId('rag-reindex-msg')).toBeTruthy());
     expect(screen.getByTestId('rag-reindex-msg').textContent).toContain('fallback');
   });
+
+  it('generates an end-of-session retro with attach + append flags', async () => {
+    renderView();
+    fireEvent.change(screen.getByTestId('retro-session'), { target: { value: 'sess-9' } });
+    fireEvent.click(screen.getByTestId('retro-attach'));
+    fireEvent.click(screen.getByTestId('retro-append'));
+    fireEvent.click(screen.getByTestId('retro-run'));
+    await waitFor(() => expect(screen.getByTestId('retro-msg')).toBeTruthy());
+    expect(mockApi.sessionRetro).toHaveBeenCalledWith('p1', {
+      session_id: 'sess-9',
+      attach_to_items: true,
+      append_to_session_start: true,
+    });
+    expect(screen.getByTestId('retro-msg').textContent).toContain('appended to session-start.md');
+  });
+
+  it('loads periodic-review hygiene buckets and synthesises on demand', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByTestId('periodic-review')).toBeTruthy());
+    expect(screen.getByTestId('review-due').textContent).toContain('due');
+    expect(screen.getByTestId('bucket-code-drift').textContent).toContain('1');
+    fireEvent.click(screen.getByTestId('review-synth'));
+    await waitFor(() => expect(screen.getByTestId('review-synthesis')).toBeTruthy());
+    expect(screen.getByTestId('review-synthesis').textContent).toContain('tier-2');
+    expect(mockApi.synthesizePeriodicReview).toHaveBeenCalledWith('p1');
+  });
 });
