@@ -326,14 +326,14 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 14 — RAG & intelligence layer
 
-- [ ] Text substrate: local embeddings generated incrementally on content edit
-- [ ] Text substrate: top-k cosine retrieval + Anthropic summarisation
-- [ ] Code substrate: routed to Semble per Phase 11
-- [ ] Audit-history substrate: structured queries on the audit log
-- [ ] Router: keyword heuristics first pass
-- [ ] Router: user-overridable per-query toggle
-- [ ] RAG response cites sources across substrates
-- [ ] Queries project-scoped by default with cross-project toggle
+- [x] **(14a)** Text substrate: local embeddings generated incrementally on content edit (`intelligence/embeddings.ts` Transformers.js-or-deterministic-fallback `TextEmbedder`; `intelligence/text-index.ts` `ensureFresh` re-embeds only content-hash-changed entities + prunes dead vectors; migration `0010` adds `project_id`/`content_hash`/`chunk_text`; test "reindex is incremental: stale on first pass, fresh (0) on the next")
+- [x] **(14a)** Text substrate: top-k cosine retrieval + Anthropic summarisation (`text-index.ts` `search` cosine top-k; `rag.ts` `textQuery`→`synthesise` Sonnet; test "retrieves over items + library and synthesises with citations + cost when AI is on")
+- [x] **(14a)** Code substrate: routed to Semble per Phase 11 (`rag.ts` `codeQuery`→`semble.codeQa`; test "code substrate maps Semble sources to code citations")
+- [x] **(14a)** Audit-history substrate: structured queries on the audit log (`rag.ts` `auditQuery` token-LIKE SQL over `audit_log`; test "audit substrate returns structured citations scoped to the project")
+- [x] **(14a)** Router: keyword heuristics first pass (`rag.ts` `routeQuery` code/audit/text regexes; test "keyword heuristics route code / audit / text")
+- [x] **(14a)** Router: user-overridable per-query toggle (`RagQueryRequest.substrate`; `routed_by` 'override'|'heuristic'; test "an explicit substrate overrides the heuristic and is reported as such")
+- [x] **(14a)** RAG response cites sources across substrates (`RagCitation[]` per substrate with ref/label/snippet; degrades to retrieval-only with no key — test "degrades to retrieval-only with no cost when Anthropic is absent")
+- [x] **(14a)** Queries project-scoped by default with cross-project toggle (`RagQueryRequest.cross_project`; text/audit scope; test "is project-scoped by default and broadens under cross_project")
 - [ ] End-of-session retro: user-initiated trigger only
 - [ ] Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window
 - [ ] Retro saved as library note

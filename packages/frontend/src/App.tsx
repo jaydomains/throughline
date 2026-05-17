@@ -24,6 +24,7 @@ import { SessionsIndex } from './views/SessionsIndex.js';
 import { SessionView } from './views/SessionView.js';
 import { TreeView } from './views/TreeView.js';
 import { DriftInbox } from './views/DriftInbox.js';
+import { IntelligenceView } from './views/IntelligenceView.js';
 import { api } from './api.js';
 
 function activeProjectIdFromPath(path: string): string | null {
@@ -170,6 +171,7 @@ function AppInner() {
           <Route path="/projects/:id/graph" element={<GraphView />} />
           <Route path="/projects/:id/library" element={<LibraryView />} />
           <Route path="/projects/:id/directives" element={<DirectivesView />} />
+          <Route path="/projects/:id/intelligence" element={<IntelligenceView />} />
           <Route path="/projects/:id/drift-inbox" element={<DriftInbox />} />
           <Route
             path="/projects/:id/methodology-gates"

@@ -52,6 +52,9 @@ import type {
   ItemCodeRef,
   ConfirmCodeRefsRequest,
   CodeQaResult,
+  RagQueryRequest,
+  RagQueryResult,
+  RagReindexResult,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -591,5 +594,17 @@ export const api = {
     jsonFetch<{ ok: boolean }>(
       `/api/projects/${pid(projectId)}/github/auto-reconcile/approve`,
       { method: 'POST', body: JSON.stringify({ run_id: runId }) },
+    ),
+
+  // Phase 14 — personal RAG (T-D25, C-D2; SPEC §7.18).
+  ragQuery: (projectId: string, req: RagQueryRequest) =>
+    jsonFetch<RagQueryResult>(`/api/projects/${pid(projectId)}/intelligence/rag`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  reindexText: (projectId: string) =>
+    jsonFetch<RagReindexResult>(
+      `/api/projects/${pid(projectId)}/intelligence/reindex`,
+      { method: 'POST' },
     ),
 };

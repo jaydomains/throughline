@@ -1087,4 +1087,19 @@ export const mockApi = {
       } as GateFiring,
     }),
   ),
+
+  // Phase 14 — personal RAG (T-D25). Default to a text answer with one citation.
+  ragQuery: vi.fn(async (_projectId: string, req: { query: string; substrate?: string | null }) => ({
+    substrate: req.substrate ?? 'text',
+    routed_by: req.substrate ? 'override' : 'heuristic',
+    answer: `mock answer for "${req.query}"`,
+    citations: [{ substrate: req.substrate ?? 'text', ref: 'item:1', label: 'mock item', snippet: 'snip' }],
+    used_ai: true,
+    cross_project: false,
+  })),
+  reindexText: vi.fn(async (_projectId: string) => ({
+    reembedded: 0,
+    total: 0,
+    embedder: 'fallback' as const,
+  })),
 };
