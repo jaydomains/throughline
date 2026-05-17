@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
@@ -280,6 +280,40 @@ describe('Phase 13 — session-start scaffolding (C-D9, T-D12)', () => {
       const third = await s.engine.generate(s.project.id, null);
       expect(third.cached).toBe(false);
       expect(classifier.calls).toBe(2);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('cache invalidates when the resolved template changes without a version bump', async () => {
+    const classifier = stubClassifier();
+    const s = await setup('test-bundle', classifier);
+    try {
+      s.items.create({ project_id: s.project.id, title: 'task one', status: 'open' });
+      const first = await s.engine.generate(s.project.id, null);
+      expect(first.cached).toBe(false);
+
+      const cached = await s.engine.generate(s.project.id, null);
+      expect(cached.cached).toBe(true);
+
+      // Edit the standard session-start template in place — same identity.version — and
+      // hot-reload the bundle, as the loader's file watcher would in development.
+      const bundleFile = join(
+        s.backend.config.methodologiesDir,
+        'test-bundle',
+        'bundle.md',
+      );
+      const edited = readFileSync(bundleFile, 'utf8').replace(
+        'You are working on a test-bundle-bound component in standard mode.',
+        'STANDARD MODE — REWORDED PREAMBLE.',
+      );
+      writeFileSync(bundleFile, edited);
+      s.backend.registry.reload('test-bundle');
+
+      const afterEdit = await s.engine.generate(s.project.id, null);
+      expect(afterEdit.cached).toBe(false);
+      expect(afterEdit.prompt).toContain('STANDARD MODE — REWORDED PREAMBLE.');
+      expect(afterEdit.prompt).not.toBe(first.prompt);
     } finally {
       await s.cleanup();
     }

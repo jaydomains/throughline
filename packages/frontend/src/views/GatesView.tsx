@@ -582,8 +582,19 @@ function SessionStart({ projectId }: { projectId: string | undefined }) {
 
   const copy = useCallback(async () => {
     if (!result) return;
-    await navigator.clipboard.writeText(result.prompt);
-    setCopied(true);
+    try {
+      await navigator.clipboard.writeText(result.prompt);
+      setCopied(true);
+      setError(null);
+    } catch (e) {
+      // clipboard.writeText rejects on focus loss, denied permission, or a
+      // non-secure context — surface it so the user doesn't believe a failed
+      // copy succeeded.
+      setCopied(false);
+      setError(
+        `Copy failed (${e instanceof Error ? e.message : String(e)}). Select the prompt and copy manually.`,
+      );
+    }
   }, [result]);
 
   if (!projectId) return null;

@@ -212,9 +212,16 @@ export function createSessionStartEngine(
     const dependencies = crossUnitDependencies(all);
     const blocks = includeBlocks(projectId);
 
+    const template = templateFor(bundle, mode);
+
     const fp = createHash('sha256');
     fp.update(`mode:${mode}\n`);
     fp.update(`bundle:${bundle.identity.name}@${bundle.identity.version}\n`);
+    // Hash the resolved template body, not just the bundle version: bundle files
+    // hot-reload (loader watches them) and template edits during development rarely
+    // come with a version bump, so a version-only key would serve a stale prompt
+    // rendered from the prior template.
+    fp.update(`tpl:${template}\n`);
     // Hash the exact fields that reach the rendered prompt (not updated_at, whose
     // millisecond granularity can collide within a request) so a stale render can never
     // be served from cache.
@@ -231,7 +238,7 @@ export function createSessionStartEngine(
 
     return {
       mode,
-      template: templateFor(bundle, mode),
+      template,
       openItems,
       decisions,
       anchors,
