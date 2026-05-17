@@ -30,6 +30,9 @@ export interface CreateProjectInput {
 export interface UpdateProjectInput {
   name?: string;
   repo_path?: string;
+  // Phase 15 — the settings panel exposes the per-project methodology bundle binding
+  // (SPEC §7.25). Rebinding re-registers any external bundle watch and is audit-logged.
+  bundle_id?: string;
   bundle_path?: string | null;
   github_owner?: string | null;
   github_repo?: string | null;

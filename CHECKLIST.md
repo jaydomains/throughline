@@ -355,31 +355,31 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 15 — Backup, cost meter, settings polish, hygiene
 
-- [ ] Manual export downloads SQLite file as timestamped copy
-- [ ] API keys excluded from export
-- [ ] `methodologies/` directory excluded from export (ships with install)
-- [ ] Header backup indicator turns red after threshold days (default 7)
-- [ ] Auto-copy target path setting works
-- [ ] Auto-copy fires on schedule when target set
-- [ ] Cost meter visible in header at all times
-- [ ] Cost meter breaks down by feature category
-- [ ] Cost meter shows day / week / month
-- [ ] Cost meter scopes per active project with global rollup option
-- [ ] Daily threshold warning (configurable; default = no threshold)
-- [ ] Orphaned rules panel functional in settings
-- [ ] Settings panel exposes every knob in SPEC §7.25
-- [ ] Settings: Anthropic API key
-- [ ] Settings: GitHub PAT
-- [ ] Settings: per-project local repo path
-- [ ] Settings: per-project methodology bundle binding (default freeform)
-- [ ] Settings: default model selector + per-feature overrides
-- [ ] Settings: stale threshold
-- [ ] Settings: backup nudge interval + auto-copy target
-- [ ] Settings: periodic review interval
-- [ ] Settings: GitHub default `owner/repo` per project and per-session branch fields
-- [ ] Settings: Claude Code inbox directory + archive retention
-- [ ] Settings: OS notification permission grant button
-- [ ] Settings: cost meter daily threshold
+- [x] Manual export downloads SQLite file as timestamped copy (`POST /api/backup/export`; `backup/service.ts` online `db.backup()` snapshot, `backup/routes.ts` streams `throughline-backup-<ISO>.sqlite`; `api.exportBackup` triggers the browser download; `backup.test.ts`, `server.test.ts`)
+- [x] API keys excluded from export (T-D4: keys live in `secrets.json`, never in the datastore — excluded by construction; `backup.test.ts` asserts the snapshot bytes contain no secret)
+- [x] `methodologies/` directory excluded from export (ships with install) (C-D3: separate install dir, not part of the SQLite datastore the snapshot copies)
+- [x] Header backup indicator turns red after threshold days (default 7) (`useBackupStatus` + `Header.tsx` backup pill; `backup/service.ts` `status()` `stale`; default `backup_threshold_days=7` per CODE_SPEC §17; `backup.test.ts`)
+- [x] Auto-copy target path setting works (`auto_copy_target_path` setting; `backup/service.ts` `autoCopy()`; Settings panel surfaces a local-only warning when unset; `backup.test.ts`)
+- [x] Auto-copy fires on schedule when target set (`backup/scheduler.ts` tick, due per `backup_nudge_interval_days`; wired in `server.ts`; `backup.test.ts` scheduler tick)
+- [x] Cost meter visible in header at all times (`Header.tsx` cost pill via `useCostMeter`, always rendered)
+- [x] Cost meter breaks down by feature category (`cost/summary.ts` `by_feature`; `cost-summary.test.ts`)
+- [x] Cost meter shows day / week / month (`cost/summary.ts` day=UTC-calendar-day, week/month=rolling 7/30d per §13-adopted rolling-window convention; `cost-summary.test.ts`)
+- [x] Cost meter scopes per active project with global rollup option (`scope=project|global`; header uses active project, settings shows global; `cost-summary.test.ts`)
+- [x] Daily threshold warning (configurable; default = no threshold) (`cost_daily_threshold_usd`, default `null` per ROADMAP §13 / CODE_SPEC Q#9; `daily_threshold_exceeded` flag + header danger styling; `cost-summary.test.ts`)
+- [x] Orphaned rules panel functional in settings (`SettingsView.tsx` `OrphanRulesSection`; backend `github/orphan-rules.ts` from Phase 10; list/dismiss/draft-cleanup-PR wired; `settingsView.test.tsx`)
+- [x] Settings panel exposes every knob in SPEC §7.25 (`views/SettingsView.tsx` at `/settings`, header gear)
+- [x] Settings: Anthropic API key (`secrets/routes.ts` write-only; `SecretsSection`; presence-only readback; `backup.test.ts`, `server.test.ts`, `settingsView.test.tsx`)
+- [x] Settings: GitHub PAT (same write-only secrets path)
+- [x] Settings: per-project local repo path (`ProjectSection` → `api.updateProject`)
+- [x] Settings: per-project methodology bundle binding (default freeform) (`bundle_id` added to `UpdateProjectInput` + `projects.update` rebind/re-register/audit; `ProjectSection` bundle select; `settingsView.test.tsx`)
+- [x] Settings: default model selector + per-feature overrides (`ModelSection` persists `default_model` + `model_override_<feature>`; override **consumption** across AI factories is a documented Phase-16 follow-up — see handover Drift Flags)
+- [x] Settings: stale threshold (`stale_threshold_days`; `NumberSetting`)
+- [x] Settings: backup nudge interval + auto-copy target (`backup_nudge_interval_days` + `auto_copy_target_path` in `BackupSection`)
+- [x] Settings: periodic review interval (`periodic_review_interval_days`; consumed by Phase-14 periodic-review service)
+- [x] Settings: GitHub default `owner/repo` per project and per-session branch fields (`ProjectSection` owner/repo; per-session branch is set on each session in the Sessions view — surfaced as a hint)
+- [x] Settings: Claude Code inbox directory + archive retention (archive retention = `archive_retention_days`, default 30, consumed by the `backup/scheduler.ts` prune — closes the CHECKLIST §Phase 6c deferral; inbox directory is a `THROUGHLINE_*` env/config knob (`config.ts`), shown read-only in the panel as documented in the handover)
+- [x] Settings: OS notification permission grant button (`notifier/routes.ts` `POST /api/notifications/test` fires through the T-D32 capability layer + records `os_notifications_enabled`; `NotificationsSection`; `settingsView.test.tsx`)
+- [x] Settings: cost meter daily threshold (`cost_daily_threshold_usd`; `settingsView.test.tsx`)
 
 ---
 

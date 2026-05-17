@@ -208,3 +208,70 @@ describe('GET /events (SSE)', () => {
     expect(buf).toMatch(/data: \{.*"at":/);
   });
 });
+
+describe('Phase 15 — backup / cost / secrets routes', () => {
+  let run: TestRun;
+  beforeEach(async () => {
+    run = await makeRun();
+  });
+  afterEach(async () => {
+    await run.cleanup();
+  });
+
+  it('GET /api/backup/status reports never-backed-up as stale', async () => {
+    const res = await fetch(`${run.server.url}/api/backup/status`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      last_backup_at: string | null;
+      stale: boolean;
+      threshold_days: number;
+      auto_copy_target_path: string | null;
+    };
+    expect(body.last_backup_at).toBeNull();
+    expect(body.stale).toBe(true);
+    expect(body.threshold_days).toBe(7);
+    expect(body.auto_copy_target_path).toBeNull();
+  });
+
+  it('POST /api/backup/export streams a SQLite snapshot download', async () => {
+    const res = await fetch(`${run.server.url}/api/backup/export`, { method: 'POST' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-disposition') ?? '').toMatch(
+      /attachment; filename="throughline-backup-.*\.sqlite"/,
+    );
+    const buf = Buffer.from(await res.arrayBuffer());
+    // SQLite file header magic.
+    expect(buf.subarray(0, 16).toString('utf8')).toContain('SQLite format 3');
+    const status = await (await fetch(`${run.server.url}/api/backup/status`)).json();
+    expect((status as { last_backup_at: string | null }).last_backup_at).not.toBeNull();
+  });
+
+  it('GET /api/cost/summary returns zeroed windows on a fresh datastore', async () => {
+    const res = await fetch(`${run.server.url}/api/cost/summary?scope=global`);
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      scope: string;
+      day: { usd_estimate: number };
+      daily_threshold_usd: number | null;
+    };
+    expect(body.scope).toBe('global');
+    expect(body.day.usd_estimate).toBe(0);
+    expect(body.daily_threshold_usd).toBeNull();
+  });
+
+  it('secrets are write-only: PUT then GET returns presence booleans only', async () => {
+    let res = await fetch(`${run.server.url}/api/secrets`);
+    expect(await res.json()).toEqual({ anthropic_api_key: false, github_pat: false });
+
+    res = await fetch(`${run.server.url}/api/secrets`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ anthropic_api_key: 'sk-xyz' }),
+    });
+    expect(res.status).toBe(200);
+    const after = (await res.json()) as Record<string, unknown>;
+    expect(after).toEqual({ anthropic_api_key: true, github_pat: false });
+    // The key value itself is never echoed.
+    expect(JSON.stringify(after)).not.toContain('sk-xyz');
+  });
+});

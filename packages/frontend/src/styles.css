@@ -884,3 +884,21 @@ button.directive-badge { cursor: pointer; }
 .intelligence-view .rag-citations { list-style: none; padding: 0; margin: 6px 0; }
 .intelligence-view .rag-citations li { padding: 4px 0; }
 .intelligence-view .rag-error { color: #b00020; margin: 6px 0; }
+
+/* Phase 15 — settings panel (SPEC §7.25) + header cost/backup pills. */
+.settings-view { max-width: 760px; margin: 0 auto; padding: 16px; }
+.settings-view h1 { margin: 0 0 12px; }
+.settings-section { border: 1px solid var(--bg-soft); border-radius: 6px; padding: 12px 16px; margin: 12px 0; background: var(--bg-elev); }
+.settings-section h2 { font-size: 14px; margin: 0 0 10px; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.settings-row { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+.settings-row > span:first-child { flex: 1; font-size: 13px; }
+.settings-row input, .settings-row select { background: var(--bg-soft); color: var(--fg); border: 1px solid var(--bg-soft); border-radius: 4px; padding: 4px 6px; min-width: 220px; }
+.settings-row em { color: var(--fg-dim); font-style: normal; font-size: 12px; }
+.settings-inline { display: flex; gap: 6px; align-items: center; }
+.settings-hint { font-size: 12px; color: var(--fg-dim); margin: 6px 0; }
+.settings-msg { color: var(--ok); font-size: 13px; }
+.settings-warning { color: var(--warn); font-size: 13px; border: 1px solid var(--warn); border-radius: 4px; padding: 8px 10px; margin: 8px 0; }
+.orphan-list { list-style: none; padding: 0; margin: 6px 0; }
+.orphan-list li { display: flex; align-items: center; gap: 8px; padding: 6px 0; flex-wrap: wrap; }
+.header-pill.cost-meter.danger { color: var(--danger); border-color: var(--danger); }
+.header-pill.settings-link { font-size: 14px; }
