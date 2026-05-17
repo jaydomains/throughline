@@ -1,6 +1,6 @@
 import { copyFileSync, existsSync, mkdirSync, readdirSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, isAbsolute, join, normalize, sep } from 'node:path';
 import type { BackupStatus } from '@throughline/shared';
 import type Database from 'better-sqlite3';
 import type { DB } from '../db/index.js';
@@ -11,6 +11,38 @@ import { appendAudit } from '../audit/log.js';
 // consistent online copy of it. API keys (T-D4) live in secrets.json and the
 // install-shipped methodologies/ directory is outside the datastore, so neither is ever
 // part of a snapshot by construction — there is nothing to filter out.
+
+export class InvalidAutoCopyTargetError extends Error {
+  constructor(public target: string) {
+    super(`invalid auto_copy_target_path "${target}"`);
+  }
+}
+
+// `auto_copy_target_path` is arbitrary user input from PUT /api/settings and is fed to
+// mkdirSync/copyFileSync. Mirror the C-D14 bundle_path convention: require a normalized
+// absolute path with no `..` traversal, and additionally refuse the sensitive system
+// roots a backup file has no business writing into. External drives, network shares,
+// synced folders, and the user's home are all still allowed (that's the point of an
+// off-disk target) — only OS-owned trees are rejected.
+const FORBIDDEN_ROOTS = ['/etc', '/bin', '/sbin', '/boot', '/dev', '/proc', '/sys', '/usr'];
+
+export function validateAutoCopyTarget(target: string): string {
+  if (typeof target !== 'string' || target.trim().length === 0) {
+    throw new InvalidAutoCopyTargetError(String(target));
+  }
+  // Check the raw input for `..` before normalizing — normalize() collapses traversal,
+  // which would otherwise smuggle a `..`-derived path past the check (C-D14 convention).
+  if (!isAbsolute(target) || target.split(/[/\\]/).includes('..')) {
+    throw new InvalidAutoCopyTargetError(target);
+  }
+  const norm = normalize(target);
+  for (const root of FORBIDDEN_ROOTS) {
+    if (norm === root || norm.startsWith(root + sep) || norm.startsWith(root + '/')) {
+      throw new InvalidAutoCopyTargetError(target);
+    }
+  }
+  return norm;
+}
 
 export const DEFAULT_BACKUP_THRESHOLD_DAYS = 7;
 export const DEFAULT_ARCHIVE_RETENTION_DAYS = 30;
@@ -125,8 +157,12 @@ export function createBackupService(opts: CreateBackupServiceOptions): BackupSer
     },
 
     async autoCopy() {
-      const target = autoCopyTarget();
-      if (!target) return false;
+      const configured = autoCopyTarget();
+      if (!configured) return false;
+      // Validate before any filesystem use — a misconfigured/malicious value must not
+      // reach mkdirSync/copyFileSync. Throws InvalidAutoCopyTargetError on a bad path;
+      // the scheduler logs it and the manual route surfaces it.
+      const target = validateAutoCopyTarget(configured);
       mkdirSync(dirname(target), { recursive: true });
       // Stage to a temp file then copy to the target so a crash mid-backup can't leave
       // a truncated file at the user's configured destination.

@@ -7,7 +7,14 @@ export function registerBackupRoutes(app: FastifyInstance, backup: BackupService
 
   app.post('/api/backup/export', async (_req, reply) => {
     const snap = await backup.createSnapshot();
-    const stream = createReadStream(snap.path);
+    let stream;
+    try {
+      stream = createReadStream(snap.path);
+    } catch (err) {
+      // Stream construction failed — the temp snapshot would otherwise orphan.
+      snap.cleanup();
+      throw err;
+    }
     // Clean the temp snapshot once the response is fully flushed (or the client aborts).
     stream.on('close', snap.cleanup);
     stream.on('error', snap.cleanup);

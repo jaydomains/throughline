@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { CostSummary } from '@throughline/shared';
 import { api } from '../api.js';
 
@@ -31,15 +31,16 @@ export function useCostMeter(
     };
   }, [activeProjectId, intervalMs]);
 
-  return {
-    summary,
-    refresh: () => {
-      api
-        .getCostSummary(
-          activeProjectId ? { projectId: activeProjectId, scope: 'project' } : { scope: 'global' },
-        )
-        .then(setSummary)
-        .catch(() => {});
-    },
-  };
+  // Re-created whenever activeProjectId changes so a held reference can't query with a
+  // stale project after a project switch.
+  const refresh = useCallback(() => {
+    api
+      .getCostSummary(
+        activeProjectId ? { projectId: activeProjectId, scope: 'project' } : { scope: 'global' },
+      )
+      .then(setSummary)
+      .catch(() => {});
+  }, [activeProjectId]);
+
+  return { summary, refresh };
 }

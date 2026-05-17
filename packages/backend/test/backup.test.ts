@@ -4,7 +4,11 @@ import { join } from 'node:path';
 import { openDb } from '../src/db/index.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { createSettingsService } from '../src/settings/service.js';
-import { createBackupService } from '../src/backup/service.js';
+import {
+  createBackupService,
+  validateAutoCopyTarget,
+  InvalidAutoCopyTargetError,
+} from '../src/backup/service.js';
 import { createBackupScheduler } from '../src/backup/scheduler.js';
 import { writeSecrets, secretsPresence } from '../src/secrets/store.js';
 import { makeTmpConfig } from './helpers.js';
@@ -144,6 +148,44 @@ describe('backup service (T-D28)', () => {
       expect(existsSync(join(cfg.archiveDir, oldDay))).toBe(false);
       expect(existsSync(join(cfg.archiveDir, today))).toBe(true);
       expect(existsSync(join(cfg.archiveDir, 'not-a-date'))).toBe(true);
+      db.close();
+    } finally {
+      cfg.cleanup();
+    }
+  });
+
+  it('rejects traversal / relative / system-dir auto-copy targets', async () => {
+    expect(() => validateAutoCopyTarget('relative/path.sqlite')).toThrow(
+      InvalidAutoCopyTargetError,
+    );
+    expect(() => validateAutoCopyTarget('/backups/../etc/passwd')).toThrow(
+      InvalidAutoCopyTargetError,
+    );
+    expect(() => validateAutoCopyTarget('/etc/throughline.sqlite')).toThrow(
+      InvalidAutoCopyTargetError,
+    );
+    expect(() => validateAutoCopyTarget('/usr/local/x.sqlite')).toThrow(
+      InvalidAutoCopyTargetError,
+    );
+    expect(() => validateAutoCopyTarget('')).toThrow(InvalidAutoCopyTargetError);
+    // Legitimate off-disk targets (external drive, home) are accepted.
+    expect(validateAutoCopyTarget('/Volumes/Backup/throughline.sqlite')).toBe(
+      '/Volumes/Backup/throughline.sqlite',
+    );
+
+    const cfg = makeTmpConfig();
+    try {
+      const db = openDb(cfg.dbPath);
+      runMigrations(db);
+      const settings = createSettingsService(db);
+      const backup = createBackupService({
+        db,
+        settings,
+        dbPath: cfg.dbPath,
+        archiveDir: cfg.archiveDir,
+      });
+      settings.set('auto_copy_target_path', '/etc/throughline.sqlite');
+      await expect(backup.autoCopy()).rejects.toBeInstanceOf(InvalidAutoCopyTargetError);
       db.close();
     } finally {
       cfg.cleanup();
