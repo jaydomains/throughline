@@ -28,6 +28,12 @@ import { createProjectsService } from './projects/service.js';
 import { registerProjectRoutes } from './projects/routes.js';
 import { registerSettingsRoutes } from './settings/routes.js';
 import { createSettingsService } from './settings/service.js';
+import { registerSecretsRoutes } from './secrets/routes.js';
+import { createBackupService } from './backup/service.js';
+import { createBackupScheduler, type BackupScheduler } from './backup/scheduler.js';
+import { registerBackupRoutes } from './backup/routes.js';
+import { createCostSummaryService } from './cost/summary.js';
+import { registerCostRoutes } from './cost/routes.js';
 import { createItemsService } from './items/service.js';
 import { registerItemRoutes } from './items/routes.js';
 import { createSessionsService } from './sessions/service.js';
@@ -71,6 +77,7 @@ import { createDirectivesService } from './directives/service.js';
 import { registerDirectiveRoutes } from './directives/routes.js';
 import { createReminderScheduler, type ReminderScheduler } from './directives/scheduler.js';
 import { createOsNotifier } from './notifier/index.js';
+import { registerNotifierRoutes } from './notifier/routes.js';
 import {
   createAnthropicSummariser,
   createHeuristicSummariser,
@@ -97,6 +104,7 @@ export interface ServerHandle {
   inboxWatcher: InboxWatcher;
   reminderScheduler: ReminderScheduler;
   mdIngestWatcher: MdIngestWatcher;
+  backupScheduler: BackupScheduler;
   url: string;
   close: () => Promise<void>;
 }
@@ -145,6 +153,23 @@ export async function startServer(
     if (p.bundle_path) registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path);
   }
   const settings = createSettingsService(db);
+  // Phase 15 — backup (T-D28, CODE_SPEC §17) + cost meter (T-D29, CODE_SPEC §11).
+  const backup = createBackupService({
+    db,
+    settings,
+    dbPath: config.dbPath,
+    archiveDir: config.archiveDir,
+  });
+  const backupScheduler = createBackupScheduler({
+    service: backup,
+    settings,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+  const costSummary = createCostSummaryService(db, settings);
   const sessions = createSessionsService(db, projects);
   const drift = createDriftService(db);
 
@@ -494,6 +519,10 @@ export async function startServer(
   registerItemRoutes(app, projects, items);
   registerAuditRoutes(app, db);
   registerSettingsRoutes(app, settings);
+  registerSecretsRoutes(app, config.secretsPath);
+  registerBackupRoutes(app, backup);
+  registerCostRoutes(app, costSummary);
+  registerNotifierRoutes(app, notifier, settings);
   registerDumpZoneRoutes(app, projects, dumpZone);
   registerLibraryRoutes(app, projects, library);
   registerScratchpadRoutes(app, projects, scratchpad);
@@ -507,6 +536,7 @@ export async function startServer(
   if (serveFrontend) registerWebRoutes(app);
 
   reminderScheduler.start();
+  backupScheduler.start();
   mdIngestWatcher.start();
   disciplineDrift.start();
   githubPoller.start();
@@ -557,9 +587,11 @@ export async function startServer(
     inboxWatcher,
     reminderScheduler,
     mdIngestWatcher,
+    backupScheduler,
     url,
     close: async () => {
       reminderScheduler.stop();
+      backupScheduler.stop();
       await app.close();
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();

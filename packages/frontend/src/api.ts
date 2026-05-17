@@ -1,6 +1,11 @@
 import type {
   ApplyRequest,
   ApplyResult,
+  BackupStatus,
+  CostSummary,
+  SecretsPresenceResult,
+  SecretsWriteInput,
+  UpdateProjectInput,
   AttachedItemSummary,
   AuditEntry,
   CodeTodoScanResult,
@@ -111,7 +116,55 @@ export const api = {
     jsonFetch<{ methodologies: MethodologySummary[] }>('/api/methodologies'),
   switchProject: (id: string) =>
     jsonFetch<{ ok: true }>(`/api/projects/${pid(id)}/switch`, { method: 'POST' }),
+  updateProject: (id: string, input: UpdateProjectInput) =>
+    jsonFetch<{ project: Project }>(`/api/projects/${pid(id)}`, {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    }),
   getSettings: () => jsonFetch<{ settings: Record<string, unknown> }>('/api/settings'),
+  updateSettings: (entries: Record<string, unknown>) =>
+    jsonFetch<{ settings: Record<string, unknown> }>('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify(entries),
+    }),
+
+  // Phase 15 — secrets (T-D4: write-only from the browser; never read back).
+  getSecrets: () => jsonFetch<SecretsPresenceResult>('/api/secrets'),
+  updateSecrets: (input: SecretsWriteInput) =>
+    jsonFetch<SecretsPresenceResult>('/api/secrets', {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    }),
+
+  testNotification: () =>
+    jsonFetch<{ ok: true }>('/api/notifications/test', { method: 'POST' }),
+
+  // Phase 15 — backup (T-D28) + cost meter (T-D29).
+  getBackupStatus: () => jsonFetch<BackupStatus>('/api/backup/status'),
+  exportBackup: async () => {
+    const res = await fetch('/api/backup/export', { method: 'POST' });
+    if (!res.ok) throw new Error(`backup export failed: ${res.status}`);
+    const disp = res.headers.get('content-disposition') ?? '';
+    const m = /filename="([^"]+)"/.exec(disp);
+    const filename = m ? m[1]! : 'throughline-backup.sqlite';
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    return { filename };
+  },
+  getCostSummary: (opts: { projectId?: string | null; scope?: 'project' | 'global' } = {}) => {
+    const params = new URLSearchParams();
+    if (opts.projectId) params.set('project_id', opts.projectId);
+    if (opts.scope) params.set('scope', opts.scope);
+    const qs = params.toString();
+    return jsonFetch<CostSummary>(`/api/cost/summary${qs ? `?${qs}` : ''}`);
+  },
 
   getPolicy: (projectId: string) =>
     jsonFetch<{ policy: ItemPolicy }>(`/api/projects/${pid(projectId)}/policy`),

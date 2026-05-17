@@ -65,6 +65,7 @@ export function registerProjectRoutes(
     Body: {
       name?: string;
       repo_path?: string;
+      bundle_id?: string;
       bundle_path?: string | null;
       github_owner?: string | null;
       github_repo?: string | null;

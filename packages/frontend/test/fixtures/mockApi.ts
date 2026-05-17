@@ -246,6 +246,35 @@ export const mockApi = {
   listMethodologies: vi.fn(async () => ({ methodologies: [] })),
   switchProject: vi.fn(async () => ({ ok: true as const })),
   getSettings: vi.fn(async () => ({ settings: state.settings })),
+  updateSettings: vi.fn(async (entries: Record<string, unknown>) => {
+    state.settings = { ...state.settings, ...entries };
+    return { settings: state.settings };
+  }),
+  updateProject: vi.fn(async (pId: string, input: Record<string, unknown>) => {
+    const p = state.projects.find((x) => x.id === pId)!;
+    Object.assign(p, input, { updated_at: new Date().toISOString() });
+    return { project: p };
+  }),
+  getSecrets: vi.fn(async () => ({ anthropic_api_key: false, github_pat: false })),
+  updateSecrets: vi.fn(async () => ({ anthropic_api_key: true, github_pat: false })),
+  testNotification: vi.fn(async () => ({ ok: true as const })),
+  getBackupStatus: vi.fn(async () => ({
+    last_backup_at: null,
+    threshold_days: 7,
+    stale: true,
+    auto_copy_target_path: null,
+    last_auto_copy_at: null,
+  })),
+  exportBackup: vi.fn(async () => ({ filename: 'throughline-backup-test.sqlite' })),
+  getCostSummary: vi.fn(async () => ({
+    scope: 'global' as const,
+    project_id: null,
+    day: { usd_estimate: 0, input_tokens: 0, output_tokens: 0, call_count: 0, by_feature: [] },
+    week: { usd_estimate: 0, input_tokens: 0, output_tokens: 0, call_count: 0, by_feature: [] },
+    month: { usd_estimate: 0, input_tokens: 0, output_tokens: 0, call_count: 0, by_feature: [] },
+    daily_threshold_usd: null,
+    daily_threshold_exceeded: false,
+  })),
   getPolicy: vi.fn(async (_projectId: string) => ({ policy: FREEFORM_POLICY })),
   getModules: vi.fn(async (_projectId: string) => ({
     primary_unit_label: null as string | null,

@@ -4,6 +4,8 @@ import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
 import { useDirectives } from '../hooks/useDirectives.js';
 import { useDriftInbox } from '../hooks/useDriftInbox.js';
+import { useCostMeter } from '../hooks/useCostMeter.js';
+import { useBackupStatus } from '../hooks/useBackupStatus.js';
 import { InboxStatus } from './InboxStatus.js';
 import { ProjectSwitcher } from './ProjectSwitcher.js';
 import { Scratchpad } from './Scratchpad.js';
@@ -30,6 +32,27 @@ export function Header({
   const bundle = activeProject ? findBundle(bundles, activeProject.bundle_id) : undefined;
   const { directives } = useDirectives(activeProjectId);
   const { inbox } = useDriftInbox(activeProjectId);
+  const { summary: cost } = useCostMeter(activeProjectId);
+  const { status: backup } = useBackupStatus();
+
+  const todaySpend = cost ? cost.day.usd_estimate : 0;
+  const costOver = cost?.daily_threshold_exceeded ?? false;
+  const costTitle = cost
+    ? `Today $${cost.day.usd_estimate.toFixed(2)} · week $${cost.week.usd_estimate.toFixed(
+        2,
+      )} · month $${cost.month.usd_estimate.toFixed(2)}${
+        cost.daily_threshold_usd !== null
+          ? ` · daily limit $${cost.daily_threshold_usd.toFixed(2)}`
+          : ''
+      }`
+    : 'Cost meter — loading';
+  const backupTitle = backup
+    ? backup.last_backup_at
+      ? `Last backup ${new Date(backup.last_backup_at).toLocaleString()}${
+          backup.stale ? ` · over ${backup.threshold_days}d — back up now` : ''
+        }${backup.auto_copy_target_path ? '' : ' · no off-disk auto-copy configured'}`
+      : 'No backup yet — export or configure auto-copy'
+    : 'Backup status — loading';
 
   return (
     <header className="header" role="banner">
@@ -78,13 +101,33 @@ export function Header({
 
       <InboxStatus />
 
-      <span className="header-pill" title="Cost meter placeholder; wires up in Phase 15">
-        $0.00 today
-      </span>
+      <Link
+        to="/settings"
+        className={`header-pill cost-meter${costOver ? ' danger' : ''}`}
+        title={costTitle}
+        data-testid="cost-meter"
+      >
+        ${todaySpend.toFixed(2)} today
+      </Link>
 
-      <span className="header-pill" title="Backup indicator placeholder; wires up in Phase 15">
-        <span className="dot" /> backup
-      </span>
+      <Link
+        to="/settings"
+        className="header-pill backup-indicator"
+        title={backupTitle}
+        data-testid="backup-indicator"
+      >
+        <span className={`dot ${backup && !backup.stale ? 'ok' : 'danger'}`} /> backup
+      </Link>
+
+      <Link
+        to="/settings"
+        className="header-pill settings-link"
+        title="Settings (SPEC §7.25)"
+        aria-label="Open settings"
+        data-testid="settings-link"
+      >
+        ⚙
+      </Link>
 
       <button
         type="button"

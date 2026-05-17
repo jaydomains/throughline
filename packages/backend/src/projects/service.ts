@@ -133,17 +133,20 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       const before = this.get(id);
       if (!before) throw new Error(`project ${id} not found`);
 
+      const nextBundleId = input.bundle_id ?? before.bundle_id;
       const nextBundlePath =
         input.bundle_path === undefined ? before.bundle_path : validateBundlePath(input.bundle_path);
-      const bundlePathChanged = nextBundlePath !== before.bundle_path;
-      if (bundlePathChanged && !registry.hasBundle(before.bundle_id, nextBundlePath)) {
-        throw new BundleNotLoadedError(before.bundle_id);
+      const bundleChanged =
+        nextBundleId !== before.bundle_id || nextBundlePath !== before.bundle_path;
+      if (bundleChanged && !registry.hasBundle(nextBundleId, nextBundlePath)) {
+        throw new BundleNotLoadedError(nextBundleId);
       }
 
       const next: Project = {
         ...before,
         name: input.name ?? before.name,
         repo_path: input.repo_path ?? before.repo_path,
+        bundle_id: nextBundleId,
         bundle_path: nextBundlePath,
         github_owner: input.github_owner === undefined ? before.github_owner : input.github_owner,
         github_repo: input.github_repo === undefined ? before.github_repo : input.github_repo,
@@ -155,11 +158,12 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
 
       db.prepare(
         `UPDATE projects
-           SET name = ?, repo_path = ?, bundle_path = ?, github_owner = ?, github_repo = ?, state = ?, settings_json = ?, updated_at = ?, archived_at = ?
+           SET name = ?, repo_path = ?, bundle_id = ?, bundle_path = ?, github_owner = ?, github_repo = ?, state = ?, settings_json = ?, updated_at = ?, archived_at = ?
          WHERE id = ?`,
       ).run(
         next.name,
         next.repo_path,
+        next.bundle_id,
         next.bundle_path,
         next.github_owner,
         next.github_repo,
@@ -170,7 +174,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         id,
       );
 
-      if (bundlePathChanged) {
+      if (bundleChanged) {
         registry.unregisterProjectBundle(id);
         registry.registerProjectBundle(id, next.bundle_id, next.bundle_path);
       }
@@ -178,6 +182,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       for (const [field, oldV, newV] of [
         ['name', before.name, next.name],
         ['repo_path', before.repo_path, next.repo_path],
+        ['bundle_id', before.bundle_id, next.bundle_id],
         ['bundle_path', before.bundle_path ?? '', next.bundle_path ?? ''],
         ['github_owner', before.github_owner ?? '', next.github_owner ?? ''],
         ['github_repo', before.github_repo ?? '', next.github_repo ?? ''],
