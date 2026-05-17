@@ -146,6 +146,7 @@ describe('Phase 14 — stakeholder view (T-D17)', () => {
 
       const r2 = await s.stakeholder.render(s.project.id, it.id);
       expect(r2.cached).toBe(true);
+      expect(r2.used_ai).toBe(true); // cache preserves the original render's AI flag
       expect(costRows(s.backend.db, 'stakeholder_view')).toBe(1); // no second AI call
     } finally {
       await s.cleanup();
