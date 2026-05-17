@@ -1,4 +1,4 @@
-#!/usr/bin/env -S tsx
+#!/usr/bin/env node
 import { loadConfig } from '../config.js';
 
 const config = loadConfig();
