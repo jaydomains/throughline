@@ -113,4 +113,4 @@ _none_
 ## Reference
 
 - Spec / decisions / build-state docs this slice operates against: `SPEC.md` (§7.18, §9), `CODE_SPEC.md` (C-D9, §11, Q#6), `DECISIONS.md` (T-D12, T-D45, T-D24, T-D29, T-D36), `CHECKLIST.md` (Phase 13), `ROADMAP.md` (Phase 13).
-- PR: <link or number — fill on PR open>
+- PR: #21 — https://github.com/jaydomains/throughline/pull/21
