@@ -876,3 +876,11 @@ button.directive-badge { cursor: pointer; }
 .code-qa-sources li, .code-ref-list li { padding: 3px 0; }
 .code-ref-candidates ul { list-style: none; padding: 0; margin: 6px 0; }
 .proposal-code-suggestions .code-suggestion { display: inline-block; margin-right: 6px; font-size: 12px; }
+
+/* Phase 14 — intelligence / RAG surface */
+.intelligence-view .rag-query textarea { width: 100%; box-sizing: border-box; }
+.intelligence-view .rag-controls { display: flex; gap: 8px; align-items: center; margin: 8px 0; flex-wrap: wrap; }
+.intelligence-view .rag-answer { white-space: pre-wrap; margin: 8px 0; }
+.intelligence-view .rag-citations { list-style: none; padding: 0; margin: 6px 0; }
+.intelligence-view .rag-citations li { padding: 4px 0; }
+.intelligence-view .rag-error { color: #b00020; margin: 6px 0; }

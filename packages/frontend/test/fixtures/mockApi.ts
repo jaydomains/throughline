@@ -1087,4 +1087,80 @@ export const mockApi = {
       } as GateFiring,
     }),
   ),
+
+  // Phase 14 — personal RAG (T-D25). Default to a text answer with one citation.
+  ragQuery: vi.fn(async (_projectId: string, req: { query: string; substrate?: string | null }) => ({
+    substrate: req.substrate ?? 'text',
+    routed_by: req.substrate ? 'override' : 'heuristic',
+    answer: `mock answer for "${req.query}"`,
+    citations: [{ substrate: req.substrate ?? 'text', ref: 'item:1', label: 'mock item', snippet: 'snip' }],
+    used_ai: true,
+    cross_project: false,
+  })),
+  reindexText: vi.fn(async (_projectId: string) => ({
+    reembedded: 0,
+    total: 0,
+    embedder: 'fallback' as const,
+  })),
+  sessionRetro: vi.fn(
+    async (_projectId: string, req: { session_id: string; attach_to_items?: boolean; append_to_session_start?: boolean }) => ({
+      library_entry_id: 'lib1',
+      summary: `retro for ${req.session_id}`,
+      used_ai: true,
+      attached_item_ids: req.attach_to_items ? ['i1'] : [],
+      appended_to_session_start: req.append_to_session_start === true,
+    }),
+  ),
+  getPeriodicReview: vi.fn(async (_projectId: string) => ({
+    interval_days: 14,
+    last_reviewed_at: null,
+    due: true,
+    buckets: [
+      { category: 'code-drift', label: 'Open code-drift signals', count: 1, entries: [{ ref: 's1', detail: 'tier-2: drift' }] },
+      { category: 'orphaned-rules', label: 'Orphaned verifier rules awaiting cleanup', count: 0, entries: [] },
+    ],
+  })),
+  synthesizePeriodicReview: vi.fn(async (_projectId: string) => ({
+    answer: 'Clean up the tier-2 signal first.',
+    used_ai: true,
+  })),
+  getDoNext: vi.fn(async (_projectId: string) => ({
+    sequence: [
+      { id: 'c', title: 'C', ready: true, blocker_chain_depth: 0, downstream_unblocked: 2, gate_deprioritised: false, primary_unit_refs: [] },
+      { id: 'a', title: 'A', ready: false, blocker_chain_depth: 2, downstream_unblocked: 0, gate_deprioritised: false, primary_unit_refs: [] },
+    ],
+    do_next: [
+      { id: 'c', title: 'C', ready: true, blocker_chain_depth: 0, downstream_unblocked: 2, gate_deprioritised: false, primary_unit_refs: [] },
+    ],
+    unblock_impact: { if_you_unblock: ['c'], items_freed: 2 },
+  })),
+  getStakeholderView: vi.fn(async (_projectId: string, itemId: string) => ({
+    item_id: itemId,
+    rendered: `Plain-language summary of ${itemId}.`,
+    used_ai: true,
+    cached: false,
+  })),
+  getChatHistory: vi.fn(async (_projectId: string, contextType: string, contextId: string) => ({
+    context_type: contextType === 'dump_zone' ? 'dump_zone' : 'session',
+    context_id: contextId,
+    messages: [] as Array<{ id: string; role: 'user' | 'assistant'; content: string; created_at: string }>,
+  })),
+  sendChat: vi.fn(
+    async (_projectId: string, req: { context_id: string; message: string }) => ({
+      user_message: { id: 'u1', role: 'user' as const, content: req.message, created_at: 't1' },
+      assistant_message: { id: 'a1', role: 'assistant' as const, content: `re: ${req.message}`, created_at: 't2' },
+      used_ai: true,
+    }),
+  ),
+  proposeFromChat: vi.fn(async (_projectId: string, _req: unknown) => ({
+    id: 'prop1',
+    project_id: 'p1',
+    target: 'session',
+    source: 'paste',
+    extractor: 'heuristic',
+    raw_text: 'x',
+    payload: { items: [] },
+    status: 'pending',
+    created_at: 't',
+  })),
 };

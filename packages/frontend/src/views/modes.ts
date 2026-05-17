@@ -51,6 +51,12 @@ export const VIEW_MODES: ViewModeDef[] = [
     pathMatch: 'directives',
   },
   {
+    id: 'intelligence',
+    label: 'Intelligence',
+    routeFor: (id) => `/projects/${id}/intelligence`,
+    pathMatch: 'intelligence',
+  },
+  {
     id: 'methodology-gates',
     label: 'Methodology gates',
     routeFor: (id) => `/projects/${id}/methodology-gates`,

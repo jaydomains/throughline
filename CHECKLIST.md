@@ -326,30 +326,30 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 
 ## Phase 14 — RAG & intelligence layer
 
-- [ ] Text substrate: local embeddings generated incrementally on content edit
-- [ ] Text substrate: top-k cosine retrieval + Anthropic summarisation
-- [ ] Code substrate: routed to Semble per Phase 11
-- [ ] Audit-history substrate: structured queries on the audit log
-- [ ] Router: keyword heuristics first pass
-- [ ] Router: user-overridable per-query toggle
-- [ ] RAG response cites sources across substrates
-- [ ] Queries project-scoped by default with cross-project toggle
-- [ ] End-of-session retro: user-initiated trigger only
-- [ ] Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window
-- [ ] Retro saved as library note
-- [ ] Retro optionally attached to discussed items
-- [ ] Retro optionally appended to `session-start.md` for next session
-- [ ] Periodic review: configurable interval (default 2 weeks)
-- [ ] Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories
-- [ ] Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count
-- [ ] Sequencing deprioritises items in primary units failing methodology gates
-- [ ] "Do next" view surfaces unblock-impact summaries
-- [ ] Stakeholder view toggle re-renders item content in plain language
-- [ ] Stakeholder view cache invalidates on item edit
-- [ ] Per-list chat panel reads session items + methodology context as input
-- [ ] Per-list chat proposed changes route through review
-- [ ] Dump zone chat mode toggle: paste, refine, apply through review
-- [ ] Chat history persisted per context and retrievable
+- [x] **(14a)** Text substrate: local embeddings generated incrementally on content edit (`intelligence/embeddings.ts` Transformers.js-or-deterministic-fallback `TextEmbedder`; `intelligence/text-index.ts` `ensureFresh` re-embeds only content-hash-changed entities + prunes dead vectors; migration `0010` adds `project_id`/`content_hash`/`chunk_text`; test "reindex is incremental: stale on first pass, fresh (0) on the next")
+- [x] **(14a)** Text substrate: top-k cosine retrieval + Anthropic summarisation (`text-index.ts` `search` cosine top-k; `rag.ts` `textQuery`→`synthesise` Sonnet; test "retrieves over items + library and synthesises with citations + cost when AI is on")
+- [x] **(14a)** Code substrate: routed to Semble per Phase 11 (`rag.ts` `codeQuery`→`semble.codeQa`; test "code substrate maps Semble sources to code citations")
+- [x] **(14a)** Audit-history substrate: structured queries on the audit log (`rag.ts` `auditQuery` token-LIKE SQL over `audit_log`; test "audit substrate returns structured citations scoped to the project")
+- [x] **(14a)** Router: keyword heuristics first pass (`rag.ts` `routeQuery` code/audit/text regexes; test "keyword heuristics route code / audit / text")
+- [x] **(14a)** Router: user-overridable per-query toggle (`RagQueryRequest.substrate`; `routed_by` 'override'|'heuristic'; test "an explicit substrate overrides the heuristic and is reported as such")
+- [x] **(14a)** RAG response cites sources across substrates (`RagCitation[]` per substrate with ref/label/snippet; degrades to retrieval-only with no key — test "degrades to retrieval-only with no cost when Anthropic is absent")
+- [x] **(14a)** Queries project-scoped by default with cross-project toggle (`RagQueryRequest.cross_project`; text/audit scope; test "is project-scoped by default and broadens under cross_project")
+- [x] **(14b)** End-of-session retro: user-initiated trigger only (`intelligence/retro.ts` `generate`; `POST /api/projects/:id/intelligence/retro`; no scheduler — test "AI-summarises, saves a library note…")
+- [x] **(14b)** Retro generates one-page summary using items + audit + Claude Code transcripts + methodology-context updates in window (`retro.ts` window = last-retro-or-session-created; items-in-session + windowed `audit_log` + methodology-event filter + `cc_inbox_queue` transcript refs; AI Sonnet, deterministic fallback — tests "AI-summarises…" / "degrades to a deterministic structured summary…")
+- [x] **(14b)** Retro saved as library note (`library.create({ type:'note' })`; test asserts `note?.type === 'note'`)
+- [x] **(14b)** Retro optionally attached to discussed items (`attach_to_items` → `library.attach`; test asserts `listAttachedNotes` includes the entry)
+- [x] **(14b)** Retro optionally appended to `session-start.md` for next session (`append_to_session_start` → `appendFileSync(<repo>/session-start.md)`; test reads the file back)
+- [x] **(14b)** Periodic review: configurable interval (default 2 weeks) (`periodic-review.ts` `intervalDays`: project settings_json → global setting → `DEFAULT_INTERVAL_DAYS=14`; test "honours a per-project interval override…")
+- [x] **(14b)** Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories (`buckets()` no-AI: code/discipline drift, orphaned rules, bundle discipline-drift categories, stale decisions, untouched sessions, longest-held blockers; T-D22 AI only on `synthesize` — tests "hygiene buckets run with no AI…" / "synthesise records the review-opened event even with no AI key")
+- [x] **(14c)** Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count (`intelligence/sequencing.ts` `doNext`: open-subgraph blocker/dependent maps, memoised `chainDepth`/`downstream`, weighted sort; `GET /api/projects/:id/intelligence/do-next`; test "topo-orders by readiness + downstream impact…")
+- [x] **(14c)** Sequencing deprioritises items in primary units failing methodology gates (`gateFailingUnits` from latest non-overridden fail/error firings → finding-ref→item→primary-unit; `gate_deprioritised` sinks in sort; test "deprioritises items whose primary unit has a failing, non-overridden gate"; attribution interpretation flagged in handover Open Questions)
+- [x] **(14c)** "Do next" view surfaces unblock-impact summaries (`unblock_impact { if_you_unblock, items_freed }`; IntelligenceView Do-next panel; tests backend "…reports unblock impact" + frontend "loads the Do-next sequence with unblock-impact summary")
+- [x] **(14c)** Stakeholder view toggle re-renders item content in plain language (`intelligence/stakeholder.ts` `render` Sonnet, deterministic fallback; `GET …/items/:itemId/stakeholder`; IntelligenceView stakeholder panel; test "AI-renders, caches, and records cost + audit")
+- [x] **(14c)** Stakeholder view cache invalidates on item edit (audit-trail-as-cache keyed by `sha256(title+description+status)`; fingerprint mismatch ⇒ regenerate, §13 adopted; test "cache invalidates when the item content changes")
+- [x] **(14d)** Per-list chat panel reads session items + methodology context as input (`intelligence/chat.ts` `sessionContext`: session items + bundle/anchors/markers/primary-units digest into the system prompt; `POST /api/projects/:id/intelligence/chat`; test "per-list chat persists the turn and replies with session + methodology context")
+- [x] **(14d)** Per-list chat proposed changes route through review (`chat.propose` → `dumpZone.propose({ source:'paste' })`, no auto-mutation; `POST …/chat/propose`; test "proposed changes route through the dump-zone review modal")
+- [x] **(14d)** Dump zone chat mode toggle: paste, refine, apply through review (`context_type:'dump_zone'` chat path + `propose` reuse the same review pipeline; IntelligenceView chat panel context-type toggle; test "persists history independently per context…")
+- [x] **(14d)** Chat history persisted per context and retrievable (`chat_history` rows keyed by `(project_id, context_type, context_id)`, ordered `created_at, rowid`; `history()` + `GET …/chat`; tests "persists history independently per context…" / frontend "loads persisted chat history for a context")
 
 ---
 

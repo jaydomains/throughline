@@ -52,6 +52,19 @@ import type {
   ItemCodeRef,
   ConfirmCodeRefsRequest,
   CodeQaResult,
+  RagQueryRequest,
+  RagQueryResult,
+  RagReindexResult,
+  SessionRetroRequest,
+  SessionRetroResult,
+  PeriodicReviewResult,
+  PeriodicReviewSynthesis,
+  DoNextResult,
+  StakeholderViewResult,
+  ChatHistoryResult,
+  ChatSendRequest,
+  ChatSendResult,
+  ChatProposeRequest,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -591,5 +604,53 @@ export const api = {
     jsonFetch<{ ok: boolean }>(
       `/api/projects/${pid(projectId)}/github/auto-reconcile/approve`,
       { method: 'POST', body: JSON.stringify({ run_id: runId }) },
+    ),
+
+  // Phase 14 — personal RAG (T-D25, C-D2; SPEC §7.18).
+  ragQuery: (projectId: string, req: RagQueryRequest) =>
+    jsonFetch<RagQueryResult>(`/api/projects/${pid(projectId)}/intelligence/rag`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  reindexText: (projectId: string) =>
+    jsonFetch<RagReindexResult>(
+      `/api/projects/${pid(projectId)}/intelligence/reindex`,
+      { method: 'POST' },
+    ),
+  sessionRetro: (projectId: string, req: SessionRetroRequest) =>
+    jsonFetch<SessionRetroResult>(`/api/projects/${pid(projectId)}/intelligence/retro`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  getPeriodicReview: (projectId: string) =>
+    jsonFetch<PeriodicReviewResult>(
+      `/api/projects/${pid(projectId)}/intelligence/periodic-review`,
+    ),
+  synthesizePeriodicReview: (projectId: string) =>
+    jsonFetch<PeriodicReviewSynthesis>(
+      `/api/projects/${pid(projectId)}/intelligence/periodic-review/synthesize`,
+      { method: 'POST' },
+    ),
+  getDoNext: (projectId: string) =>
+    jsonFetch<DoNextResult>(`/api/projects/${pid(projectId)}/intelligence/do-next`),
+  getStakeholderView: (projectId: string, itemId: string) =>
+    jsonFetch<StakeholderViewResult>(
+      `/api/projects/${pid(projectId)}/intelligence/items/${encodeURIComponent(itemId)}/stakeholder`,
+    ),
+  getChatHistory: (projectId: string, contextType: string, contextId: string) =>
+    jsonFetch<ChatHistoryResult>(
+      `/api/projects/${pid(projectId)}/intelligence/chat?context_type=${encodeURIComponent(
+        contextType,
+      )}&context_id=${encodeURIComponent(contextId)}`,
+    ),
+  sendChat: (projectId: string, req: ChatSendRequest) =>
+    jsonFetch<ChatSendResult>(`/api/projects/${pid(projectId)}/intelligence/chat`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  proposeFromChat: (projectId: string, req: ChatProposeRequest) =>
+    jsonFetch<DumpZoneProposal>(
+      `/api/projects/${pid(projectId)}/intelligence/chat/propose`,
+      { method: 'POST', body: JSON.stringify(req) },
     ),
 };

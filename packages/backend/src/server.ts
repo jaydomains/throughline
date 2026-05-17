@@ -13,6 +13,14 @@ import { registerCompanionRoutes } from './methodology/companion/routes.js';
 import { createSessionStartEngine } from './methodology/session-start/engine.js';
 import { createAnthropicRelevanceClassifier } from './methodology/session-start/classifier.js';
 import { registerSessionStartRoutes } from './methodology/session-start/routes.js';
+import { createTextEmbedder } from './intelligence/embeddings.js';
+import { createRagService } from './intelligence/rag.js';
+import { createRetroService } from './intelligence/retro.js';
+import { createPeriodicReviewService } from './intelligence/periodic-review.js';
+import { createSequencingService } from './intelligence/sequencing.js';
+import { createStakeholderService } from './intelligence/stakeholder.js';
+import { createChatService } from './intelligence/chat.js';
+import { registerIntelligenceRoutes } from './intelligence/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
 import { installGateHooks } from './methodology/gates/hook-installer.js';
@@ -350,6 +358,62 @@ export async function startServer(
     directives,
     classifier: createAnthropicRelevanceClassifier({ client: anthropicClient }),
   });
+  // Phase 14 — personal RAG (T-D25, C-D2; SPEC §7.18). Three substrates, one router:
+  // text via local embeddings (Transformers.js when present, deterministic offline
+  // fallback otherwise — capability-gated like Semble/Anthropic), code via the Phase-11
+  // Semble service, audit via structured audit_log queries. Synthesis is Anthropic-gated;
+  // no key ⇒ retrieval-only, no cost.
+  const textEmbedder = createTextEmbedder();
+  const rag = createRagService({
+    db,
+    projects,
+    items,
+    library,
+    semble,
+    anthropic: anthropicClient,
+    embedder: textEmbedder,
+  });
+  // Phase 14 — end-of-session retro (SPEC §7.18, user-initiated) and periodic review
+  // (T-D22: hygiene queries with no AI; AI synthesis only on user open). Capability-gated
+  // like the rest of the intelligence layer.
+  const retro = createRetroService({
+    db,
+    projects,
+    sessions,
+    items,
+    library,
+    anthropic: anthropicClient,
+  });
+  const periodicReview = createPeriodicReviewService({
+    db,
+    projects,
+    registry,
+    drift,
+    orphanRules,
+    items,
+    sessions,
+    settings,
+    anthropic: anthropicClient,
+  });
+  // Phase 14 — dependency-aware sequencing ("Do next", no AI) + stakeholder view
+  // (T-D17; cache invalidates on item edit via content fingerprint).
+  const sequencing = createSequencingService({ projects, items, gateRuntime });
+  const stakeholder = createStakeholderService({
+    db,
+    projects,
+    items,
+    anthropic: anthropicClient,
+  });
+  // Phase 14 — chat (SPEC §7.19, T-D23). Per-list + dump-zone chat; history persisted
+  // per context; proposed changes route through the dump-zone review modal.
+  const chat = createChatService({
+    db,
+    projects,
+    items,
+    registry,
+    dumpZone,
+    anthropic: anthropicClient,
+  });
   const notifier = createOsNotifier({
     logger: {
       info: (m) => app.log.info(m),
@@ -406,6 +470,14 @@ export async function startServer(
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
   registerCompanionRoutes(app, projects, companion);
   registerSessionStartRoutes(app, projects, sessionStart);
+  registerIntelligenceRoutes(app, projects, {
+    rag,
+    retro,
+    periodicReview,
+    sequencing,
+    stakeholder,
+    chat,
+  });
   registerGitHubRoutes(app, {
     projects,
     api: githubApi,
