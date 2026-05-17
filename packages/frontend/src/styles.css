@@ -272,8 +272,20 @@
 [data-density="compact"]     { --row-h: 26px; --pad: 6px;  --gap: 6px;  --gap-lg: 10px; }
 [data-density="comfortable"] { --row-h: 32px; --pad: 8px;  --gap: 8px;  --gap-lg: 14px; }
 [data-density="spacious"]    { --row-h: 38px; --pad: 12px; --gap: 12px; --gap-lg: 20px; }
-[data-density="comfortable"] { --fs-base: 13px; }
-[data-density="spacious"]    { --fs-base: 14px; }
+
+/* --fs-base scales with density, but each direction owns its own size scale
+   (Direction C — Terminal Atelier — is intentionally smaller). Standalone
+   [data-density] selectors have equal specificity to [data-direction] and,
+   appearing later, would override Direction C's 12.5px at the default
+   `comfortable`. Compound direction×density selectors keep each direction's
+   intent. `compact` has no fs-base override (it shrinks spacing, not text),
+   so the direction-level value applies. */
+[data-direction="A"][data-density="comfortable"] { --fs-base: 13px; }
+[data-direction="A"][data-density="spacious"]    { --fs-base: 14px; }
+[data-direction="B"][data-density="comfortable"] { --fs-base: 13px; }
+[data-direction="B"][data-density="spacious"]    { --fs-base: 14px; }
+[data-direction="C"][data-density="comfortable"] { --fs-base: 12.5px; }
+[data-direction="C"][data-density="spacious"]    { --fs-base: 13.5px; }
 
 * { box-sizing: border-box; }
 
