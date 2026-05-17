@@ -1124,4 +1124,20 @@ export const mockApi = {
     answer: 'Clean up the tier-2 signal first.',
     used_ai: true,
   })),
+  getDoNext: vi.fn(async (_projectId: string) => ({
+    sequence: [
+      { id: 'c', title: 'C', ready: true, blocker_chain_depth: 0, downstream_unblocked: 2, gate_deprioritised: false, primary_unit_refs: [] },
+      { id: 'a', title: 'A', ready: false, blocker_chain_depth: 2, downstream_unblocked: 0, gate_deprioritised: false, primary_unit_refs: [] },
+    ],
+    do_next: [
+      { id: 'c', title: 'C', ready: true, blocker_chain_depth: 0, downstream_unblocked: 2, gate_deprioritised: false, primary_unit_refs: [] },
+    ],
+    unblock_impact: { if_you_unblock: ['c'], items_freed: 2 },
+  })),
+  getStakeholderView: vi.fn(async (_projectId: string, itemId: string) => ({
+    item_id: itemId,
+    rendered: `Plain-language summary of ${itemId}.`,
+    used_ai: true,
+    cached: false,
+  })),
 };

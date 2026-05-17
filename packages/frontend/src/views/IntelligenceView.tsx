@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type {
+  DoNextResult,
   PeriodicReviewResult,
   RagQueryResult,
   RagSubstrate,
+  StakeholderViewResult,
 } from '@throughline/shared';
 import { api } from '../api.js';
 
@@ -34,6 +36,9 @@ export function IntelligenceView() {
   const [retroMsg, setRetroMsg] = useState<string | null>(null);
   const [review, setReview] = useState<PeriodicReviewResult | null>(null);
   const [reviewSynthesis, setReviewSynthesis] = useState<string | null>(null);
+  const [doNext, setDoNext] = useState<DoNextResult | null>(null);
+  const [stakeItem, setStakeItem] = useState('');
+  const [stake, setStake] = useState<StakeholderViewResult | null>(null);
 
   useEffect(() => {
     if (!projectId) return;
@@ -41,6 +46,10 @@ export function IntelligenceView() {
       .getPeriodicReview(projectId)
       .then(setReview)
       .catch(() => setReview(null));
+    api
+      .getDoNext(projectId)
+      .then(setDoNext)
+      .catch(() => setDoNext(null));
   }, [projectId]);
 
   if (!projectId) return null;
@@ -109,6 +118,19 @@ export function IntelligenceView() {
       setReview(await api.getPeriodicReview(projectId));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Synthesis failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loadStakeholder = async () => {
+    if (stakeItem.trim() === '') return;
+    setBusy(true);
+    setError(null);
+    try {
+      setStake(await api.getStakeholderView(projectId, stakeItem.trim()));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Stakeholder render failed');
     } finally {
       setBusy(false);
     }
@@ -276,6 +298,57 @@ export function IntelligenceView() {
           )}
         </div>
       )}
+
+      <hr />
+      <h2>Do next</h2>
+      {doNext && (
+        <div className="do-next" data-testid="do-next">
+          {doNext.unblock_impact.if_you_unblock.length > 0 ? (
+            <p className="muted" data-testid="unblock-impact">
+              If you unblock these {doNext.unblock_impact.if_you_unblock.length}, ~
+              {doNext.unblock_impact.items_freed} items become unblocked.
+            </p>
+          ) : (
+            <p className="muted">No high-impact unblocks right now.</p>
+          )}
+          <ol className="do-next-list">
+            {doNext.do_next.map((it) => (
+              <li key={it.id} data-testid={`do-next-${it.id}`}>
+                <strong>{it.title}</strong> — frees {it.downstream_unblocked}
+              </li>
+            ))}
+          </ol>
+          {doNext.sequence.some((x) => x.gate_deprioritised) && (
+            <p className="muted" data-testid="gate-deprioritised">
+              Some items are deprioritised pending methodology-gate clearance.
+            </p>
+          )}
+        </div>
+      )}
+
+      <hr />
+      <h2>Stakeholder view</h2>
+      <p className="muted">Plain-language re-render of one item (cached; refreshes on edit).</p>
+      <div className="stakeholder">
+        <input
+          data-testid="stake-item"
+          placeholder="item id"
+          value={stakeItem}
+          onChange={(e) => setStakeItem(e.target.value)}
+        />
+        <button type="button" data-testid="stake-run" disabled={busy} onClick={loadStakeholder}>
+          Render
+        </button>
+        {stake && (
+          <div className="stakeholder-result" data-testid="stake-result">
+            <p className="rag-answer">{stake.rendered}</p>
+            <p className="muted">
+              {stake.used_ai ? 'AI-rendered' : 'plain restatement'}
+              {stake.cached ? ' · cached' : ''}
+            </p>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

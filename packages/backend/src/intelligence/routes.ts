@@ -11,6 +11,15 @@ import {
   ProjectNotFoundError as ReviewProjectNotFoundError,
   type PeriodicReviewService,
 } from './periodic-review.js';
+import {
+  ProjectNotFoundError as SeqProjectNotFoundError,
+  type SequencingService,
+} from './sequencing.js';
+import {
+  ProjectNotFoundError as StakeProjectNotFoundError,
+  ItemNotFoundError,
+  type StakeholderService,
+} from './stakeholder.js';
 
 // Phase 14 — intelligence surfaces (SPEC §7.18, §9; T-D22, T-D25, C-D2; CODE_SPEC §15).
 
@@ -18,12 +27,17 @@ function mapError(reply: FastifyReply, err: unknown): unknown {
   if (
     err instanceof ProjectNotFoundError ||
     err instanceof RetroProjectNotFoundError ||
-    err instanceof ReviewProjectNotFoundError
+    err instanceof ReviewProjectNotFoundError ||
+    err instanceof SeqProjectNotFoundError ||
+    err instanceof StakeProjectNotFoundError
   ) {
     return reply.code(404).send({ error: 'not_found', message: (err as Error).message });
   }
   if (err instanceof SessionNotFoundError) {
     return reply.code(404).send({ error: 'session_not_found', message: err.message });
+  }
+  if (err instanceof ItemNotFoundError) {
+    return reply.code(404).send({ error: 'item_not_found', message: err.message });
   }
   throw err;
 }
@@ -32,6 +46,8 @@ interface IntelligenceServices {
   rag: RagService;
   retro: RetroService;
   periodicReview: PeriodicReviewService;
+  sequencing: SequencingService;
+  stakeholder: StakeholderService;
 }
 
 export function registerIntelligenceRoutes(
@@ -111,6 +127,34 @@ export function registerIntelligenceRoutes(
       }
       try {
         return await svc.periodicReview.synthesize(req.params.id);
+      } catch (err) {
+        return mapError(reply, err);
+      }
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/intelligence/do-next',
+    async (req, reply) => {
+      if (!projects.get(req.params.id)) {
+        return reply.code(404).send({ error: 'project_not_found' });
+      }
+      try {
+        return svc.sequencing.doNext(req.params.id);
+      } catch (err) {
+        return mapError(reply, err);
+      }
+    },
+  );
+
+  app.get<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/intelligence/items/:itemId/stakeholder',
+    async (req, reply) => {
+      if (!projects.get(req.params.id)) {
+        return reply.code(404).send({ error: 'project_not_found' });
+      }
+      try {
+        return await svc.stakeholder.render(req.params.id, req.params.itemId);
       } catch (err) {
         return mapError(reply, err);
       }

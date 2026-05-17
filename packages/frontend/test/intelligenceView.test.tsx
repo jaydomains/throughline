@@ -96,4 +96,20 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
     expect(screen.getByTestId('review-synthesis').textContent).toContain('tier-2');
     expect(mockApi.synthesizePeriodicReview).toHaveBeenCalledWith('p1');
   });
+
+  it('loads the Do-next sequence with unblock-impact summary', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByTestId('do-next')).toBeTruthy());
+    expect(screen.getByTestId('unblock-impact').textContent).toContain('2 items become unblocked');
+    expect(screen.getByTestId('do-next-c').textContent).toContain('frees 2');
+  });
+
+  it('renders a stakeholder view for an item id', async () => {
+    renderView();
+    fireEvent.change(screen.getByTestId('stake-item'), { target: { value: 'item-7' } });
+    fireEvent.click(screen.getByTestId('stake-run'));
+    await waitFor(() => expect(screen.getByTestId('stake-result')).toBeTruthy());
+    expect(mockApi.getStakeholderView).toHaveBeenCalledWith('p1', 'item-7');
+    expect(screen.getByTestId('stake-result').textContent).toContain('Plain-language summary of item-7');
+  });
 });

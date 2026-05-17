@@ -59,6 +59,8 @@ import type {
   SessionRetroResult,
   PeriodicReviewResult,
   PeriodicReviewSynthesis,
+  DoNextResult,
+  StakeholderViewResult,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -624,5 +626,11 @@ export const api = {
     jsonFetch<PeriodicReviewSynthesis>(
       `/api/projects/${pid(projectId)}/intelligence/periodic-review/synthesize`,
       { method: 'POST' },
+    ),
+  getDoNext: (projectId: string) =>
+    jsonFetch<DoNextResult>(`/api/projects/${pid(projectId)}/intelligence/do-next`),
+  getStakeholderView: (projectId: string, itemId: string) =>
+    jsonFetch<StakeholderViewResult>(
+      `/api/projects/${pid(projectId)}/intelligence/items/${encodeURIComponent(itemId)}/stakeholder`,
     ),
 };

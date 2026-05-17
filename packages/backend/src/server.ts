@@ -17,6 +17,8 @@ import { createTextEmbedder } from './intelligence/embeddings.js';
 import { createRagService } from './intelligence/rag.js';
 import { createRetroService } from './intelligence/retro.js';
 import { createPeriodicReviewService } from './intelligence/periodic-review.js';
+import { createSequencingService } from './intelligence/sequencing.js';
+import { createStakeholderService } from './intelligence/stakeholder.js';
 import { registerIntelligenceRoutes } from './intelligence/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
@@ -392,6 +394,15 @@ export async function startServer(
     settings,
     anthropic: anthropicClient,
   });
+  // Phase 14 — dependency-aware sequencing ("Do next", no AI) + stakeholder view
+  // (T-D17; cache invalidates on item edit via content fingerprint).
+  const sequencing = createSequencingService({ projects, items, gateRuntime });
+  const stakeholder = createStakeholderService({
+    db,
+    projects,
+    items,
+    anthropic: anthropicClient,
+  });
   const notifier = createOsNotifier({
     logger: {
       info: (m) => app.log.info(m),
@@ -448,7 +459,13 @@ export async function startServer(
   registerDisciplineDriftRoutes(app, { projects, drift, engine: disciplineDrift });
   registerCompanionRoutes(app, projects, companion);
   registerSessionStartRoutes(app, projects, sessionStart);
-  registerIntelligenceRoutes(app, projects, { rag, retro, periodicReview });
+  registerIntelligenceRoutes(app, projects, {
+    rag,
+    retro,
+    periodicReview,
+    sequencing,
+    stakeholder,
+  });
   registerGitHubRoutes(app, {
     projects,
     api: githubApi,

@@ -341,11 +341,11 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 - [x] **(14b)** Retro optionally appended to `session-start.md` for next session (`append_to_session_start` → `appendFileSync(<repo>/session-start.md)`; test reads the file back)
 - [x] **(14b)** Periodic review: configurable interval (default 2 weeks) (`periodic-review.ts` `intervalDays`: project settings_json → global setting → `DEFAULT_INTERVAL_DAYS=14`; test "honours a per-project interval override…")
 - [x] **(14b)** Periodic review hygiene questions cover code-drift, discipline-drift, orphaned rules, bundle-declared hygiene categories (`buckets()` no-AI: code/discipline drift, orphaned rules, bundle discipline-drift categories, stale decisions, untouched sessions, longest-held blockers; T-D22 AI only on `synthesize` — tests "hygiene buckets run with no AI…" / "synthesise records the review-opened event even with no AI key")
-- [ ] Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count
-- [ ] Sequencing deprioritises items in primary units failing methodology gates
-- [ ] "Do next" view surfaces unblock-impact summaries
-- [ ] Stakeholder view toggle re-renders item content in plain language
-- [ ] Stakeholder view cache invalidates on item edit
+- [x] **(14c)** Dependency-aware sequencing: topological sort weighted by blocker chain depth + downstream-unblocked count (`intelligence/sequencing.ts` `doNext`: open-subgraph blocker/dependent maps, memoised `chainDepth`/`downstream`, weighted sort; `GET /api/projects/:id/intelligence/do-next`; test "topo-orders by readiness + downstream impact…")
+- [x] **(14c)** Sequencing deprioritises items in primary units failing methodology gates (`gateFailingUnits` from latest non-overridden fail/error firings → finding-ref→item→primary-unit; `gate_deprioritised` sinks in sort; test "deprioritises items whose primary unit has a failing, non-overridden gate"; attribution interpretation flagged in handover Open Questions)
+- [x] **(14c)** "Do next" view surfaces unblock-impact summaries (`unblock_impact { if_you_unblock, items_freed }`; IntelligenceView Do-next panel; tests backend "…reports unblock impact" + frontend "loads the Do-next sequence with unblock-impact summary")
+- [x] **(14c)** Stakeholder view toggle re-renders item content in plain language (`intelligence/stakeholder.ts` `render` Sonnet, deterministic fallback; `GET …/items/:itemId/stakeholder`; IntelligenceView stakeholder panel; test "AI-renders, caches, and records cost + audit")
+- [x] **(14c)** Stakeholder view cache invalidates on item edit (audit-trail-as-cache keyed by `sha256(title+description+status)`; fingerprint mismatch ⇒ regenerate, §13 adopted; test "cache invalidates when the item content changes")
 - [ ] Per-list chat panel reads session items + methodology context as input
 - [ ] Per-list chat proposed changes route through review
 - [ ] Dump zone chat mode toggle: paste, refine, apply through review

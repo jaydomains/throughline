@@ -84,3 +84,38 @@ export interface PeriodicReviewSynthesis {
   answer: string | null;
   used_ai: boolean;
 }
+
+// Dependency-aware sequencing / "Do next" (SPEC §7.18). Topological sort across open
+// items weighted by blocker-chain depth + downstream-unblocked count; items in primary
+// units with a failing methodology gate are deprioritised.
+export interface DoNextItem {
+  id: string;
+  title: string;
+  // No open blockers ⇒ actionable now.
+  ready: boolean;
+  blocker_chain_depth: number;
+  downstream_unblocked: number;
+  gate_deprioritised: boolean;
+  primary_unit_refs: string[];
+}
+
+export interface DoNextResult {
+  // Full open-item set in weighted topological order.
+  sequence: DoNextItem[];
+  // The actionable head of the sequence (ready, not gate-deprioritised), highest impact
+  // first — what to do next.
+  do_next: DoNextItem[];
+  // "If you unblock these N, M items become unblocked."
+  unblock_impact: { if_you_unblock: string[]; items_freed: number };
+}
+
+// Stakeholder view (T-D17, §13 adopted: cache invalidates on item edit). Plain-language
+// AI re-render of one item; cached against the item's content fingerprint.
+export interface StakeholderViewResult {
+  item_id: string;
+  rendered: string;
+  // false ⇒ no Anthropic key; a plain structured restatement is returned instead.
+  used_ai: boolean;
+  // true ⇒ served from the fingerprint-keyed cache (no fresh AI call / cost).
+  cached: boolean;
+}
