@@ -234,9 +234,14 @@ export function createHeuristicExtractor(): Extractor {
 export interface AnthropicExtractorOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
-export function createAnthropicExtractor({ client, model = 'claude-sonnet-4-6' }: AnthropicExtractorOptions): Extractor {
+export function createAnthropicExtractor({
+  client,
+  model: defaultModel = 'claude-sonnet-4-6',
+  resolveModel,
+}: AnthropicExtractorOptions): Extractor {
   return {
     async extract(input) {
       if (!client.available()) {
@@ -245,6 +250,7 @@ export function createAnthropicExtractor({ client, model = 'claude-sonnet-4-6' }
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
+      const model = resolveModel ? resolveModel() : defaultModel;
       const system = buildPrompt(input);
       const userPrompt = input.text;
       try {

@@ -56,11 +56,22 @@ interface CreateOptions {
   sessions: SessionsService;
   settings: SettingsService;
   anthropic: AnthropicClient;
+  resolveModel?: () => string;
 }
 
 export function createPeriodicReviewService(opts: CreateOptions): PeriodicReviewService {
-  const { db, projects, registry, drift, orphanRules, items, sessions, settings, anthropic } =
-    opts;
+  const {
+    db,
+    projects,
+    registry,
+    drift,
+    orphanRules,
+    items,
+    sessions,
+    settings,
+    anthropic,
+    resolveModel,
+  } = opts;
 
   function intervalDays(projectId: string): number {
     const p = projects.get(projectId);
@@ -209,10 +220,11 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
         .join('\n\n');
       let answer: string | null = null;
       let usedAi = false;
+      const model = resolveModel ? resolveModel() : REVIEW_MODEL;
       if (anthropic.available()) {
         try {
           const res = await anthropic.call({
-            model: REVIEW_MODEL,
+            model,
             system:
               'You are a project-hygiene reviewer. From the hygiene buckets, write a ' +
               'short prioritised list of what to clean up next and why. Be concrete.',
@@ -227,10 +239,10 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
             recordCost(db, {
               projectId,
               feature: 'periodic_review',
-              model: REVIEW_MODEL,
+              model,
               inputTokens: res.input_tokens,
               outputTokens: res.output_tokens,
-              usdEstimate: usdEstimate(REVIEW_MODEL, res.input_tokens, res.output_tokens),
+              usdEstimate: usdEstimate(model, res.input_tokens, res.output_tokens),
             });
           }
         } catch {
@@ -247,7 +259,7 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
         triggerContext: {
           used_ai: usedAi,
           ...(usedAi
-            ? { model: REVIEW_MODEL, prompt_fingerprint: promptFingerprint('periodic_review', context) }
+            ? { model, prompt_fingerprint: promptFingerprint('periodic_review', context) }
             : {}),
         },
       });

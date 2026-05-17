@@ -67,6 +67,7 @@ interface CreateOptions {
   items: ItemsService;
   client: SembleClient;
   anthropic: AnthropicClient;
+  resolveModel?: () => string;
 }
 
 function rowToRef(r: CodeRefRow): ItemCodeRef {
@@ -81,7 +82,7 @@ function rowToRef(r: CodeRefRow): ItemCodeRef {
 }
 
 export function createSembleService(opts: CreateOptions): SembleService {
-  const { db, projects, items, client, anthropic } = opts;
+  const { db, projects, items, client, anthropic, resolveModel } = opts;
 
   function repoPathForProject(projectId: string): string {
     const project = projects.get(projectId);
@@ -213,9 +214,10 @@ export function createSembleService(opts: CreateOptions): SembleService {
         'Answer in plain English, concisely. Cite excerpts by their [n] index. ' +
         'If the excerpts do not contain the answer, say so.';
       const userContent = `Question: ${q}\n\nCode excerpts:\n${context}`;
+      const model = resolveModel ? resolveModel() : QA_MODEL;
       try {
         const res = await anthropic.call({
-          model: QA_MODEL,
+          model,
           system,
           messages: [{ role: 'user', content: userContent }],
           max_tokens: QA_MAX_TOKENS,
@@ -224,10 +226,10 @@ export function createSembleService(opts: CreateOptions): SembleService {
           recordCost(db, {
             projectId,
             feature: 'code_qa',
-            model: QA_MODEL,
+            model,
             inputTokens: res.input_tokens,
             outputTokens: res.output_tokens,
-            usdEstimate: usdEstimate(QA_MODEL, res.input_tokens, res.output_tokens),
+            usdEstimate: usdEstimate(model, res.input_tokens, res.output_tokens),
           });
         }
         appendAudit(db, {
@@ -238,7 +240,7 @@ export function createSembleService(opts: CreateOptions): SembleService {
           field: 'code_qa',
           newValue: `${hits.length} sources`,
           triggerContext: {
-            model: QA_MODEL,
+            model,
             prompt_fingerprint: promptFingerprint('code_qa', `${system}\n${userContent}`),
           },
         });

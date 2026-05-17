@@ -27,6 +27,7 @@ export interface JudgementGate {
 export interface AnthropicJudgementOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
 const SYSTEM =
@@ -37,7 +38,8 @@ const SYSTEM =
 
 export function createAnthropicJudgementGate({
   client,
-  model = 'claude-sonnet-4-6',
+  model: defaultModel = 'claude-sonnet-4-6',
+  resolveModel,
 }: AnthropicJudgementOptions): JudgementGate {
   return {
     async evaluate(ctx) {
@@ -52,6 +54,7 @@ export function createAnthropicJudgementGate({
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
+      const model = resolveModel ? resolveModel() : defaultModel;
       const prompt =
         `Gate: ${ctx.gateId}\nIntent: ${ctx.description}\n` +
         `Project: ${ctx.projectName}\n\nProject state:\n${ctx.stateDigest}`;

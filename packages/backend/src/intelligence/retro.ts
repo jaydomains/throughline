@@ -47,10 +47,11 @@ interface CreateOptions {
   items: ItemsService;
   library: LibraryService;
   anthropic: AnthropicClient;
+  resolveModel?: () => string;
 }
 
 export function createRetroService(opts: CreateOptions): RetroService {
-  const { db, projects, sessions, items, library, anthropic } = opts;
+  const { db, projects, sessions, items, library, anthropic, resolveModel } = opts;
 
   function windowStart(projectId: string, sessionId: string, fallback: string): string {
     const row = db
@@ -141,6 +142,7 @@ export function createRetroService(opts: CreateOptions): RetroService {
 
       let summary = structured;
       let usedAi = false;
+      const model = resolveModel ? resolveModel() : RETRO_MODEL;
       if (anthropic.available()) {
         const system =
           'You write a concise one-page end-of-session retrospective for a software ' +
@@ -148,7 +150,7 @@ export function createRetroService(opts: CreateOptions): RetroService {
           'methodology changes, open risks, and a short "next session" list.';
         try {
           const res = await anthropic.call({
-            model: RETRO_MODEL,
+            model,
             system,
             messages: [{ role: 'user', content: structured }],
             max_tokens: RETRO_MAX_TOKENS,
@@ -161,10 +163,10 @@ export function createRetroService(opts: CreateOptions): RetroService {
             recordCost(db, {
               projectId,
               feature: 'session_retro',
-              model: RETRO_MODEL,
+              model,
               inputTokens: res.input_tokens,
               outputTokens: res.output_tokens,
-              usdEstimate: usdEstimate(RETRO_MODEL, res.input_tokens, res.output_tokens),
+              usdEstimate: usdEstimate(model, res.input_tokens, res.output_tokens),
             });
           }
         } catch {
@@ -214,7 +216,7 @@ export function createRetroService(opts: CreateOptions): RetroService {
           attached_item_ids: attachedItemIds,
           appended_to_session_start: appended,
           ...(usedAi
-            ? { model: RETRO_MODEL, prompt_fingerprint: promptFingerprint('session_retro', structured) }
+            ? { model, prompt_fingerprint: promptFingerprint('session_retro', structured) }
             : {}),
         },
       });

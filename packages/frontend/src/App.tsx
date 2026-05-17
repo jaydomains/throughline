@@ -147,13 +147,13 @@ function AppInner() {
             path="/projects"
             element={
               <ProjectsView
-                projects={projects}
                 bundles={bundles}
                 onCreated={async (project) => {
                   await refreshProjects();
                   void api.switchProject(project.id).catch(() => {});
                   navigate(`/projects/${project.id}`);
                 }}
+                onChanged={refreshProjects}
               />
             }
           />

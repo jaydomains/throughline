@@ -1,14 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { ModalStackProvider } from '../src/keyboard/modalStack.js';
-import {
-  GraphView,
-  HomeView,
-  ModulesView,
-  ProjectsView,
-} from '../src/views/stubs.js';
-import type { Project } from '@throughline/shared';
+import { GraphView, HomeView, ModulesView } from '../src/views/stubs.js';
 import type { MethodologySummary } from '../src/api.js';
 
 const freeform: MethodologySummary = {
@@ -44,35 +37,6 @@ describe('View stubs', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Graph' })).toBeInTheDocument();
-  });
-
-  it('ProjectsView lists projects passed in', () => {
-    const projects: Project[] = [
-      {
-        id: 'p1',
-        name: 'Alpha',
-        repo_path: '/tmp/alpha',
-        github_owner: null,
-        github_repo: null,
-        bundle_id: 'freeform',
-        bundle_path: null,
-        state: 'active',
-        settings_json: {},
-        created_at: '',
-        updated_at: '',
-        archived_at: null,
-      },
-    ];
-    render(
-      <MemoryRouter>
-        <ModalStackProvider>
-          <ProjectsView projects={projects} bundles={[]} onCreated={() => {}} />
-        </ModalStackProvider>
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('heading', { name: 'Projects' })).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'Alpha' })).toBeInTheDocument();
-    expect(screen.getByTestId('new-project-button')).toBeInTheDocument();
   });
 
   it('ModulesView redirects when the bundle declares no primary unit', () => {

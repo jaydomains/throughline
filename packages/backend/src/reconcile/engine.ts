@@ -385,11 +385,13 @@ export function createHeuristicReconcileEngine(): ReconcileEngine {
 export interface AnthropicReconcileEngineOptions {
   client: AnthropicClient;
   model?: string;
+  resolveModel?: () => string;
 }
 
 export function createAnthropicReconcileEngine({
   client,
-  model = 'claude-sonnet-4-6',
+  model: defaultModel = 'claude-sonnet-4-6',
+  resolveModel,
 }: AnthropicReconcileEngineOptions): ReconcileEngine {
   return {
     async diff(input) {
@@ -399,6 +401,7 @@ export function createAnthropicReconcileEngine({
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
+      const model = resolveModel ? resolveModel() : defaultModel;
       const system = buildPrompt(input);
       const userPrompt = input.text;
       try {

@@ -63,10 +63,11 @@ interface CreateOptions {
   semble: SembleService;
   anthropic: AnthropicClient;
   embedder: TextEmbedder;
+  resolveModel?: (feature: string, codeSpecDefault: string) => string;
 }
 
 export function createRagService(opts: CreateOptions): RagService {
-  const { db, projects, semble, anthropic, embedder } = opts;
+  const { db, projects, semble, anthropic, embedder, resolveModel } = opts;
   const textIndex: TextIndex = createTextIndex({
     db,
     projects,
@@ -142,7 +143,13 @@ export function createRagService(opts: CreateOptions): RagService {
     const context = hits
       .map((h, i) => `[${i + 1}] ${h.label}\n${h.snippet}`)
       .join('\n\n');
-    const s = await synthesise('rag_text', TEXT_MODEL, projectId, req.query, context);
+    const s = await synthesise(
+      'rag_text',
+      resolveModel ? resolveModel('rag_text', TEXT_MODEL) : TEXT_MODEL,
+      projectId,
+      req.query,
+      context,
+    );
     return { answer: s.answer, citations, used_ai: s.used_ai };
   }
 
@@ -213,7 +220,13 @@ export function createRagService(opts: CreateOptions): RagService {
     const context = citations
       .map((c, i) => `[${i + 1}] ${c.label}\n${c.snippet}`)
       .join('\n\n');
-    const s = await synthesise('rag_audit', AUDIT_MODEL, projectId, req.query, context);
+    const s = await synthesise(
+      'rag_audit',
+      resolveModel ? resolveModel('rag_audit', AUDIT_MODEL) : AUDIT_MODEL,
+      projectId,
+      req.query,
+      context,
+    );
     return { answer: s.answer, citations, used_ai: s.used_ai };
   }
 

@@ -57,9 +57,9 @@ The backend binds to `127.0.0.1:47823` by default (configurable via `THROUGHLINE
 A minimal CLI ships with the backend:
 
 ```
-pnpm --filter @throughline/backend exec throughline health
-pnpm --filter @throughline/backend exec throughline projects create --name Demo --repo /path/to/repo
-pnpm --filter @throughline/backend exec throughline projects list
+pnpm --filter @throughline/backend exec tsx src/cli/index.ts health
+pnpm --filter @throughline/backend exec tsx src/cli/index.ts projects create --name Demo --repo /path/to/repo
+pnpm --filter @throughline/backend exec tsx src/cli/index.ts projects list
 ```
 
 For the broader build plan see [`ROADMAP.md`](ROADMAP.md) and [`CODE_SPEC.md`](CODE_SPEC.md).

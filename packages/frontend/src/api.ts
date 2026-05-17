@@ -106,7 +106,12 @@ function pid(projectId: string): string {
 
 export const api = {
   health: () => jsonFetch<{ ok: boolean; version: string }>('/health'),
-  listProjects: () => jsonFetch<{ projects: Project[] }>('/api/projects'),
+  listProjects: (includeArchived = false) =>
+    jsonFetch<{ projects: Project[] }>(
+      `/api/projects${includeArchived ? '?include_archived=true' : ''}`,
+    ),
+  deleteProject: (id: string) =>
+    jsonFetch<{ ok: true }>(`/api/projects/${pid(id)}`, { method: 'DELETE' }),
   createProject: (input: CreateProjectInput) =>
     jsonFetch<{ project: Project }>('/api/projects', {
       method: 'POST',

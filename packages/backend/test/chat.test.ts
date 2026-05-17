@@ -140,3 +140,47 @@ describe('Phase 14 — chat (SPEC §7.19, T-D23)', () => {
     }
   });
 });
+
+describe('Phase 16 (DoD) — per-feature model override is consumed end-to-end', () => {
+  it('routes the resolved model into the AI call and cost telemetry', async () => {
+    const seen: string[] = [];
+    const capturing: AnthropicClient = {
+      available: () => true,
+      call: async (input) => {
+        seen.push(input.model);
+        return { text: 'ok', input_tokens: 5, output_tokens: 3, stop_reason: 'end_turn' };
+      },
+    };
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry, {});
+      const dumpZone = { propose: vi.fn() } as unknown as DumpZoneService;
+      // resolveModel stands in for the server.ts closure modelFor('chat', …);
+      // an explicit per-feature override (Opus) must reach the call + telemetry.
+      const chat = createChatService({
+        db: backend.db,
+        projects,
+        items,
+        registry: backend.registry,
+        dumpZone,
+        anthropic: capturing,
+        resolveModel: () => 'claude-opus-4-7',
+      });
+      const project = projects.create({ name: 'p1', repo_path: '/tmp/p1' });
+      await chat.send(project.id, { context_type: 'session', context_id: 's1', message: 'hi' });
+      expect(seen).toEqual(['claude-opus-4-7']);
+      expect(
+        (
+          backend.db
+            .prepare(`SELECT model FROM cost_telemetry WHERE feature = 'chat'`)
+            .get() as { model: string }
+        ).model,
+      ).toBe('claude-opus-4-7');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
