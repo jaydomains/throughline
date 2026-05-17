@@ -20,6 +20,7 @@ interface NavDef {
 
 const PROJECT_NAV: NavDef[] = [
   { id: 'home', label: 'Home', icon: 'home', to: (id) => `/projects/${id}`, end: true },
+  { id: 'capture', label: 'Dump zone', icon: 'note', to: (id) => `/projects/${id}/capture` },
   { id: 'sessions', label: 'Sessions', icon: 'session', to: (id) => `/projects/${id}/sessions` },
   {
     id: 'modules',

@@ -457,5 +457,14 @@ Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plum
 - [x] Declass pass — single global block zeroes legacy rounded corners and removes pastel tag/pill fills (per handoff README step 3) without touching the ~25 components individually; per-screen structural restyle is Slice 3
 - [x] `ViewToggle.tsx` + `test/viewToggle.test.tsx` deleted; `test/sidebar.test.tsx` written (visibility predicates + no-project state); `test/directives.test.tsx` Header-hint test repointed to the sidebar count
 - [x] Suite green — frontend 113/113, typecheck clean, build clean
-### Slice 3 — HomeView build-out + Capture promotion + per-screen polish _(pending)_
+### Slice 3 — HomeView build-out + Capture promotion + per-screen polish
+
+- [x] `views/HomeView.tsx` — promoted out of `stubs.tsx` to a real surface: hero (eyebrow/h1/meta + scan & + Capture actions), 4-stat strip (in-progress / blocked / drift / directives), in-progress + blocked lists, drift summary, periodic-review nudge. Wired to `useItems` / `useDriftInbox` / `useDirectives` / `useStaleThreshold`. Code-TODO scan entry point preserved.
+- [x] CC-push timeline and methodology phase card **intentionally omitted** — Throughline does not model that data yet; faking it was rejected (same honesty stance as Pass 1b's deferred edges)
+- [x] `views/CaptureView.tsx` — first-class capture surface; new route `/projects/:id/capture`; sidebar "Dump zone" entry; embeds the existing `DumpZone` (review-before-apply modal unchanged, T-D5)
+- [x] `HomeView` stub removed from `stubs.tsx`; `App.tsx` imports the real view; `test/stubs.test.tsx` HomeView-stub test removed (dedicated coverage in `homeView.test.tsx`, same pattern as Pass 1b's GraphView stub removal)
+- [x] `test/homeView.test.tsx` rewritten (hero + stat strip + capture link + scan); `test/sidebar.test.tsx` covers the new Dump-zone entry implicitly via nav rendering
+- [x] Per-screen polish: global declass + new pill/tag/btn/card vocabulary applies to Session / Gates / Drift via the shared stylesheet. **Deep structural restyle of those screens' markup (e.g. DumpZone `.dz`/`.review-sheet`, detail-panel slide-in) is deferred** — flagged in the handover; out of scope for a green-suite slice
+- [x] Folded in two Slice-2 Gitar quality findings (PR #27): removed the dead `bundles` prop from `HeaderProps`/`App.tsx`; consolidated the duplicate `.main` selector
+- [x] Suite green — frontend 114/114, typecheck clean, build clean
 ### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density _(pending)_

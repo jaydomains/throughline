@@ -160,68 +160,8 @@ export function ProjectsView({ bundles, onCreated, onChanged }: ProjectsViewProp
   );
 }
 
-export function HomeView() {
-  const { id: projectId } = useParams();
-  const [scanning, setScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanResult, setScanResult] = useState<{ scan_id: string; proposal_id: string; match_count: number } | null>(
-    null,
-  );
-
-  async function runScan() {
-    if (!projectId) return;
-    setScanning(true);
-    setScanError(null);
-    setScanResult(null);
-    try {
-      const r = await api.scanCodeTodos(projectId);
-      setScanResult(r.result);
-    } catch (err) {
-      setScanError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setScanning(false);
-    }
-  }
-
-  return (
-    <div className="view-stub" data-testid="view-home">
-      <h1>Home</h1>
-      <p>
-        Phase 14 fills this with the across-everything surface (recent activity, drift inbox count, scratchpad
-        jots). For now it hosts manual capture entry points.
-      </p>
-      <section className="home-section" aria-label="Code TODO/FIXME import">
-        <h2>Code TODO import</h2>
-        <p className="form-hint">
-          Scans the project's repo for <code>TODO:</code>, <code>FIXME:</code>, <code>XXX:</code> and proposes
-          one item per match. Apply via the dump-zone review modal.
-        </p>
-        <div className="form-actions">
-          <button
-            type="button"
-            className="primary"
-            onClick={() => void runScan()}
-            disabled={scanning || !projectId}
-            data-testid="code-todo-scan"
-          >
-            {scanning ? 'Scanning…' : 'Scan repo for TODOs'}
-          </button>
-        </div>
-        {scanError && (
-          <p className="form-error" role="alert">
-            {scanError}
-          </p>
-        )}
-        {scanResult && (
-          <p className="form-hint" data-testid="code-todo-result">
-            Found {scanResult.match_count} match{scanResult.match_count === 1 ? '' : 'es'}; proposal saved as{' '}
-            <code>{scanResult.proposal_id.slice(0, 8)}</code>. Open the session view for this project to apply.
-          </p>
-        )}
-      </section>
-    </div>
-  );
-}
+// HomeView promoted to a first-class surface in views/HomeView.tsx
+// (UI redesign Slice 3). The code-TODO scan moved there.
 
 export function ModulesView({
   bundles,

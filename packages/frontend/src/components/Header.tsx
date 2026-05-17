@@ -1,6 +1,5 @@
 import { Link } from 'react-router-dom';
 import type { Project } from '@throughline/shared';
-import type { MethodologySummary } from '../api.js';
 import { useCostMeter } from '../hooks/useCostMeter.js';
 import { Wordmark } from './Wordmark.js';
 import { Icon } from './Icon.js';
@@ -10,7 +9,6 @@ import { InboxStatus } from './InboxStatus.js';
 
 interface HeaderProps {
   projects: Project[];
-  bundles: MethodologySummary[];
   activeProjectId: string | null;
   onOpenPalette: () => void;
   sseConnected: boolean;

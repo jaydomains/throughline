@@ -12,11 +12,9 @@ import { useBackendHealth } from './hooks/useBackendHealth.js';
 import { KeyboardProvider, useKeyboardRegistry } from './keyboard/registry.js';
 import { ModalStackProvider } from './keyboard/modalStack.js';
 import { useHotkey } from './keyboard/useHotkey.js';
-import {
-  HomeView,
-  ModulesView,
-  ProjectsView,
-} from './views/stubs.js';
+import { ModulesView, ProjectsView } from './views/stubs.js';
+import { HomeView } from './views/HomeView.js';
+import { CaptureView } from './views/CaptureView.js';
 import { GraphView } from './views/GraphView.js';
 import { GatesView } from './views/GatesView.js';
 import { DirectivesView } from './views/DirectivesView.js';
@@ -141,7 +139,6 @@ function AppInner() {
       <div className="app">
       <Header
         projects={projects}
-        bundles={bundles}
         activeProjectId={activeProjectId}
         onOpenPalette={openPalette}
         sseConnected={connected}
@@ -166,6 +163,7 @@ function AppInner() {
             }
           />
           <Route path="/projects/:id" element={<HomeView />} />
+          <Route path="/projects/:id/capture" element={<CaptureView />} />
           <Route path="/projects/:id/sessions" element={<SessionsIndex />} />
           <Route path="/projects/:id/sessions/:sessionId" element={<SessionView />} />
           <Route
