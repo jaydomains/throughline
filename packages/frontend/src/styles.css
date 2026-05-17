@@ -883,3 +883,4 @@ button.directive-badge { cursor: pointer; }
 .intelligence-view .rag-answer { white-space: pre-wrap; margin: 8px 0; }
 .intelligence-view .rag-citations { list-style: none; padding: 0; margin: 6px 0; }
 .intelligence-view .rag-citations li { padding: 4px 0; }
+.intelligence-view .rag-error { color: #b00020; margin: 6px 0; }

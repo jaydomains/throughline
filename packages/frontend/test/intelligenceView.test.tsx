@@ -55,6 +55,15 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
     });
   });
 
+  it('surfaces an error when the query API throws', async () => {
+    mockApi.ragQuery.mockRejectedValueOnce(new Error('network down'));
+    renderView();
+    fireEvent.change(screen.getByTestId('rag-input'), { target: { value: 'q' } });
+    fireEvent.click(screen.getByTestId('rag-run'));
+    await waitFor(() => expect(screen.getByTestId('rag-error')).toBeTruthy());
+    expect(screen.getByTestId('rag-error').textContent).toContain('network down');
+  });
+
   it('reindex reports the embedder backend', async () => {
     renderView();
     fireEvent.click(screen.getByTestId('rag-reindex'));

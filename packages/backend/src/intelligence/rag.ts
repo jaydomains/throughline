@@ -220,7 +220,7 @@ export function createRagService(opts: CreateOptions): RagService {
   return {
     async reindex(projectId) {
       if (!projects.get(projectId)) throw new ProjectNotFoundError(projectId);
-      const r = await textIndex.ensureFresh(projectId);
+      const r = await textIndex.ensureFresh(projectId, { force: true });
       return { reembedded: r.reembedded, total: r.total, embedder: embedder.kind };
     },
 

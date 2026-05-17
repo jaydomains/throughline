@@ -24,12 +24,14 @@ export function IntelligenceView() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<RagQueryResult | null>(null);
   const [reindexMsg, setReindexMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   if (!projectId) return null;
 
   const run = async () => {
     if (query.trim() === '') return;
     setBusy(true);
+    setError(null);
     try {
       const r = await api.ragQuery(projectId, {
         query,
@@ -37,6 +39,8 @@ export function IntelligenceView() {
         cross_project: crossProject,
       });
       setResult(r);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Query failed');
     } finally {
       setBusy(false);
     }
@@ -44,9 +48,12 @@ export function IntelligenceView() {
 
   const reindex = async () => {
     setBusy(true);
+    setError(null);
     try {
       const r = await api.reindexText(projectId);
       setReindexMsg(`reembedded ${r.reembedded}/${r.total} (${r.embedder})`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Reindex failed');
     } finally {
       setBusy(false);
     }
@@ -98,6 +105,11 @@ export function IntelligenceView() {
         {reindexMsg && (
           <p className="muted" data-testid="rag-reindex-msg">
             {reindexMsg}
+          </p>
+        )}
+        {error && (
+          <p className="rag-error" role="alert" data-testid="rag-error">
+            {error}
           </p>
         )}
       </div>

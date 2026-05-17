@@ -33,7 +33,10 @@ export interface TextHit {
 }
 
 export interface TextIndex {
-  ensureFresh(projectId: string | null): Promise<{ reembedded: number; total: number }>;
+  ensureFresh(
+    projectId: string | null,
+    opts?: { force?: boolean },
+  ): Promise<{ reembedded: number; total: number }>;
   search(
     projectId: string | null,
     query: string,
@@ -106,7 +109,32 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
     return out;
   }
 
-  async function ensureFresh(projectId: string | null) {
+  // The freshness sweep (gather + per-entity content-hash + a DB read; embedding only
+  // for actually-changed entities) stays on the search path so an edit is reflected at
+  // query time — that is the C-D2 "incremental on content edit" contract. To keep that
+  // off the per-query hot path under bursty querying, the O(n) sweep is throttled to at
+  // most once per scope per FRESH_TTL_MS; an explicit reindex (or a forced call) always
+  // sweeps. Net: edits surface within the TTL window, not on every keystroke-fast query.
+  const FRESH_TTL_MS = 4000;
+  const lastFresh = new Map<string, number>();
+
+  async function ensureFresh(
+    projectId: string | null,
+    fopts?: { force?: boolean },
+  ): Promise<{ reembedded: number; total: number }> {
+    const scopeKey = projectId ?? '*';
+    if (
+      fopts?.force !== true &&
+      Date.now() - (lastFresh.get(scopeKey) ?? 0) < FRESH_TTL_MS
+    ) {
+      return { reembedded: 0, total: 0 };
+    }
+    const r = await runEnsure(projectId);
+    lastFresh.set(scopeKey, Date.now());
+    return r;
+  }
+
+  async function runEnsure(projectId: string | null) {
     const entities = gather(projectId);
     const liveIds = new Set(entities.map((e) => `${e.entity_type}:${e.entity_id}`));
 
