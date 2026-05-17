@@ -346,10 +346,10 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 - [x] **(14c)** "Do next" view surfaces unblock-impact summaries (`unblock_impact { if_you_unblock, items_freed }`; IntelligenceView Do-next panel; tests backend "…reports unblock impact" + frontend "loads the Do-next sequence with unblock-impact summary")
 - [x] **(14c)** Stakeholder view toggle re-renders item content in plain language (`intelligence/stakeholder.ts` `render` Sonnet, deterministic fallback; `GET …/items/:itemId/stakeholder`; IntelligenceView stakeholder panel; test "AI-renders, caches, and records cost + audit")
 - [x] **(14c)** Stakeholder view cache invalidates on item edit (audit-trail-as-cache keyed by `sha256(title+description+status)`; fingerprint mismatch ⇒ regenerate, §13 adopted; test "cache invalidates when the item content changes")
-- [ ] Per-list chat panel reads session items + methodology context as input
-- [ ] Per-list chat proposed changes route through review
-- [ ] Dump zone chat mode toggle: paste, refine, apply through review
-- [ ] Chat history persisted per context and retrievable
+- [x] **(14d)** Per-list chat panel reads session items + methodology context as input (`intelligence/chat.ts` `sessionContext`: session items + bundle/anchors/markers/primary-units digest into the system prompt; `POST /api/projects/:id/intelligence/chat`; test "per-list chat persists the turn and replies with session + methodology context")
+- [x] **(14d)** Per-list chat proposed changes route through review (`chat.propose` → `dumpZone.propose({ source:'paste' })`, no auto-mutation; `POST …/chat/propose`; test "proposed changes route through the dump-zone review modal")
+- [x] **(14d)** Dump zone chat mode toggle: paste, refine, apply through review (`context_type:'dump_zone'` chat path + `propose` reuse the same review pipeline; IntelligenceView chat panel context-type toggle; test "persists history independently per context…")
+- [x] **(14d)** Chat history persisted per context and retrievable (`chat_history` rows keyed by `(project_id, context_type, context_id)`, ordered `created_at, rowid`; `history()` + `GET …/chat`; tests "persists history independently per context…" / frontend "loads persisted chat history for a context")
 
 ---
 

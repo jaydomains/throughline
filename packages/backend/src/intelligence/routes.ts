@@ -1,5 +1,10 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { RagQueryRequest, SessionRetroRequest } from '@throughline/shared';
+import type {
+  ChatProposeRequest,
+  ChatSendRequest,
+  RagQueryRequest,
+  SessionRetroRequest,
+} from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
 import { ProjectNotFoundError, type RagService } from './rag.js';
 import {
@@ -20,6 +25,10 @@ import {
   ItemNotFoundError,
   type StakeholderService,
 } from './stakeholder.js';
+import {
+  ProjectNotFoundError as ChatProjectNotFoundError,
+  type ChatService,
+} from './chat.js';
 
 // Phase 14 — intelligence surfaces (SPEC §7.18, §9; T-D22, T-D25, C-D2; CODE_SPEC §15).
 
@@ -29,7 +38,8 @@ function mapError(reply: FastifyReply, err: unknown): unknown {
     err instanceof RetroProjectNotFoundError ||
     err instanceof ReviewProjectNotFoundError ||
     err instanceof SeqProjectNotFoundError ||
-    err instanceof StakeProjectNotFoundError
+    err instanceof StakeProjectNotFoundError ||
+    err instanceof ChatProjectNotFoundError
   ) {
     return reply.code(404).send({ error: 'not_found', message: (err as Error).message });
   }
@@ -48,6 +58,7 @@ interface IntelligenceServices {
   periodicReview: PeriodicReviewService;
   sequencing: SequencingService;
   stakeholder: StakeholderService;
+  chat: ChatService;
 }
 
 export function registerIntelligenceRoutes(
@@ -155,6 +166,61 @@ export function registerIntelligenceRoutes(
       }
       try {
         return await svc.stakeholder.render(req.params.id, req.params.itemId);
+      } catch (err) {
+        return mapError(reply, err);
+      }
+    },
+  );
+
+  app.get<{
+    Params: { id: string };
+    Querystring: { context_type?: string; context_id?: string };
+  }>('/api/projects/:id/intelligence/chat', async (req, reply) => {
+    if (!projects.get(req.params.id)) {
+      return reply.code(404).send({ error: 'project_not_found' });
+    }
+    const ct = req.query.context_type ?? '';
+    const ci = req.query.context_id ?? '';
+    if (ct === '' || ci === '') {
+      return reply.code(400).send({ error: 'context_required' });
+    }
+    try {
+      return svc.chat.history(req.params.id, ct, ci);
+    } catch (err) {
+      return mapError(reply, err);
+    }
+  });
+
+  app.post<{ Params: { id: string }; Body: ChatSendRequest }>(
+    '/api/projects/:id/intelligence/chat',
+    async (req, reply) => {
+      if (!projects.get(req.params.id)) {
+        return reply.code(404).send({ error: 'project_not_found' });
+      }
+      const b = req.body;
+      if (!b || typeof b.message !== 'string' || b.message.trim() === '' || !b.context_id) {
+        return reply.code(400).send({ error: 'message_and_context_required' });
+      }
+      try {
+        return await svc.chat.send(req.params.id, b);
+      } catch (err) {
+        return mapError(reply, err);
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string }; Body: ChatProposeRequest }>(
+    '/api/projects/:id/intelligence/chat/propose',
+    async (req, reply) => {
+      if (!projects.get(req.params.id)) {
+        return reply.code(404).send({ error: 'project_not_found' });
+      }
+      const b = req.body;
+      if (!b || typeof b.text !== 'string' || b.text.trim() === '') {
+        return reply.code(400).send({ error: 'text_required' });
+      }
+      try {
+        return await svc.chat.propose(req.params.id, b);
       } catch (err) {
         return mapError(reply, err);
       }

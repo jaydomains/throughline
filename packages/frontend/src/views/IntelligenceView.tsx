@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import type {
+  ChatContextType,
+  ChatMessage,
   DoNextResult,
   PeriodicReviewResult,
   RagQueryResult,
@@ -39,6 +41,10 @@ export function IntelligenceView() {
   const [doNext, setDoNext] = useState<DoNextResult | null>(null);
   const [stakeItem, setStakeItem] = useState('');
   const [stake, setStake] = useState<StakeholderViewResult | null>(null);
+  const [chatCtxType, setChatCtxType] = useState<ChatContextType>('session');
+  const [chatCtxId, setChatCtxId] = useState('');
+  const [chatMsg, setChatMsg] = useState('');
+  const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -131,6 +137,39 @@ export function IntelligenceView() {
       setStake(await api.getStakeholderView(projectId, stakeItem.trim()));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Stakeholder render failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const loadChat = async () => {
+    if (chatCtxId.trim() === '') return;
+    setBusy(true);
+    setError(null);
+    try {
+      const h = await api.getChatHistory(projectId, chatCtxType, chatCtxId.trim());
+      setChatLog(h.messages);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Chat load failed');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const sendChat = async () => {
+    if (chatMsg.trim() === '' || chatCtxId.trim() === '') return;
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api.sendChat(projectId, {
+        context_type: chatCtxType,
+        context_id: chatCtxId.trim(),
+        message: chatMsg.trim(),
+      });
+      setChatLog((log) => [...log, r.user_message, r.assistant_message]);
+      setChatMsg('');
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Chat send failed');
     } finally {
       setBusy(false);
     }
@@ -348,6 +387,51 @@ export function IntelligenceView() {
             </p>
           </div>
         )}
+      </div>
+
+      <hr />
+      <h2>Chat</h2>
+      <p className="muted">
+        Per-list (session) or dump-zone chat. History is persisted per context; proposed
+        changes route through the review modal.
+      </p>
+      <div className="chat-panel" data-testid="chat-panel">
+        <div className="chat-controls">
+          <select
+            data-testid="chat-ctx-type"
+            value={chatCtxType}
+            onChange={(e) => setChatCtxType(e.target.value as ChatContextType)}
+          >
+            <option value="session">session (per-list)</option>
+            <option value="dump_zone">dump_zone</option>
+          </select>
+          <input
+            data-testid="chat-ctx-id"
+            placeholder={chatCtxType === 'session' ? 'session id' : 'context id'}
+            value={chatCtxId}
+            onChange={(e) => setChatCtxId(e.target.value)}
+          />
+          <button type="button" data-testid="chat-load" disabled={busy} onClick={loadChat}>
+            Load history
+          </button>
+        </div>
+        <ul className="chat-log" data-testid="chat-log">
+          {chatLog.map((m) => (
+            <li key={m.id} className={`chat-${m.role}`}>
+              <strong>{m.role}:</strong> {m.content}
+            </li>
+          ))}
+        </ul>
+        <textarea
+          data-testid="chat-input"
+          rows={2}
+          value={chatMsg}
+          placeholder="Ask about this list…"
+          onChange={(e) => setChatMsg(e.target.value)}
+        />
+        <button type="button" data-testid="chat-send" disabled={busy} onClick={sendChat}>
+          Send
+        </button>
       </div>
     </section>
   );

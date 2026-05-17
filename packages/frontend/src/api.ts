@@ -61,6 +61,10 @@ import type {
   PeriodicReviewSynthesis,
   DoNextResult,
   StakeholderViewResult,
+  ChatHistoryResult,
+  ChatSendRequest,
+  ChatSendResult,
+  ChatProposeRequest,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -632,5 +636,21 @@ export const api = {
   getStakeholderView: (projectId: string, itemId: string) =>
     jsonFetch<StakeholderViewResult>(
       `/api/projects/${pid(projectId)}/intelligence/items/${encodeURIComponent(itemId)}/stakeholder`,
+    ),
+  getChatHistory: (projectId: string, contextType: string, contextId: string) =>
+    jsonFetch<ChatHistoryResult>(
+      `/api/projects/${pid(projectId)}/intelligence/chat?context_type=${encodeURIComponent(
+        contextType,
+      )}&context_id=${encodeURIComponent(contextId)}`,
+    ),
+  sendChat: (projectId: string, req: ChatSendRequest) =>
+    jsonFetch<ChatSendResult>(`/api/projects/${pid(projectId)}/intelligence/chat`, {
+      method: 'POST',
+      body: JSON.stringify(req),
+    }),
+  proposeFromChat: (projectId: string, req: ChatProposeRequest) =>
+    jsonFetch<DumpZoneProposal>(
+      `/api/projects/${pid(projectId)}/intelligence/chat/propose`,
+      { method: 'POST', body: JSON.stringify(req) },
     ),
 };

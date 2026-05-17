@@ -112,4 +112,37 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
     expect(mockApi.getStakeholderView).toHaveBeenCalledWith('p1', 'item-7');
     expect(screen.getByTestId('stake-result').textContent).toContain('Plain-language summary of item-7');
   });
+
+  it('sends a per-list chat turn and appends the exchange to the log', async () => {
+    renderView();
+    fireEvent.change(screen.getByTestId('chat-ctx-id'), { target: { value: 'sess-3' } });
+    fireEvent.change(screen.getByTestId('chat-input'), {
+      target: { value: 'what should I do next' },
+    });
+    fireEvent.click(screen.getByTestId('chat-send'));
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-log').textContent).toContain('re: what should I do next'),
+    );
+    expect(mockApi.sendChat).toHaveBeenCalledWith('p1', {
+      context_type: 'session',
+      context_id: 'sess-3',
+      message: 'what should I do next',
+    });
+  });
+
+  it('loads persisted chat history for a context', async () => {
+    mockApi.getChatHistory.mockResolvedValueOnce({
+      context_type: 'dump_zone',
+      context_id: 'p1',
+      messages: [{ id: 'm1', role: 'user', content: 'earlier note', created_at: 't' }],
+    });
+    renderView();
+    fireEvent.change(screen.getByTestId('chat-ctx-type'), { target: { value: 'dump_zone' } });
+    fireEvent.change(screen.getByTestId('chat-ctx-id'), { target: { value: 'p1' } });
+    fireEvent.click(screen.getByTestId('chat-load'));
+    await waitFor(() =>
+      expect(screen.getByTestId('chat-log').textContent).toContain('earlier note'),
+    );
+    expect(mockApi.getChatHistory).toHaveBeenCalledWith('p1', 'dump_zone', 'p1');
+  });
 });

@@ -119,3 +119,43 @@ export interface StakeholderViewResult {
   // true ⇒ served from the fingerprint-keyed cache (no fresh AI call / cost).
   cached: boolean;
 }
+
+// Chat mode (SPEC §7.19; T-D23: history persisted per context). Per-list chat is scoped
+// to a session (reads its items + methodology context); dump-zone chat is the paste/
+// refine surface. Proposed changes route through the standard dump-zone review modal.
+export type ChatContextType = 'session' | 'dump_zone';
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  created_at: string;
+}
+
+export interface ChatHistoryResult {
+  context_type: ChatContextType;
+  context_id: string;
+  messages: ChatMessage[];
+}
+
+export interface ChatSendRequest {
+  context_type: ChatContextType;
+  context_id: string;
+  message: string;
+}
+
+export interface ChatSendResult {
+  user_message: ChatMessage;
+  assistant_message: ChatMessage;
+  // false ⇒ no Anthropic key; the user message is still persisted and a stub assistant
+  // reply is stored so the thread stays coherent (no cost).
+  used_ai: boolean;
+}
+
+export interface ChatProposeRequest {
+  context_type: ChatContextType;
+  context_id: string;
+  text: string;
+  target: 'session' | 'library';
+  session_id?: string | null;
+}

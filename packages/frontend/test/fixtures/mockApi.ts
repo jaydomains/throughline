@@ -1140,4 +1140,27 @@ export const mockApi = {
     used_ai: true,
     cached: false,
   })),
+  getChatHistory: vi.fn(async (_projectId: string, contextType: string, contextId: string) => ({
+    context_type: contextType === 'dump_zone' ? 'dump_zone' : 'session',
+    context_id: contextId,
+    messages: [] as Array<{ id: string; role: 'user' | 'assistant'; content: string; created_at: string }>,
+  })),
+  sendChat: vi.fn(
+    async (_projectId: string, req: { context_id: string; message: string }) => ({
+      user_message: { id: 'u1', role: 'user' as const, content: req.message, created_at: 't1' },
+      assistant_message: { id: 'a1', role: 'assistant' as const, content: `re: ${req.message}`, created_at: 't2' },
+      used_ai: true,
+    }),
+  ),
+  proposeFromChat: vi.fn(async (_projectId: string, _req: unknown) => ({
+    id: 'prop1',
+    project_id: 'p1',
+    target: 'session',
+    source: 'paste',
+    extractor: 'heuristic',
+    raw_text: 'x',
+    payload: { items: [] },
+    status: 'pending',
+    created_at: 't',
+  })),
 };

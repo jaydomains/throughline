@@ -19,6 +19,7 @@ import { createRetroService } from './intelligence/retro.js';
 import { createPeriodicReviewService } from './intelligence/periodic-review.js';
 import { createSequencingService } from './intelligence/sequencing.js';
 import { createStakeholderService } from './intelligence/stakeholder.js';
+import { createChatService } from './intelligence/chat.js';
 import { registerIntelligenceRoutes } from './intelligence/routes.js';
 import { createGateHookQueue } from './methodology/gates/hook-queue.js';
 import { writeRuntimeFile } from './methodology/gates/runtime-file.js';
@@ -403,6 +404,16 @@ export async function startServer(
     items,
     anthropic: anthropicClient,
   });
+  // Phase 14 — chat (SPEC §7.19, T-D23). Per-list + dump-zone chat; history persisted
+  // per context; proposed changes route through the dump-zone review modal.
+  const chat = createChatService({
+    db,
+    projects,
+    items,
+    registry,
+    dumpZone,
+    anthropic: anthropicClient,
+  });
   const notifier = createOsNotifier({
     logger: {
       info: (m) => app.log.info(m),
@@ -465,6 +476,7 @@ export async function startServer(
     periodicReview,
     sequencing,
     stakeholder,
+    chat,
   });
   registerGitHubRoutes(app, {
     projects,
