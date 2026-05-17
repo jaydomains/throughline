@@ -147,7 +147,6 @@ function AppInner() {
             path="/projects"
             element={
               <ProjectsView
-                projects={projects}
                 bundles={bundles}
                 onCreated={async (project) => {
                   await refreshProjects();

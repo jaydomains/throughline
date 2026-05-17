@@ -20,7 +20,6 @@ export function Stub({ title, body }: StubProps) {
 }
 
 interface ProjectsViewProps {
-  projects: Project[];
   bundles: MethodologySummary[];
   onCreated: (project: Project) => void;
   // Keeps the header switcher / app-level project list in sync after a
@@ -28,12 +27,13 @@ interface ProjectsViewProps {
   onChanged?: () => void | Promise<void>;
 }
 
-export function ProjectsView({ projects, bundles, onCreated, onChanged }: ProjectsViewProps) {
+export function ProjectsView({ bundles, onCreated, onChanged }: ProjectsViewProps) {
   const [modalOpen, setModalOpen] = useState(false);
-  // The header switcher only carries active projects; this view owns the full
-  // lifecycle (SPEC §11: create / switch / archive / delete all functional), so
-  // it fetches active + archived itself.
-  const [all, setAll] = useState<Project[]>(projects);
+  // This view owns the full project lifecycle (SPEC §11: create / switch /
+  // archive / delete all functional) and is the single source of truth for its
+  // list — it fetches active + archived via reload() on mount and after every
+  // action, rather than seeding from a prop the header switcher also drives.
+  const [all, setAll] = useState<Project[]>([]);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 

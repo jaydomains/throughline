@@ -15,7 +15,7 @@ function mount(onChanged = vi.fn()) {
   return render(
     <MemoryRouter>
       <ModalStackProvider>
-        <ProjectsView projects={[]} bundles={[]} onCreated={() => {}} onChanged={onChanged} />
+        <ProjectsView bundles={[]} onCreated={() => {}} onChanged={onChanged} />
       </ModalStackProvider>
     </MemoryRouter>,
   );
