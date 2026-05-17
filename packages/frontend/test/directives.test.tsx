@@ -11,7 +11,7 @@ vi.mock('../src/api.js', async () => {
 
 import { DirectivesView } from '../src/views/DirectivesView.js';
 import { LibraryView } from '../src/views/LibraryView.js';
-import { Header } from '../src/components/Header.js';
+import { Sidebar } from '../src/components/Sidebar.js';
 import {
   mockApi,
   resetMockApi,
@@ -220,41 +220,21 @@ describe('DirectiveModal — reminder paths', () => {
   });
 });
 
-describe('Header directives hint', () => {
+describe('Sidebar directives count', () => {
   it('shows the active count and links to the directives view', async () => {
     seedItem({ id: 'i1', project_id: 'p1', title: 'Item one' });
     seedDirective({ id: 'd1', project_id: 'p1', parent_type: 'item', parent_id: 'i1', kind: 'pin' });
     seedDirective({ id: 'd2', project_id: 'p1', parent_type: 'item', parent_id: 'i1', kind: 'include_prompt' });
     render(
       <MemoryRouter initialEntries={['/projects/p1']}>
-        <Header
-          projects={[
-            {
-              id: 'p1',
-              name: 'demo',
-              repo_path: '/tmp/demo',
-              github_owner: null,
-              github_repo: null,
-              bundle_id: 'freeform',
-              bundle_path: null,
-              state: 'active',
-              settings_json: {},
-              created_at: '',
-              updated_at: '',
-              archived_at: null,
-            },
-          ]}
-          bundles={[]}
-          activeProjectId="p1"
-          onOpenPalette={() => {}}
-          sseConnected
-        />
+        <Sidebar activeProjectId="p1" bundle={undefined} />
       </MemoryRouter>,
     );
-    const hint = await screen.findByTestId('directives-hint');
+    const count = await screen.findByTestId('nav-count-directives');
     await waitFor(() => {
-      expect(hint).toHaveTextContent('Directives (2)');
+      expect(count).toHaveTextContent('2');
     });
-    expect(hint).toHaveAttribute('href', '/projects/p1/directives');
+    const link = count.closest('a');
+    expect(link).toHaveAttribute('href', '/projects/p1/directives');
   });
 });

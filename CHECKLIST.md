@@ -446,6 +446,16 @@ Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plum
 - [x] GraphView `--gv-*` scoped token block deleted (`views/graph/graph.css`); every rule repointed to global tokens — GraphView now follows direction/theme/density. **Closes DECISIONS WN-1b-c.**
 - [x] Suite green — frontend 112/112, `pnpm --filter @throughline/frontend typecheck` clean, `build` clean (fonts emitted as offline assets)
 
-### Slice 2 — shell + vocabulary sweep _(pending)_
+### Slice 2 — shell + vocabulary sweep
+
+- [x] `components/Icon.tsx` — 15-glyph inline-SVG icon set (typed `IconName`), ported from `prototype/icons.jsx`
+- [x] `components/Wordmark.tsx` — direction-specific (A through-line glyph / B serif masthead / C terminal prompt); cursor blink gated behind `prefers-reduced-motion: no-preference`
+- [x] `components/Sidebar.tsx` — two grouped nav rails (Project / Methodology) + settings link; replaces `ViewToggle`; visibility predicates (Primary units / Gates) preserved from `views/modes.ts`; directives count + drift-inbox warn badge
+- [x] `Header.tsx` rebuilt to the handoff layout (Wordmark → hairline → project switcher → spacer → scratchpad → inbox → cost → live → jump); directives/drift/backup/settings moved to the sidebar
+- [x] `App.tsx` switched to the `grid-template-areas` shell (`.app-root` → `.app` head/side/main); DownBanner kept above the grid
+- [x] Shell + pill/tag/btn/card vocabulary appended to `styles.css`; dead `.app-shell`/`.header`/`.view-toggle`/`main.view` blocks removed
+- [x] Declass pass — single global block zeroes legacy rounded corners and removes pastel tag/pill fills (per handoff README step 3) without touching the ~25 components individually; per-screen structural restyle is Slice 3
+- [x] `ViewToggle.tsx` + `test/viewToggle.test.tsx` deleted; `test/sidebar.test.tsx` written (visibility predicates + no-project state); `test/directives.test.tsx` Header-hint test repointed to the sidebar count
+- [x] Suite green — frontend 113/113, typecheck clean, build clean
 ### Slice 3 — HomeView build-out + Capture promotion + per-screen polish _(pending)_
 ### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density _(pending)_

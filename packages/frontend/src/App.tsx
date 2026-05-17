@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Header } from './components/Header.js';
+import { Sidebar } from './components/Sidebar.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { HelpModal } from './components/HelpModal.js';
 import { DownBanner } from './components/DownBanner.js';
@@ -62,6 +63,10 @@ function AppInner() {
   }, []);
 
   const activeProjectId = activeProjectIdFromPath(location.pathname);
+  const activeProject = activeProjectId
+    ? projects.find((p) => p.id === activeProjectId) ?? null
+    : null;
+  const activeBundle = activeProject ? findBundle(bundles, activeProject.bundle_id) : undefined;
 
   // Register global keybindings exactly once each.
   useEffect(() => {
@@ -131,8 +136,9 @@ function AppInner() {
   }, [activeProjectId, projects, navigate]);
 
   return (
-    <div className="app-shell">
+    <div className="app-root">
       <DownBanner visible={banner} />
+      <div className="app">
       <Header
         projects={projects}
         bundles={bundles}
@@ -140,7 +146,9 @@ function AppInner() {
         onOpenPalette={openPalette}
         sseConnected={connected}
       />
-      <main className="view" role="main">
+      <Sidebar activeProjectId={activeProjectId} bundle={activeBundle} />
+      <main className="main" role="main">
+        <div className="view">
         <Routes>
           <Route path="/" element={<RootRedirect lastActiveProjectId={lastActive} />} />
           <Route
@@ -185,7 +193,9 @@ function AppInner() {
           />
           <Route path="*" element={<Navigate to="/projects" replace />} />
         </Routes>
+        </div>
       </main>
+      </div>
 
       <CommandPalette
         open={paletteOpen}
