@@ -28,6 +28,26 @@ describe('settings service', () => {
     }
   });
 
+  it('fires the onChange hook after each successful write (Slice 4 SSE source)', () => {
+    const cfg = makeTmpConfig();
+    try {
+      const db = openDb(cfg.dbPath);
+      runMigrations(db);
+      const seen: Array<[string, unknown]> = [];
+      const settings = createSettingsService(db, (k, v) => seen.push([k, v]));
+      settings.set('theme_direction', 'B');
+      settings.setMany({ theme_mode: 'light', theme_density: 'spacious' });
+      expect(seen).toEqual([
+        ['theme_direction', 'B'],
+        ['theme_mode', 'light'],
+        ['theme_density', 'spacious'],
+      ]);
+      db.close();
+    } finally {
+      cfg.cleanup();
+    }
+  });
+
   it('rejects keys that look like secrets (T-D4)', () => {
     const cfg = makeTmpConfig();
     try {

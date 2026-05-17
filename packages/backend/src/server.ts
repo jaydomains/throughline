@@ -41,7 +41,7 @@ import { registerSessionRoutes } from './sessions/routes.js';
 import { registerAuditRoutes } from './audit/routes.js';
 import { registerMethodologyRoutes } from './routes/methodologies.js';
 import { registerHealthRoute } from './routes/health.js';
-import { registerEventsRoute } from './routes/events.js';
+import { registerEventsRoute, createSSEHub } from './routes/events.js';
 import { registerWebRoutes } from './routes/web.js';
 import { createAnthropicClient } from './ai/anthropic.js';
 import { createModelResolver } from './ai/model-resolver.js';
@@ -153,7 +153,19 @@ export async function startServer(
   for (const p of projects.list({ includeArchived: true })) {
     if (p.bundle_path) registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path);
   }
-  const settings = createSettingsService(db);
+  // SSE fan-out hub (UI redesign Slice 4). The events route registers each
+  // connection; settings writes for the theme keys broadcast `settings-changed`
+  // so every open tab hot-reloads its theme without a refresh.
+  const sseHub = createSSEHub();
+  const THEME_KEYS = new Set(['theme_direction', 'theme_mode', 'theme_density']);
+  const themePayload = (): Record<string, unknown> => ({
+    theme_direction: settings.get('theme_direction') ?? 'A',
+    theme_mode: settings.get('theme_mode') ?? 'dark',
+    theme_density: settings.get('theme_density') ?? 'comfortable',
+  });
+  const settings = createSettingsService(db, (key) => {
+    if (THEME_KEYS.has(key)) sseHub.broadcast('settings-changed', themePayload());
+  });
   // Phase 16 (DoD) — single per-feature model-resolution point. Reads settings per
   // call so a model override / global-default change takes effect without a backend
   // restart. Precedence: per-feature override > global default (Sonnet-tier only) >
@@ -514,7 +526,7 @@ export async function startServer(
   });
 
   registerHealthRoute(app);
-  registerEventsRoute(app);
+  registerEventsRoute(app, sseHub);
   registerMethodologyRoutes(app, registry);
   registerGateRoutes(app, {
     db,

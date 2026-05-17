@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Header } from './components/Header.js';
+import { Sidebar } from './components/Sidebar.js';
 import { CommandPalette } from './components/CommandPalette.js';
 import { HelpModal } from './components/HelpModal.js';
 import { DownBanner } from './components/DownBanner.js';
@@ -11,11 +12,9 @@ import { useBackendHealth } from './hooks/useBackendHealth.js';
 import { KeyboardProvider, useKeyboardRegistry } from './keyboard/registry.js';
 import { ModalStackProvider } from './keyboard/modalStack.js';
 import { useHotkey } from './keyboard/useHotkey.js';
-import {
-  HomeView,
-  ModulesView,
-  ProjectsView,
-} from './views/stubs.js';
+import { ModulesView, ProjectsView } from './views/stubs.js';
+import { HomeView } from './views/HomeView.js';
+import { CaptureView } from './views/CaptureView.js';
 import { GraphView } from './views/GraphView.js';
 import { GatesView } from './views/GatesView.js';
 import { DirectivesView } from './views/DirectivesView.js';
@@ -27,6 +26,7 @@ import { DriftInbox } from './views/DriftInbox.js';
 import { IntelligenceView } from './views/IntelligenceView.js';
 import { SettingsView } from './views/SettingsView.js';
 import { api } from './api.js';
+import { applyTheme, readTheme, type ThemeDirection } from './theme.js';
 
 function activeProjectIdFromPath(path: string): string | null {
   const m = /^\/projects\/([^/]+)/.exec(path);
@@ -43,13 +43,25 @@ function AppInner() {
   const location = useLocation();
   const { projects, refresh: refreshProjects } = useProjects();
   const { bundles } = useMethodologies();
-  const { connected } = useSSE();
+  const { connected, settingsChange } = useSSE();
   const { healthy } = useBackendHealth();
   const registry = useKeyboardRegistry();
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [lastActive, setLastActive] = useState<string | null>(null);
+  // Direction drives the wordmark treatment. Seeded from the attribute
+  // main.tsx applied pre-paint; updated live on the SSE settings-changed event.
+  const [direction, setDirection] = useState<ThemeDirection>(
+    () => (document.body.getAttribute('data-direction') as ThemeDirection) || 'A',
+  );
+
+  useEffect(() => {
+    if (!settingsChange) return;
+    const theme = readTheme(settingsChange);
+    applyTheme(theme);
+    setDirection(theme.direction);
+  }, [settingsChange]);
 
   useEffect(() => {
     api
@@ -62,6 +74,10 @@ function AppInner() {
   }, []);
 
   const activeProjectId = activeProjectIdFromPath(location.pathname);
+  const activeProject = activeProjectId
+    ? projects.find((p) => p.id === activeProjectId) ?? null
+    : null;
+  const activeBundle = activeProject ? findBundle(bundles, activeProject.bundle_id) : undefined;
 
   // Register global keybindings exactly once each.
   useEffect(() => {
@@ -131,16 +147,19 @@ function AppInner() {
   }, [activeProjectId, projects, navigate]);
 
   return (
-    <div className="app-shell">
+    <div className="app-root">
       <DownBanner visible={banner} />
+      <div className="app">
       <Header
         projects={projects}
-        bundles={bundles}
         activeProjectId={activeProjectId}
         onOpenPalette={openPalette}
         sseConnected={connected}
+        direction={direction}
       />
-      <main className="view" role="main">
+      <Sidebar activeProjectId={activeProjectId} bundle={activeBundle} />
+      <main className="main" role="main">
+        <div className="view">
         <Routes>
           <Route path="/" element={<RootRedirect lastActiveProjectId={lastActive} />} />
           <Route
@@ -158,6 +177,7 @@ function AppInner() {
             }
           />
           <Route path="/projects/:id" element={<HomeView />} />
+          <Route path="/projects/:id/capture" element={<CaptureView />} />
           <Route path="/projects/:id/sessions" element={<SessionsIndex />} />
           <Route path="/projects/:id/sessions/:sessionId" element={<SessionView />} />
           <Route
@@ -185,7 +205,9 @@ function AppInner() {
           />
           <Route path="*" element={<Navigate to="/projects" replace />} />
         </Routes>
+        </div>
       </main>
+      </div>
 
       <CommandPalette
         open={paletteOpen}

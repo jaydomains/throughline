@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { HomeView, ModulesView } from '../src/views/stubs.js';
+import { ModulesView } from '../src/views/stubs.js';
 import type { MethodologySummary } from '../src/api.js';
 
 const freeform: MethodologySummary = {
@@ -21,15 +21,6 @@ const rich: MethodologySummary = {
 };
 
 describe('View stubs', () => {
-  it('HomeView renders its stub copy', () => {
-    render(
-      <MemoryRouter>
-        <HomeView />
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
-  });
-
   it('ModulesView redirects when the bundle declares no primary unit', () => {
     render(
       <MemoryRouter initialEntries={['/projects/p1/modules']}>

@@ -430,3 +430,55 @@ Not a ROADMAP phase. Closes the v1 pre-launch verification Cat-1 honesty blocker
 - [ ] **Deferred — cross-session-mention edge** (SPEC §7.11): no mention/reference field in the `Item` model. Raised as DECISIONS **WN-1b-a** for spec-author resolution. Not a separate §11 DoD line.
 - [ ] **Deferred — communication-model graph layer** (SPEC §7.11): bundle parser extracts only `communication_model.edge_types`, not the per-unit routing/producer contract. Raised as DECISIONS **WN-1b-b**. Not a separate §11 DoD line.
 - CODE_SPEC §18 graph-view bullet revised to the as-built shape (implementation-shape, CODE_SPEC-only per spec-drift policy). SPEC §7.11 functional text left to the spec author (surfaced via WN-1b-a/b, not silently edited).
+
+---
+
+## UI Redesign — full design-system adoption
+
+Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plumbing, per the design handoff (`docs/_meta/throughline/mockups/THROUGHLINE/design_handoff_throughline_ui/`). One PR, four slice commits, Gitar-reviewed per slice. Offline posture held — fonts self-hosted (no Google Fonts CDN).
+
+### Slice 1 — tokens + GraphView reconciliation
+
+- [x] `packages/frontend/src/styles.css` token layer replaced wholesale with the handoff `theme.css` tokens — 3 directions × 2 themes × 3 densities, plus a `:root` A·dark fallback so the cascade never resolves unstyled
+- [x] v1 default hardcoded `A · dark · comfortable` on `<body>` (`main.tsx`); Slice 4 makes it settings-driven
+- [x] Legacy token names (`--bg-elev` / `--bg-soft` / `--border` / `--fg-dim`) aliased onto the new tokens so the ~25 existing components keep rendering; aliases removed per-component in the Slice 2 declass sweep
+- [x] Fonts self-hosted offline via `@fontsource` (Geist Sans/Mono, Instrument Serif, IBM Plex Sans/Mono, JetBrains Mono — latin subset, theme-used weights); `src/fonts.css`; woff2 bundled by Vite — **no CDN call** (corrects the handoff README's Google Fonts `<link>`)
+- [x] GraphView `--gv-*` scoped token block deleted (`views/graph/graph.css`); every rule repointed to global tokens — GraphView now follows direction/theme/density. **Closes DECISIONS WN-1b-c.**
+- [x] Suite green — frontend 112/112, `pnpm --filter @throughline/frontend typecheck` clean, `build` clean (fonts emitted as offline assets)
+
+### Slice 2 — shell + vocabulary sweep
+
+- [x] `components/Icon.tsx` — 15-glyph inline-SVG icon set (typed `IconName`), ported from `prototype/icons.jsx`
+- [x] `components/Wordmark.tsx` — direction-specific (A through-line glyph / B serif masthead / C terminal prompt); cursor blink gated behind `prefers-reduced-motion: no-preference`
+- [x] `components/Sidebar.tsx` — two grouped nav rails (Project / Methodology) + settings link; replaces `ViewToggle`; visibility predicates (Primary units / Gates) preserved from `views/modes.ts`; directives count + drift-inbox warn badge
+- [x] `Header.tsx` rebuilt to the handoff layout (Wordmark → hairline → project switcher → spacer → scratchpad → inbox → cost → live → jump); directives/drift/backup/settings moved to the sidebar
+- [x] `App.tsx` switched to the `grid-template-areas` shell (`.app-root` → `.app` head/side/main); DownBanner kept above the grid
+- [x] Shell + pill/tag/btn/card vocabulary appended to `styles.css`; dead `.app-shell`/`.header`/`.view-toggle`/`main.view` blocks removed
+- [x] Declass pass — single global block zeroes legacy rounded corners and removes pastel tag/pill fills (per handoff README step 3) without touching the ~25 components individually; per-screen structural restyle is Slice 3
+- [x] `ViewToggle.tsx` + `test/viewToggle.test.tsx` deleted; `test/sidebar.test.tsx` written (visibility predicates + no-project state); `test/directives.test.tsx` Header-hint test repointed to the sidebar count
+- [x] Suite green — frontend 113/113, typecheck clean, build clean
+### Slice 3 — HomeView build-out + Capture promotion + per-screen polish
+
+- [x] `views/HomeView.tsx` — promoted out of `stubs.tsx` to a real surface: hero (eyebrow/h1/meta + scan & + Capture actions), 4-stat strip (in-progress / blocked / drift / directives), in-progress + blocked lists, drift summary, periodic-review nudge. Wired to `useItems` / `useDriftInbox` / `useDirectives` / `useStaleThreshold`. Code-TODO scan entry point preserved.
+- [x] CC-push timeline and methodology phase card **intentionally omitted** — Throughline does not model that data yet; faking it was rejected (same honesty stance as Pass 1b's deferred edges)
+- [x] `views/CaptureView.tsx` — first-class capture surface; new route `/projects/:id/capture`; sidebar "Dump zone" entry; embeds the existing `DumpZone` (review-before-apply modal unchanged, T-D5)
+- [x] `HomeView` stub removed from `stubs.tsx`; `App.tsx` imports the real view; `test/stubs.test.tsx` HomeView-stub test removed (dedicated coverage in `homeView.test.tsx`, same pattern as Pass 1b's GraphView stub removal)
+- [x] `test/homeView.test.tsx` rewritten (hero + stat strip + capture link + scan); `test/sidebar.test.tsx` covers the new Dump-zone entry implicitly via nav rendering
+- [x] Per-screen polish: global declass + new pill/tag/btn/card vocabulary applies to Session / Gates / Drift via the shared stylesheet. **Deep structural restyle of those screens' markup (e.g. DumpZone `.dz`/`.review-sheet`, detail-panel slide-in) is deferred** — flagged in the handover; out of scope for a green-suite slice
+- [x] Folded in two Slice-2 Gitar quality findings (PR #27): removed the dead `bundles` prop from `HeaderProps`/`App.tsx`; consolidated the duplicate `.main` selector
+- [x] Suite green — frontend 114/114, typecheck clean, build clean
+### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density
+
+- [x] Backend SSE hub built (`routes/events.ts` `createSSEHub`) — connection registry + `broadcast`; the events route registers/unregisters each connection; dead-pipe-safe. **This is new** — `useSSE`/events only handled welcome/ping before (verified, not assumed from the README)
+- [x] `settings/service.ts` gains an optional `onChange(key,value)` hook fired after each successful write; `server.ts` wires it to broadcast `settings-changed` (the resolved theme triplet) for the three theme keys
+- [x] `SETTINGS_DEFAULTS` += `theme_direction:'A'`, `theme_mode:'dark'`, `theme_density:'comfortable'` (so `/api/settings` returns them before first write — no FOUC fallback)
+- [x] `useSSE` handles `settings-changed`, exposes `settingsChange`; `App` applies `data-direction/-theme/-density` live and feeds direction to the Wordmark
+- [x] `src/theme.ts` — single `readTheme`/`applyTheme` helper used by both `main.tsx` (early pre-paint fetch, FOUC-safe, default fallback) and `App` (live SSE updates)
+- [x] `SettingsView` Appearance section — direction (A/B/C), mode (light/dark), density (compact/comfortable/spacious) selects → `updateSettings`
+- [x] Tests — backend `test/events.test.ts` (hub fan-out / unregister / dead-pipe), `test/settings.test.ts` onChange hook; frontend `test/theme.test.ts` (readTheme/applyTheme), `settingsView.test.tsx` appearance persistence
+- [x] Folded in the Slice-3 Gitar finding (PR #27): HomeView item rows made informational (non-interactive) — no misleading affordance, since item deep-linking does not exist (honesty stance, same as Pass 1b deferrals)
+- [x] Suite green — frontend 118/118, backend 261/261, `pnpm -r typecheck` clean, both builds clean
+
+---
+
+**Redesign close:** one PR (#27) titled "UI redesign: full design-system adoption", four slice commits + inline Gitar-finding fixes, merged to main when all four slices land Gitar-clean. No SPEC functional change (visual layer over the unchanged data model). Handover authored per `HANDOVER_TEMPLATE.md`.

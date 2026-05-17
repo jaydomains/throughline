@@ -18,6 +18,12 @@ export const SETTINGS_DEFAULTS: Record<string, unknown> = {
   periodic_review_interval_days: 14,
   cost_daily_threshold_usd: null,
   default_model: 'sonnet',
+  // UI redesign Slice 4 — theme switcher. Hardcoded v1 default is A·dark·
+  // comfortable (design-handoff default); these surface so /api/settings
+  // returns sensible values before first write (avoids FOUC fallback).
+  theme_direction: 'A',
+  theme_mode: 'dark',
+  theme_density: 'comfortable',
 };
 
 function withDefaults(values: Record<string, unknown>): Record<string, unknown> {
