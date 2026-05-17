@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { GraphView, HomeView, ModulesView } from '../src/views/stubs.js';
+import { HomeView, ModulesView } from '../src/views/stubs.js';
 import type { MethodologySummary } from '../src/api.js';
 
 const freeform: MethodologySummary = {
@@ -28,15 +28,6 @@ describe('View stubs', () => {
       </MemoryRouter>,
     );
     expect(screen.getByRole('heading', { name: 'Home' })).toBeInTheDocument();
-  });
-
-  it('renders Graph stub (Sessions/Tree/Library/Directives are now live views, tested separately)', () => {
-    render(
-      <MemoryRouter>
-        <GraphView />
-      </MemoryRouter>,
-    );
-    expect(screen.getByRole('heading', { name: 'Graph' })).toBeInTheDocument();
   });
 
   it('ModulesView redirects when the bundle declares no primary unit', () => {

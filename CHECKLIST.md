@@ -63,7 +63,8 @@ When a phase completes, leave its section in place so the build-state record is 
 
 - [x] React app served by backend at `/` (`packages/backend/src/routes/web.ts` resolves `packages/frontend/dist`; smoke test served `index.html` + hashed assets + SPA fallback)
 - [x] Project switcher in header lists and switches projects (`packages/frontend/src/components/ProjectSwitcher.tsx`; calls `POST /api/projects/:id/switch` to persist `last_active_project_id`)
-- [x] All nine view-mode routes render an empty stub under `/projects/:id/...` (`packages/frontend/src/App.tsx` routes; `src/views/stubs.tsx`)
+- [x] All nine view-mode routes render an empty stub under `/projects/:id/...` (`packages/frontend/src/App.tsx` routes; `src/views/stubs.tsx`) <!-- Phase 2 shipped routes as stubs; each was later built out. The graph route's permanent stub is superseded by Pass 1b — see the Pass 1b section. -->
+
 - [x] Modules view mode hidden for projects whose bundle declares no primary unit (`ViewToggle` filters via `VIEW_MODES[].visibleFor`; `ModulesView` guard redirects on direct nav; verified by `test/viewToggle.test.tsx`, `test/stubs.test.tsx`)
 - [x] Methodology-gates view mode hidden for projects whose bundle declares no gates (same mechanism; verified by `test/viewToggle.test.tsx`, `test/stubs.test.tsx`)
 - [x] Header view-mode toggle switches routes (`packages/frontend/src/components/ViewToggle.tsx`; NavLinks per view mode)
@@ -394,7 +395,8 @@ Walkthrough verified against the full suite (backend 257/257, frontend 99/99, `p
 - [x] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform — create+switch Phase 3.5; **archive/delete UI closed this phase** (`views/stubs.tsx` `ProjectsView`, `api.ts` `deleteProject`/`listProjects(includeArchived)`, `test/projectsLifecycle.test.tsx`); backend `projects/service.ts`+`routes.ts`
 - [x] §11 bullet — items in one local datastore per project with stable identifiers; sessions are saved views — `items/service.ts`, `sessions/service.ts`; `test/{items,sessions}.test.ts`
 - [x] §11 bullet — items support nesting, type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log — `items/service.ts`, `audit/log.ts`; `test/items.test.ts`
-- [x] §11 bullet — nine view modes functional and switchable; modules/methodology-gates hide where bundle declares none — `components/ViewToggle.tsx`, `App.tsx` routes; `test/viewToggle.test.tsx`
+- [x] §11 bullet — nine view modes functional and switchable; modules/methodology-gates hide where bundle declares none — `components/ViewToggle.tsx`, `App.tsx` routes; `test/viewToggle.test.tsx` <!-- At Phase 16 this was checked while the graph view was still a permanent stub (v1 pre-launch verification Cat 1). Honestly true as of Pass 1b: graph is implemented (`views/GraphView.tsx`, `views/graph/layout.ts`; `test/{graphLayout,graphView}.test.ts(x)`). Two §7.11 sub-features deferred to spec-author clarification — see Pass 1b section. -->
+
 - [x] §11 bullet — all capture surfaces functional with consistent review-before-apply — dump-zone/scratchpad/voice/Claude-Code-push/code-TODO; `test/{dumpZone,scratchpad,codeTodo}.test.ts(x)`
 - [x] §11 bullet — reconcile produces structured diffs with all six categories and applies cleanly — `reconcile/engine.ts`+`service.ts`; `test/reconcile.test.ts`
 - [x] §11 bullet — three directive types functional with OS notification integration; directives view groups by type — `directives/*`, `notifier/*`; `test/{directives,directives-scheduler,notifier}.test.ts`
@@ -411,3 +413,20 @@ Walkthrough verified against the full suite (backend 257/257, frontend 99/99, `p
 - [x] §11 bullet — single-file backup with optional auto-copy — `backup/*` (Phase 15); `test/backup.test.ts`
 - [x] §11 bullet — settings panel covers all required knobs — `views/SettingsView.tsx`; **per-feature model-override now consumed end-to-end** (`ai/model-resolver.ts`, wired into all live AI callsites; `test/model-resolver.test.ts`, `test/chat.test.ts` override-consumption)
 - [x] §11 bullet — backend installs and runs via documented single-command setup; frontend served from backend — `pnpm build` + `pnpm --filter @throughline/backend start` (now `tsx`-run, resolves the workspace package consistently); smoke-verified: `/health` 200, `/` serves `index.html`, SPA route 200 (`routes/web.ts`)
+
+---
+
+## Pass 1b — GraphView implementation (v1 pre-launch remediation)
+
+Not a ROADMAP phase. Closes the v1 pre-launch verification Cat-1 honesty blocker: SPEC §11 "nine view modes functional" was checked while the graph view was a permanent stub. Pass 1a deferred this here.
+
+- [x] Graph view implemented — pure deterministic model+layout (`packages/frontend/src/views/graph/layout.ts`) + dependency-free SVG renderer (`packages/frontend/src/views/GraphView.tsx`); replaces the `views/stubs.tsx` `GraphView` stub; wired in `App.tsx`
+- [x] Nodes are items; edges are parent-child (`parent_id`) + structured blockers (`blockers[]`, T-D8); arrowed, kind-styled
+- [x] "Show chains" mode — highlights blocker dependency paths and structural root blockers; dims off-chain nodes/edges; surfaces root-blocker count
+- [x] Interactive — pan/zoom controls; node click opens the existing `ItemDetailPanel` (↑/↓ cycle, Esc close — same pattern as Tree view); stale ⚑ / drift ↯ no-fill pills on nodes (T-D46 consistency); empty state
+- [x] Visual layer adopts the design-handoff "Direction A · dark" tokens scoped to `.graph-view` (`views/graph/graph.css`, `--gv-*`); full design-system adoption deferred (DECISIONS WN-1b-c)
+- [x] Tests — `test/graphLayout.test.ts` (model/layering/chain analysis, cycle-safety, order-independence), `test/graphView.test.tsx` (render, edges, Show-chains, node→panel, empty); obsolete Graph stub test removed from `test/stubs.test.tsx`
+- [x] Full suite green — frontend 112/112, `pnpm -r typecheck` clean (3/3), `pnpm --filter @throughline/frontend build` clean
+- [ ] **Deferred — cross-session-mention edge** (SPEC §7.11): no mention/reference field in the `Item` model. Raised as DECISIONS **WN-1b-a** for spec-author resolution. Not a separate §11 DoD line.
+- [ ] **Deferred — communication-model graph layer** (SPEC §7.11): bundle parser extracts only `communication_model.edge_types`, not the per-unit routing/producer contract. Raised as DECISIONS **WN-1b-b**. Not a separate §11 DoD line.
+- CODE_SPEC §18 graph-view bullet revised to the as-built shape (implementation-shape, CODE_SPEC-only per spec-drift policy). SPEC §7.11 functional text left to the spec author (surfaced via WN-1b-a/b, not silently edited).
