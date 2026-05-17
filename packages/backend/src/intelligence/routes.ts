@@ -219,6 +219,11 @@ export function registerIntelligenceRoutes(
       if (!b || typeof b.text !== 'string' || b.text.trim() === '') {
         return reply.code(400).send({ error: 'text_required' });
       }
+      // `target` is untrusted HTTP input that reaches a DB insert via
+      // dumpZone.propose — guard it at the boundary (TS types don't bind clients).
+      if (b.target !== 'session' && b.target !== 'library') {
+        return reply.code(400).send({ error: 'invalid_target' });
+      }
       try {
         return await svc.chat.propose(req.params.id, b);
       } catch (err) {
