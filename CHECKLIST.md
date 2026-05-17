@@ -467,4 +467,18 @@ Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plum
 - [x] Per-screen polish: global declass + new pill/tag/btn/card vocabulary applies to Session / Gates / Drift via the shared stylesheet. **Deep structural restyle of those screens' markup (e.g. DumpZone `.dz`/`.review-sheet`, detail-panel slide-in) is deferred** — flagged in the handover; out of scope for a green-suite slice
 - [x] Folded in two Slice-2 Gitar quality findings (PR #27): removed the dead `bundles` prop from `HeaderProps`/`App.tsx`; consolidated the duplicate `.main` selector
 - [x] Suite green — frontend 114/114, typecheck clean, build clean
-### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density _(pending)_
+### Slice 4 — theme switcher + hot-reload + light mode + Directions B/C + density
+
+- [x] Backend SSE hub built (`routes/events.ts` `createSSEHub`) — connection registry + `broadcast`; the events route registers/unregisters each connection; dead-pipe-safe. **This is new** — `useSSE`/events only handled welcome/ping before (verified, not assumed from the README)
+- [x] `settings/service.ts` gains an optional `onChange(key,value)` hook fired after each successful write; `server.ts` wires it to broadcast `settings-changed` (the resolved theme triplet) for the three theme keys
+- [x] `SETTINGS_DEFAULTS` += `theme_direction:'A'`, `theme_mode:'dark'`, `theme_density:'comfortable'` (so `/api/settings` returns them before first write — no FOUC fallback)
+- [x] `useSSE` handles `settings-changed`, exposes `settingsChange`; `App` applies `data-direction/-theme/-density` live and feeds direction to the Wordmark
+- [x] `src/theme.ts` — single `readTheme`/`applyTheme` helper used by both `main.tsx` (early pre-paint fetch, FOUC-safe, default fallback) and `App` (live SSE updates)
+- [x] `SettingsView` Appearance section — direction (A/B/C), mode (light/dark), density (compact/comfortable/spacious) selects → `updateSettings`
+- [x] Tests — backend `test/events.test.ts` (hub fan-out / unregister / dead-pipe), `test/settings.test.ts` onChange hook; frontend `test/theme.test.ts` (readTheme/applyTheme), `settingsView.test.tsx` appearance persistence
+- [x] Folded in the Slice-3 Gitar finding (PR #27): HomeView item rows made informational (non-interactive) — no misleading affordance, since item deep-linking does not exist (honesty stance, same as Pass 1b deferrals)
+- [x] Suite green — frontend 118/118, backend 261/261, `pnpm -r typecheck` clean, both builds clean
+
+---
+
+**Redesign close:** one PR (#27) titled "UI redesign: full design-system adoption", four slice commits + inline Gitar-finding fixes, merged to main when all four slices land Gitar-clean. No SPEC functional change (visual layer over the unchanged data model). Handover authored per `HANDOVER_TEMPLATE.md`.

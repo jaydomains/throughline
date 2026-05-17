@@ -72,4 +72,24 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     fireEvent.click(await screen.findByTestId('grant-notifications'));
     await waitFor(() => expect(mockApi.testNotification).toHaveBeenCalled());
   });
+
+  it('persists theme direction/mode/density through updateSettings (Slice 4)', async () => {
+    renderView();
+    fireEvent.change(await screen.findByTestId('theme-direction'), {
+      target: { value: 'C' },
+    });
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ theme_direction: 'C' }),
+    );
+    fireEvent.change(screen.getByTestId('theme-mode'), { target: { value: 'light' } });
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ theme_mode: 'light' }),
+    );
+    fireEvent.change(screen.getByTestId('theme-density'), {
+      target: { value: 'spacious' },
+    });
+    await waitFor(() =>
+      expect(mockApi.updateSettings).toHaveBeenCalledWith({ theme_density: 'spacious' }),
+    );
+  });
 });

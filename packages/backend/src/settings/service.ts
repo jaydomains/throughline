@@ -19,7 +19,14 @@ function ensureNotSecret(key: string): void {
   }
 }
 
-export function createSettingsService(db: DB): SettingsService {
+// Optional change hook — fired after a successful write (inside setMany's
+// transaction it fires per key). Slice 4 uses this to broadcast a
+// `settings-changed` SSE event for the theme keys. Kept generic so future
+// producers (drift thresholds, model overrides) can subscribe too.
+export function createSettingsService(
+  db: DB,
+  onChange?: (key: string, value: unknown) => void,
+): SettingsService {
   const getStmt = db.prepare('SELECT value_json FROM settings WHERE key = ?');
   const allStmt = db.prepare('SELECT key, value_json FROM settings');
   const upsertStmt = db.prepare(
@@ -45,6 +52,7 @@ export function createSettingsService(db: DB): SettingsService {
       oldValue: prev === undefined ? null : JSON.stringify(prev),
       newValue: JSON.stringify(value),
     });
+    onChange?.(key, value);
   }
 
   return {

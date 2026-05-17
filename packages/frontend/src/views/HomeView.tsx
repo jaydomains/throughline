@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import type { Item } from '@throughline/shared';
 import { api } from '../api.js';
 import { useItems } from '../hooks/useItems.js';
@@ -26,7 +26,6 @@ function isInProgress(it: Item): boolean {
 
 export function HomeView() {
   const { id: projectId } = useParams();
-  const navigate = useNavigate();
   const { items } = useItems({ projectId: projectId ?? null });
   const { inbox } = useDriftInbox(projectId ?? null);
   const { directives } = useDirectives(projectId ?? null);
@@ -64,11 +63,6 @@ export function HomeView() {
       setScanning(false);
     }
   }
-
-  const openItem = (it: Item) => {
-    if (projectId) navigate(`/projects/${projectId}/sessions`);
-    void it;
-  };
 
   const stats = [
     { label: 'In progress', value: inProgress.length },
@@ -141,13 +135,7 @@ export function HomeView() {
               <div className="home-empty muted">Nothing in progress.</div>
             )}
             {inProgress.map((it) => (
-              <button
-                type="button"
-                className="home-row"
-                key={it.id}
-                onClick={() => openItem(it)}
-                data-testid={`inprogress-${it.id}`}
-              >
+              <div className="home-row" key={it.id} data-testid={`inprogress-${it.id}`}>
                 <span className="mono faint id">{it.id.slice(0, 7)}</span>
                 <span className="home-row-title">
                   {it.title}
@@ -158,7 +146,7 @@ export function HomeView() {
                   )}
                 </span>
                 <span className="pill ghost mono">{it.type}</span>
-              </button>
+              </div>
             ))}
           </div>
 
@@ -169,13 +157,7 @@ export function HomeView() {
           <div className="card" style={{ padding: 0 }}>
             {blocked.length === 0 && <div className="home-empty muted">Nothing blocked.</div>}
             {blocked.map((it) => (
-              <button
-                type="button"
-                className="home-row"
-                key={it.id}
-                onClick={() => openItem(it)}
-                data-testid={`blocked-${it.id}`}
-              >
+              <div className="home-row" key={it.id} data-testid={`blocked-${it.id}`}>
                 <span className="mono faint id">{it.id.slice(0, 7)}</span>
                 <span className="home-row-title">
                   {it.title}
@@ -186,7 +168,7 @@ export function HomeView() {
                 {isStale(it.updated_at, staleDays) && (
                   <span className="pill warn">⚑ stale</span>
                 )}
-              </button>
+              </div>
             ))}
           </div>
         </div>

@@ -26,6 +26,7 @@ import { DriftInbox } from './views/DriftInbox.js';
 import { IntelligenceView } from './views/IntelligenceView.js';
 import { SettingsView } from './views/SettingsView.js';
 import { api } from './api.js';
+import { applyTheme, readTheme, type ThemeDirection } from './theme.js';
 
 function activeProjectIdFromPath(path: string): string | null {
   const m = /^\/projects\/([^/]+)/.exec(path);
@@ -42,13 +43,25 @@ function AppInner() {
   const location = useLocation();
   const { projects, refresh: refreshProjects } = useProjects();
   const { bundles } = useMethodologies();
-  const { connected } = useSSE();
+  const { connected, settingsChange } = useSSE();
   const { healthy } = useBackendHealth();
   const registry = useKeyboardRegistry();
 
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [lastActive, setLastActive] = useState<string | null>(null);
+  // Direction drives the wordmark treatment. Seeded from the attribute
+  // main.tsx applied pre-paint; updated live on the SSE settings-changed event.
+  const [direction, setDirection] = useState<ThemeDirection>(
+    () => (document.body.getAttribute('data-direction') as ThemeDirection) || 'A',
+  );
+
+  useEffect(() => {
+    if (!settingsChange) return;
+    const theme = readTheme(settingsChange);
+    applyTheme(theme);
+    setDirection(theme.direction);
+  }, [settingsChange]);
 
   useEffect(() => {
     api
@@ -142,6 +155,7 @@ function AppInner() {
         activeProjectId={activeProjectId}
         onOpenPalette={openPalette}
         sseConnected={connected}
+        direction={direction}
       />
       <Sidebar activeProjectId={activeProjectId} bundle={activeBundle} />
       <main className="main" role="main">

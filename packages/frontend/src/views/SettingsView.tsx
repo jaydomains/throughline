@@ -53,6 +53,68 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function strOr(v: unknown, fallback: string): string {
+  return typeof v === 'string' && v ? v : fallback;
+}
+
+// Theme switcher (UI redesign Slice 4). Persists theme_direction / theme_mode /
+// theme_density via the settings store. The backend broadcasts a
+// `settings-changed` SSE event on write; App applies the body data-* attributes
+// live, so a change here hot-reloads every open tab without a refresh.
+function AppearanceSection({
+  settings,
+  onSaveSettings,
+}: {
+  settings: Record<string, unknown>;
+  onSaveSettings: (patch: Record<string, unknown>) => void;
+}) {
+  const direction = strOr(settings['theme_direction'], 'A');
+  const mode = strOr(settings['theme_mode'], 'dark');
+  const density = strOr(settings['theme_density'], 'comfortable');
+  return (
+    <Section title="Appearance">
+      <p className="settings-hint">
+        Changes apply live to every open tab (no refresh).
+      </p>
+      <label className="settings-row">
+        <span>Direction</span>
+        <select
+          data-testid="theme-direction"
+          value={direction}
+          onChange={(e) => onSaveSettings({ theme_direction: e.target.value })}
+        >
+          <option value="A">A · Quiet Rigor</option>
+          <option value="B">B · Editorial Spec</option>
+          <option value="C">C · Terminal Atelier</option>
+        </select>
+      </label>
+      <label className="settings-row">
+        <span>Mode</span>
+        <select
+          data-testid="theme-mode"
+          value={mode}
+          onChange={(e) => onSaveSettings({ theme_mode: e.target.value })}
+        >
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
+      </label>
+      <label className="settings-row">
+        <span>Density</span>
+        <select
+          data-testid="theme-density"
+          value={density}
+          onChange={(e) => onSaveSettings({ theme_density: e.target.value })}
+        >
+          <option value="compact">Compact</option>
+          <option value="comfortable">Comfortable</option>
+          <option value="spacious">Spacious</option>
+        </select>
+      </label>
+    </Section>
+  );
+}
+
 export function SettingsView() {
   const { projects, refresh: refreshProjects } = useProjects();
   const { bundles } = useMethodologies();
@@ -97,6 +159,8 @@ export function SettingsView() {
       <h1>Settings</h1>
       {msg && <p className="settings-msg" role="status">{msg}</p>}
       {error && <p className="error" role="alert">{error}</p>}
+
+      <AppearanceSection settings={settings} onSaveSettings={saveSettings} />
 
       <SecretsSection presence={secrets} onSaved={setSecrets} />
 

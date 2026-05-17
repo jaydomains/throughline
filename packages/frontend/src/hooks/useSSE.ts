@@ -4,6 +4,9 @@ export interface SSEState {
   connected: boolean;
   lastPingAt: number | null;
   lastEvent: { type: string; data: unknown } | null;
+  // Latest `settings-changed` payload (UI redesign Slice 4 — theme hot-reload).
+  // Raw settings map; consumers normalise via theme.readTheme.
+  settingsChange: Record<string, unknown> | null;
 }
 
 // Phase 2 establishes the channel. Producers (drift signals, gate firings,
@@ -12,6 +15,7 @@ export function useSSE(url = '/events'): SSEState {
   const [connected, setConnected] = useState(false);
   const [lastPingAt, setLastPingAt] = useState<number | null>(null);
   const [lastEvent, setLastEvent] = useState<{ type: string; data: unknown } | null>(null);
+  const [settingsChange, setSettingsChange] = useState<Record<string, unknown> | null>(null);
   const esRef = useRef<EventSource | null>(null);
 
   useEffect(() => {
@@ -30,6 +34,14 @@ export function useSSE(url = '/events'): SSEState {
       setLastPingAt(Date.now());
       setLastEvent({ type: 'ping', data: safeParse(evt.data) });
     });
+    es.addEventListener('settings-changed', (ev) => {
+      const evt = ev as MessageEvent;
+      const data = safeParse(evt.data);
+      setLastEvent({ type: 'settings-changed', data });
+      if (data && typeof data === 'object') {
+        setSettingsChange(data as Record<string, unknown>);
+      }
+    });
 
     return () => {
       es.close();
@@ -38,7 +50,7 @@ export function useSSE(url = '/events'): SSEState {
     };
   }, [url]);
 
-  return { connected, lastPingAt, lastEvent };
+  return { connected, lastPingAt, lastEvent, settingsChange };
 }
 
 function safeParse(s: string): unknown {
