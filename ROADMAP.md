@@ -2,7 +2,7 @@
 
 Sequenced build plan. Each phase has a scope, dependencies, done criteria, and adopts §13 recommended defaults where it makes sense to fix the policy at the implementation point. Phases that depend on §13 questions without a recommended default are flagged.
 
-The methodology runtime is load-bearing. Phase 1 delivers enough runtime substrate (datastore, project model, bundle loader, freeform bundle) that subsequent phases build against it. The freeform bundle lands early so Throughline is usable on real projects before SiteMesh bundle wiring is complete.
+The methodology runtime is load-bearing. Phase 1 delivers enough runtime substrate (datastore, project model, bundle loader, freeform bundle) that subsequent phases build against it. The freeform bundle lands early so Throughline is usable on real projects before rich-bundle wiring is complete.
 
 §13 adoption legend at the bottom of this file lists every recommended default applied and the section reference.
 
@@ -153,28 +153,27 @@ The methodology runtime is load-bearing. Phase 1 delivers enough runtime substra
 
 ---
 
-## Phase 7 — SiteMesh bundle delivery & bundle-aware capture parameterisation
+## Phase 7 — Rich-bundle delivery & bundle-aware capture parameterisation
 
-**Scope.** Author the SiteMesh bundle markdown (eleven sections per the bundle's authoring discipline); wire bundle-defined item types (`todo`, `decision`) into the existing UI from Phase 3 (parameterised by bundle, not hardcoded); confirm a SiteMesh-bound project's session boards render todos and decisions as separate boards (§7.5); methodology-context fields on items (primary unit, phase, anchor citations, marker refs) populate from SiteMesh-bound projects; modules view comes alive for SiteMesh-bound projects (§7.11).
+> **Superseded in part by the bundle-externalisation refactor (2026-05, C-D14).** This phase originally authored a business-internal rich bundle inside the repo. That bundle was later removed from the repo and replaced by a generic, business-neutral `test-bundle` grammar fixture; rich user-owned discipline now binds per-project via `bundle_path`. The done-criteria below are restated against the `test-bundle`. See `docs/_meta/throughline/handovers/2026-05-16-bundle-externalisation-refactor.md`.
 
-The freeform path from Phase 1–6 establishes that the runtime is methodology-agnostic; this phase proves it under the rich-discipline reference bundle.
+**Scope.** Provide a non-trivial repo-shipped bundle (`methodologies/test-bundle/bundle.md`, eleven sections); wire bundle-defined item types into the existing UI from Phase 3 (parameterised by bundle, not hardcoded); confirm a rich-bundle-bound project's session boards render each item type as separate boards (§7.5); methodology-context fields on items (primary unit, phase, anchor citations, marker refs) populate from rich-bundle-bound projects; modules view comes alive for rich-bundle-bound projects (§7.11).
 
-**Cites:** T-D39, T-D41, T-D42, T-D47, T-D48, §7.3, §7.5, §7.11.
+The freeform path from Phase 1–6 establishes that the runtime is methodology-agnostic; this phase proves it under a non-trivial bundle.
+
+**Cites:** T-D39, T-D41, T-D42, T-D47, T-D48, C-D14, §7.3, §7.5, §7.11.
 
 **§13 partially-blocking (recommendation present):**
 - Bundle versioning: SPEC §13 commits to "v1 ships with no bundle-versioning mechanism; bundles are always-current; bundle change events audit-logged." Phase 1 already lands the audit-logging of bundle changes; nothing additional in Phase 7.
 
-**§13 informational:**
-- Bundle authoring path for the SiteMesh bundle: three discipline-doc gaps in flight (§13 last bullet). Do not block the Phase 7 build of Throughline; affect the SiteMesh bundle's completeness only. Handed off to the SiteMesh bundle author.
-
 **Dependencies.** Phase 3, Phase 6.
 
 **Done when:**
-- `methodologies/sitemesh/bundle.md` parses successfully through the bundle loader.
-- A new SiteMesh-bound project shows todos and decisions on separate boards.
-- Item creation in a SiteMesh-bound project shows methodology-context fields (primary unit, phase, anchors, markers).
-- Modules view renders for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts.
-- No code path uses SiteMesh-specific terminology unmediated by the bundle.
+- `methodologies/test-bundle/bundle.md` parses successfully through the bundle loader.
+- A new rich-bundle-bound project shows its item types on separate boards.
+- Item creation in a rich-bundle-bound project shows methodology-context fields (primary unit, phase, anchors, markers).
+- Modules view renders for rich-bundle-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts.
+- No code path uses bundle-specific terminology unmediated by the bundle.
 
 **Sizing:** large.
 
@@ -182,7 +181,7 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 ## Phase 8 — Methodology gate runtime (four phase moments + PR-open)
 
-**Scope.** Implement the gate dispatcher per C-D6: pre-write, per-commit, plan-mode, post-commit, pr-open moments. Multi-gate-per-phase-moment support (T-D42). Independent findings streams per gate. Gate failures as proposals never blocks (T-D44). Audit-logged overrides. SiteMesh's `verify-structure.sh` and `sitemesh-pre-commit` gates run as the per-commit moment's two independent gates. Methodology-gates view comes alive for projects whose bundle declares gates.
+**Scope.** Implement the gate dispatcher per C-D6: pre-write, per-commit, plan-mode, post-commit, pr-open moments. Multi-gate-per-phase-moment support (T-D42). Independent findings streams per gate. Gate failures as proposals never blocks (T-D44). Audit-logged overrides. The `test-bundle`'s two per-commit gates (a structure check and a banned-string sweep) run as the per-commit moment's two independent gates. Methodology-gates view comes alive for projects whose bundle declares gates.
 
 **Cites:** T-D42, T-D44, T-D36, §7.12.
 
@@ -191,14 +190,14 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 **Spec-author gaps (CODE_SPEC.md Questions for the spec author 1–4):** four moment-trigger detection mechanisms unspecified in SPEC.md v5.1 — pre-write, per-commit, plan-mode, post-commit. Build proceeds with the provisional v1 mechanisms in CODE_SPEC.md §7 (signal-file conventions + UI actions + git-hook options); final per-moment trigger choice awaits spec-author confirmation. PR-open trigger via GitHub poller is fully specified.
 
-**Dependencies.** Phase 7 (SiteMesh bundle exists with non-trivial gate specs to fire against).
+**Dependencies.** Phase 7 (a non-trivial bundle exists with gate specs to fire against — the `test-bundle`).
 
 **Done when:**
 - All five moments dispatch gates correctly when triggered (some via provisional triggers, see above).
 - Multi-gate moments produce independent findings streams.
 - Gate failures surface in the methodology-gates view with override + fix-and-retry actions.
 - Override entries write to the audit log with reason + original findings reference.
-- SiteMesh's per-commit moment runs verify-structure.sh and sitemesh-pre-commit as two independent gates.
+- The `test-bundle`'s per-commit moment runs its structure check and banned-string sweep as two independent gates.
 
 **Sizing:** large.
 
@@ -210,7 +209,7 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 **Cites:** T-D21, T-D42, §7.14.
 
-**Dependencies.** Phase 7 (SiteMesh bundle declares the categories to scan for); Phase 8 (shares the pre-write moment dispatcher for write-time scanners).
+**Dependencies.** Phase 7 (the `test-bundle` declares the categories to scan for); Phase 8 (shares the pre-write moment dispatcher for write-time scanners).
 
 **Done when:**
 - Discipline-drift scanners instantiate from the bundle's validation-rules section.
@@ -295,12 +294,12 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 **Cites:** T-D12, T-D45 (companion-runtime kin), §7.18, §9.
 
-**Dependencies.** Phase 6 (include-in-prompt directives), Phase 7 (SiteMesh bundle provides non-trivial templates and companion modes), Phase 12 (shares context-assembly idioms with companion-review judgement steps).
+**Dependencies.** Phase 6 (include-in-prompt directives), Phase 7 (the `test-bundle` provides non-trivial templates and companion modes), Phase 12 (shares context-assembly idioms with companion-review judgement steps).
 
 **Spec-author gap (CODE_SPEC.md Questions for the spec author 6):** companion modes ↔ review patterns relationship unspecified. Build proceeds with bundle-declared enum + default; spec confirmation tightens the contract.
 
 **Done when:**
-- Session-start prompt generation works for a SiteMesh-bound project across the bundle's declared companion modes.
+- Session-start prompt generation works for a rich-bundle-bound project across the bundle's declared companion modes.
 - Include-in-prompt directives appear in generated prompts.
 - Cost telemetry records every assembly call.
 
@@ -387,7 +386,6 @@ Recommended defaults from SPEC §13 adopted into the build at the phase level:
 | End-of-session retro trigger | User-initiated only | Phase 14 |
 | Confidence threshold values | Calibrate during build; instrument from day 1 | Phase 10 (pinning), §11 (DoD) |
 | Bundle versioning | None in v1; bundles always-current; bundle change events audit-logged | Phase 1 |
-| Bundle authoring path for SiteMesh | Three in-flight gaps don't block v1 Throughline build; affect SiteMesh bundle's completeness only | Phase 7 (handoff to SiteMesh bundle author) |
 
 Recommended values were adopted as-is unless implementation revealed an issue. Any deviation requires a SPEC.md amendment.
 
@@ -431,7 +429,7 @@ Confirmation tightens the contract; if spec direction differs from a provisional
 - Phase 1 → Phase 2 (UI needs backend + bundle loader).
 - Phase 2 → Phase 3 (CRUD needs view shell).
 - Phase 3 → Phase 5 (reconcile mutates items).
-- Phase 3 → Phase 7 (SiteMesh bundle wiring depends on item infrastructure being bundle-parameterisable).
+- Phase 3 → Phase 7 (rich-bundle wiring depends on item infrastructure being bundle-parameterisable).
 - Phase 7 → Phase 8 (gates need a non-trivial bundle to fire against; freeform declares no gates).
 - Phase 7 → Phase 9 (discipline-drift needs a bundle that declares categories).
 - Phase 8 → Phase 10 (PR-open gate uses the gate dispatcher).
@@ -446,7 +444,7 @@ Confirmation tightens the contract; if spec direction differs from a provisional
 - **Phase 11 (Semble) ‖ Phase 10**: Semble track is independent until tier-3 wiring.
 - **Phase 9 (discipline-drift) ‖ Phase 10 (code-drift)**: streams land independently.
 - **Phase 12 ‖ Phase 13**: companion review and session-start scaffolding can land in either order once Phase 7 lands.
-- **Templates** (`templates/github-actions/throughline-semgrep.yml`, session-start prompt, SiteMesh bundle markdown drafting): can be drafted at any time; SiteMesh bundle drafting is the long pole for Phase 7.
+- **Templates** (`templates/github-actions/throughline-semgrep.yml`, session-start prompt, `test-bundle` markdown drafting): can be drafted at any time; the `test-bundle` drafting is the long pole for Phase 7.
 
 ### Minimum useful product
 
@@ -459,4 +457,4 @@ The smallest slice of Throughline that delivers the core promise:
 - **Slim Phase 10** (GitHub PR state surfacing only — badges + manual link; no auto-reconcile yet)
 - **Slim Phase 15** (manual export + backup-stale header indicator)
 
-At this point a freeform-bound project tracks tasks across parallel sessions with capture surfaces and knows about PRs at a glance. Skips reconcile-engine niceties, drift detection, library, directives, Semble, RAG, methodology gates, SiteMesh bundle, companion review, session-start scaffolding. The user can start using it for parallel-session tracking on lightweight projects and accept that the rich-discipline path isn't wired in yet.
+At this point a freeform-bound project tracks tasks across parallel sessions with capture surfaces and knows about PRs at a glance. Skips reconcile-engine niceties, drift detection, library, directives, Semble, RAG, methodology gates, rich-bundle wiring, companion review, session-start scaffolding. The user can start using it for parallel-session tracking on lightweight projects and accept that the rich-discipline path isn't wired in yet.

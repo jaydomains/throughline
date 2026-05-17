@@ -199,7 +199,7 @@ export function createSessionStartEngine(
     const openItems = all.filter(isOpen);
 
     // Decision-bearing items: the boards beyond the first declared item-type carry the
-    // methodology's decisions (SiteMesh: `decision`; test-bundle: `note`). Single-type
+    // methodology's decisions (e.g. the test-bundle's `note` type). Single-type
     // and freeform bundles have none. Bundle-agnostic — no status/type vocabulary baked.
     const policy = items.policy(projectId);
     const decisionTypes = new Set(policy.types.slice(1));

@@ -6,7 +6,7 @@ Throughline loads a methodology bundle that codifies your documentation discipli
 
 ## Status
 
-**Phase 3 in progress.** Phases 1 + 2 + 3 complete: backend runtime substrate, browser UI shell, and items + sessions + manual entry + item detail panel landed. A freeform-bound project now tracks tasks end-to-end with bundle-derived boards, structured + free-text blockers (T-D8), tags, parent/child nesting, branch refs (T-D38), session memberships, and a slide-in detail panel with arrow-key cycling, stale yellow flag (T-D46), and the full audit history per item. Capture surfaces, library, reconcile engine, and the gate runtime still ahead.
+**v1 complete.** All sixteen build phases have landed, along with three spec-clarification slices and the bundle-externalisation refactor. Throughline ships the `freeform` default bundle and a generic `test-bundle` grammar fixture; rich user-owned discipline bundles live *outside* this repo and bind per-project via `bundle_path` (see [Configuring a user-owned bundle](#configuring-a-user-owned-bundle)). The full runtime is in place: methodology bundle loading and hot-reload, items + sessions + capture surfaces, reconcile engine, library, directives, discipline-drift and code-drift detection, GitHub polling, methodology gate runtime, companion review, session-start scaffolding, the RAG/intelligence layer, backup, and a cost meter.
 
 ## What it does
 
@@ -24,13 +24,13 @@ See [`SPEC.md`](SPEC.md) for the full functional description.
 
 - **Single user.** Designed for one person on one laptop. No multi-user model. No auth. No sharing.
 - **Local only.** Backend and UI both run on your machine. No cloud sync; the only cross-device mechanism is copying the datastore file.
-- **Private.** This repo is not public-distribution software. No license is included in v1.
+- **Single-user scope.** Designed for one person on one laptop, but released as open source under the MIT License (see [`LICENSE`](LICENSE)).
 
 ## Architecture (high level)
 
 Two pieces, both on your laptop:
 
-- **Backend service** — long-lived local process. Handles persistence, methodology bundle loading and enforcement, project doc parsing, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Auto-runs on login.
+- **Backend service** — long-lived local process. Handles persistence, methodology bundle loading and enforcement, project doc parsing, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Can be configured to auto-run on login (opt-in manual setup; see [`docs/install/auto-start.md`](docs/install/auto-start.md)).
 - **Browser UI** — served from the backend over a local-only address. The browser does not access the filesystem, OS notifications, or external networks directly; the backend mediates everything.
 
 Closing the browser tab does not stop background work — reminders fire, polling continues, drift checks run, methodology gates enforce.
@@ -54,12 +54,10 @@ pnpm --filter @throughline/backend start
 
 The backend binds to `127.0.0.1:47823` by default (configurable via `THROUGHLINE_PORT`). State lives at `~/.throughline/` — SQLite datastore, secrets file, and the Claude Code inbox archive. Login auto-start per platform is documented at [`docs/install/auto-start.md`](docs/install/auto-start.md).
 
-A minimal CLI ships with the backend:
+A minimal CLI ships with the backend (health check, project and methodology management). Run it with no arguments to print the full subcommand list:
 
 ```
-pnpm --filter @throughline/backend exec tsx src/cli/index.ts health
-pnpm --filter @throughline/backend exec tsx src/cli/index.ts projects create --name Demo --repo /path/to/repo
-pnpm --filter @throughline/backend exec tsx src/cli/index.ts projects list
+pnpm --filter @throughline/backend exec tsx src/cli/index.ts
 ```
 
 For the broader build plan see [`ROADMAP.md`](ROADMAP.md) and [`CODE_SPEC.md`](CODE_SPEC.md).
@@ -89,6 +87,13 @@ When `bundle_path` is set, the loader resolves `<bundle_path>/bundle.md` instead
 | [`ROADMAP.md`](ROADMAP.md) | Sequenced build plan, phase by phase. |
 | [`CHECKLIST.md`](CHECKLIST.md) | Per-phase build state. Read at session start; update at session end. |
 
+## Development discipline
+
+Throughline is built against its own documentation discipline — the same kind of methodology it runs for other projects. Two files govern how work is done:
+
+- [`SESSION_START.md`](SESSION_START.md) — read first at every build session. Sets the file-authority hierarchy, reading order, branch/PR discipline, and the spec-drift policy.
+- [`docs/_meta/throughline/HANDOVER_TEMPLATE.md`](docs/_meta/throughline/HANDOVER_TEMPLATE.md) — every slice/PR closes by writing a dated handover (to `docs/_meta/throughline/handovers/`) reconstructed from the PR's artefacts: build state vs. spec, decisions minted, drift flags, open questions. The next session reads the most recent handover before anything else, so build-state history stays continuous across sessions.
+
 ## Dependencies
 
 Throughline integrates with — but does not bundle:
@@ -102,4 +107,4 @@ It degrades gracefully when these are absent: no Anthropic key disables AI but e
 
 ## Owner
 
-Kunda Tech (Jay).
+[jaydomains](https://github.com/jaydomains).

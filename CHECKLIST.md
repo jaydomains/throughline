@@ -174,30 +174,32 @@ Sliced into three sub-PRs at the session author's direction: **6a** library cont
 
 ---
 
-## Phase 7 — SiteMesh bundle delivery & bundle-aware capture parameterisation
+## Phase 7 — Rich-bundle delivery & bundle-aware capture parameterisation
 
-- [x] `methodologies/sitemesh/bundle.md` authored per the eleven-section structure
-- [x] SiteMesh bundle parses cleanly through the bundle loader
-- [x] SiteMesh-bound project: item types `todo` and `decision` declared by bundle and surfaced in UI
-- [x] SiteMesh-bound project: status lifecycles per bundle (todos 4 states; decisions 3 states)
-- [x] SiteMesh-bound project: todos and decisions render on separate boards
+<!-- Phase 7 originally authored a business-internal rich bundle in-repo; superseded by the bundle-externalisation refactor (C-D14), which replaced it with the generic `test-bundle` fixture and external `bundle_path`. Rows below restated against the `test-bundle`; work is real, only the worked-example bundle changed. -->
+
+- [x] `methodologies/test-bundle/bundle.md` authored per the eleven-section structure
+- [x] The `test-bundle` parses cleanly through the bundle loader
+- [x] Rich-bundle-bound project: item types `task` and `note` declared by bundle and surfaced in UI
+- [x] Rich-bundle-bound project: status lifecycles per bundle (`task` 4 states; `note` 2 states)
+- [x] Rich-bundle-bound project: the two item types render on separate boards
 - [x] Methodology-context fields populate on items (primary unit / phase / anchor citations / marker refs)
-- [x] Modules view renders for SiteMesh-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts
-- [x] No code path uses SiteMesh-specific terminology unmediated by the bundle (verified by review)
-- [x] Phase 3 UI works for both freeform-bound and SiteMesh-bound projects without per-bundle code branches
+- [x] Modules view renders for rich-bundle-bound projects with primary-unit grouping, tier classification, phase indicators, anchor/marker counts
+- [x] No code path uses bundle-specific terminology unmediated by the bundle (verified by review)
+- [x] Phase 3 UI works for both freeform-bound and rich-bundle-bound projects without per-bundle code branches
 
 ---
 
 ## Refactor — Bundle externalisation (public-repo readiness)
 
-Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from the repo and add a configurable mechanism for user-owned bundles to live outside Throughline. C-D14.
+Slice (not a ROADMAP phase): remove the business-internal rich bundle from the repo and add a configurable mechanism for user-owned bundles to live outside Throughline. C-D14.
 
 - [x] `bundle_path` added to the project model (nullable) + schema migration `0007_project_bundle_path.sql`
 - [x] Bundle loader resolves external `bundle_path/bundle.md` first, falls back to install-shipped `methodologies/<bundle_id>/`
 - [x] External bundles get `chokidar` watch parity (refcounted by project binding; registered on create/`bundle_path` change, unregistered on delete; re-registered for existing projects on backend start)
 - [x] Generic `methodologies/test-bundle/bundle.md` fixture authored (two item types w/ per-type lifecycles, multi-gate moment, anchors, markers); parses cleanly
-- [x] Phase 7 tests retargeted from `methodologies/sitemesh/` to `methodologies/test-bundle/`; frontend mock ids de-business-named; all suites green (backend 132, frontend 70)
-- [x] `methodologies/sitemesh/` deleted from the repo
+- [x] Phase 7 tests retargeted from the former in-repo rich bundle to `methodologies/test-bundle/`; frontend mock ids de-business-named; all suites green (backend 132, frontend 70)
+- [x] The former in-repo rich-bundle directory deleted from the repo
 - [x] CODE_SPEC.md (C-D3, C-D5 updated; C-D14 minted; bundle-loading section + tables) and README.md (user-owned-bundle guide) documented
 
 ---
@@ -222,7 +224,7 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 - [x] Gate failures surface in methodology-gates view as proposals (`views/GatesView.tsx`)
 - [x] "Override with reason" action records audit-log row with reason + original findings reference
 - [x] "Fix and retry" action re-fires the gate (re-run the moment)
-- [x] Per-commit moment runs the test-bundle's two gates (structure-check + banned-string-sweep) as two independent gates <!-- SiteMesh bundle removed from repo per bundle-externalisation refactor; test-bundle is the worked example -->
+- [x] Per-commit moment runs the test-bundle's two gates (structure-check + banned-string-sweep) as two independent gates <!-- the former in-repo rich bundle was removed per the bundle-externalisation refactor; test-bundle is the worked example -->
 - [x] Throughline never silently blocks the underlying repo (advisory hooks `exit 0`; checks fail as proposals, T-D44)
 
 ---
@@ -388,7 +390,7 @@ Slice (not a ROADMAP phase): remove the business-internal SiteMesh bundle from t
 Walkthrough verified against the full suite (backend 257/257, frontend 99/99, `pnpm -r typecheck` clean) plus a runtime smoke (`pnpm build` + backend `start`).
 
 - [x] §11 bullet — methodology runtime loads bundles from `methodologies/`; eleven-section parsing; runtime configures validators, sweeps, marker scanners, state-machine transitions, review-checklist steps, template parsers — Phases 1/6/7/8; `methodology/loader.ts`, `bundle-parser.ts`, gate runtime; `test/{loader,bundle-parser,gates,companion}.test.ts`
-- [x] §11 bullet — SiteMesh and freeform bundles both ship and load — `methodologies/freeform/bundle.md` + external SiteMesh bundle via `bundle_path` (Phase 7 handover); `test/loader.test.ts`
+- [x] §11 bullet — the `freeform` default and the generic `test-bundle` fixture ship and load; rich user-owned bundles resolve via per-project `bundle_path` (C-D14) — `methodologies/freeform/bundle.md` + `methodologies/test-bundle/bundle.md` + external-`bundle_path` resolution; `test/loader.test.ts`, `test/test-bundle.test.ts`
 - [x] §11 bullet — multi-project: create / switch / archive / delete functional; coexist; per-project state; default bundle freeform — create+switch Phase 3.5; **archive/delete UI closed this phase** (`views/stubs.tsx` `ProjectsView`, `api.ts` `deleteProject`/`listProjects(includeArchived)`, `test/projectsLifecycle.test.tsx`); backend `projects/service.ts`+`routes.ts`
 - [x] §11 bullet — items in one local datastore per project with stable identifiers; sessions are saved views — `items/service.ts`, `sessions/service.ts`; `test/{items,sessions}.test.ts`
 - [x] §11 bullet — items support nesting, type lifecycles, blockers, tags, methodology-context refs, branch + PR refs, code refs, verifier rules, audit log — `items/service.ts`, `audit/log.ts`; `test/items.test.ts`

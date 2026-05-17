@@ -3,10 +3,10 @@
 # Throughline — Phase 7 Handover
 
 **Generated:** 2026-05-15 (pre-merge)
-**Last commit SHA:** see PR #12 head — branch `claude/throughline-phase-7-sitemesh-zGvPj`, 2026-05-15
+**Last commit SHA:** see PR #12 head — branch `claude/throughline-phase-7-rich-bundle-zGvPj`, 2026-05-15
 **Previous handover:** `docs/_meta/throughline/handovers/2026-05-15-phase-6c-md-ingestion.md` (Phase 6c — repo `.md` ingestion; completed Phase 6)
 
-Phase 7 authors the SiteMesh rich-discipline reference bundle and parameterises the runtime on it: bundle-declared item types on separate boards with per-type status lifecycles, methodology-context fields on items end-to-end, and a live Modules view. The freeform path is unchanged; no SiteMesh terminology is hardcoded in code (T-D48).
+Phase 7 authors the rich-discipline reference bundle and parameterises the runtime on it: bundle-declared item types on separate boards with per-type status lifecycles, methodology-context fields on items end-to-end, and a live Modules view. The freeform path is unchanged; no bundle-specific terminology is hardcoded in code (T-D48).
 
 ---
 
@@ -14,15 +14,15 @@ Phase 7 authors the SiteMesh rich-discipline reference bundle and parameterises 
 
 | Spec requirement | State | Evidence | Notes |
 |---|---|---|---|
-| `methodologies/sitemesh/bundle.md` authored per eleven-section structure (T-D41, T-D42) | built | `methodologies/sitemesh/bundle.md`; `packages/backend/test/sitemesh.test.ts` "parses cleanly through the bundle loader" | Primary unit `module`, anchor/marker systems, phase state machine, multi-gate moments, two item types, companion modes, templates, drift categories. |
-| SiteMesh bundle parses cleanly through the loader (§Phase 7 done-when) | built | `bundle-parser.test.ts` + `sitemesh.test.ts`; loader unchanged (`methodology/loader.ts`) | Existing 11-section grammar; only the State-machine parser extended. |
+| `methodologies/<rich-bundle>/bundle.md` authored per eleven-section structure (T-D41, T-D42) | built | `methodologies/<rich-bundle>/bundle.md`; `packages/backend/test/rich-bundle.test.ts` "parses cleanly through the bundle loader" | Primary unit `module`, anchor/marker systems, phase state machine, multi-gate moments, two item types, companion modes, templates, drift categories. |
+| rich bundle parses cleanly through the loader (§Phase 7 done-when) | built | `bundle-parser.test.ts` + `rich-bundle.test.ts`; loader unchanged (`methodology/loader.ts`) | Existing 11-section grammar; only the State-machine parser extended. |
 | Item types `todo`/`decision` declared by bundle, surfaced in UI (§7.4, §7.5, C-D12) | built | `state-machine.ts` `extractItemTypes`; `items/policy.ts`; `Board.tsx`; `test/phase7.test.tsx` | `### Item type: <id>` sub-blocks parsed into `StateMachine.item_types`. |
-| Status lifecycles per bundle (todos 4 states; decisions 3 states) | built | `items/policy.ts` `statuses_by_type`; `service.ts` create/update validation; `sitemesh.test.ts` "validates status against the item type lifecycle" | Per-type validation; flat union retained for generic consumers. |
+| Status lifecycles per bundle (todos 4 states; decisions 3 states) | built | `items/policy.ts` `statuses_by_type`; `service.ts` create/update validation; `rich-bundle.test.ts` "validates status against the item type lifecycle" | Per-type validation; flat union retained for generic consumers. |
 | Todos and decisions render on separate boards (§7.5) | built | `SessionView.tsx` (iterates `policy.boards`) + `Board.tsx` (board-scoped `statuses`); `phase7.test.tsx` | Decision board does not carry todo-only columns. |
-| Methodology-context fields populate on items (primary unit / phase / anchor / marker) | built | `service.ts` `loadItemChildren`/`writeContext`; `ItemDetailPanel.tsx` `MethodologyContextField`; `sitemesh.test.ts` round-trip + audit | PATCH semantics: an omitted dimension is left untouched; per-dimension audit diffs (T-D36). |
-| Modules view: grouping, tier, phase indicators, anchor/marker counts (§7.11, C-D13) | built | `GET /api/projects/:id/modules` (`items/routes.ts` + `service.ts` `modules()`); `ModulesView` in `views/stubs.tsx`; `sitemesh.test.ts` + `phase7.test.tsx` | Tier classification driven by the bundle's `tier_rules` count bands. |
-| No code path uses SiteMesh terminology unmediated by the bundle (T-D48) | built | review; `'module'` fallback in `stubs.tsx` changed to generic `'primary unit'` | `primary_unit_label`/tier strings come from the bundle. |
-| Phase 3 UI works for freeform- and SiteMesh-bound projects without per-bundle branches | built | `bundleItemPolicy` single derivation point; freeform tests still green (`items.test.ts`) | Boards/columns/validation all read the policy. |
+| Methodology-context fields populate on items (primary unit / phase / anchor / marker) | built | `service.ts` `loadItemChildren`/`writeContext`; `ItemDetailPanel.tsx` `MethodologyContextField`; `rich-bundle.test.ts` round-trip + audit | PATCH semantics: an omitted dimension is left untouched; per-dimension audit diffs (T-D36). |
+| Modules view: grouping, tier, phase indicators, anchor/marker counts (§7.11, C-D13) | built | `GET /api/projects/:id/modules` (`items/routes.ts` + `service.ts` `modules()`); `ModulesView` in `views/stubs.tsx`; `rich-bundle.test.ts` + `phase7.test.tsx` | Tier classification driven by the bundle's `tier_rules` count bands. |
+| No code path uses bundle-specific terminology unmediated by the bundle (T-D48) | built | review; `'module'` fallback in `stubs.tsx` changed to generic `'primary unit'` | `primary_unit_label`/tier strings come from the bundle. |
+| Phase 3 UI works for freeform- and rich-bundle-bound projects without per-bundle branches | built | `bundleItemPolicy` single derivation point; freeform tests still green (`items.test.ts`) | Boards/columns/validation all read the policy. |
 
 ---
 
@@ -46,8 +46,8 @@ _none_
 ## Files Changed Since Last Handover
 
 **New:**
-- `methodologies/sitemesh/bundle.md` — SiteMesh rich-discipline reference bundle (eleven sections).
-- `packages/backend/test/sitemesh.test.ts` — 6 tests (parse, boards, per-type validation, context round-trip, modules, freeform).
+- `methodologies/<rich-bundle>/bundle.md` — rich-discipline reference bundle (eleven sections).
+- `packages/backend/test/rich-bundle.test.ts` — 6 tests (parse, boards, per-type validation, context round-trip, modules, freeform).
 - `packages/frontend/test/phase7.test.tsx` — 2 tests (two boards w/ per-type columns; Modules table).
 
 **Modified (shared):** `bundle.ts` (`ItemTypeSpec`, `StateMachine.item_types`); `items.ts` (`MethodologyContext`, per-type `statuses_by_type`, `Board.statuses`, `ModuleSummary`/`ModulesResult`, context inputs).
@@ -68,7 +68,7 @@ _none_
 |---|---|---|---|
 | Item-type grammar home | `state-machine.ts` | Plan said "declare item types in the bundle markdown" without fixing which section. | Chose §5 State machine (`### Item type:` sub-blocks) over a new section — preserves the fixed eleven-section contract (T-D42). Recorded as C-D12. |
 | Top-level vs sub-block keys | `state-machine.ts` | Item-type sub-blocks also carry `transitions:`, which `parseKeyValueLines` over the whole body would let bleed into the state machine's own transitions. | Parse top-level `phases`/`transitions` only from the region before the first `###`. |
-| `'module'` fallback in UI | `views/stubs.tsx` | The Modules view defaulted `primary_unit_label` to the SiteMesh term `'module'` — unmediated terminology (T-D48). | Changed to the runtime-generic `'primary unit'`; the real label always comes from the bundle when modules load. |
+| `'module'` fallback in UI | `views/stubs.tsx` | The Modules view defaulted `primary_unit_label` to the rich-bundle term `'module'` — unmediated terminology (T-D48). | Changed to the runtime-generic `'primary unit'`; the real label always comes from the bundle when modules load. |
 | `pnpm lint` is a no-op | repo | Carry-forward from 6c. | Relied on `pnpm typecheck` as the static gate, consistent with prior slices. |
 
 ---
@@ -77,7 +77,7 @@ _none_
 
 - [ ] **Real lint wiring.** Still a no-op (carry-forward from 6a/6b/6c). Repo-infra slice.
 - [ ] **Per-type terminal status for reconcile/dump-zone.** `bundleDoneStatus` still uses the flat-union last status; `bundleDoneStatusForType` exists but reconcile/dump-zone are not item-type aware. Acceptable for v1; revisit if a bundle's union ordering misleads those flows.
-- [ ] **Gate execution.** Phase 7 only declares SiteMesh gates so `has_gates` is true; the dispatcher is Phase 8 (C-D6).
+- [ ] **Gate execution.** Phase 7 only declares the rich bundle gates so `has_gates` is true; the dispatcher is Phase 8 (C-D6).
 - [ ] **TagChipsEditor consolidation (carry-forward from 6a/6b).** Still not done; not blocking.
 
 ---
@@ -85,7 +85,7 @@ _none_
 ## Recently Resolved
 
 - **Phase 7 (whole phase)** — was the open phase after Phase 6 closed in `2026-05-15-phase-6c-md-ingestion.md`; delivered here.
-- **Phase 3 `policy.ts` pre-Phase-7 catch-all** — the placeholder branch flagged in `items/policy.ts` ("Phase 7 replaces this branch with SiteMesh's todo + decision boards") is now driven by bundle-declared item types.
+- **Phase 3 `policy.ts` pre-Phase-7 catch-all** — the placeholder branch flagged in `items/policy.ts` ("Phase 7 replaces this branch with the rich bundle's todo + decision boards") is now driven by bundle-declared item types.
 - **Phase 2 `ModulesView` stub** — the empty stub flagged since Phase 2 is now a live primary-unit-grouped view.
 
 ---
@@ -98,8 +98,8 @@ _none_
 - Phase 2/3 frontend: `SessionView`/`Board`/`ItemDetailPanel`, view-mode toggle + `has_primary_unit` gate, `ProjectBundleGuard`.
 
 **Downstream (consumes this slice's work):**
-- **Phase 8 gate runtime** — SiteMesh's `gates_by_moment` (incl. the per-commit two-gate moment) is the non-trivial bundle Phase 8 fires against.
-- **Phase 9 discipline-drift** — SiteMesh's `discipline_drift_categories` (banned-strings / structural / cross-reference) are the categories Phase 9 instantiates scanners from.
+- **Phase 8 gate runtime** — the rich bundle's `gates_by_moment` (incl. the per-commit two-gate moment) is the non-trivial bundle Phase 8 fires against.
+- **Phase 9 discipline-drift** — the rich bundle's `discipline_drift_categories` (banned-strings / structural / cross-reference) are the categories Phase 9 instantiates scanners from.
 - **Phase 11+** — `methodology_context` (primary unit / phase / anchors / markers) on items is the substrate for modules-scoped drift badges and session-start context.
 
 ---

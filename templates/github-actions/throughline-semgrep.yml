@@ -26,8 +26,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       # Point --config at the verifier-rule directory your methodology bundle declares.
-      # SiteMesh convention (T-D26): one rule file per item, named by the item's stable
-      # identifier, under the repo's Semgrep config area.
+      # Example bundle convention (T-D26): one rule file per item, named by the item's
+      # stable identifier, under the repo's Semgrep config area.
       - run: semgrep ci --config .semgrep/throughline
         env:
           SEMGREP_RULES: .semgrep/throughline

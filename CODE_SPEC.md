@@ -298,7 +298,7 @@ Step transitions are sequential by default; the bundle can declare parallel-elig
 When the run completes, an optional library-note summary (markdown) is offered for save, attaching to discussed items.
 
 ### Rationale
-A workflow engine generalises across bundle checklists; SiteMesh's anchor-citation-validation + scope-assessment pattern is one shape, but freeform projects could declare entirely different patterns. The mechanical/judgement split lets fully automatable checks run without human bottlenecking while preserving human judgement for genuinely subjective calls. Persisting step state means a run can be paused, resumed, or audited later.
+A workflow engine generalises across bundle checklists; a rich bundle's anchor-citation-validation + scope-assessment pattern is one shape, but freeform projects could declare entirely different patterns. The mechanical/judgement split lets fully automatable checks run without human bottlenecking while preserving human judgement for genuinely subjective calls. Persisting step state means a run can be paused, resumed, or audited later.
 
 ### Implications
 - `backend/src/methodology/companion/` houses the workflow engine.
@@ -316,14 +316,14 @@ A workflow engine generalises across bundle checklists; SiteMesh's anchor-citati
 ### Decision
 When the user opens a slice or session and triggers "generate session-start prompt", the runtime runs a context-assembly pipeline:
 
-1. **Resolve companion mode** — the bundle's review-patterns section declares one or more companion modes (e.g., SiteMesh's "doc-readiness mode" and "code-PR mode"). The user picks a mode; default is the bundle's first-declared mode.
+1. **Resolve companion mode** — the bundle's review-patterns section declares one or more companion modes (e.g. a "doc-readiness mode" and a "code-PR mode"). The user picks a mode; default is the bundle's first-declared mode.
 2. **Gather context** — for the current project and chosen mode, retrieve: project spec excerpts, decisions relevant to the active primary unit (if bundle declares primary units), active anchors and open markers, execution-plan slice for the chosen mode, cross-primary-unit dependencies, and any items carrying include-in-prompt directives (T-D12).
 3. **Relevance classification** — Anthropic Haiku (per SPEC §9: "Session-start prompt assembly: Haiku") classifies which decisions and anchors are relevant to the slice; full text included for high-relevance, citations only for medium, dropped for low.
 4. **Render** — the bundle's templates section provides the session-start template for that companion mode; the assembled context fills the template; output is a prompt string.
 5. **Surface** — UI shows the rendered prompt with a one-click copy-to-clipboard.
 
 ### Rationale
-Bundle-driven template selection keeps Throughline methodology-agnostic — SiteMesh declares its specific companion modes; a different bundle declares different modes. Relevance classification via the cheapest model (Haiku) keeps cost low for what is a frequently-used feature. Templates lifted from the bundle's templates section means the bundle author controls prompt shape without code changes.
+Bundle-driven template selection keeps Throughline methodology-agnostic — each bundle declares its own companion modes; a different bundle declares different modes. Relevance classification via the cheapest model (Haiku) keeps cost low for what is a frequently-used feature. Templates lifted from the bundle's templates section means the bundle author controls prompt shape without code changes.
 
 ### Implications
 - `backend/src/methodology/session-start/` houses the pipeline.
@@ -357,7 +357,7 @@ Re-ingest semantics: snapshot by default; the per-entry `source_tracked` toggle 
 - **Cites:** T-D42, T-D47, T-D48; SPEC §7.4, §7.5
 
 ### Decision
-SPEC §7.4/§7.5 require methodology-defined item types, each with its own status lifecycle, rendered as separate boards (SiteMesh: `todo` with `todo/in-progress/blocked/done`, `decision` with `open/locked/superseded`). The eleven-section bundle structure (T-D42) has no dedicated "item types" section, so item types are declared inside **§5 State machine** via `### Item type: <id>` sub-blocks — mirroring the existing `### Gates: <moment>` sub-heading convention — each carrying `board:`, `statuses:`, and `transitions:` key-value lines. The parser populates `StateMachine.item_types: ItemTypeSpec[]`.
+SPEC §7.4/§7.5 require methodology-defined item types, each with its own status lifecycle, rendered as separate boards (the `test-bundle`: `task` with `open/doing/blocked/done`, `note` with `draft/published`). The eleven-section bundle structure (T-D42) has no dedicated "item types" section, so item types are declared inside **§5 State machine** via `### Item type: <id>` sub-blocks — mirroring the existing `### Gates: <moment>` sub-heading convention — each carrying `board:`, `statuses:`, and `transitions:` key-value lines. The parser populates `StateMachine.item_types: ItemTypeSpec[]`.
 
 `ItemPolicy` gains `statuses_by_type: Record<string,string[]>` and each `Board` gains a board-scoped `statuses: string[]`. The flat `ItemPolicy.statuses` is retained as the de-duplicated union of every type's statuses for generic, non-item-type-aware consumers (reconcile, dump-zone, tree-by-status). Item create/update validate the status against the **item type's** lifecycle, not the union. Bundles that declare no item types (freeform) yield an empty `item_types` and the runtime infers a single board from the state machine's `phases` — the existing freeform behaviour, unchanged.
 
@@ -377,7 +377,7 @@ The State machine section already owns lifecycle/transition semantics, so per-ty
 - **Cites:** T-D39, T-D48; SPEC §7.11
 
 ### Decision
-`GET /api/projects/:id/modules` returns `{ primary_unit_label, modules: ModuleSummary[] }`. Primary units are the distinct `item_primary_unit_refs` values across the project's items; per unit the endpoint reports item count, distinct phase refs (phase indicators), anchor-citation count, marker-ref count, and a tier label. `primary_unit_label` is the bundle's primary-unit `name` (SiteMesh: "module"), or `null` when the bundle declares no primary unit (freeform) — the view stays hidden via the existing `has_primary_unit` gate, not a freeform code branch.
+`GET /api/projects/:id/modules` returns `{ primary_unit_label, modules: ModuleSummary[] }`. Primary units are the distinct `item_primary_unit_refs` values across the project's items; per unit the endpoint reports item count, distinct phase refs (phase indicators), anchor-citation count, marker-ref count, and a tier label. `primary_unit_label` is the bundle's primary-unit `name` (e.g. "module" in a rich bundle), or `null` when the bundle declares no primary unit (freeform) — the view stays hidden via the existing `has_primary_unit` gate, not a freeform code branch.
 
 Tier classification is bundle-driven: the primary unit's `tier_rules` string declares ordered count bands of the form `<tier> <=<n> items; <tier> ><n> items`. The runtime evaluates bands against the unit's item count and the first satisfied band wins; an empty/unparseable rule yields `untiered`. No tier-inference engine — the bundle author owns the thresholds.
 
@@ -386,7 +386,7 @@ Deriving primary units from item refs (rather than a separate registry) keeps "a
 
 ### Implications
 - `ItemsService.modules(projectId)` is the single derivation point; the route is a thin pass-through.
-- The frontend Modules view renders the table generically (label, tier, counts, phases) with no SiteMesh terms — `primary_unit_label` and tier strings come from the bundle.
+- The frontend Modules view renders the table generically (label, tier, counts, phases) with no bundle-specific terms baked in — `primary_unit_label` and tier strings come from the bundle.
 
 ---
 
@@ -588,7 +588,7 @@ Numbered SQL files run in order on backend start. Each migration recorded in a `
 
 ### Identifiers
 
-`nanoid`-style stable identifiers per record (per §8 "Stable identifiers per record, generated locally"). Verifier rule files named by item identifier per the bundle's declaration; SiteMesh declares `{item_id}.yml` (T-D26).
+`nanoid`-style stable identifiers per record (per §8 "Stable identifiers per record, generated locally"). Verifier rule files named by item identifier per the bundle's declaration; a rich bundle might declare `{item_id}.yml` (T-D26).
 
 ---
 
@@ -902,7 +902,7 @@ These are SPEC.md v5.1 gaps that came up during this regeneration. Each is too t
 
 1–4. **Gate trigger mechanisms** — resolved per SPEC §7.12 amendments: single local-loopback transport; Claude Code sends plan-mode/pre-write, git hooks send per-commit/post-commit; consented idempotent hook install; best-effort (Claude Code) vs durable (hook queue) delivery.
 5. **Bundle markdown convention** (§7.1, §11). SPEC.md says bundles are "markdown files following the eleven-section structure" without committing to a per-section heading convention. CODE_SPEC.md C-D3 picks H2 headings (`## 1. Identity`, etc.) with a single `bundle.md` per directory; confirm the convention or specify the alternative.
-6. **Companion modes ↔ review patterns relationship** (§7.1 bundle structure §8; §7.18 session-start reference). §7.1's bundle §8 says "review patterns" includes "companion modes"; §7.18 references "the methodology's appropriate companion mode" without a worked example. Confirm: are companion modes a fixed list per bundle (e.g., SiteMesh's "doc-readiness", "code-PR"), parameterised by phase, or something else? CODE_SPEC.md C-D9 treats them as a bundle-declared enum with a default; spec confirmation would unblock the assembly pipeline's contract.
+6. **Companion modes ↔ review patterns relationship** (§7.1 bundle structure §8; §7.18 session-start reference). §7.1's bundle §8 says "review patterns" includes "companion modes"; §7.18 references "the methodology's appropriate companion mode" without a worked example. Confirm: are companion modes a fixed list per bundle (e.g. a "doc-readiness" mode and a "code-PR" mode), parameterised by phase, or something else? CODE_SPEC.md C-D9 treats them as a bundle-declared enum with a default; spec confirmation would unblock the assembly pipeline's contract.
 7. **Verifier-tool plurality** (§7.16; T-D26 wording). §7.16 still discusses Semgrep specifically as the verifier tool while T-D26 references "the methodology bundle defines rule conventions" implying methodology bundles could declare a different verifier tool entirely. Clarify: in v1, is Semgrep the only supported verifier tool (with bundles only varying naming/storage conventions), or can a bundle declare a different verifier-tool integration?
 8. **Voice input language default** (§13). Open question without a recommendation. Implementation needs a default for the speech-recognition `lang` parameter on first launch. Recommendation request: pick one.
 9. **Cost meter daily threshold default value** (§13, §7.25). Spec says "pending real usage data." Settings panel needs a starting default. Recommendation request: pick a placeholder value (e.g., $5) or explicitly default to "no threshold / never warn."
