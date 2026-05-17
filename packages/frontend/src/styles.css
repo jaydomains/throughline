@@ -843,6 +843,13 @@ button.directive-badge { cursor: pointer; }
 .companion-run { margin-top: 12px; }
 .companion-run-active { outline: 2px solid var(--accent); }
 
+/* Phase 13 — session-start scaffolding (C-D9). Reuses the methodology-surface vocabulary
+   (gate-moment-head, gates-actions) shared with gates + companion review. */
+.session-start { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 10px; }
+.session-start-controls { margin: 10px 0; flex-wrap: wrap; }
+.session-start-result { margin-top: 12px; }
+.session-start-prompt { width: 100%; min-height: 240px; padding: 8px; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; color: var(--fg); font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; }
+
 /* Phase 10 — code-drift tier badges (SPEC §7.14): tier-1 red, tier-2 orange,
    tier-3 yellow. Distinct from the methodology (.drift-badge) indicator. */
 .code-drift-badge { font-size: 12px; margin-right: 4px; }

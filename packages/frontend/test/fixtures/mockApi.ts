@@ -318,6 +318,25 @@ export const mockApi = {
     throw new Error('not mocked');
   }),
 
+  // Phase 13 — session-start scaffolding (C-D9, T-D12). Default to the freeform-shaped
+  // single `default` mode so the panel renders uniformly unless a test opts in.
+  getSessionStartModes: vi.fn(async (_projectId: string) => ({
+    modes: [{ id: 'default', name: 'default' }],
+    default_mode: 'default',
+  })),
+  generateSessionStartPrompt: vi.fn(
+    async (): Promise<{
+      mode: string;
+      modes: Array<{ id: string; name: string }>;
+      prompt: string;
+      classifications: Array<{ ref: string; tier: 'high' | 'medium' | 'low' }>;
+      cached: boolean;
+      classifier_used_ai: boolean;
+    }> => {
+      throw new Error('not mocked');
+    },
+  ),
+
   // Phase 10 — GitHub integration & code-drift (C-D16).
   getProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
   refreshProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
