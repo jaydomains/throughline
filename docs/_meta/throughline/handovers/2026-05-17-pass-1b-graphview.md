@@ -107,4 +107,4 @@ _none_
 
 - Spec / decisions / build-state docs this slice operates against: `SPEC.md` (§7.11, §11), `CODE_SPEC.md` (§18), `DECISIONS.md` (T-D8; new WN-1b-a/b/c), `CHECKLIST.md` (§11, Phase 2, Pass 1b), `SESSION_START.md`.
 - Design handoff: `docs/_meta/throughline/mockups/THROUGHLINE/design_handoff_throughline_ui/README.md`.
-- PR: <fill on PR open>
+- PR: https://github.com/jaydomains/throughline/pull/26
