@@ -104,5 +104,8 @@ describe('SessionsIndex', () => {
     await user.click(screen.getByRole('button', { name: /Create session/ }));
     await screen.findByText('session-target');
     expect(mockApi.createSession).toHaveBeenCalledWith('p1', { name: 'wave 1' });
+    // refresh() is awaited before navigation — the sessions list is reloaded, not
+    // left stale by a fire-and-forget call that races the route change.
+    expect(mockApi.listSessions).toHaveBeenCalledWith('p1');
   });
 });

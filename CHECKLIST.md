@@ -511,3 +511,10 @@ Mechanical items from the v1 pre-launch verification findings (the subset that n
 - [x] Gate-trigger explicit-project guard (`gates/routes.ts`): `/api/gate-trigger` with a supplied-but-unknown `project_id` now returns `404 project_not_found` (consistent with the four sibling gate routes) instead of dispatching into a silent null resolve that returned `{ ok:true, fired:0 }` — a misrouted hook now fails loudly. Loopback triggers with no `project_id` (best-effort, repo-path/no-resolve) unchanged
 - [x] Regression tests added — `reconcile.test.ts`: a non-existent `session_id` normalises to null across row/diff/re-fetch; `server.test.ts` "POST /api/gate-trigger": unknown `project_id` → 404, no `project_id` → still `{ ok:true, fired:0 }`
 - [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 4 — Frontend async correctness
+
+- [x] `useSessions.refresh` now returns `Promise<void>` (async/await form; no-projectId branch resolves immediately) — consistent with `useDriftInbox`/`SessionView`'s awaitable refresh; hook's own `useEffect` uses `void refresh()` to match the established pattern
+- [x] `SessionsIndex.create()` now `await refresh()` before `navigate()` — the sessions list is reloaded before the route changes, instead of a fire-and-forget call racing the navigation
+- [x] Regression assertion added to the existing `sessionView.test.tsx` "SessionsIndex" test: `listSessions` is called with the project id during the create→navigate flow
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean
