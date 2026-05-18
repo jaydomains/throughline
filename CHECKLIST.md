@@ -504,3 +504,10 @@ Mechanical items from the v1 pre-launch verification findings (the subset that n
 - [x] Regression test added — `inbox.test.ts` "inbox watcher" describe: `stop()` twice returns the same promise, both resolve, a third resolves `undefined`
 - [x] Folded in the Slice-1 Gitar finding (PR #28): the `dbPath` field — genuinely dead (snapshots use better-sqlite3 `db.backup()`, not the file path) — fully removed from `CreateBackupServiceOptions` and all callers (`server.ts`, `backup.test.ts`), not left as a half-removed contract
 - [x] Suite green — `pnpm -r lint` clean, backend 262/262, frontend 118/118, `pnpm -r typecheck` clean. (Pre-existing unrelated flake noted: `server.test.ts` backup/export shares a fixed `tmpdir()/throughline-backup` with concurrent test files; out of the Pass-2 scope list — not introduced here, passes isolated and on re-run)
+
+### Slice 3 — Backend boundary validation
+
+- [x] Reconcile `session_id` validated up front, not written-then-corrected (`reconcile/service.ts`): a single `sessionId` (normalised to null when the session doesn't exist) now feeds the items query, the engine diff, the INSERT, and the audit `triggerContext` — coherent from the first write. The post-INSERT `UPDATE … SET session_id = NULL` correction dance deleted; no transient invalid row ever persists. Final state identical
+- [x] Gate-trigger explicit-project guard (`gates/routes.ts`): `/api/gate-trigger` with a supplied-but-unknown `project_id` now returns `404 project_not_found` (consistent with the four sibling gate routes) instead of dispatching into a silent null resolve that returned `{ ok:true, fired:0 }` — a misrouted hook now fails loudly. Loopback triggers with no `project_id` (best-effort, repo-path/no-resolve) unchanged
+- [x] Regression tests added — `reconcile.test.ts`: a non-existent `session_id` normalises to null across row/diff/re-fetch; `server.test.ts` "POST /api/gate-trigger": unknown `project_id` → 404, no `project_id` → still `{ ok:true, fired:0 }`
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean

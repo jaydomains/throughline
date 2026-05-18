@@ -35,6 +35,12 @@ export function registerGateRoutes(app: FastifyInstance, deps: GateRoutesDeps): 
     if (!body.moment || !MOMENTS.has(body.moment)) {
       return reply.code(400).send({ error: 'invalid_moment' });
     }
+    // An explicitly-supplied project_id that doesn't resolve is a misrouted trigger
+    // (stale hook, wrong repo). Fail loudly — consistent with the sibling gate routes —
+    // rather than dispatching into a silent null resolve that returns { ok:true, fired:0 }.
+    if (body.project_id && !projects.get(body.project_id)) {
+      return reply.code(404).send({ error: 'project_not_found' });
+    }
     const input: Parameters<GateRuntime['dispatch']>[1] = {};
     if (body.project_id) input.projectId = body.project_id;
     if (body.repo_path) input.repoPath = body.repo_path;

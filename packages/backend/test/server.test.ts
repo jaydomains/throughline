@@ -104,6 +104,36 @@ describe('POST /api/projects/:id/switch', () => {
   });
 });
 
+describe('POST /api/gate-trigger', () => {
+  let run: TestRun;
+  beforeEach(async () => {
+    run = await makeRun();
+  });
+  afterEach(async () => {
+    await run.cleanup();
+  });
+
+  it('404s when an explicit project_id does not resolve (misrouted trigger fails loudly)', async () => {
+    const res = await fetch(`${run.server.url}/api/gate-trigger`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ moment: 'plan-mode', project_id: 'does-not-exist' }),
+    });
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: 'project_not_found' });
+  });
+
+  it('still accepts a loopback trigger with no project_id (best-effort, no-resolve)', async () => {
+    const res = await fetch(`${run.server.url}/api/gate-trigger`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ moment: 'plan-mode' }),
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true, fired: 0 });
+  });
+});
+
 describe('items + sessions REST', () => {
   let run: TestRun;
   beforeEach(async () => {
