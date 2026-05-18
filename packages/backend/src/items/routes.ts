@@ -48,6 +48,16 @@ export function registerItemRoutes(
     },
   );
 
+  // Phase 17 (SPEC §7.17) — "Linked items" relations for the detail panel.
+  app.get<{ Params: { id: string; itemId: string } }>(
+    '/api/projects/:id/items/:itemId/links',
+    async (req, reply) => {
+      const item = items.get(req.params.itemId);
+      if (!item || item.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
+      return { links: items.links(req.params.itemId)! };
+    },
+  );
+
   app.post<{
     Params: { id: string };
     Body: {

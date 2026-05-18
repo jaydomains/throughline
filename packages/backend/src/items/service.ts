@@ -3,6 +3,8 @@ import type {
   BundleLoadResult,
   CreateItemInput,
   Item,
+  ItemLinks,
+  ItemLinkSummary,
   ItemPolicy,
   ModulesResult,
   ModuleSummary,
@@ -71,6 +73,7 @@ export interface ItemsService {
   modules(projectId: string): ModulesResult;
   list(filter: ListItemsFilter): Item[];
   get(id: string): Item | null;
+  links(id: string): ItemLinks | null;
   create(input: CreateItemInput): Item;
   update(id: string, input: UpdateItemInput): Item;
   delete(id: string): void;
@@ -450,6 +453,59 @@ export function createItemsService(
     get(id) {
       const row = getRow(id);
       return row ? rowToItem(db, row) : null;
+    },
+
+    // Phase 17 (SPEC §7.17) — the four "Linked items" relations. The detail
+    // panel fetches a single item and can't compute reverse relations
+    // (children, mentioning) itself. parents/children from parent_id;
+    // mentioned/mentioning from the item_mentions projection. Deterministic
+    // order (created_at, id) so the panel render is stable.
+    links(id) {
+      const row = getRow(id);
+      if (!row) return null;
+      const summary = (r: ItemRow): ItemLinkSummary => ({
+        id: r.id,
+        title: r.title,
+        type: r.type,
+        status: r.status,
+      });
+      const byId = (ids: string[]): ItemLinkSummary[] =>
+        ids
+          .map((i) => getRow(i))
+          .filter((r): r is ItemRow => r !== null)
+          .sort((a, b) =>
+            a.created_at !== b.created_at
+              ? a.created_at < b.created_at
+                ? -1
+                : 1
+              : a.id < b.id
+                ? -1
+                : a.id > b.id
+                  ? 1
+                  : 0,
+          )
+          .map(summary);
+      const childIds = (
+        db
+          .prepare('SELECT id FROM items WHERE parent_id = ? ORDER BY created_at, id')
+          .all(id) as Array<{ id: string }>
+      ).map((r) => r.id);
+      const mentionedIds = (
+        db
+          .prepare('SELECT mentions_item_id FROM item_mentions WHERE item_id = ?')
+          .all(id) as Array<{ mentions_item_id: string }>
+      ).map((r) => r.mentions_item_id);
+      const mentioningIds = (
+        db
+          .prepare('SELECT item_id FROM item_mentions WHERE mentions_item_id = ?')
+          .all(id) as Array<{ item_id: string }>
+      ).map((r) => r.item_id);
+      return {
+        parents: row.parent_id ? byId([row.parent_id]) : [],
+        children: byId(childIds),
+        mentioned: byId(mentionedIds),
+        mentioning: byId(mentioningIds),
+      };
     },
 
     create(input) {

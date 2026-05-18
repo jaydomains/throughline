@@ -121,6 +121,55 @@ describe('item mentions capture', () => {
     }
   });
 
+  it('links() returns parents, children, mentioned and mentioning', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      const parent = items.create({ project_id: project.id, title: 'parent' });
+      const target = items.create({ project_id: project.id, title: 'target' });
+      const src = items.create({
+        project_id: project.id,
+        title: 'src',
+        parent_id: parent.id,
+        description: `uses @item:${target.id}`,
+      });
+      const child = items.create({
+        project_id: project.id,
+        title: 'child',
+        parent_id: src.id,
+      });
+      const other = items.create({
+        project_id: project.id,
+        title: 'other',
+        description: `also @item:${src.id}`,
+      });
+
+      const links = items.links(src.id)!;
+      expect(links.parents.map((l) => l.id)).toEqual([parent.id]);
+      expect(links.children.map((l) => l.id)).toEqual([child.id]);
+      expect(links.mentioned.map((l) => l.id)).toEqual([target.id]);
+      expect(links.mentioning.map((l) => l.id)).toEqual([other.id]);
+      expect(links.mentioned[0]).toMatchObject({ title: 'target', type: 'task', status: 'open' });
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('links() returns null for an unknown item and empty arrays when isolated', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      expect(items.links('does-not-exist')).toBeNull();
+      const lone = items.create({ project_id: project.id, title: 'lone' });
+      expect(items.links(lone.id)).toEqual({
+        parents: [],
+        children: [],
+        mentioned: [],
+        mentioning: [],
+      });
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('cascades mention rows when a mentioned item is deleted', async () => {
     const { backend, items, project } = await setup();
     try {

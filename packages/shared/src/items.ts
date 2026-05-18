@@ -64,6 +64,24 @@ export interface UpdateItemInput {
   methodology_context?: Partial<MethodologyContext>;
 }
 
+// Phase 17 (SPEC §7.17) — "Linked items" detail-panel section. Compact
+// summaries for the four relations the panel renders. parents/children come
+// from parent_id; mentioned/mentioning from the item_mentions projection
+// (mentioning = items whose description @item:-references this one).
+export interface ItemLinkSummary {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+}
+
+export interface ItemLinks {
+  parents: ItemLinkSummary[];
+  children: ItemLinkSummary[];
+  mentioning: ItemLinkSummary[];
+  mentioned: ItemLinkSummary[];
+}
+
 export interface Board {
   id: string;
   label: string;
