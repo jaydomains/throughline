@@ -30,7 +30,7 @@ See [`SPEC.md`](SPEC.md) for the full functional description.
 
 Two pieces, both on your laptop:
 
-- **Backend service** — long-lived local process. Handles persistence, methodology bundle loading and enforcement, project doc parsing, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Can be configured to auto-run on login (opt-in manual setup; see [`docs/install/auto-start.md`](docs/install/auto-start.md)).
+- **Backend service** — long-lived local process. Handles persistence, methodology bundle loading and enforcement, project doc parsing, file watching, Semble and Semgrep integration, GitHub polling, scheduled work (reminders, periodic reviews), Anthropic API calls, and Claude Code → Throughline push. Can be configured for login auto-start (opt-in manual setup; see [`docs/install/auto-start.md`](docs/install/auto-start.md)).
 - **Browser UI** — served from the backend over a local-only address. The browser does not access the filesystem, OS notifications, or external networks directly; the backend mediates everything.
 
 Closing the browser tab does not stop background work — reminders fire, polling continues, drift checks run, methodology gates enforce.
@@ -54,10 +54,10 @@ pnpm --filter @throughline/backend start
 
 The backend binds to `127.0.0.1:47823` by default (configurable via `THROUGHLINE_PORT`). State lives at `~/.throughline/` — SQLite datastore, secrets file, and the Claude Code inbox archive. Login auto-start per platform is documented at [`docs/install/auto-start.md`](docs/install/auto-start.md).
 
-A minimal CLI ships with the backend (health check, project and methodology management). Run it with no arguments to print the full subcommand list:
+A minimal CLI ships with the backend (health check, project and methodology management). Run it with `--help` for the full, always-current subcommand list:
 
 ```
-pnpm --filter @throughline/backend exec tsx src/cli/index.ts
+pnpm --filter @throughline/backend exec tsx src/cli/index.ts --help
 ```
 
 For the broader build plan see [`ROADMAP.md`](ROADMAP.md) and [`CODE_SPEC.md`](CODE_SPEC.md).
@@ -86,6 +86,8 @@ When `bundle_path` is set, the loader resolves `<bundle_path>/bundle.md` instead
 | [`DECISIONS.md`](DECISIONS.md) | Full text of every T-D decision anchor referenced in `SPEC.md` §14. |
 | [`ROADMAP.md`](ROADMAP.md) | Sequenced build plan, phase by phase. |
 | [`CHECKLIST.md`](CHECKLIST.md) | Per-phase build state. Read at session start; update at session end. |
+| [`SESSION_START.md`](SESSION_START.md) | Build-session discipline floor — file-authority hierarchy, reading order, branch/PR rules, spec-drift policy. See [Development discipline](#development-discipline). |
+| [`docs/_meta/throughline/HANDOVER_TEMPLATE.md`](docs/_meta/throughline/HANDOVER_TEMPLATE.md) | Template every slice/PR closes against; dated handovers land in `docs/_meta/throughline/handovers/`. |
 
 ## Development discipline
 

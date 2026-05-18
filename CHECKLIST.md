@@ -518,3 +518,15 @@ Mechanical items from the v1 pre-launch verification findings (the subset that n
 - [x] `SessionsIndex.create()` now `await refresh()` before `navigate()` — the sessions list is reloaded before the route changes, instead of a fire-and-forget call racing the navigation
 - [x] Regression assertion added to the existing `sessionView.test.tsx` "SessionsIndex" test: `listSessions` is called with the project id during the create→navigate flow
 - [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 5 — README + CLI help
+
+- [x] CLI gained explicit `--help` / `-h` / `help` (`cli/index.ts`): help is what was asked for → printed to **stdout**, exit **0**. `helpText()` extracted; misuse (no command / unknown command / missing required arg) still routes through `usage()` → **stderr**, exit **2**. Manually verified all four paths
+- [x] README CLI section points at `… src/cli/index.ts --help` ("full, always-current subcommand list") instead of the prior "run with no arguments" (which printed to stderr with exit 2 — a poor discovery path and an inaccurate instruction)
+- [x] README auto-run wording made consistent — Architecture line now reads "configured for login auto-start", matching the Install section's "Login auto-start" and the doc title `docs/install/auto-start.md` ("# Login auto-start")
+- [x] Discipline-doc discoverability: `SESSION_START.md` and `HANDOVER_TEMPLATE.md` added as rows to the README **Documentation** table (with a pointer to the Development-discipline section), so the table is a complete doc index rather than silently omitting the discipline floor
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean, `pnpm build` clean
+
+---
+
+**Pass 2 close:** one PR (#28) titled "Pass 2 — mechanical pre-launch fixes", five slice commits + the inline Slice-1 Gitar `dbPath` fold-in (Slice 2). Merges to main when all slices land Gitar-clean. No SPEC functional change; no new T-D/C-D anchors (implementation-shape + doc fixes). Spec-author items (Q5/Q6/Q7, the four `RATIONALE NEEDED` markers, AI callsite↔panel asymmetry, the two Pass-1b GraphView gaps, voice/cost defaults, v1.x) deliberately untouched. Handover authored per `HANDOVER_TEMPLATE.md`.
