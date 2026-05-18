@@ -126,15 +126,20 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
         throw new Error(`bundle "${project.bundle_id}" not loaded`);
       }
       const policy = bundleItemPolicy(bundleResult.bundle);
-      const existing = input.session_id
-        ? items.list({ project_id: project.id, session_id: input.session_id })
+      // Validate the optional session_id up front. The FK is ON DELETE SET NULL, so a
+      // stale id would otherwise be written as-is and corrected after the fact; normalise
+      // to null here so the items query, the engine diff, the row, and the audit context
+      // all see the same coherent value (no transient invalid row).
+      const sessionId = input.session_id && sessions.get(input.session_id) ? input.session_id : null;
+      const existing = sessionId
+        ? items.list({ project_id: project.id, session_id: sessionId })
         : items.list({ project_id: project.id });
 
       const result = await engine.diff({
         project_id: project.id,
         text: input.text,
         source: input.source,
-        session_id: input.session_id,
+        session_id: sessionId,
         bundle: bundleResult.bundle,
         policy,
         existing_items: existing,
@@ -149,7 +154,7 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
       ).run(
         id,
         project.id,
-        input.session_id,
+        sessionId,
         input.source,
         input.text,
         JSON.stringify(result.diff),
@@ -160,7 +165,7 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
       const triggerContext: Record<string, unknown> = {
         source: input.source,
         extractor: result.diff.extractor,
-        session_id: input.session_id,
+        session_id: sessionId,
         row_count: result.diff.rows.length,
         category_counts: countByCategory(result.diff),
       };
@@ -199,13 +204,6 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
             result.telemetry.output_tokens,
           ),
         });
-      }
-
-      // Validate the optional session_id; the foreign key is ON DELETE SET NULL so a stale id
-      // would otherwise quietly persist as-is. We don't reject here — the propose can target a
-      // project-wide reconcile by passing null — but we want a row only if the session exists.
-      if (input.session_id && !sessions.get(input.session_id)) {
-        db.prepare('UPDATE reconcile_runs SET session_id = NULL WHERE id = ?').run(id);
       }
 
       return rowToRun(getRow(id)!);

@@ -157,6 +157,25 @@ describe('reconcile engine — heuristic', () => {
       await backend.cleanup();
     }
   });
+
+  it('normalises a non-existent session_id to null before writing the run', async () => {
+    const { backend, reconcile, project } = await setup();
+    try {
+      const run = await reconcile.propose({
+        project_id: project.id,
+        text: 'Add a tour for new users',
+        source: 'manual',
+        session_id: 'session-does-not-exist',
+      });
+      // Validated up front, not written-then-corrected: the row, the diff, and the
+      // re-fetched run all carry null — no transient invalid session_id ever persisted.
+      expect(run.session_id).toBeNull();
+      expect(run.diff.session_id).toBeNull();
+      expect(reconcile.get(run.id)?.session_id).toBeNull();
+    } finally {
+      await backend.cleanup();
+    }
+  });
 });
 
 describe('reconcile service — apply', () => {

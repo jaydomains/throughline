@@ -12,6 +12,10 @@ export default [
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
+      // Late-bound bindings (declared, captured in a closure, assigned later — e.g.
+      // server.ts disciplineEngine per C-D7) are read before assignment by design and
+      // cannot become `const`.
+      'prefer-const': ['error', { ignoreReadBeforeAssign: true }],
     },
   },
   {

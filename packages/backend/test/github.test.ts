@@ -49,11 +49,6 @@ function pull(over: Partial<GhPull> = {}): GhPull {
   };
 }
 
-interface FakeApiState {
-  pulls: GhPull[];
-  annotations: Parameters<GitHubApi['listAnnotations']> extends never ? never : never;
-}
-
 function fakeApi(opts: {
   pulls?: GhPull[];
   reviews?: { state: string; submitted_at: string | null }[];

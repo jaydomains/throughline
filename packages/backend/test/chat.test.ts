@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { DB } from '../src/db/index.js';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import type { DumpZoneService } from '../src/dump-zone/service.js';
 import type { DumpZoneProposal } from '@throughline/shared';
@@ -26,7 +27,7 @@ function stubAnthropic(answer: string): AnthropicClient {
 function offAnthropic(): AnthropicClient {
   return { available: () => false, call: async () => { throw new Error('off'); } };
 }
-function costRows(db: import('../src/db/index.js').DB, feature: string): number {
+function costRows(db: DB, feature: string): number {
   return (db.prepare(`SELECT COUNT(*) n FROM cost_telemetry WHERE feature = ?`).get(feature) as { n: number }).n;
 }
 

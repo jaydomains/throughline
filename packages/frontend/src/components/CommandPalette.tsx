@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Project } from '@throughline/shared';
 import { useModalRegistration } from '../keyboard/modalStack.js';
-import { VIEW_MODES, type ViewMode, viewModeVisible } from '../views/modes.js';
+import { VIEW_MODES, viewModeVisible } from '../views/modes.js';
 import type { MethodologySummary } from '../api.js';
 import { findBundle } from '../hooks/useMethodologies.js';
 

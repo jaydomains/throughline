@@ -1,7 +1,7 @@
 import chokidar, { type FSWatcher } from 'chokidar';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
-import type { BundleLoadResult, LoadedBundle } from '@throughline/shared';
+import type { BundleLoadResult } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import { parseBundle } from './bundle-parser/index.js';

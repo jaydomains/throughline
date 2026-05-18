@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import { isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { nanoid } from 'nanoid';
 import type {
@@ -211,7 +212,7 @@ export function createMdIngestService(opts: CreateOptions): MdIngestService {
     const out: string[] = [];
     function walk(dir: string): void {
       if (out.length >= SCAN_MAX_CANDIDATES) return;
-      let entries: import('node:fs').Dirent[];
+      let entries: Dirent[];
       try {
         entries = readdirSync(dir, { withFileTypes: true });
       } catch {

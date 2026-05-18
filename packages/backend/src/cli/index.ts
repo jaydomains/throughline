@@ -23,8 +23,8 @@ async function call<T>(method: string, path: string, body?: unknown): Promise<T>
   return (await res.json()) as T;
 }
 
-function usage(): never {
-  process.stderr.write(
+function helpText(): string {
+  return (
     [
       'throughline — Throughline CLI',
       '',
@@ -40,8 +40,20 @@ function usage(): never {
       '',
       `Talks to the backend at ${BASE}.`,
       '',
-    ].join('\n'),
+    ].join('\n')
   );
+}
+
+// Explicit `--help`/`-h`: help is what was asked for, so it goes to stdout and exits 0.
+function printHelp(): never {
+  process.stdout.write(helpText());
+  process.exit(0);
+}
+
+// Misuse (no command, unknown command, missing required arg): the usage text is a
+// diagnostic, so it goes to stderr and exits non-zero.
+function usage(): never {
+  process.stderr.write(helpText());
   process.exit(2);
 }
 
@@ -115,6 +127,7 @@ async function methodologiesCmd(ctx: CommandContext): Promise<void> {
 
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
+  if (cmd === '--help' || cmd === '-h' || cmd === 'help') printHelp();
   if (!cmd) usage();
   try {
     switch (cmd) {

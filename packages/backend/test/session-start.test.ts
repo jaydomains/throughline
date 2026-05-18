@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { DB } from '../src/db/index.js';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
 import { createLibraryService } from '../src/library/service.js';
@@ -90,7 +91,7 @@ async function setup(
   };
 }
 
-function costRows(db: import('../src/db/index.js').DB, projectId: string): number {
+function costRows(db: DB, projectId: string): number {
   return (
     db
       .prepare(

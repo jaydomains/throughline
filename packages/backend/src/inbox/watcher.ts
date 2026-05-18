@@ -23,6 +23,7 @@ export function createInboxWatcher(opts: InboxWatcherOptions): InboxWatcher {
   const { inboxDir, worker, watch = true, logger } = opts;
   let watcher: FSWatcher | null = null;
   let draining: Promise<void> = Promise.resolve();
+  let stopping: Promise<void> | null = null;
 
   function enqueueExistingFiles(): void {
     if (!existsSync(inboxDir)) return;
@@ -65,9 +66,19 @@ export function createInboxWatcher(opts: InboxWatcherOptions): InboxWatcher {
       enqueueExistingFiles();
       await scheduleDrain();
     },
-    async stop() {
-      if (watcher) await watcher.close();
-      await draining;
+    stop() {
+      // Idempotent: a second stop() returns the same settled promise rather than
+      // re-closing an already-closed chokidar watcher.
+      if (!stopping) {
+        stopping = (async () => {
+          if (watcher) {
+            await watcher.close();
+            watcher = null;
+          }
+          await draining;
+        })();
+      }
+      return stopping;
     },
   };
 }

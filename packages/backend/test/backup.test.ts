@@ -30,7 +30,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
 
@@ -72,7 +71,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
 
@@ -100,7 +98,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
 
@@ -131,7 +128,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
 
@@ -181,7 +177,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
       settings.set('auto_copy_target_path', '/etc/throughline.sqlite');
@@ -204,7 +199,6 @@ describe('backup service (T-D28)', () => {
       const backup = createBackupService({
         db,
         settings,
-        dbPath: cfg.dbPath,
         archiveDir: cfg.archiveDir,
       });
       const scheduler = createBackupScheduler({ service: backup, settings });

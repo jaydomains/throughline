@@ -19,7 +19,7 @@ export function SessionsIndex() {
     try {
       const r = await api.createSession(projectId, { name: name.trim() });
       setName('');
-      refresh();
+      await refresh();
       navigate(`/projects/${projectId}/sessions/${r.session.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));

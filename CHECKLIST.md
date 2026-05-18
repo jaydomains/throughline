@@ -482,3 +482,51 @@ Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plum
 ---
 
 **Redesign close:** one PR (#27) titled "UI redesign: full design-system adoption", four slice commits + inline Gitar-finding fixes, merged to main when all four slices land Gitar-clean. No SPEC functional change (visual layer over the unchanged data model). Handover authored per `HANDOVER_TEMPLATE.md`.
+
+---
+
+## Pass 2 — mechanical pre-launch fixes (v1 pre-launch remediation)
+
+Mechanical items from the v1 pre-launch verification findings (the subset that needs no spec-author decision). One PR, multi-slice. No SPEC functional change; no new T-D/C-D anchors (implementation-shape + doc fixes). Out of scope and left for the spec author: Q5/Q6/Q7, the four `RATIONALE NEEDED` markers, AI callsite↔panel asymmetry, the two Pass-1b GraphView spec gaps, voice-input/cost-threshold defaults, all v1.x items.
+
+### Slice 1 — Lint configuration (wire ESLint)
+
+- [x] Root no-op lint flag (carried since Phase 6a) closed: `@eslint/js` + `typescript-eslint` declared as root devDeps; the three `echo 'no lint config' && exit 0` scripts replaced with real `eslint` invocations (`shared`: `eslint src`; `backend`/`frontend`: `eslint src test`); `pnpm -r lint` convention preserved
+- [x] Root `package.json` `"type": "module"` added (flat config is ESM; silences the Node reparse warning)
+- [x] `eslint.config.js` `prefer-const` set to `{ ignoreReadBeforeAssign: true }` — the rule's own option for legitimately late-bound bindings (`server.ts` `disciplineEngine`, captured in the registry reload hook before assignment per C-D7); no code contortion
+- [x] All surfaced findings fixed: 8 `import()`-type annotations hoisted to top-level `import type`, 7 unused vars/imports removed, 1 `prefer-const`, 1 dead `react-hooks/exhaustive-deps` disable comment replaced with a plain WHY note (no react-hooks plugin added — config kept minimal)
+- [x] Suite green — `pnpm -r lint` clean, backend 261/261, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 2 — Backend robustness
+
+- [x] companion `listRuns` flake (`companion.test.ts:294`) fixed at the source: `engine.ts` `ORDER BY started_at DESC` → `ORDER BY started_at DESC, rowid DESC`. `started_at` is ms-precision ISO; same-millisecond runs ordered non-deterministically. `rowid DESC` is a stable insertion-order tiebreaker (table is a normal-rowid `TEXT PRIMARY KEY`), making newest-first a real production guarantee, not a lucky test
+- [x] Inbox watcher `stop()` made idempotent (`inbox/watcher.ts`): memoised `stopping` promise — a repeated `stop()` returns the same settled promise and never re-closes an already-closed chokidar watcher; `watcher` nulled after close
+- [x] Regression test added — `inbox.test.ts` "inbox watcher" describe: `stop()` twice returns the same promise, both resolve, a third resolves `undefined`
+- [x] Folded in the Slice-1 Gitar finding (PR #28): the `dbPath` field — genuinely dead (snapshots use better-sqlite3 `db.backup()`, not the file path) — fully removed from `CreateBackupServiceOptions` and all callers (`server.ts`, `backup.test.ts`), not left as a half-removed contract
+- [x] Suite green — `pnpm -r lint` clean, backend 262/262, frontend 118/118, `pnpm -r typecheck` clean. (Pre-existing unrelated flake noted: `server.test.ts` backup/export shares a fixed `tmpdir()/throughline-backup` with concurrent test files; out of the Pass-2 scope list — not introduced here, passes isolated and on re-run)
+
+### Slice 3 — Backend boundary validation
+
+- [x] Reconcile `session_id` validated up front, not written-then-corrected (`reconcile/service.ts`): a single `sessionId` (normalised to null when the session doesn't exist) now feeds the items query, the engine diff, the INSERT, and the audit `triggerContext` — coherent from the first write. The post-INSERT `UPDATE … SET session_id = NULL` correction dance deleted; no transient invalid row ever persists. Final state identical
+- [x] Gate-trigger explicit-project guard (`gates/routes.ts`): `/api/gate-trigger` with a supplied-but-unknown `project_id` now returns `404 project_not_found` (consistent with the four sibling gate routes) instead of dispatching into a silent null resolve that returned `{ ok:true, fired:0 }` — a misrouted hook now fails loudly. Loopback triggers with no `project_id` (best-effort, repo-path/no-resolve) unchanged
+- [x] Regression tests added — `reconcile.test.ts`: a non-existent `session_id` normalises to null across row/diff/re-fetch; `server.test.ts` "POST /api/gate-trigger": unknown `project_id` → 404, no `project_id` → still `{ ok:true, fired:0 }`
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 4 — Frontend async correctness
+
+- [x] `useSessions.refresh` now returns `Promise<void>` (async/await form; no-projectId branch resolves immediately) — consistent with `useDriftInbox`/`SessionView`'s awaitable refresh; hook's own `useEffect` uses `void refresh()` to match the established pattern
+- [x] `SessionsIndex.create()` now `await refresh()` before `navigate()` — the sessions list is reloaded before the route changes, instead of a fire-and-forget call racing the navigation
+- [x] Regression assertion added to the existing `sessionView.test.tsx` "SessionsIndex" test: `listSessions` is called with the project id during the create→navigate flow
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 5 — README + CLI help
+
+- [x] CLI gained explicit `--help` / `-h` / `help` (`cli/index.ts`): help is what was asked for → printed to **stdout**, exit **0**. `helpText()` extracted; misuse (no command / unknown command / missing required arg) still routes through `usage()` → **stderr**, exit **2**. Manually verified all four paths
+- [x] README CLI section points at `… src/cli/index.ts --help` ("full, always-current subcommand list") instead of the prior "run with no arguments" (which printed to stderr with exit 2 — a poor discovery path and an inaccurate instruction)
+- [x] README auto-run wording made consistent — Architecture line now reads "configured for login auto-start", matching the Install section's "Login auto-start" and the doc title `docs/install/auto-start.md` ("# Login auto-start")
+- [x] Discipline-doc discoverability: `SESSION_START.md` and `HANDOVER_TEMPLATE.md` added as rows to the README **Documentation** table (with a pointer to the Development-discipline section), so the table is a complete doc index rather than silently omitting the discipline floor
+- [x] Suite green — `pnpm -r lint` clean, backend 265/265, frontend 118/118, `pnpm -r typecheck` clean, `pnpm build` clean
+
+---
+
+**Pass 2 close:** one PR (#28) titled "Pass 2 — mechanical pre-launch fixes", five slice commits + the inline Slice-1 Gitar `dbPath` fold-in (Slice 2). Merges to main when all slices land Gitar-clean. No SPEC functional change; no new T-D/C-D anchors (implementation-shape + doc fixes). Spec-author items (Q5/Q6/Q7, the four `RATIONALE NEEDED` markers, AI callsite↔panel asymmetry, the two Pass-1b GraphView gaps, voice/cost defaults, v1.x) deliberately untouched. Handover authored per `HANDOVER_TEMPLATE.md`.

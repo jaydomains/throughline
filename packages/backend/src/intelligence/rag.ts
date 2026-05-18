@@ -11,6 +11,8 @@ import { usdEstimate } from '../ai/pricing.js';
 import { appendAudit } from '../audit/log.js';
 import { recordCost } from '../cost/telemetry.js';
 import type { DB } from '../db/index.js';
+import type { ItemsService } from '../items/service.js';
+import type { LibraryService } from '../library/service.js';
 import type { ProjectsService } from '../projects/service.js';
 import type { SembleService } from '../semble/service.js';
 import type { TextEmbedder } from './embeddings.js';
@@ -58,8 +60,8 @@ export interface RagService {
 interface CreateOptions {
   db: DB;
   projects: ProjectsService;
-  items: import('../items/service.js').ItemsService;
-  library: import('../library/service.js').LibraryService;
+  items: ItemsService;
+  library: LibraryService;
   semble: SembleService;
   anthropic: AnthropicClient;
   embedder: TextEmbedder;

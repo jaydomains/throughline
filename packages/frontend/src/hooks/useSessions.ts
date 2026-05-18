@@ -7,22 +7,25 @@ export function useSessions(projectId: string | null) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
-  const refresh = useCallback(() => {
+  const refresh = useCallback(async (): Promise<void> => {
     if (!projectId) {
       setSessions([]);
       setLoading(false);
       return;
     }
     setLoading(true);
-    api
-      .listSessions(projectId)
-      .then((r) => setSessions(r.sessions))
-      .catch((e: unknown) => setError(e instanceof Error ? e : new Error(String(e))))
-      .finally(() => setLoading(false));
+    try {
+      const r = await api.listSessions(projectId);
+      setSessions(r.sessions);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e : new Error(String(e)));
+    } finally {
+      setLoading(false);
+    }
   }, [projectId]);
 
   useEffect(() => {
-    refresh();
+    void refresh();
   }, [refresh]);
 
   return { sessions, loading, error, refresh };
