@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import type { ProjectsService } from '../../projects/service.js';
 import {
   ChecklistNotFoundError,
@@ -14,7 +14,7 @@ import {
 // checklists run as a structured workflow. Empty-but-present for freeform-bound projects
 // (no declared checklists) — the UI hides the surface, mirroring the gates view.
 
-function mapError(reply: import('fastify').FastifyReply, err: unknown): unknown {
+function mapError(reply: FastifyReply, err: unknown): unknown {
   if (
     err instanceof ProjectNotFoundError ||
     err instanceof RunNotFoundError ||
@@ -39,7 +39,7 @@ export function registerCompanionRoutes(
   // (same not-found shape used for an unknown run) and returns false. Mirrors the Phase-5
   // cross-project apply guard.
   function ownsRun(
-    reply: import('fastify').FastifyReply,
+    reply: FastifyReply,
     runId: string,
     projectId: string,
   ): boolean {

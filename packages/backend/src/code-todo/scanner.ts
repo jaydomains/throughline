@@ -1,4 +1,5 @@
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
+import type { Dirent } from 'node:fs';
 import { join, relative } from 'node:path';
 
 // Manual code TODO/FIXME scanner. Per §7.6 and the §13 adoption applied in ROADMAP Phase 4:
@@ -121,7 +122,7 @@ export function scanRepo(repoPath: string, options: ScanOptions = {}): ScanResul
     // symlinks by default unless there's a specific reason to follow them — guards against
     // infinite recursion on symlinks pointing to ancestor directories (real risk in
     // monorepos, including Throughline's own repo if scanned via Phase 4 code-todo).
-    let entries: import('node:fs').Dirent[];
+    let entries: Dirent[];
     try {
       entries = readdirSync(dir, { withFileTypes: true });
     } catch {

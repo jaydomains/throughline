@@ -27,8 +27,9 @@ export function PrBadges({ projectId }: { projectId: string }) {
   };
 
   useEffect(() => {
+    // Re-fetch only when the project changes; `load` is a stable per-render closure
+    // and is intentionally excluded to avoid a fetch loop.
     load(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [projectId]);
 
   if (!configured) return null;

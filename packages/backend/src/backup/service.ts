@@ -89,7 +89,7 @@ function timestampSlug(d: Date): string {
 }
 
 export function createBackupService(opts: CreateBackupServiceOptions): BackupService {
-  const { db, settings, dbPath, archiveDir } = opts;
+  const { db, settings, archiveDir } = opts;
 
   function thresholdDays(): number {
     return toPositiveInt(settings.get(KEY_THRESHOLD), DEFAULT_BACKUP_THRESHOLD_DAYS);

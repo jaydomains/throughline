@@ -10,7 +10,7 @@
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "lint": "echo 'no lint config' && exit 0"
+    "lint": "eslint src test"
   },
   "dependencies": {
     "@fontsource/geist-mono": "^5.2.8",

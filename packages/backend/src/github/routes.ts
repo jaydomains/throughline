@@ -30,8 +30,7 @@ export interface GitHubRoutesDeps {
 }
 
 export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDeps): void {
-  const { projects, api, cache, poller, drift, prLinking, orphanRules, autoReconcile, reverify } =
-    deps;
+  const { projects, cache, poller, drift, prLinking, orphanRules, autoReconcile, reverify } = deps;
 
   function project(id: string) {
     return projects.get(id);

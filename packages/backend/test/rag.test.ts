@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import type { DB } from '../src/db/index.js';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import type { SembleService } from '../src/semble/service.js';
 import { createProjectsService } from '../src/projects/service.js';
@@ -53,7 +54,7 @@ async function setup(anthropic: AnthropicClient = offAnthropic(), semble?: Sembl
   return { backend, projects, items, library, rag, project, cleanup: () => backend.cleanup() };
 }
 
-function costRows(db: import('../src/db/index.js').DB, feature: string): number {
+function costRows(db: DB, feature: string): number {
   return (db.prepare(`SELECT COUNT(*) n FROM cost_telemetry WHERE feature = ?`).get(feature) as { n: number }).n;
 }
 

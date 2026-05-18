@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
+import { copyFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { DB } from '../src/db/index.js';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import type { GitHubApi } from '../src/github/api.js';
 import { createProjectsService } from '../src/projects/service.js';
@@ -30,10 +31,10 @@ function stubAnthropic(answer: string): AnthropicClient {
 function offAnthropic(): AnthropicClient {
   return { available: () => false, call: async () => { throw new Error('off'); } };
 }
-function costRows(db: import('../src/db/index.js').DB, feature: string): number {
+function costRows(db: DB, feature: string): number {
   return (db.prepare(`SELECT COUNT(*) n FROM cost_telemetry WHERE feature = ?`).get(feature) as { n: number }).n;
 }
-function auditRows(db: import('../src/db/index.js').DB, field: string): number {
+function auditRows(db: DB, field: string): number {
   return (db.prepare(`SELECT COUNT(*) n FROM audit_log WHERE field = ?`).get(field) as { n: number }).n;
 }
 

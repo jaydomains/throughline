@@ -482,3 +482,17 @@ Not a ROADMAP phase. Visual layer over the unchanged data model / view-mode plum
 ---
 
 **Redesign close:** one PR (#27) titled "UI redesign: full design-system adoption", four slice commits + inline Gitar-finding fixes, merged to main when all four slices land Gitar-clean. No SPEC functional change (visual layer over the unchanged data model). Handover authored per `HANDOVER_TEMPLATE.md`.
+
+---
+
+## Pass 2 — mechanical pre-launch fixes (v1 pre-launch remediation)
+
+Mechanical items from the v1 pre-launch verification findings (the subset that needs no spec-author decision). One PR, multi-slice. No SPEC functional change; no new T-D/C-D anchors (implementation-shape + doc fixes). Out of scope and left for the spec author: Q5/Q6/Q7, the four `RATIONALE NEEDED` markers, AI callsite↔panel asymmetry, the two Pass-1b GraphView spec gaps, voice-input/cost-threshold defaults, all v1.x items.
+
+### Slice 1 — Lint configuration (wire ESLint)
+
+- [x] Root no-op lint flag (carried since Phase 6a) closed: `@eslint/js` + `typescript-eslint` declared as root devDeps; the three `echo 'no lint config' && exit 0` scripts replaced with real `eslint` invocations (`shared`: `eslint src`; `backend`/`frontend`: `eslint src test`); `pnpm -r lint` convention preserved
+- [x] Root `package.json` `"type": "module"` added (flat config is ESM; silences the Node reparse warning)
+- [x] `eslint.config.js` `prefer-const` set to `{ ignoreReadBeforeAssign: true }` — the rule's own option for legitimately late-bound bindings (`server.ts` `disciplineEngine`, captured in the registry reload hook before assignment per C-D7); no code contortion
+- [x] All surfaced findings fixed: 8 `import()`-type annotations hoisted to top-level `import type`, 7 unused vars/imports removed, 1 `prefer-const`, 1 dead `react-hooks/exhaustive-deps` disable comment replaced with a plain WHY note (no react-hooks plugin added — config kept minimal)
+- [x] Suite green — `pnpm -r lint` clean, backend 261/261, frontend 118/118, `pnpm -r typecheck` clean

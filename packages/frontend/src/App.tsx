@@ -25,7 +25,8 @@ import { TreeView } from './views/TreeView.js';
 import { DriftInbox } from './views/DriftInbox.js';
 import { IntelligenceView } from './views/IntelligenceView.js';
 import { SettingsView } from './views/SettingsView.js';
-import { api } from './api.js';
+import { api, type MethodologySummary } from './api.js';
+import type { Project } from '@throughline/shared';
 import { applyTheme, readTheme, type ThemeDirection } from './theme.js';
 
 function activeProjectIdFromPath(path: string): string | null {
@@ -123,7 +124,6 @@ function AppInner() {
 
   const openPalette = useCallback(() => setPaletteOpen(true), []);
   const closePalette = useCallback(() => setPaletteOpen(false), []);
-  const openHelp = useCallback(() => setHelpOpen(true), []);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
 
   useHotkey('mod+k', (e) => {
@@ -226,8 +226,8 @@ function ProjectBundleGuard({
   bundles,
   children,
 }: {
-  projects: import('@throughline/shared').Project[];
-  bundles: import('./api.js').MethodologySummary[];
+  projects: Project[];
+  bundles: MethodologySummary[];
   children: (bundleId: string) => JSX.Element;
 }) {
   const { id } = useParams();

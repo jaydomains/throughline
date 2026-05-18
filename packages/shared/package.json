@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit",
     "build": "tsc",
     "test": "echo 'no tests' && exit 0",
-    "lint": "echo 'no lint config' && exit 0"
+    "lint": "eslint src"
   },
   "devDependencies": {
     "typescript": "^5.4.5"
