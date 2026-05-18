@@ -56,6 +56,31 @@ describe('buildGraph', () => {
     expect(g.edges).toHaveLength(0);
   });
 
+  it('emits a mentions edge (item -> mentioned) and ignores out-of-set mentions', () => {
+    const g = buildGraph([
+      item({ id: 'src', mentions: ['target', 'ghost'] }),
+      item({ id: 'target' }),
+    ]);
+    const mentionEdges = g.edges.filter((e) => e.kind === 'mentions');
+    expect(mentionEdges).toEqual([
+      { id: 'mentions:src->target', from: 'src', to: 'target', kind: 'mentions' },
+    ]);
+  });
+
+  it('mention edges do not constrain layering or "Show chains"', () => {
+    const g = buildGraph([
+      item({ id: 'a', mentions: ['b'] }),
+      item({ id: 'b', mentions: ['a'] }),
+    ]);
+    // Pure mention links → both stay on layer 0 (mentions are non-structural).
+    const layer = Object.fromEntries(g.nodes.map((n) => [n.id, n.layer]));
+    expect(layer.a).toBe(0);
+    expect(layer.b).toBe(0);
+    const chains = analyseChains(g);
+    expect(chains.rootBlockerIds.size).toBe(0);
+    expect(chains.chainEdgeIds.size).toBe(0);
+  });
+
   it('layers children below parents (longest-path)', () => {
     const g = buildGraph([
       item({ id: 'a' }),

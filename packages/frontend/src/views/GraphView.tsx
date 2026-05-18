@@ -122,6 +122,9 @@ export function GraphView() {
           <span style={{ color: 'var(--gv-danger)' }}>
             <i className="dashed" /> blocked-by
           </span>
+          <span style={{ color: 'var(--accent)' }}>
+            <i className="dotted" /> mentions
+          </span>
         </div>
       </div>
 
@@ -175,6 +178,7 @@ export function GraphView() {
               const cls = [
                 'gv-edge',
                 e.kind === 'blocked' ? 'blocked' : '',
+                e.kind === 'mentions' ? 'mentions' : '',
                 showChains && inChain ? 'chain' : '',
                 dim ? 'dim' : '',
               ]
