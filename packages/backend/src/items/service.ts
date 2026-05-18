@@ -469,25 +469,20 @@ export function createItemsService(
         type: r.type,
         status: r.status,
       });
-      const byId = (ids: string[]): ItemLinkSummary[] =>
-        ids
-          .map((i) => getRow(i))
-          .filter((r): r is ItemRow => r !== null)
-          .sort((a, b) =>
-            a.created_at !== b.created_at
-              ? a.created_at < b.created_at
-                ? -1
-                : 1
-              : a.id < b.id
-                ? -1
-                : a.id > b.id
-                  ? 1
-                  : 0,
-          )
-          .map(summary);
+      // Batch the row fetch via WHERE id IN (...) — same convention as
+      // loadItemChildren; ORDER BY makes the (created_at, id) order the single
+      // source of truth (no redundant JS re-sort).
+      const byIds = (ids: string[]): ItemLinkSummary[] => {
+        if (ids.length === 0) return [];
+        const placeholders = ids.map(() => '?').join(',');
+        const rows = db
+          .prepare(`SELECT * FROM items WHERE id IN (${placeholders}) ORDER BY created_at, id`)
+          .all(...ids) as ItemRow[];
+        return rows.map(summary);
+      };
       const childIds = (
         db
-          .prepare('SELECT id FROM items WHERE parent_id = ? ORDER BY created_at, id')
+          .prepare('SELECT id FROM items WHERE parent_id = ?')
           .all(id) as Array<{ id: string }>
       ).map((r) => r.id);
       const mentionedIds = (
@@ -501,10 +496,10 @@ export function createItemsService(
           .all(id) as Array<{ item_id: string }>
       ).map((r) => r.item_id);
       return {
-        parents: row.parent_id ? byId([row.parent_id]) : [],
-        children: byId(childIds),
-        mentioned: byId(mentionedIds),
-        mentioning: byId(mentioningIds),
+        parents: row.parent_id ? byIds([row.parent_id]) : [],
+        children: byIds(childIds),
+        mentioned: byIds(mentionedIds),
+        mentioning: byIds(mentioningIds),
       };
     },
 
