@@ -457,6 +457,19 @@ export const mockApi = {
     if (!item) throw new Error('not found');
     return { item };
   }),
+  getItemLinks: vi.fn(async (_pid: string, itemId: string) => {
+    const all = state.items;
+    const self = all.find((x) => x.id === itemId);
+    const summ = (x: Item) => ({ id: x.id, title: x.title, type: x.type, status: x.status });
+    return {
+      links: {
+        parents: self?.parent_id ? all.filter((x) => x.id === self.parent_id).map(summ) : [],
+        children: all.filter((x) => x.parent_id === itemId).map(summ),
+        mentioned: self ? all.filter((x) => self.mentions.includes(x.id)).map(summ) : [],
+        mentioning: all.filter((x) => x.mentions.includes(itemId)).map(summ),
+      },
+    };
+  }),
   createItem: vi.fn(async (projectId: string, input: Omit<CreateItemInput, 'project_id'>) => {
     const item: Item = {
       id: id('i'),
