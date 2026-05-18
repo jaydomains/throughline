@@ -175,7 +175,6 @@ export async function startServer(
   const backup = createBackupService({
     db,
     settings,
-    dbPath: config.dbPath,
     archiveDir: config.archiveDir,
   });
   const backupScheduler = createBackupScheduler({

@@ -346,7 +346,12 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
       // Batched assembly: a constant number of queries regardless of run count
       // (runs + steps + run-level audits), not the 1+4N that per-run loadRun would cost.
       const rows = db
-        .prepare(`SELECT * FROM checklist_runs WHERE project_id = ? ORDER BY started_at DESC`)
+        .prepare(
+          // rowid DESC is the stable tiebreaker: started_at is ms-precision ISO, so two
+          // runs started in the same millisecond would otherwise order non-deterministically
+          // (the companion.test.ts newest-first assertion flaked on exactly this).
+          `SELECT * FROM checklist_runs WHERE project_id = ? ORDER BY started_at DESC, rowid DESC`,
+        )
         .all(projectId) as RunRow[];
       if (rows.length === 0) return [];
       const runIds = rows.map((r) => r.id);

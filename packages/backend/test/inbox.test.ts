@@ -12,6 +12,7 @@ import {
 } from '../src/dump-zone/extractor.js';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import { createInboxWorker } from '../src/inbox/worker.js';
+import { createInboxWatcher } from '../src/inbox/watcher.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -220,6 +221,23 @@ describe('inbox worker', () => {
       for (const a of archived) {
         expect(a.endsWith(`__${filename}`)).toBe(true);
       }
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
+
+describe('inbox watcher', () => {
+  it('stop() is idempotent — a repeated call resolves without re-closing the watcher', async () => {
+    const { backend, cfg, worker } = await setup();
+    try {
+      const watcher = createInboxWatcher({ inboxDir: cfg.inboxDir, worker });
+      const first = watcher.stop();
+      const second = watcher.stop();
+      // Same memoised promise; the second call must not throw on an already-closed watcher.
+      expect(second).toBe(first);
+      await expect(Promise.all([first, second])).resolves.toBeDefined();
+      await expect(watcher.stop()).resolves.toBeUndefined();
     } finally {
       await backend.cleanup();
     }

@@ -79,7 +79,6 @@ export interface BackupService {
 export interface CreateBackupServiceOptions {
   db: DB;
   settings: SettingsService;
-  dbPath: string;
   archiveDir: string;
 }
 

@@ -496,3 +496,11 @@ Mechanical items from the v1 pre-launch verification findings (the subset that n
 - [x] `eslint.config.js` `prefer-const` set to `{ ignoreReadBeforeAssign: true }` — the rule's own option for legitimately late-bound bindings (`server.ts` `disciplineEngine`, captured in the registry reload hook before assignment per C-D7); no code contortion
 - [x] All surfaced findings fixed: 8 `import()`-type annotations hoisted to top-level `import type`, 7 unused vars/imports removed, 1 `prefer-const`, 1 dead `react-hooks/exhaustive-deps` disable comment replaced with a plain WHY note (no react-hooks plugin added — config kept minimal)
 - [x] Suite green — `pnpm -r lint` clean, backend 261/261, frontend 118/118, `pnpm -r typecheck` clean
+
+### Slice 2 — Backend robustness
+
+- [x] companion `listRuns` flake (`companion.test.ts:294`) fixed at the source: `engine.ts` `ORDER BY started_at DESC` → `ORDER BY started_at DESC, rowid DESC`. `started_at` is ms-precision ISO; same-millisecond runs ordered non-deterministically. `rowid DESC` is a stable insertion-order tiebreaker (table is a normal-rowid `TEXT PRIMARY KEY`), making newest-first a real production guarantee, not a lucky test
+- [x] Inbox watcher `stop()` made idempotent (`inbox/watcher.ts`): memoised `stopping` promise — a repeated `stop()` returns the same settled promise and never re-closes an already-closed chokidar watcher; `watcher` nulled after close
+- [x] Regression test added — `inbox.test.ts` "inbox watcher" describe: `stop()` twice returns the same promise, both resolve, a third resolves `undefined`
+- [x] Folded in the Slice-1 Gitar finding (PR #28): the `dbPath` field — genuinely dead (snapshots use better-sqlite3 `db.backup()`, not the file path) — fully removed from `CreateBackupServiceOptions` and all callers (`server.ts`, `backup.test.ts`), not left as a half-removed contract
+- [x] Suite green — `pnpm -r lint` clean, backend 262/262, frontend 118/118, `pnpm -r typecheck` clean. (Pre-existing unrelated flake noted: `server.test.ts` backup/export shares a fixed `tmpdir()/throughline-backup` with concurrent test files; out of the Pass-2 scope list — not introduced here, passes isolated and on re-run)
