@@ -120,6 +120,8 @@ Throughline's core is a runtime that loads and applies methodology bundles. A me
 10. **Validation rules** — banned-string sweeps, implementation-discipline rules, cross-reference resolution, structural validation
 11. **Authority hierarchy** — source ranking, drift policy
 
+**Bundle file grammar.** A bundle is a single markdown file. Each of the eleven sections is an H2 heading numbered in the canonical order above (`## 1. Identity`, `## 2. Project layout`, … `## 11. Authority hierarchy`); each section appears once, in order. Sub-structures within a section (item types, per-moment gates) are H3 sub-blocks under their section. The parser dispatches each H2 to a typed section handler; out-of-order, missing, or duplicate H2 headings are structural-validation errors at load time. **v1 ships one `bundle.md` per bundle directory.** Splitting a bundle across multiple files (a `bundle.md` acting as a manifest that includes sibling files) is a documented v2 possibility, not a v1 feature.
+
 **Bundle loading.** A project's methodology binding names a bundle. On project open, Throughline parses the bundle and configures the runtime: structural validators, banned-string greps, marker scanners, state-machine transitions, review-checklist steps, template parsers. The same Throughline UI and data model serve any project; behaviour adapts to the bundle.
 
 **Bundle authoring.** v1 ships with the `freeform` default (minimum-spec, no primary units, no anchors, no markers, single board, single item type called "task") and a generic `test-bundle` grammar fixture that exercises every section. Rich user-owned bundles are authored as markdown files following the eleven-section structure and bound per-project via `bundle_path` (C-D14) so proprietary discipline stays outside the repo; repo-shipped bundles live in Throughline's `methodologies/` directory. In-app bundle authoring (a UI for drafting and editing bundles) is deferred to v2.
@@ -342,11 +344,11 @@ Three uses inside Throughline:
 
 Semble also runs as an MCP server for Claude Code (separate setup; recommended regardless).
 
-### 7.16 Static rule verification (Semgrep)
+### 7.16 Static rule verification
 
-Semgrep runs in GitHub Actions on every PR. Findings post to the PR via Semgrep's GitHub integration. The backend reads findings via the GitHub API and overlays them on items via verifier rule references.
+Static rule verification runs in GitHub Actions on every PR and reports through the **GitHub Checks annotation contract**: a check run posts annotations whose rule identifiers match a methodology-defined verifier-rule convention. The backend reads those annotations via the GitHub API and overlays them on items via verifier rule references. The integration is annotation-generic — any tool that posts Checks annotations with matching rule identifiers links — and **Semgrep is the v1 reference tool**: v1 recommends and templates Semgrep, and the rest of this section is written in those terms.
 
-**Rule convention** — methodology-defined. A rich bundle might declare: rules live in a dedicated subdirectory of the repo's Semgrep config area, one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions.
+**Rule convention** — methodology-defined; it is the boundary the backend matches against (rule identifier ↔ annotation). A rich bundle might declare: rules live in a dedicated subdirectory of the repo's Semgrep config area, one rule file per item, named by the item's stable identifier. Other methodologies may define different conventions, or front a different annotation-posting tool that satisfies the same contract.
 
 **Workflow setup** — Throughline does not create or manage the GitHub Actions workflow. Users add a one-time workflow file pointing Semgrep at the rules path; recommended template ships with Throughline. The backend warns at first GitHub-integration use if the expected workflow is not present.
 
@@ -386,6 +388,8 @@ Closes with Esc or click-out. Arrow keys move through items in the parent list w
 - **Stakeholder view toggle.** Re-renders item content in plain language, AI-generated. Cached; invalidates on item edit.
 - **Companion runtime.** The methodology's review checklist runs inside Throughline as a structured workflow. The bundle declares which checklist steps are mechanical (Throughline executes) and which are judgement (Throughline surfaces for human or AI reviewer). For a rich bundle: anchor citation validation and marker presence are mechanical; scope, regression, and summary assessments are judgement steps that open a panel for the call. Output lands in the audit log.
 - **Session-start scaffolding.** When opening a slice or session, Throughline assembles the right context (project spec + relevant decisions + active anchors + open markers + execution-plan slice + cross-primary-unit dependencies) and produces a prompt for that session, in the methodology's appropriate companion mode.
+
+**Companion modes.** A companion mode is a bundle-declared identifier in the review-patterns section (e.g. a doc-readiness mode and a code-PR mode). In v1 its sole runtime effect is **session-start template selection**: the mode names which template the session-start scaffolding renders, and a project's default mode is the bundle's first-declared mode. Richer coupling — mode-gated checklists, mode-scoped context assembly, mode-derived phase — is **deferred to a worked example**; it is not specified as template-only forever.
 
 All AI features use the Anthropic API key from backend config. Model selection is per-feature: Haiku for cheap classification, Sonnet for default, Opus for harder reasoning.
 
@@ -512,7 +516,7 @@ Cost is the user's responsibility; settings expose model selection per feature c
 | Anthropic API | OUT | Backend HTTPS, key from backend config |
 | GitHub REST API | OUT | Backend polling |
 | Semble | LOCAL | Backend invokes per query (execFile); keyless |
-| Semgrep | OUT (CI) | GitHub Actions; results read via GitHub API |
+| GitHub Checks annotations (Semgrep = v1 ref tool) | OUT (CI) | GitHub Actions posts Checks annotations; backend reads via GitHub API (§7.16) |
 | Local filesystem | IN/OUT | Backend native FS access |
 | OS notifications | OUT | Backend → cross-platform OS notification capability |
 | Browser speech recognition | IN | Browser-native (voice capture) |
@@ -614,7 +618,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D23 | Chat history persisted per context for retrieval | 7.19 |
 | T-D24 | Audit log entries never expose API keys or full prompt content beyond what's needed for trigger reconstruction | 7.22, 8 |
 | T-D25 | Personal RAG has three substrates (text via local embeddings, code via Semble, audit history via structured queries); router uses keyword heuristics with user override; AI classification of query intent deferred | 7.18 |
-| T-D26 | Semgrep runs in GitHub Actions, not in the backend; backend reads findings via GitHub API. Methodology bundle defines rule conventions; a rich bundle may declare one-file-per-item named by item identifier. | 7.16 |
+| T-D26 | Static rule verification runs in GitHub Actions, not the backend; backend reads findings via the GitHub Checks annotation contract. The annotation contract is the integration boundary; the methodology bundle defines the rule-identifier convention; a rich bundle may declare one-file-per-item named by item identifier. Semgrep is the v1 reference/recommended tool. | 7.16 |
 | T-D27 | Semble integrated keyless/local, invoked per query on demand (lifecycle revised Phase 11; see DECISIONS T-D27, CODE_SPEC C-D17) | 7.15 |
 | T-D28 | Backup is a single-file copy of the underlying datastore; optional configurable auto-copy target | 7.23 |
 | T-D29 | Cost meter visible in header at all times; tracks per-feature spend with configurable warning threshold | 7.25 |
@@ -648,7 +652,7 @@ External services and capabilities Throughline depends on. Specific tool and lib
 |---|---|---|
 | Anthropic API account | All AI features | Extraction, reconcile, chat, RAG, retro, drift re-verify, mermaid, stakeholder, verifier rule drafting, companion review, session-start scaffolding |
 | GitHub account with PAT | Repo and PR awareness | GitHub integration, auto-reconcile, drift signals (code-drift tiers 1, 2, 3) |
-| Semgrep + GitHub Actions configured on the user's repos | Static rule verification | Code-drift tier 1 (for projects whose bundle declares Semgrep-based verifier rules) |
+| GitHub Actions posting Checks annotations (Semgrep is the v1 reference tool) | Static rule verification | Code-drift tier 1 (for projects whose bundle declares annotation-contract verifier rules; §7.16) |
 | Semble | Local code search | Code Q&A, item enrichment, code-drift tier 3 |
 | Local environment capable of running a long-lived backend service alongside a modern browser | Backend + UI runtime | Everything |
 | Cross-platform OS notification capability | Reminder firing | Time-based directives |

@@ -262,7 +262,7 @@ Slice (not a ROADMAP phase): remove the business-internal rich bundle from the r
 - [x] Manual item-to-PR linking: override action — `setPrLink(pr_number)` with explicit number
 - [x] Manual item-to-PR linking: skip path — detect returns null candidate; no association written
 - [x] Re-association possible from item detail panel anytime — detail-panel PR section (detect/clear)
-- [x] Code-drift tier-1: Semgrep findings read via GitHub API and matched to items by rule filename — convention match (verifier-tool plurality gap surfaced, C-D16)
+- [x] Code-drift tier-1: verifier findings read via the GitHub Checks annotation contract and matched to items by the bundle-defined rule-identifier convention — annotation-generic, Semgrep is the v1 reference tool (verifier-tool plurality resolved per SPEC §7.16 / Q7, C-D16)
 - [x] Tier-1 failure badges item red; passing clears badge — idempotent; passing dismisses open tier-1
 - [x] Tier-2 GitHub revert event detection; item badged orange — revert-PR detection over `item_pr_associations`
 - [x] Tier-3 watches for new PRs touching files in `item_code_refs`; item badged yellow — wired + tested; dormant until Phase 11 populates refs (per ROADMAP)
@@ -316,7 +316,7 @@ Slice (not a ROADMAP phase): remove the business-internal rich bundle from the r
 ## Phase 13 — Session-start scaffolding
 
 - [x] Endpoint generates session-start prompts for the active project (`POST /api/projects/:id/session-start-prompt` + `GET …/session-start/modes` — `methodology/session-start/routes.ts`; engine `generate`/`modes` in `methodology/session-start/engine.ts`; verified by backend "renders the bundle template for the chosen mode and lists open items")
-- [x] Companion-mode selection: bundle-declared enum with default (`resolveMode`/`declaredModes` — first-declared mode is the default; `default` synthetic mode for freeform/none; invalid mode → `InvalidModeError` 400; verified by "lists the bundle-declared companion modes with the first as default" and "rejects a mode the bundle does not declare". The companion-modes ↔ review-patterns relationship is the explicit CODE_SPEC Q#6 spec gap — proceeded with bundle-declared enum + default per ROADMAP §Phase 13, surfaced in the handover, not silently resolved)
+- [x] Companion-mode selection: bundle-declared enum with default (`resolveMode`/`declaredModes` — first-declared mode is the default; `default` synthetic mode for freeform/none; invalid mode → `InvalidModeError` 400; verified by "lists the bundle-declared companion modes with the first as default" and "rejects a mode the bundle does not declare". The companion-modes ↔ review-patterns relationship (CODE_SPEC Q#6) is resolved per SPEC §7.18 — a companion mode is a bundle-declared identifier whose v1 effect is session-start template selection only; the as-built enum + first-declared default is ratified)
 - [x] Context-assembly retrieves project spec, decisions, anchors, markers, execution-plan slice, dependencies (`assemble` — open items, decision-bearing items (boards beyond the first declared type), cited anchors, open markers, cross-primary-unit blocker edges; the bundle's per-mode template is the execution-plan slice (C-D9 step 4); verified by "renders the bundle template…" and "surfaces cross-primary-unit dependencies")
 - [x] Include-in-prompt directives auto-prepend to the generated prompt (`includeBlocks` resolves each `kind:'include_prompt'` directive's parent item title+body or library entry body + optional note; prepended above the rendered template; verified by "auto-prepends include-in-prompt directives (item + library, with note)")
 - [x] Anthropic Haiku call classifies relevance (`session-start/classifier.ts` `createAnthropicRelevanceClassifier` default `claude-haiku-4-5`; high ⇒ full text, medium ⇒ citation, low ⇒ dropped; capability-gated — no key ⇒ all-medium degrade, no call; verified by "classifier tiers drive decision rendering…" and "degrades to citation-only with no AI cost when the classifier is unavailable")
@@ -530,3 +530,15 @@ Mechanical items from the v1 pre-launch verification findings (the subset that n
 ---
 
 **Pass 2 close:** one PR (#28) titled "Pass 2 — mechanical pre-launch fixes", five slice commits + the inline Slice-1 Gitar `dbPath` fold-in (Slice 2). Merges to main when all slices land Gitar-clean. No SPEC functional change; no new T-D/C-D anchors (implementation-shape + doc fixes). Spec-author items (Q5/Q6/Q7, the four `RATIONALE NEEDED` markers, AI callsite↔panel asymmetry, the two Pass-1b GraphView gaps, voice/cost defaults, v1.x) deliberately untouched. Handover authored per `HANDOVER_TEMPLATE.md`.
+
+---
+
+## Spec clarification — Q5/Q6/Q7 close-out
+
+Docs-only spec-author resolution slice. Ratify-as-built; no code, no new T-D/C-D anchors. Branch `claude/resolve-spec-questions-ybwen`.
+
+- [x] Q5 (bundle markdown) resolved — SPEC §7.1 formalises the eleven-section H2 grammar; one `bundle.md` per directory in v1, multi-file (manifest) a documented v2 possibility. CODE_SPEC C-D3 body ratified; Questions item 5 closed
+- [x] Q6 (companion modes ↔ review patterns) resolved — SPEC §7.18 formalises companion mode as a bundle-declared identifier; v1 effect = session-start template selection only; richer coupling explicitly deferred to a worked example. CODE_SPEC C-D9 body ratified; Questions item 6 closed; Phase-13 row provisional note retired
+- [x] Q7 (verifier-tool plurality) resolved — SPEC §7.16 reframed to the GitHub Checks annotation contract (Semgrep = v1 reference tool); SPEC §10/§13/§14, DECISIONS T-D26 rationale, CODE_SPEC C-D16 reconciled under the boundary. Questions item 7 closed; Phase-10 row provisional note retired
+- [x] CODE_SPEC "Questions for the spec author" items 5–7 closed with SPEC references (items 8–9 remain open)
+- [x] Handover authored per `HANDOVER_TEMPLATE.md`; PR opened at close
