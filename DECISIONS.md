@@ -999,11 +999,13 @@ Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-se
 
 - **Date:** 2026-05-17
 - **Raised by:** Pass 1b (GraphView)
-- **Status:** open — spec-author decision required
+- **Status:** implemented in Phase 17 (PR #30) — spec-author ratification of SPEC §7.11/§7.17 wording pending the separate follow-up clarification PR
 
-**Observation.** SPEC §7.11 says graph edges show "parent-child, blocked-by, and **cross-session mentions**". The `Item` model (`packages/shared/src/items.ts`) has no mention/reference field — only `parent_id`, `blockers[]` (item-id refs, T-D8), and `session_ids[]` (multi-session membership). There is no captured "item A mentions item B" relation anywhere in the datastore.
+**Observation.** SPEC §7.11 says graph edges show "parent-child, blocked-by, and **cross-session mentions**". The `Item` model (`packages/shared/src/items.ts`) had no mention/reference field — only `parent_id`, `blockers[]` (item-id refs, T-D8), and `session_ids[]` (multi-session membership). There was no captured "item A mentions item B" relation anywhere in the datastore.
 
-**Decision deferred.** Pass 1b ships parent-child + blocked-by + "Show chains" (the two fully-supported edge types) and does **not** invent a cross-session edge. Candidate resolutions for the spec author: (1) add a mention/reference relation to the item model and capture it (capture surfaces / reconcile would need to populate it); (2) redefine the edge as shared-session co-membership (derivable today from `session_ids`); (3) drop the clause from §7.11. The §11 DoD bullet ("nine view modes functional and switchable") is satisfied without it.
+**Decision deferred (Pass 1b).** Pass 1b shipped parent-child + blocked-by + "Show chains" and did **not** invent a cross-session edge. Candidate resolutions surfaced for the spec author: (1) add a mention/reference relation to the item model and capture it; (2) redefine the edge as shared-session co-membership (derivable from `session_ids`); (3) drop the clause from §7.11.
+
+**Resolution (Phase 17).** The spec author chose option (1): build mentions as a first-class relation. As built — mentions are a derived projection of an item's description text via the explicit `@item:<id>` token (21-char nanoid), resolved to live same-project items (self-ref dropped) and stored in the `item_mentions` join table mirroring `item_blockers`, re-derived on every `items.create`/`items.update` with an unchanged-set short-circuit. Surfaced as `Item.mentions`, the `…/items/:itemId/links` endpoint (§7.17 "Linked items": parents/children/mentioning/mentioned), and a third non-structural GraphView edge kind (§7.11). The chosen reference convention (`@item:<id>`) and the §7.11/§7.17 wording are to be ratified into SPEC by the separate follow-up clarification PR — implementation was allowed to settle first; not silently edited. No new T-D/C-D anchor minted (SESSION_START anchor convention); CODE_SPEC §18 carries the implementation-shape detail. The §11 DoD bullet is satisfied by the functional item graph.
 
 ### WN-1b-b — Communication-model graph layer needs contract-source parsing
 
