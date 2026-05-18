@@ -537,7 +537,7 @@ Semgrep runs in GitHub Actions on every PR, not in the backend. Backend reads fi
 Tier-1 drift requires reliable rule execution. Backend execution would be brittle and tie up local resources. The methodology runtime owns rule conventions so different bundles can declare different verifier-tool conventions over time.
 
 ### Rationale
-GitHub Actions is already the CI substrate; running Semgrep there is free and reliable. Bundle-defined naming convention is what allows the backend to match findings to items unambiguously when reading via API, while still letting other methodologies adopt different conventions.
+GitHub Actions is already the CI substrate; running the verifier there is free and reliable. **Boundary clarification (Q7, SPEC §7.16):** the integration boundary is the GitHub Checks annotation contract — the backend matches a check run's annotation rule identifiers to items via the bundle-defined rule-identifier convention, which is what lets the backend match findings unambiguously while letting other annotation-posting tools or conventions slot in. Semgrep is the v1 reference/recommended tool; the contract, not the tool, is what Throughline integrates against. No new T-D anchor — the underlying decision is unchanged; the wording is tightened in place and the anchor ID is retained (canonical via SPEC §14).
 
 ### Implications
 Workflow setup is a one-time user task. Rule path configurable in settings per project. Verifier rule lifecycle on item deletion follows T-D33 (orphan-flag, not auto-removal).
