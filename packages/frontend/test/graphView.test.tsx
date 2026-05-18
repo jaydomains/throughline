@@ -50,6 +50,17 @@ describe('GraphView', () => {
     expect(blockedEdge.getAttribute('class')).toContain('blocked');
   });
 
+  it('renders a mention edge as a third edge kind', async () => {
+    seedItem({ id: 'src', project_id: 'p1', title: 'Source' });
+    seedItem({ id: 'tgt', project_id: 'p1', title: 'Target', mentions: ['src'] });
+    renderGraph();
+
+    const mentionEdge = await screen.findByTestId('graph-edge-mentions:tgt->src');
+    expect(mentionEdge).toHaveAttribute('data-kind', 'mentions');
+    expect(mentionEdge.getAttribute('class')).toContain('mentions');
+    expect(screen.getByText('mentions')).toBeInTheDocument(); // legend entry
+  });
+
   it('does not render edges to items outside the project set', async () => {
     seedItem({ id: 'lonely', project_id: 'p1', title: 'Lonely', parent_id: 'gone' });
     renderGraph();

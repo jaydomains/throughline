@@ -427,7 +427,7 @@ Not a ROADMAP phase. Closes the v1 pre-launch verification Cat-1 honesty blocker
 - [x] Visual layer adopts the design-handoff "Direction A · dark" tokens scoped to `.graph-view` (`views/graph/graph.css`, `--gv-*`); full design-system adoption deferred (DECISIONS WN-1b-c)
 - [x] Tests — `test/graphLayout.test.ts` (model/layering/chain analysis, cycle-safety, order-independence), `test/graphView.test.tsx` (render, edges, Show-chains, node→panel, empty); obsolete Graph stub test removed from `test/stubs.test.tsx`
 - [x] Full suite green — frontend 112/112, `pnpm -r typecheck` clean (3/3), `pnpm --filter @throughline/frontend build` clean
-- [ ] **Deferred — cross-session-mention edge** (SPEC §7.11): no mention/reference field in the `Item` model. Raised as DECISIONS **WN-1b-a** for spec-author resolution. Not a separate §11 DoD line.
+- [x] ~~Deferred~~ **cross-session-mention edge** (SPEC §7.11): **resolved in Phase 17** — `Item.mentions` projection + third graph edge kind. WN-1b-a status updated; SPEC §7.11/§7.17 ratification is the separate follow-up clarification PR. See "Phase 17 — Item mentions" below.
 - [ ] **Deferred — communication-model graph layer** (SPEC §7.11): bundle parser extracts only `communication_model.edge_types`, not the per-unit routing/producer contract. Raised as DECISIONS **WN-1b-b**. Not a separate §11 DoD line.
 - CODE_SPEC §18 graph-view bullet revised to the as-built shape (implementation-shape, CODE_SPEC-only per spec-drift policy). SPEC §7.11 functional text left to the spec author (surfaced via WN-1b-a/b, not silently edited).
 
@@ -542,3 +542,17 @@ Docs-only spec-author resolution slice. Ratify-as-built; no code, no new T-D/C-D
 - [x] Q7 (verifier-tool plurality) resolved — SPEC §7.16 reframed to the GitHub Checks annotation contract (Semgrep = v1 reference tool); SPEC §10/§13/§14, DECISIONS T-D26 rationale, CODE_SPEC C-D16 reconciled under the boundary. Questions item 7 closed; Phase-10 row provisional note retired
 - [x] CODE_SPEC "Questions for the spec author" items 5–7 closed with SPEC references (items 8–9 remain open)
 - [x] Handover authored per `HANDOVER_TEMPLATE.md`; PR opened at close
+
+---
+
+## Phase 17 — Item mentions as a first-class relation
+
+Builds the cross-session-mention edge deferred by Pass 1b (DECISIONS WN-1b-a). Chunked-execution PR #30, five slice commits + inline Gitar fold-in, single branch `claude/throughline-phase-17-items-kJJNB`. No SPEC.md functional edits — SPEC §7.11/§7.17 ratification is a separate follow-up clarification PR.
+
+- [x] Slice 1 — data model + capture: migration `0011_phase17_mentions.sql` (`item_mentions` join table + reverse index, mirroring `item_blockers`); `Item.mentions: string[]` (shared); `items/mentions.ts` `parseMentionRefs` (explicit `@item:<id>` token, deduped, first-seen order); `items/service.ts` derives on create+update (same-project, self-dropped) with an unchanged-set short-circuit (no spurious write/audit), `loadItemChildren`+`rowToItemWithChildren` hydrate, `mentions` audit on change. `test/mentions.test.ts`
+- [x] Slice 2 — linked-items endpoint: `GET /api/projects/:id/items/:itemId/links` → `{ parents, children, mentioning, mentioned }`; `items.links(id)` service method (batched `WHERE id IN (...)`); shared `ItemLinkSummary`/`ItemLinks`. `test/mentions.test.ts` + `test/server.test.ts`
+- [x] Slice 3 — detail panel: `ItemDetailPanel` "Linked items" renders the four §7.17 groups (clickable, cycle via `onCycle`; muted em-dash for empty); `api.getItemLinks`; `styles.css` `.linked-*`. `test/linkedItems.test.tsx`
+- [x] Slice 4 — GraphView mention edges: third `EdgeKind` `'mentions'`; `buildGraph` emits from `item.mentions` (out-of-set ignored); non-structural (excluded from layering + "Show chains"); accent-dotted style + legend entry. `test/graphLayout.test.ts` + `test/graphView.test.tsx`
+- [x] Slice 5 — docs + handover: this section; Pass-1b cross-session-mention row flipped; CODE_SPEC §18 + item-model revised as-built; DECISIONS WN-1b-a status updated (no new anchor); handover per `HANDOVER_TEMPLATE.md`
+- [x] Inline Gitar fold-in (Slice-2 finding): `links()` per-id `getRow` + JS re-sort replaced with batched `WHERE id IN (...) ORDER BY created_at, id` (loadItemChildren convention) — resolved on PR #30
+- [x] Full suite green — backend 276/276, frontend 123/123, `pnpm -r lint` clean, `pnpm -r typecheck` clean, `pnpm build` clean

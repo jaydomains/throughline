@@ -22,6 +22,10 @@ export interface Item {
   branch_ref: string | null;
   tags: string[];
   blockers: string[]; // structured blocker references — item ids that block this one (T-D8)
+  // Phase 17 (SPEC §7.11, §7.17; WN-1b-a) — item ids this item references via the
+  // explicit @item:<id> token in its description. Derived projection of description
+  // text, re-parsed on every create/update; never edited directly.
+  mentions: string[];
   session_ids: string[];
   methodology_context: MethodologyContext;
   // Phase 9 (C-D7, SPEC §7.14) — true when an open discipline-drift signal is scoped to
@@ -58,6 +62,24 @@ export interface UpdateItemInput {
   parent_id?: string | null;
   branch_ref?: string | null;
   methodology_context?: Partial<MethodologyContext>;
+}
+
+// Phase 17 (SPEC §7.17) — "Linked items" detail-panel section. Compact
+// summaries for the four relations the panel renders. parents/children come
+// from parent_id; mentioned/mentioning from the item_mentions projection
+// (mentioning = items whose description @item:-references this one).
+export interface ItemLinkSummary {
+  id: string;
+  title: string;
+  type: string;
+  status: string;
+}
+
+export interface ItemLinks {
+  parents: ItemLinkSummary[];
+  children: ItemLinkSummary[];
+  mentioning: ItemLinkSummary[];
+  mentioned: ItemLinkSummary[];
 }
 
 export interface Board {

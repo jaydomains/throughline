@@ -10,6 +10,7 @@ import type {
   AuditEntry,
   CodeTodoScanResult,
   CreateItemInput,
+  ItemLinks,
   CreateDirectiveInput,
   CreateLibraryEntryInput,
   CreateProjectInput,
@@ -212,6 +213,10 @@ export const api = {
   getItem: (projectId: string, itemId: string) =>
     jsonFetch<{ item: Item }>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}`,
+    ),
+  getItemLinks: (projectId: string, itemId: string) =>
+    jsonFetch<{ links: ItemLinks }>(
+      `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/links`,
     ),
   createItem: (projectId: string, input: Omit<CreateItemInput, 'project_id'>) =>
     jsonFetch<{ item: Item }>(`/api/projects/${pid(projectId)}/items`, {

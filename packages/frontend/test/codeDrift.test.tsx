@@ -24,6 +24,7 @@ function makeItem(over: Partial<Item>): Item {
     branch_ref: null,
     tags: [],
     blockers: [],
+    mentions: [],
     session_ids: [],
     methodology_context: {
       primary_unit_refs: [],

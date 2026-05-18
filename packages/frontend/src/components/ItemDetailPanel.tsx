@@ -5,6 +5,7 @@ import type {
   Directive,
   Item,
   ItemCodeRef,
+  ItemLinks,
   ItemPolicy,
   LibraryEntry,
   ReminderPayload,
@@ -38,6 +39,7 @@ export function ItemDetailPanel({
   onChanged,
 }: Props) {
   const [item, setItem] = useState<Item | null>(null);
+  const [links, setLinks] = useState<ItemLinks | null>(null);
   const [auditEntries, setAuditEntries] = useState<AuditEntry[]>([]);
   const [attachedNotes, setAttachedNotes] = useState<LibraryEntry[]>([]);
   const [editingTitle, setEditingTitle] = useState<string | null>(null);
@@ -65,6 +67,12 @@ export function ItemDetailPanel({
       setItem(r.item);
     } catch {
       setItem(null);
+    }
+    try {
+      const l = await api.getItemLinks(projectId, itemId);
+      setLinks(l.links);
+    } catch {
+      setLinks(null);
     }
     try {
       const a = await api.listAudit({ entity_type: 'item', entity_id: itemId, limit: 50 });
@@ -681,9 +689,40 @@ export function ItemDetailPanel({
 
       <section className="detail-section">
         <h3>Linked items</h3>
-        <p className="muted">
-          parent: {item.parent_id ?? '—'} · sessions: {item.session_ids.join(', ') || '—'}
-        </p>
+        {(
+          [
+            ['Parents', links?.parents ?? []],
+            ['Children', links?.children ?? []],
+            ['Mentioning this', links?.mentioning ?? []],
+            ['Mentioned by this', links?.mentioned ?? []],
+          ] as const
+        ).map(([label, group]) => (
+          <div key={label} className="linked-group" data-testid={`linked-${label}`}>
+            <span className="linked-label">{label}</span>{' '}
+            {group.length === 0 ? (
+              <span className="muted">—</span>
+            ) : (
+              <ul className="linked-list">
+                {group.map((l) => (
+                  <li key={l.id}>
+                    <button
+                      type="button"
+                      className="linkish"
+                      onClick={() => onCycle(l.id)}
+                      data-testid={`linked-item-${l.id}`}
+                    >
+                      {l.title}
+                    </button>{' '}
+                    <span className="muted">
+                      ({l.type} · {l.status})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ))}
+        <p className="muted">sessions: {item.session_ids.join(', ') || '—'}</p>
       </section>
 
       <AttachNoteToItemModal

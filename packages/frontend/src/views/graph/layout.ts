@@ -1,16 +1,18 @@
 // Pure, deterministic graph model + layout for the Graph view (SPEC §7.11).
 //
-// Nodes are items; edges are parent-child (from `parent_id`) and blocked-by
-// (from `blockers[]` — item ids that block this one, T-D8). Cross-session and
-// communication-model layers are deferred to a spec-author clarification
-// (see DECISIONS.md working notes) and intentionally not modelled here.
+// Nodes are items; edges are parent-child (from `parent_id`), blocked-by
+// (from `blockers[]` — item ids that block this one, T-D8) and mentions
+// (from `mentions[]` — Phase 17, the @item:<id> projection of description
+// text, SPEC §7.11/§7.17). Mention edges are non-structural: excluded from
+// layering and "Show chains". The communication-model layer remains deferred
+// to a spec-author clarification (DECISIONS.md WN-1b-b) — not modelled here.
 //
 // Everything is deterministic (stable sort, longest-path layering, no RNG, no
 // animation) so the renderer is reproducible and jsdom-testable.
 
 import type { Item } from '@throughline/shared';
 
-export type EdgeKind = 'parent' | 'blocked';
+export type EdgeKind = 'parent' | 'blocked' | 'mentions';
 
 export interface GraphNode {
   id: string;
@@ -76,6 +78,19 @@ export function buildGraph(items: Item[]): GraphModel {
         });
       }
     }
+    // Mention edges (SPEC §7.11, §7.17): item.mentions are ids this item
+    // @item:-references in its description. Out-of-set refs ignored, same as
+    // blockers. Not dependency edges — excluded from layering and chains below.
+    for (const mention of item.mentions) {
+      if (ids.has(mention)) {
+        edges.push({
+          id: `mentions:${item.id}->${mention}`,
+          from: item.id,
+          to: mention,
+          kind: 'mentions',
+        });
+      }
+    }
   }
 
   // Longest-path layering: layer(to) >= layer(from) + 1. Cycle-guarded so a
@@ -83,6 +98,7 @@ export function buildGraph(items: Item[]): GraphModel {
   // shouldn't produce cycles, but the renderer must never hang).
   const incoming = new Map<string, GraphEdge[]>();
   for (const e of edges) {
+    if (e.kind === 'mentions') continue; // mentions don't constrain layering
     const arr = incoming.get(e.to) ?? [];
     arr.push(e);
     incoming.set(e.to, arr);

@@ -94,6 +94,10 @@
   border-top-style: dashed;
 }
 
+.graph-view .gv-legend i.dotted {
+  border-top-style: dotted;
+}
+
 .graph-view .gv-canvas-wrap {
   flex: 1;
   min-height: 0;
@@ -122,6 +126,14 @@
 .graph-view .gv-edge.blocked {
   stroke: var(--danger);
   stroke-dasharray: 5 4;
+}
+
+/* Phase 17 — mention edges (SPEC §7.11/§7.17): third edge type, visually
+   distinct from solid parent and dashed-danger blocked. Non-structural. */
+.graph-view .gv-edge.mentions {
+  stroke: var(--accent);
+  stroke-dasharray: 2 3;
+  opacity: 0.7;
 }
 
 .graph-view .gv-edge.chain {

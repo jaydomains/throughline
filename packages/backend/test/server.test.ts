@@ -191,6 +191,43 @@ describe('items + sessions REST', () => {
     expect(entries.some((e) => e.field === 'create')).toBe(true);
   });
 
+  it('serves item links (Phase 17 §7.17) and 404s an unknown item', async () => {
+    const created = await fetch(`${run.server.url}/api/projects`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'demo', repo_path: '/tmp/d' }),
+    });
+    const { project } = (await created.json()) as { project: { id: string } };
+
+    const targetRes = await fetch(`${run.server.url}/api/projects/${project.id}/items`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'target' }),
+    });
+    const { item: target } = (await targetRes.json()) as { item: { id: string } };
+
+    const srcRes = await fetch(`${run.server.url}/api/projects/${project.id}/items`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'src', description: `see @item:${target.id}` }),
+    });
+    const { item: src } = (await srcRes.json()) as { item: { id: string } };
+
+    const linksRes = await fetch(
+      `${run.server.url}/api/projects/${project.id}/items/${src.id}/links`,
+    );
+    expect(linksRes.status).toBe(200);
+    const { links } = (await linksRes.json()) as {
+      links: { mentioned: Array<{ id: string }> };
+    };
+    expect(links.mentioned.map((l) => l.id)).toEqual([target.id]);
+
+    const missing = await fetch(
+      `${run.server.url}/api/projects/${project.id}/items/nope/links`,
+    );
+    expect(missing.status).toBe(404);
+  });
+
   it('returns default stale_threshold_days from /api/settings', async () => {
     const res = await fetch(`${run.server.url}/api/settings`);
     const { settings } = (await res.json()) as { settings: Record<string, unknown> };

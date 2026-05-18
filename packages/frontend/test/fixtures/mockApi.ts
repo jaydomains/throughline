@@ -207,6 +207,7 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
     branch_ref: null,
     tags: [],
     blockers: [],
+    mentions: [],
     session_ids: [],
     methodology_context: {
       primary_unit_refs: [],
@@ -456,6 +457,19 @@ export const mockApi = {
     if (!item) throw new Error('not found');
     return { item };
   }),
+  getItemLinks: vi.fn(async (_pid: string, itemId: string) => {
+    const all = state.items;
+    const self = all.find((x) => x.id === itemId);
+    const summ = (x: Item) => ({ id: x.id, title: x.title, type: x.type, status: x.status });
+    return {
+      links: {
+        parents: self?.parent_id ? all.filter((x) => x.id === self.parent_id).map(summ) : [],
+        children: all.filter((x) => x.parent_id === itemId).map(summ),
+        mentioned: self ? all.filter((x) => self.mentions.includes(x.id)).map(summ) : [],
+        mentioning: all.filter((x) => x.mentions.includes(itemId)).map(summ),
+      },
+    };
+  }),
   createItem: vi.fn(async (projectId: string, input: Omit<CreateItemInput, 'project_id'>) => {
     const item: Item = {
       id: id('i'),
@@ -469,6 +483,7 @@ export const mockApi = {
       branch_ref: input.branch_ref ?? null,
       tags: input.tags ?? [],
       blockers: [],
+      mentions: [],
       session_ids: input.session_ids ?? [],
       methodology_context: {
         primary_unit_refs: input.methodology_context?.primary_unit_refs ?? [],
@@ -663,6 +678,7 @@ export const mockApi = {
         branch_ref: null,
         tags: itemProposal.tags,
         blockers: [],
+        mentions: [],
         session_ids: itemProposal.target_session_id ? [itemProposal.target_session_id] : [],
         methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
         methodology_drift: false,
@@ -971,6 +987,7 @@ export const mockApi = {
             branch_ref: null,
             tags: row.tags,
             blockers: [],
+            mentions: [],
             session_ids: input.diff.session_id ? [input.diff.session_id] : [],
             methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
             methodology_drift: false,

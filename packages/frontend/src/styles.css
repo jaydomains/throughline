@@ -983,6 +983,14 @@ a:hover { text-decoration: underline; }
 .attached-notes-list li .meta { color: var(--fg-dim); font-size: 11px; }
 .attached-notes-list li button { margin-left: auto; padding: 2px 8px; font-size: 11px; }
 
+/* Phase 17 — "Linked items" four-group section (SPEC §7.17). */
+.linked-group { margin-bottom: 6px; font-size: 12px; }
+.linked-label { color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.04em; font-size: 11px; }
+.linked-list { list-style: none; padding: 0; margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px; }
+.linked-list li { display: flex; align-items: baseline; gap: 6px; }
+button.linkish { background: none; border: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-align: left; }
+button.linkish:hover { background: none; text-decoration: underline; }
+
 /* Phase 6b — directives, reminders, notifier (T-D12, T-D32). */
 
 .directive-badge { display: inline-block; padding: 0 4px; margin-left: 6px; font-size: 11px; line-height: 16px; border-radius: 8px; background: var(--bg); color: var(--fg-dim); border: 1px solid var(--border); cursor: default; }
