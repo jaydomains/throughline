@@ -207,6 +207,7 @@ export function seedItem(i: Partial<Item> & { id: string; project_id: string; ti
     branch_ref: null,
     tags: [],
     blockers: [],
+    mentions: [],
     session_ids: [],
     methodology_context: {
       primary_unit_refs: [],
@@ -469,6 +470,7 @@ export const mockApi = {
       branch_ref: input.branch_ref ?? null,
       tags: input.tags ?? [],
       blockers: [],
+      mentions: [],
       session_ids: input.session_ids ?? [],
       methodology_context: {
         primary_unit_refs: input.methodology_context?.primary_unit_refs ?? [],
@@ -663,6 +665,7 @@ export const mockApi = {
         branch_ref: null,
         tags: itemProposal.tags,
         blockers: [],
+        mentions: [],
         session_ids: itemProposal.target_session_id ? [itemProposal.target_session_id] : [],
         methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
         methodology_drift: false,
@@ -971,6 +974,7 @@ export const mockApi = {
             branch_ref: null,
             tags: row.tags,
             blockers: [],
+            mentions: [],
             session_ids: input.diff.session_id ? [input.diff.session_id] : [],
             methodology_context: { primary_unit_refs: [], phase_refs: [], anchor_citations: [], marker_refs: [] },
             methodology_drift: false,

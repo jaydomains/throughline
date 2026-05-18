@@ -22,6 +22,10 @@ export interface Item {
   branch_ref: string | null;
   tags: string[];
   blockers: string[]; // structured blocker references — item ids that block this one (T-D8)
+  // Phase 17 (SPEC §7.11, §7.17; WN-1b-a) — item ids this item references via the
+  // explicit @item:<id> token in its description. Derived projection of description
+  // text, re-parsed on every create/update; never edited directly.
+  mentions: string[];
   session_ids: string[];
   methodology_context: MethodologyContext;
   // Phase 9 (C-D7, SPEC §7.14) — true when an open discipline-drift signal is scoped to

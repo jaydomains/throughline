@@ -19,6 +19,7 @@ import {
 import type { DB } from '../db/index.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
+import { parseMentionRefs } from './mentions.js';
 import { bundleItemPolicy } from './policy.js';
 
 interface ItemRow {
@@ -84,6 +85,7 @@ export interface ItemsService {
 interface ItemChildren {
   tagsById: Map<string, string[]>;
   blockersById: Map<string, string[]>;
+  mentionsById: Map<string, string[]>;
   sessionsById: Map<string, string[]>;
   primaryUnitsById: Map<string, string[]>;
   phasesById: Map<string, string[]>;
@@ -108,6 +110,7 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
     return {
       tagsById: new Map(),
       blockersById: new Map(),
+      mentionsById: new Map(),
       sessionsById: new Map(),
       primaryUnitsById: new Map(),
       phasesById: new Map(),
@@ -118,6 +121,7 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
   const placeholders = ids.map(() => '?').join(',');
   const tagsById = new Map<string, string[]>();
   const blockersById = new Map<string, string[]>();
+  const mentionsById = new Map<string, string[]>();
   const sessionsById = new Map<string, string[]>();
   const contextMaps: Record<string, Map<string, string[]>> = {
     primaryUnitsById: new Map(),
@@ -152,6 +156,14 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
     arr.push(r.blocked_by_item_id);
     blockersById.set(r.item_id, arr);
   }
+  const mentionRows = db
+    .prepare(`SELECT item_id, mentions_item_id FROM item_mentions WHERE item_id IN (${placeholders})`)
+    .all(...ids) as Array<{ item_id: string; mentions_item_id: string }>;
+  for (const r of mentionRows) {
+    const arr = mentionsById.get(r.item_id) ?? [];
+    arr.push(r.mentions_item_id);
+    mentionsById.set(r.item_id, arr);
+  }
   const sessionRows = db
     .prepare(`SELECT item_id, session_id FROM item_session_memberships WHERE item_id IN (${placeholders})`)
     .all(...ids) as Array<{ item_id: string; session_id: string }>;
@@ -163,6 +175,7 @@ function loadItemChildren(db: DB, ids: string[]): ItemChildren {
   return {
     tagsById,
     blockersById,
+    mentionsById,
     sessionsById,
     primaryUnitsById: contextMaps['primaryUnitsById']!,
     phasesById: contextMaps['phasesById']!,
@@ -189,6 +202,7 @@ function rowToItemWithChildren(
     branch_ref: row.branch_ref,
     tags: children.tagsById.get(row.id) ?? [],
     blockers: children.blockersById.get(row.id) ?? [],
+    mentions: children.mentionsById.get(row.id) ?? [],
     session_ids: children.sessionsById.get(row.id) ?? [],
     methodology_context: {
       primary_unit_refs: children.primaryUnitsById.get(row.id) ?? [],
@@ -304,6 +318,47 @@ export function createItemsService(
         db.prepare(`INSERT OR IGNORE INTO ${table} (item_id, ${col}) VALUES (?, ?)`).run(itemId, v);
       }
     }
+  }
+
+  // Phase 17 (SPEC §7.11, §7.17; WN-1b-a). Resolve the @item:<id> tokens in a
+  // description to live same-project item ids, dropping self-refs and refs that
+  // don't resolve (silently — same lenient treatment as out-of-set blocker refs
+  // in the graph layout). First-seen order preserved.
+  function resolveMentions(itemId: string, projectId: string, description: string): string[] {
+    const resolved: string[] = [];
+    for (const ref of parseMentionRefs(description)) {
+      if (ref === itemId) continue;
+      const row = getRow(ref);
+      if (row && row.project_id === projectId) resolved.push(ref);
+    }
+    return resolved;
+  }
+
+  function currentMentions(itemId: string): string[] {
+    return (
+      db
+        .prepare('SELECT mentions_item_id FROM item_mentions WHERE item_id = ? ORDER BY mentions_item_id')
+        .all(itemId) as Array<{ mentions_item_id: string }>
+    ).map((r) => r.mentions_item_id);
+  }
+
+  // Rewrite the mention projection only when it actually changed — a description
+  // edit that doesn't touch any @item: token issues no DELETE/INSERT and no
+  // audit entry. Returns the prior set when it rewrote, null when unchanged.
+  function syncMentions(itemId: string, projectId: string, description: string): string[] | null {
+    const before = currentMentions(itemId);
+    const next = resolveMentions(itemId, projectId, description);
+    const a = [...before].sort();
+    const b = [...next].sort();
+    if (a.length === b.length && a.every((v, i) => v === b[i])) return null;
+    db.prepare('DELETE FROM item_mentions WHERE item_id = ?').run(itemId);
+    for (const m of next) {
+      db.prepare('INSERT OR IGNORE INTO item_mentions (item_id, mentions_item_id) VALUES (?, ?)').run(
+        itemId,
+        m,
+      );
+    }
+    return before;
   }
 
   return {
@@ -445,6 +500,7 @@ export function createItemsService(
           db.prepare('INSERT OR IGNORE INTO item_session_memberships (item_id, session_id) VALUES (?, ?)').run(id, sid);
         }
         writeContext(id, input.methodology_context);
+        syncMentions(id, project.id, input.description ?? '');
       });
       tx();
       appendAudit(db, {
@@ -544,6 +600,19 @@ export function createItemsService(
             });
           }
         }
+      }
+
+      const mentionsBefore = syncMentions(id, before.project_id, next.description);
+      if (mentionsBefore !== null) {
+        appendAudit(db, {
+          projectId: before.project_id,
+          entityType: 'item',
+          entityId: id,
+          actor: 'user',
+          field: 'mentions',
+          oldValue: mentionsBefore.join(','),
+          newValue: currentMentions(id).join(','),
+        });
       }
 
       for (const [field, oldV, newV] of [
