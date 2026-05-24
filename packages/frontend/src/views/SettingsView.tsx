@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BackupStatus,
   CommunicationModelView,
@@ -614,10 +614,18 @@ function CommunicationModelSection({
   const [view, setView] = useState<CommunicationModelView | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // `viewRef` always points at the freshest view so `save()` reads from a live
+  // value, not a closure capture. The earlier fix made `load()` awaitable and
+  // gated input on `busy`; both still hold. The ref closes the structural risk
+  // Gitar flagged: removing or weakening the busy-gate later would no longer
+  // silently re-introduce stale-write races (PR #31 Slice 3 fix-round 1).
+  const viewRef = useRef<CommunicationModelView | null>(null);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
   // Returns the load promise so `save()` can await the post-write reload before
-  // releasing `busy`. Fire-and-forget here would race the next save's closure read
-  // of `view`: the second PUT (replace-semantics) would clobber the first edit
-  // (Gitar finding, PR #31 Slice-2 review).
+  // releasing `busy`. Fire-and-forget would race the next save (Slice 2 review).
   const load = useCallback(
     async (projectId: string) => {
       if (!projectId) {
@@ -638,10 +646,29 @@ function CommunicationModelSection({
     void load(sel);
   }, [sel, load]);
 
-  const save = async (next: { contract_sources?: Record<string, string>; module_tiers?: Record<string, string> }) => {
+  // Patch shape: one of two single-field updates per click. `save()` merges the
+  // patch against the freshest stored maps from `viewRef` (never against the
+  // render-time `view` closure).
+  type SavePatch =
+    | { kind: 'contract_source'; edgeName: string; value: string }
+    | { kind: 'module_tier'; moduleName: string; tier: string };
+
+  const save = async (patch: SavePatch) => {
     if (!sel) return;
+    const current = viewRef.current;
+    if (!current) return;
     setBusy(true);
     try {
+      const next = {
+        contract_sources:
+          patch.kind === 'contract_source'
+            ? { ...current.contract_sources, [patch.edgeName]: patch.value }
+            : current.contract_sources,
+        module_tiers:
+          patch.kind === 'module_tier'
+            ? { ...current.module_tiers, [patch.moduleName]: patch.tier }
+            : current.module_tiers,
+      };
       await api.updateCommunicationModel(sel, next);
       await load(sel);
     } catch (e) {
@@ -705,15 +732,7 @@ function CommunicationModelSection({
                   <ContractSourceInput
                     initial={view.contract_sources[edgeName] ?? ''}
                     busy={busy}
-                    onSave={(value) =>
-                      save({
-                        contract_sources: {
-                          ...view.contract_sources,
-                          [edgeName]: value,
-                        },
-                        module_tiers: view.module_tiers,
-                      })
-                    }
+                    onSave={(value) => save({ kind: 'contract_source', edgeName, value })}
                     testid={`comm-cs-input-${edgeName}`}
                   />
                 </li>
@@ -745,13 +764,7 @@ function CommunicationModelSection({
                     value={tier ?? ''}
                     disabled={busy}
                     onChange={(e) =>
-                      save({
-                        contract_sources: view.contract_sources,
-                        module_tiers: {
-                          ...view.module_tiers,
-                          [moduleName]: e.target.value,
-                        },
-                      })
+                      save({ kind: 'module_tier', moduleName, tier: e.target.value })
                     }
                     data-testid={`comm-mt-select-${moduleName}`}
                   >
