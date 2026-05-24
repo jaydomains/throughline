@@ -73,6 +73,79 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     await waitFor(() => expect(mockApi.testNotification).toHaveBeenCalled());
   });
 
+  it('Phase 18 Slice 2: communication-model section shows the "none" hint for freeform-shaped views', async () => {
+    // The default mock returns status: 'none' → the section shows the "nothing to
+    // configure" hint instead of any input rows.
+    renderView();
+    const select = await screen.findByTestId('comm-project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    await screen.findByTestId('comm-bundle-none');
+    expect(screen.queryByTestId('comm-contract-sources')).toBeNull();
+    expect(screen.queryByTestId('comm-module-tiers')).toBeNull();
+  });
+
+  it('Phase 18 Slice 2: hides communication-model controls until a project is chosen, then renders both blocks', async () => {
+    // Override the mock to return a declared-shape view for project p1: one
+    // edge type with a contract_source and one item-derived module to assign.
+    // (`mockImplementation` here persists into later tests; `resetMockApi` only
+    // clears call counts. Ordering this test after the "none" default test
+    // keeps the default unobserved by the override.)
+    mockApi.getCommunicationModel.mockImplementation(async (_projectId: string) => ({
+      bundle: {
+        status: 'declared',
+        edge_types: [
+          {
+            name: 'mediated',
+            when: { kind: 'pair', a: 'tier-a', b: 'tier-a' },
+            mechanism: { kind: 'via', module_id: 'router' },
+            contract_source: 'tier-a-flows',
+            invariant: 'violation',
+          },
+        ],
+        tier_routing: [],
+        producer_ownership: null,
+      },
+      contract_sources: {},
+      module_tiers: {},
+      resolved: {
+        contract_sources: { mediated: { absolute_path: '', configured: false } },
+        module_tiers: { router: { tier: null, valid: false } },
+        declared_tiers: ['tier-a', 'tier-b'],
+      },
+    }));
+
+    renderView();
+    const select = await screen.findByTestId('comm-project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+
+    // Contract-source row appears with the "not configured" hint.
+    await screen.findByTestId('comm-cs-mediated');
+    // Module-tier row appears with the unassigned dropdown.
+    await screen.findByTestId('comm-mt-router');
+
+    // Save a contract-source path → updateCommunicationModel called with the new value
+    // for the edge type, preserving the empty module_tiers map.
+    const input = screen.getByTestId('comm-cs-input-mediated');
+    fireEvent.change(input, { target: { value: 'docs/contracts/router' } });
+    fireEvent.click(screen.getByTestId('comm-cs-input-mediated-save'));
+    await waitFor(() =>
+      expect(mockApi.updateCommunicationModel).toHaveBeenCalledWith('p1', {
+        contract_sources: { mediated: 'docs/contracts/router' },
+        module_tiers: {},
+      }),
+    );
+
+    // Assign a tier to the router module → updateCommunicationModel called with the
+    // tier assignment merged in.
+    fireEvent.change(screen.getByTestId('comm-mt-select-router'), { target: { value: 'tier-a' } });
+    await waitFor(() =>
+      expect(mockApi.updateCommunicationModel).toHaveBeenLastCalledWith('p1', {
+        contract_sources: {},
+        module_tiers: { router: 'tier-a' },
+      }),
+    );
+  });
+
   it('persists theme direction/mode/density through updateSettings (Slice 4)', async () => {
     renderView();
     fireEvent.change(await screen.findByTestId('theme-direction'), {

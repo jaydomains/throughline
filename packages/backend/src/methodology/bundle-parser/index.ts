@@ -21,7 +21,11 @@ export function parseBundle(bundleId: string, markdown: string): BundleLoadResul
   const anchor_system = parseAnchorSystem(bundleId, sections['3. Anchor system']);
   const marker_system = parseMarkerSystem(bundleId, sections['4. Marker system']);
   const state_machine = parseStateMachine(bundleId, sections['5. State machine']);
-  const communication_model = parseCommunicationModel(bundleId, sections['6. Communication model']);
+  const communication_model = parseCommunicationModel(
+    bundleId,
+    sections['6. Communication model'],
+    project_layout.value?.tiers ?? [],
+  );
   const gating_model = parseGatingModel(bundleId, sections['7. Gating model']);
   const review_patterns = parseReviewPatterns(bundleId, sections['8. Review patterns']);
   const templates = parseTemplates(bundleId, sections['9. Templates']);

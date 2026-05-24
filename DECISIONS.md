@@ -991,6 +991,69 @@ Documentation review checks for bundle-specific terminology used as if it were u
 
 ---
 
+## T-D49 — Communication-model bundle §6 grammar + per-project supply split
+
+- **Date:** 2026-05-24
+- **Status:** active — implemented in Phase 18 (PR #31), resolves WN-1b-b
+- **Sections affected:** 7.11
+
+### Decision
+Bundle §6 "Communication model" is a typed-record grammar, not a free-form bullet list:
+
+- §2 "Project layout" enumerates the **architectural-tier vocabulary** the model resolves against, via a top-level `tiers: <a>, <b>, …` line. This vocabulary is distinct from a primary unit's item-count `tier_rules` text (C-D13).
+- §6 declares three sub-section kinds via h3 headings:
+  - `### Edge type: <name>` — `when:` clause (a `<tier-a> <-> <tier-b>` pair, or the keyword `any`), `mechanism:` (`direct` or `via <module-id>`), optional `contract_source: <slug>`, optional `invariant: violation`.
+  - `### Tier routing: <tier-name>` — `mechanism:` override applied to any edge touching a module of that tier; optional `note:`.
+  - `### Producer ownership` — `rule: producer-owns-shape` plus optional `notes:`.
+- Tier-name resolution against §2's `tiers:` happens at **parse time**: an `Edge type` `when:` or `Tier routing:` heading referencing an undeclared tier raises a structural error attached to §6.
+
+The bundle declares the shape; the **project supplies the per-project pieces** — same bundle-declares / project-supplies split as `bundle_path` (C-D14):
+
+- For each edge type whose §6 declaration carries `contract_source:`, the project supplies a path on disk in `projects.settings_json.communication_model.contract_sources: Record<edge-type-name, repo-relative-or-absolute path>`. Only edge types with a declared `contract_source:` surface in the resolved view.
+- For each item-derived module (= C-D13 modules), the project supplies an architectural-tier assignment in `projects.settings_json.communication_model.module_tiers: Record<module-name, tier-name>`. Tier names come from §2's `tiers:` vocabulary. Module-tier assignment is per-project (not bundle-declared) because the architectural-tier vocabulary is methodology-wide but which modules sit in which tier is project-specific.
+
+### Context
+Pre-Phase-18 the bundle parser extracted only an `edge_types: string[]` bullet list, leaving `routing_rules` / `producer_ownership_rules` empty — DECISIONS WN-1b-b flagged this as insufficient to render the §7.11 communication-model layer. The Phase-18 spec-author resolution chose a typed grammar, with per-project supply for both contract-source paths AND module-tier assignments (the latter clarified mid-phase: tier vocabulary is bundle-declared, tier assignments are per-project).
+
+### Rationale
+- **Typed records over bullets.** Edge types, tier-routing rules, and producer-ownership carry distinct fields; encoding them as h3 sub-sections with key-value bodies mirrors the existing state-machine `### Item type:` / `### Gates: <moment>` convention (T-D42).
+- **Parse-time tier resolution.** Catching unknown tier names at bundle load surfaces errors next to the bundle author, not at derivation time when the connection back to the bundle is lost.
+- **Per-project supply.** Contract files live in the project repo, not in the bundle (the bundle is methodology-wide; the repo is the project). Module-tier assignment is per-project for the same reason: the bundle declares the tier vocabulary; which item-derived modules sit in which tier depends on this specific project's items and how the project author classifies them.
+
+### Implications
+Bundle parser (`bundle-parser/communication-model.ts`) walks h3 sub-sections like `state-machine.ts`. View endpoint `GET /api/projects/:id/communication-model` returns `{ bundle, contract_sources, module_tiers, resolved: { contract_sources, module_tiers, declared_tiers } }`; PUT replaces the `communication_model` block in `settings_json`. SettingsView surfaces both blocks behind a "configured but not yet consumed in Phase 18" hint. Implementation-shape detail in C-D18.
+
+---
+
+## T-D50 — Communication-model graph is rule-level with coupled freshness
+
+- **Date:** 2026-05-24
+- **Status:** active — implemented in Phase 18 (PR #31), resolves WN-1b-b
+- **Sections affected:** 7.11
+
+### Decision
+The communication-model graph rendered in GraphView (§7.11) is **rule-level**, not instance-level: each declared edge type expands into one edge per ordered-distinct pair of modules whose tiers satisfy its `when:` clause (self-loops excluded). Module nodes are **synthesised** from the project's items — the module set is the union of `Item.methodology_context.primary_unit_refs` over all items in the project (= the C-D13 modules service), with each module's tier read from `projects.settings_json.communication_model.module_tiers` (resolver `valid:false` and unassigned both map to a null tier; pairs matching tier-pair `when:` clauses skip null-tier endpoints, but `when: any` includes them).
+
+Tier-routing overrides (`### Tier routing:` rules in §6) replace the edge type's mechanism on any edge touching a module of that tier. When both endpoints carry conflicting overrides, the tier name that sorts lexicographically first wins; the winning tier is reported on the edge as `mechanism_overridden_by_tier` so the renderer can surface it. `invariant: violation` is parsed-and-carried on every emitted edge and **rendered as a styling hint** (danger colour + violation badge in the side panel); Phase-18 **does not enforce** routing invariants — enforcement is a later phase.
+
+The graph tracks current item state — **coupled freshness**: the synthesised module set and per-module item counts depend on items' `primary_unit_refs`, so the graph re-derives whenever the project's items change (the relevant change set: item creation, deletion, or methodology-context edits; not title / status / description / tag edits). The frontend implements this by deriving a stable `commItemsKey` from items and using it as a dependency for the fetch effect.
+
+Concrete-instance edges parsed from contract files (the `contract_source:` paths the project supplies) are **out of scope for Phase 18**: the paths are stored but never read. Instance-level edges and routing-invariant enforcement are deferred to a later phase.
+
+### Context
+WN-1b-b's open candidate (1) — "extend the §6 bundle grammar + parser to capture per-unit routing/producer rules, then draw the layer" — would, taken literally, require parsing each project's contract files to enumerate concrete producer→consumer edges. Phase 18 scope was scoped narrower than that: ratify the grammar (T-D49), render the rule-level expansion now, defer instance-level. Mid-phase Gitar review on the frontend slice surfaced the coupled-freshness property when Gitar flagged that the comm graph fetched only on mount/projectId change and would go stale on item changes; the spec author reframed that fix as a property of T-D50's render semantics, not a refresh bug.
+
+### Rationale
+- **Rule-level reads the bundle straight.** What the bundle declares is the typology of legal communication. Rule-level expansion makes that typology visible at the project level without claiming to enumerate actual runtime traffic.
+- **Synthesised modules over a separate module-registry.** Modules come from items' primary_unit_refs (C-D13). Introducing a separate module table for the graph would duplicate state and drift from the modules view.
+- **Coupled freshness is render-correctness, not perf.** A graph that silently shows stale modules after item changes mis-represents the project. The narrow re-fetch key (`ref:count|…`) keeps refresh rate off the hot path while honouring correctness.
+- **Parse-and-carry for invariants.** `invariant: violation` is visible to users without code committing to an enforcement model that hasn't been spec-decided yet.
+
+### Implications
+Pure derivation `(bundle, modules, module_tiers) → { modules, edges, producer_owns_shape }` in the backend; endpoint `GET /api/projects/:id/communication-model/graph`. Frontend renders modules in tier swimlanes via a pure layout; mediated edges (`mechanism: via <id>`) draw as two arrows through the mediator module when it's in the graph, else as a single curve with a `via <id>` badge. The `commItemsKey` derivation lives in shared graph utilities so it's unit-testable. Implementation-shape detail in C-D18.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
@@ -1011,11 +1074,13 @@ Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-se
 
 - **Date:** 2026-05-17
 - **Raised by:** Pass 1b (GraphView)
-- **Status:** open — spec-author decision required
+- **Status:** resolved — implemented in Phase 18 (PR #31). Spec-author chose candidate (1): extend the §6 bundle grammar + parser (T-D49) and render the rule-level layer (T-D50). Instance-level edges from parsed contract files remain deferred to a later phase, by design.
 
 **Observation.** SPEC §7.11 calls for "an additional graph layer [showing] primary-unit-level emit/consume edges based on the methodology's contract source" for bundles that declare a communication model. The bundle parser (`bundle-parser/communication-model.ts`) extracts only `edge_types` (e.g. `emit`, `consume`, `depends-on`) and leaves `routing_rules` / `producer_ownership_rules` empty — there is no parsed per-unit producer/consumer contract to draw edges from.
 
-**Decision deferred.** The layer is not built. Candidate resolutions: (1) extend the §6 bundle grammar + parser to capture per-unit routing/producer rules, then draw the layer; (2) approximate by aggregating item-level parent/blocker edges to `methodology_context.primary_unit_refs` (labelled an approximation, not contract-derived); (3) narrow §7.11's wording. Not a separate §11 DoD line.
+**Decision deferred (Pass 1b).** The layer was not built. Candidate resolutions surfaced: (1) extend the §6 bundle grammar + parser to capture per-unit routing/producer rules, then draw the layer; (2) approximate by aggregating item-level parent/blocker edges to `methodology_context.primary_unit_refs` (labelled an approximation, not contract-derived); (3) narrow §7.11's wording. Not a separate §11 DoD line.
+
+**Resolution (Phase 18).** The spec author chose candidate (1) with a scope split: ratify the grammar and render the rule-level layer now; defer concrete-instance edges (parsed from contract files on disk) to a later phase. T-D49 ratifies the §6 grammar (tier vocabulary in §2, typed edge-type / tier-routing / producer-ownership sub-sections) and the bundle-declares / project-supplies split for contract paths and module-tier assignments. T-D50 ratifies the render semantics (rule-level expansion, mediated-edge two-arrow rendering, parse-and-carry for `invariant: violation`, coupled freshness with item state). C-D18 records the implementation shape (h3-walking parser, per-project view + settings endpoint, pure derivation, GraphView fourth-layer toggle). The Pass-1b CHECKLIST row flips here; SPEC §7.11 is updated functionally in this PR (not deferred to a separate ratification round, because the grammar+render scope is itself the spec answer the working note asked for).
 
 ### WN-1b-c — GraphView adopts design-handoff tokens scoped-only
 

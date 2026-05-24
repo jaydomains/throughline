@@ -1,5 +1,5 @@
 import type { BundleStructuralError, ProjectLayout } from '@throughline/shared';
-import { isNoneBody, parseBulletList } from './sections.js';
+import { isNoneBody, parseBulletList, parseKeyValueLines } from './sections.js';
 
 export interface ProjectLayoutParseResult {
   value?: ProjectLayout;
@@ -26,8 +26,22 @@ function extractSubsection(body: string, heading: RegExp): string {
 
 export function parseProjectLayout(_bundleId: string, body: string): ProjectLayoutParseResult {
   if (isNoneBody(body)) {
-    return { value: { primary_unit: null, runtime_artefact_dirs: [] }, errors: [] };
+    return {
+      value: { primary_unit: null, runtime_artefact_dirs: [], tiers: [] },
+      errors: [],
+    };
   }
+
+  // Top-level lines above the first ### sub-heading carry §2's project-wide fields.
+  // Currently only `tiers:` — the architectural-tier vocabulary §6's `when:` clauses
+  // resolve against (T-D49).
+  const firstSub = body.search(/^###\s+/m);
+  const headerBody = firstSub >= 0 ? body.slice(0, firstSub) : body;
+  const headerKv = parseKeyValueLines(headerBody);
+  const tiers = (headerKv['tiers'] ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   const primarySub = extractSubsection(body, PRIMARY_HEADING);
   const dirsSub = extractSubsection(body, RUNTIME_DIRS_HEADING);
@@ -46,5 +60,5 @@ export function parseProjectLayout(_bundleId: string, body: string): ProjectLayo
 
   const runtime_artefact_dirs = dirsSub ? parseBulletList(dirsSub) : [];
 
-  return { value: { primary_unit, runtime_artefact_dirs }, errors: [] };
+  return { value: { primary_unit, runtime_artefact_dirs, tiers }, errors: [] };
 }

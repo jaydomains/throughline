@@ -238,3 +238,128 @@
   font-size: 15px;
   font-weight: 600;
 }
+
+/* Phase 18 Slice 4 — communication-model fourth layer. Module swimlanes:
+   horizontal divider per tier, label on the left, modules placed within. */
+.graph-view svg.gv-canvas.comm {
+  cursor: default;
+}
+
+.graph-view .comm-lane-divider {
+  stroke: var(--hairline);
+  stroke-width: 1;
+  stroke-dasharray: 2 4;
+}
+
+.graph-view .comm-lane-label {
+  fill: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.graph-view .comm-module .gv-node-box {
+  fill: var(--surface);
+}
+
+.graph-view .comm-edge {
+  stroke: var(--fg-muted);
+  stroke-width: 1.25;
+  fill: none;
+}
+
+/* Routing override (a `### Tier routing:` rule won out over the edge type's
+   default mechanism). Visually similar to mentions but in accent-2 so the user
+   can tell which edges were rerouted. */
+.graph-view .comm-edge.routed {
+  stroke: var(--accent);
+  stroke-dasharray: 4 4;
+}
+
+/* `invariant: violation` — the bundle declares this edge type's instantiation
+   as a violation. Phase 18 surfaces it visually but does not enforce (T-D50). */
+.graph-view .comm-edge.violation {
+  stroke: var(--danger);
+  stroke-width: 1.5;
+}
+
+.graph-view .comm-edge-label {
+  fill: var(--fg-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+}
+
+.graph-view .module-panel {
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 360px;
+  max-width: 60vw;
+  background: var(--surface);
+  border-left: 1px solid var(--hairline);
+  padding: 16px 20px;
+  overflow: auto;
+  z-index: 2;
+}
+
+.graph-view .module-panel-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.graph-view .module-panel-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.graph-view .module-panel-header button {
+  background: transparent;
+  border: 1px solid var(--hairline-2);
+  border-radius: var(--radius);
+  color: var(--fg-2);
+  font-size: 18px;
+  line-height: 1;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.graph-view .module-panel-meta {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 12px 0;
+  font-size: 12px;
+}
+
+.graph-view .module-panel-meta dt {
+  color: var(--fg-muted);
+}
+
+.graph-view .module-panel-meta dd {
+  margin: 0;
+  color: var(--fg);
+}
+
+.graph-view .module-panel-edges {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.graph-view .module-panel-edge {
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 12px;
+}
+
+.graph-view .module-panel-edge.violation {
+  border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+}

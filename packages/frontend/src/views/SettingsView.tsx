@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BackupStatus,
+  CommunicationModelView,
   CostSummary,
   OrphanedRule,
   Project,
@@ -228,6 +229,8 @@ export function SettingsView() {
         onSaved={refreshProjects}
         onError={setError}
       />
+
+      <CommunicationModelSection projects={projects} onError={setError} />
 
       <OrphanRulesSection projects={projects} onError={setError} />
     </div>
@@ -586,6 +589,235 @@ function ProjectSection({
         </>
       )}
     </Section>
+  );
+}
+
+// Phase 18 Slice 2 — per-project Communication-model settings.
+//
+// The bundle's §6 (T-D49) declares edge types and the tier vocabulary; this UI
+// supplies the per-project pieces the bundle leaves open:
+//   • a path on disk for each edge type whose §6 declaration carries
+//     `contract_source:` (only those surface, per confirmation 5);
+//   • an architectural-tier assignment for each item-derived module
+//     (= C-D13 modules), chosen from the bundle's `tiers:` vocabulary.
+//
+// Phase 18 ships parse-and-render only — nothing reads the configured paths yet.
+// Inputs persist via `PUT /api/projects/:id/communication-model`.
+function CommunicationModelSection({
+  projects,
+  onError,
+}: {
+  projects: Project[];
+  onError: (m: string) => void;
+}) {
+  const [sel, setSel] = useState('');
+  const [view, setView] = useState<CommunicationModelView | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  // `viewRef` always points at the freshest view so `save()` reads from a live
+  // value, not a closure capture. The earlier fix made `load()` awaitable and
+  // gated input on `busy`; both still hold. The ref closes the structural risk
+  // Gitar flagged: removing or weakening the busy-gate later would no longer
+  // silently re-introduce stale-write races (PR #31 Slice 3 fix-round 1).
+  const viewRef = useRef<CommunicationModelView | null>(null);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
+
+  // Returns the load promise so `save()` can await the post-write reload before
+  // releasing `busy`. Fire-and-forget would race the next save (Slice 2 review).
+  const load = useCallback(
+    async (projectId: string) => {
+      if (!projectId) {
+        setView(null);
+        return;
+      }
+      try {
+        const v = await api.getCommunicationModel(projectId);
+        setView(v);
+      } catch (e) {
+        onError(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [onError],
+  );
+
+  useEffect(() => {
+    void load(sel);
+  }, [sel, load]);
+
+  // Patch shape: one of two single-field updates per click. `save()` merges the
+  // patch against the freshest stored maps from `viewRef` (never against the
+  // render-time `view` closure).
+  type SavePatch =
+    | { kind: 'contract_source'; edgeName: string; value: string }
+    | { kind: 'module_tier'; moduleName: string; tier: string };
+
+  const save = async (patch: SavePatch) => {
+    if (!sel) return;
+    const current = viewRef.current;
+    if (!current) return;
+    setBusy(true);
+    try {
+      const next = {
+        contract_sources:
+          patch.kind === 'contract_source'
+            ? { ...current.contract_sources, [patch.edgeName]: patch.value }
+            : current.contract_sources,
+        module_tiers:
+          patch.kind === 'module_tier'
+            ? { ...current.module_tiers, [patch.moduleName]: patch.tier }
+            : current.module_tiers,
+      };
+      await api.updateCommunicationModel(sel, next);
+      await load(sel);
+    } catch (e) {
+      onError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const contractEntries = view ? Object.entries(view.resolved.contract_sources) : [];
+  const moduleEntries = view ? Object.entries(view.resolved.module_tiers) : [];
+  const tierOptions = view?.resolved.declared_tiers ?? [];
+
+  return (
+    <Section title="Communication model (T-D49 — per project)">
+      <p className="settings-hint">
+        Configured paths and module-tier assignments are <strong>not yet consumed</strong> —
+        Phase 18 ships parse-and-render only. They persist now so later phases can read them.
+      </p>
+      <label className="settings-row">
+        <span>Project</span>
+        <select
+          value={sel}
+          onChange={(e) => setSel(e.target.value)}
+          data-testid="comm-project-select"
+        >
+          <option value="">— choose —</option>
+          {projects.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      {sel && view && view.bundle.status === 'none' && (
+        <p className="settings-hint" data-testid="comm-bundle-none">
+          This project's bundle declares no communication model (§6 = none). Nothing to configure.
+        </p>
+      )}
+
+      {sel && view && view.bundle.status === 'declared' && (
+        <>
+          <h3>Contract sources</h3>
+          {contractEntries.length === 0 ? (
+            <p className="settings-hint" data-testid="comm-no-contract-sources">
+              No edge types in this bundle declare a <code>contract_source:</code>.
+            </p>
+          ) : (
+            <ul className="settings-list" data-testid="comm-contract-sources">
+              {contractEntries.map(([edgeName, { absolute_path, configured }]) => (
+                <li key={edgeName} className="settings-row" data-testid={`comm-cs-${edgeName}`}>
+                  <span>
+                    <code>{edgeName}</code>
+                    {configured ? (
+                      <em className="settings-hint"> · resolves to {absolute_path}</em>
+                    ) : (
+                      <em className="settings-hint"> · not configured</em>
+                    )}
+                  </span>
+                  <ContractSourceInput
+                    initial={view.contract_sources[edgeName] ?? ''}
+                    busy={busy}
+                    onSave={(value) => save({ kind: 'contract_source', edgeName, value })}
+                    testid={`comm-cs-input-${edgeName}`}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <h3>Module tiers</h3>
+          {moduleEntries.length === 0 ? (
+            <p className="settings-hint" data-testid="comm-no-modules">
+              No modules to assign yet — modules appear once items carry primary-unit references.
+            </p>
+          ) : (
+            <ul className="settings-list" data-testid="comm-module-tiers">
+              {moduleEntries.map(([moduleName, { tier, valid }]) => (
+                <li key={moduleName} className="settings-row" data-testid={`comm-mt-${moduleName}`}>
+                  <span>
+                    <code>{moduleName}</code>
+                    {tier === null ? (
+                      <em className="settings-hint"> · unassigned</em>
+                    ) : valid ? null : (
+                      <em className="settings-hint settings-warning">
+                        {' '}
+                        · tier "{tier}" is not declared in §2
+                      </em>
+                    )}
+                  </span>
+                  <select
+                    value={tier ?? ''}
+                    disabled={busy}
+                    onChange={(e) =>
+                      save({ kind: 'module_tier', moduleName, tier: e.target.value })
+                    }
+                    data-testid={`comm-mt-select-${moduleName}`}
+                  >
+                    <option value="">— unassigned —</option>
+                    {tierOptions.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
+                    ))}
+                  </select>
+                </li>
+              ))}
+            </ul>
+          )}
+        </>
+      )}
+    </Section>
+  );
+}
+
+// Per-edge-type path input. Local state so the user can type without each
+// keystroke round-tripping; `Save` flushes back through the section's save().
+function ContractSourceInput({
+  initial,
+  busy,
+  onSave,
+  testid,
+}: {
+  initial: string;
+  busy: boolean;
+  onSave: (value: string) => void;
+  testid: string;
+}) {
+  const [v, setV] = useState(initial);
+  useEffect(() => setV(initial), [initial]);
+  return (
+    <span className="settings-inline">
+      <input
+        value={v}
+        placeholder="docs/contracts/<edge-source>"
+        onChange={(e) => setV(e.target.value)}
+        disabled={busy}
+        data-testid={testid}
+      />
+      <button
+        type="button"
+        onClick={() => onSave(v)}
+        disabled={busy}
+        data-testid={`${testid}-save`}
+      >
+        Save
+      </button>
+    </span>
   );
 }
 

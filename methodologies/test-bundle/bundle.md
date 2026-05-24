@@ -15,6 +15,8 @@ authority_precedence: bundle > project settings
 
 ## 2. Project layout
 
+tiers: tier-a, tier-b
+
 ### Primary unit
 
 name: component
@@ -75,9 +77,27 @@ transitions: draft -> published, published -> draft
 
 ## 6. Communication model
 
-- emit
-- consume
-- depends-on
+### Edge type: mediated
+
+when: tier-a <-> tier-a
+mechanism: via router
+contract_source: tier-a-flows
+invariant: violation
+
+### Edge type: direct-call
+
+when: tier-a <-> tier-b
+mechanism: direct
+
+### Tier routing: tier-b
+
+mechanism: direct
+note: tier-b modules always communicate directly, regardless of partner tier
+
+### Producer ownership
+
+rule: producer-owns-shape
+notes: producer side of an edge owns the contract; consumer reads against producer's schema
 
 ## 7. Gating model
 

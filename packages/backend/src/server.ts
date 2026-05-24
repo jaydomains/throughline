@@ -40,6 +40,7 @@ import { createSessionsService } from './sessions/service.js';
 import { registerSessionRoutes } from './sessions/routes.js';
 import { registerAuditRoutes } from './audit/routes.js';
 import { registerMethodologyRoutes } from './routes/methodologies.js';
+import { registerCommunicationModelRoutes } from './routes/communication-model.js';
 import { registerHealthRoute } from './routes/health.js';
 import { registerEventsRoute, createSSEHub } from './routes/events.js';
 import { registerWebRoutes } from './routes/web.js';
@@ -559,6 +560,7 @@ export async function startServer(
   registerProjectRoutes(app, projects, settings);
   registerSessionRoutes(app, projects, sessions);
   registerItemRoutes(app, projects, items);
+  registerCommunicationModelRoutes(app, { projects, items, registry });
   registerAuditRoutes(app, db);
   registerSettingsRoutes(app, settings);
   registerSecretsRoutes(app, config.secretsPath);
