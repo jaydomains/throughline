@@ -14,6 +14,7 @@ import {
   type PlacedNode,
 } from './graph/layout.js';
 import { CommunicationGraphCanvas } from './graph/CommunicationGraphCanvas.js';
+import { computeCommItemsKey } from './graph/commUtils.js';
 import { ModulePanel } from './graph/ModulePanel.js';
 import './graph/graph.css';
 
@@ -41,13 +42,18 @@ export function GraphView() {
   const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const [panning, setPanning] = useState(false);
 
-  // Phase 18 Slice 4 — communication-model fourth layer. Loaded once on mount
-  // so the toolbar can know whether to expose the toggle (hidden when the
-  // bundle's §6 is none — freeform short-circuit).
+  // Phase 18 Slice 4 — communication-model fourth layer. Coupled freshness
+  // (T-D50 render property): the comm graph re-derives whenever the project's
+  // item set changes, since the synthesised module set comes from items'
+  // `primary_unit_refs` and per-module item counts. We project items to a
+  // stable key of `ref:count|…` so the effect refetches only on changes that
+  // can affect the graph — not on title/status/description edits.
   const [commGraph, setCommGraph] = useState<CommunicationGraph | null>(null);
   const [commDeclaredTiers, setCommDeclaredTiers] = useState<readonly string[]>([]);
   const [showComm, setShowComm] = useState(false);
   const [selectedModule, setSelectedModule] = useState<string | null>(null);
+
+  const commItemsKey = useMemo(() => computeCommItemsKey(items), [items]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -67,7 +73,9 @@ export function GraphView() {
     return () => {
       cancelled = true;
     };
-  }, [projectId]);
+    // commItemsKey is the coupled-freshness dependency; projectId covers
+    // project switches.
+  }, [projectId, commItemsKey]);
 
   // Hide the toggle entirely when the project has no communication model
   // declared (freeform-shape: empty modules + empty edges + producer_owns_shape=false

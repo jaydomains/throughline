@@ -15,7 +15,9 @@ import {
   computeCommunicationLayout,
   DEFAULT_COMM_LAYOUT,
 } from '../src/views/graph/communicationLayout.js';
+import { computeCommItemsKey, edgeId } from '../src/views/graph/commUtils.js';
 import { mockApi, resetMockApi, seedItem } from './fixtures/mockApi.js';
+import type { Item } from '@throughline/shared';
 
 function renderGraph() {
   return render(
@@ -136,6 +138,93 @@ describe('communicationLayout — pure swimlane placement', () => {
     };
     const layout = computeCommunicationLayout(graph, ['tier-a', 'tier-b']);
     expect(layout.height).toBeGreaterThan(DEFAULT_COMM_LAYOUT.laneHeight);
+  });
+});
+
+describe('commUtils — shared helpers (Slice 4 fix-round 1)', () => {
+  it('edgeId returns the same id for identical (edge_type, endpoints)', () => {
+    const id1 = edgeId({
+      edge_type: 'mediated',
+      endpoints: ['a', 'b'],
+      mechanism: { kind: 'direct' },
+      contract_source: null,
+      invariant: null,
+      mechanism_overridden_by_tier: null,
+    });
+    const id2 = edgeId({
+      edge_type: 'mediated',
+      endpoints: ['a', 'b'],
+      mechanism: { kind: 'via', module_id: 'router' },
+      contract_source: 'flows',
+      invariant: 'violation',
+      mechanism_overridden_by_tier: 'tier-b',
+    });
+    // Identity is keyed only on edge_type + endpoints, by design.
+    expect(id1).toBe(id2);
+  });
+
+  function mkItem(id: string, refs: string[]): Item {
+    return {
+      id,
+      project_id: 'p1',
+      type: 'task',
+      title: id,
+      description: '',
+      status: 'open',
+      blocker_text: null,
+      parent_id: null,
+      branch_ref: null,
+      tags: [],
+      blockers: [],
+      mentions: [],
+      session_ids: [],
+      methodology_context: {
+        primary_unit_refs: refs,
+        phase_refs: [],
+        anchor_citations: [],
+        marker_refs: [],
+      },
+      methodology_drift: false,
+      code_drift_tier: null,
+      created_at: '',
+      updated_at: '',
+    };
+  }
+
+  it('computeCommItemsKey produces deterministic output regardless of item order', () => {
+    const a = computeCommItemsKey([mkItem('1', ['x']), mkItem('2', ['y'])]);
+    const b = computeCommItemsKey([mkItem('2', ['y']), mkItem('1', ['x'])]);
+    expect(a).toBe(b);
+  });
+
+  it('computeCommItemsKey changes when a new ref appears in the item set', () => {
+    const before = computeCommItemsKey([mkItem('1', ['x'])]);
+    const after = computeCommItemsKey([mkItem('1', ['x']), mkItem('2', ['y'])]);
+    expect(before).not.toBe(after);
+  });
+
+  it('computeCommItemsKey changes when item_count for an existing ref changes', () => {
+    const before = computeCommItemsKey([mkItem('1', ['x'])]);
+    const after = computeCommItemsKey([mkItem('1', ['x']), mkItem('2', ['x'])]);
+    // Both reference 'x' → ref set unchanged but count went 1→2; key must differ.
+    expect(before).not.toBe(after);
+  });
+
+  it('computeCommItemsKey is stable under non-module-affecting item edits (T-D50 coupled-freshness)', () => {
+    // Title, status, description, tag edits don't move modules or change counts —
+    // so the key shouldn't change, so the comm graph shouldn't refetch.
+    const baseline = computeCommItemsKey([mkItem('1', ['router'])]);
+    const renamed: Item = { ...mkItem('1', ['router']), title: 'different title' };
+    const restatused: Item = { ...mkItem('1', ['router']), status: 'done' };
+    const retagged: Item = { ...mkItem('1', ['router']), tags: ['x', 'y'] };
+    expect(computeCommItemsKey([renamed])).toBe(baseline);
+    expect(computeCommItemsKey([restatused])).toBe(baseline);
+    expect(computeCommItemsKey([retagged])).toBe(baseline);
+  });
+
+  it('computeCommItemsKey returns an empty string when no items carry primary_unit_refs', () => {
+    expect(computeCommItemsKey([])).toBe('');
+    expect(computeCommItemsKey([mkItem('1', [])])).toBe('');
   });
 });
 

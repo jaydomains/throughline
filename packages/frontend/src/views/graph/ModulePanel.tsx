@@ -6,6 +6,7 @@
 // at this slice.
 
 import type { CommunicationGraph, GraphEdge } from '@throughline/shared';
+import { edgeId } from './commUtils.js';
 
 interface Props {
   graph: CommunicationGraph;
@@ -83,6 +84,3 @@ function ModuleEdgeRow({ edge, selfRef }: { edge: GraphEdge; selfRef: string }) 
   );
 }
 
-function edgeId(e: GraphEdge): string {
-  return `${e.edge_type}:${e.endpoints[0]}->${e.endpoints[1]}`;
-}

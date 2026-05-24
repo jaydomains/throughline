@@ -4,7 +4,7 @@
 // mediator is itself in the graph, otherwise as a single curve with a `via <id>`
 // badge. Edges flagged `invariant: 'violation'` render in the danger style.
 
-import type { GraphEdge } from '@throughline/shared';
+import type { CommunicationGraph } from '@throughline/shared';
 import {
   computeCommunicationLayout,
   DEFAULT_COMM_LAYOUT,
@@ -12,14 +12,10 @@ import {
   type PlacedCommModule,
   type CommLayoutResult,
 } from './communicationLayout.js';
-import type { CommunicationGraph } from '@throughline/shared';
+import { edgeId } from './commUtils.js';
 
 const NW = DEFAULT_COMM_LAYOUT.nodeWidth;
 const NH = DEFAULT_COMM_LAYOUT.nodeHeight;
-
-function edgeId(e: GraphEdge): string {
-  return `${e.edge_type}:${e.endpoints[0]}->${e.endpoints[1]}`;
-}
 
 function curve(x1: number, y1: number, x2: number, y2: number): string {
   const my = (y1 + y2) / 2;
