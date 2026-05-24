@@ -71,6 +71,7 @@ import type {
   ChatSendRequest,
   ChatSendResult,
   ChatProposeRequest,
+  CommunicationGraph,
   CommunicationModelView,
   UpdateCommunicationProjectSettingsInput,
   Session,
@@ -144,6 +145,9 @@ export const api = {
       `/api/projects/${pid(projectId)}/communication-model`,
       { method: 'PUT', body: JSON.stringify(input) },
     ),
+  // Phase 18 Slice 3 — rule-level graph derived from bundle + items + module-tier assignments.
+  getCommunicationGraph: (projectId: string) =>
+    jsonFetch<CommunicationGraph>(`/api/projects/${pid(projectId)}/communication-model/graph`),
 
   // Phase 15 — secrets (T-D4: write-only from the browser; never read back).
   getSecrets: () => jsonFetch<SecretsPresenceResult>('/api/secrets'),

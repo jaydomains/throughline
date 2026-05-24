@@ -1,5 +1,7 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
+import type { CommunicationGraph } from '@throughline/shared';
+import { api } from '../api.js';
 import { useItemPolicy } from '../hooks/useItemPolicy.js';
 import { useItems } from '../hooks/useItems.js';
 import { useStaleThreshold, isStale } from '../hooks/useStaleThreshold.js';
@@ -11,6 +13,8 @@ import {
   DEFAULT_LAYOUT,
   type PlacedNode,
 } from './graph/layout.js';
+import { CommunicationGraphCanvas } from './graph/CommunicationGraphCanvas.js';
+import { ModulePanel } from './graph/ModulePanel.js';
 import './graph/graph.css';
 
 const NW = DEFAULT_LAYOUT.nodeWidth;
@@ -36,6 +40,41 @@ export function GraphView() {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const dragRef = useRef<{ x: number; y: number; px: number; py: number } | null>(null);
   const [panning, setPanning] = useState(false);
+
+  // Phase 18 Slice 4 — communication-model fourth layer. Loaded once on mount
+  // so the toolbar can know whether to expose the toggle (hidden when the
+  // bundle's §6 is none — freeform short-circuit).
+  const [commGraph, setCommGraph] = useState<CommunicationGraph | null>(null);
+  const [commDeclaredTiers, setCommDeclaredTiers] = useState<readonly string[]>([]);
+  const [showComm, setShowComm] = useState(false);
+  const [selectedModule, setSelectedModule] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    void Promise.all([
+      api.getCommunicationGraph(projectId),
+      api.getCommunicationModel(projectId),
+    ])
+      .then(([graph, view]) => {
+        if (cancelled) return;
+        setCommGraph(graph);
+        setCommDeclaredTiers(view.resolved.declared_tiers);
+      })
+      .catch(() => {
+        // Comm graph is opt-in eye-candy — keep the rest of GraphView working on failure.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  // Hide the toggle entirely when the project has no communication model
+  // declared (freeform-shape: empty modules + empty edges + producer_owns_shape=false
+  // implies §6 = none after Slice 3's derivation; the bundle-status proxy via
+  // the view endpoint's declared_tiers also distinguishes empty-declared vs none).
+  const commAvailable =
+    commGraph !== null && (commGraph.modules.length > 0 || commDeclaredTiers.length > 0);
 
   const { model, layout, chains } = useMemo(() => {
     const m = buildGraph(items);
@@ -78,11 +117,27 @@ export function GraphView() {
           type="button"
           className={showChains ? 'on' : ''}
           aria-pressed={showChains}
+          disabled={showComm}
           onClick={() => setShowChains((v) => !v)}
           data-testid="graph-toggle-chains"
         >
           Show chains
         </button>
+        {commAvailable && (
+          <button
+            type="button"
+            className={showComm ? 'on' : ''}
+            aria-pressed={showComm}
+            onClick={() => {
+              setShowComm((v) => !v);
+              setSelectedId(null);
+              setSelectedModule(null);
+            }}
+            data-testid="graph-toggle-comm"
+          >
+            Show communication model
+          </button>
+        )}
         <button
           type="button"
           onClick={() => setZoom((z) => Math.min(MAX_ZOOM, z * ZOOM_STEP))}
@@ -128,7 +183,26 @@ export function GraphView() {
         </div>
       </div>
 
-      {empty ? (
+      {showComm && commGraph ? (
+        commGraph.modules.length === 0 ? (
+          <div className="gv-empty" data-testid="comm-empty">
+            <strong>No modules to graph</strong>
+            <span>
+              Items haven't referenced any primary units yet. Add modules via
+              item methodology context to populate this view.
+            </span>
+          </div>
+        ) : (
+          <div className="gv-canvas-wrap">
+            <CommunicationGraphCanvas
+              graph={commGraph}
+              declared_tiers={commDeclaredTiers}
+              selectedRef={selectedModule}
+              onSelectModule={setSelectedModule}
+            />
+          </div>
+        )
+      ) : empty ? (
         <div className="gv-empty" data-testid="graph-empty">
           <strong>No items to graph</strong>
           <span>
@@ -212,7 +286,7 @@ export function GraphView() {
         </div>
       )}
 
-      {selectedId && policy && (
+      {!showComm && selectedId && policy && (
         <ItemDetailPanel
           projectId={projectId}
           itemId={selectedId}
@@ -222,6 +296,13 @@ export function GraphView() {
           onCycle={setSelectedId}
           onClose={() => setSelectedId(null)}
           onChanged={refresh}
+        />
+      )}
+      {showComm && commGraph && selectedModule && (
+        <ModulePanel
+          graph={commGraph}
+          selectedRef={selectedModule}
+          onClose={() => setSelectedModule(null)}
         />
       )}
     </div>

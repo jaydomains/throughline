@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import type {
   ApplyRequest,
   AttachedItemSummary,
+  CommunicationGraph,
   CommunicationModelView,
   UpdateCommunicationProjectSettingsInput,
   AuditEntry,
@@ -278,6 +279,13 @@ export const mockApi = {
       settings: state.settings,
     }),
   ),
+  // Phase 18 Slice 3 — default to an empty graph (freeform-shaped). Tests that
+  // need a populated graph override via `mockImplementation`.
+  getCommunicationGraph: vi.fn(async (_projectId: string): Promise<CommunicationGraph> => ({
+    modules: [],
+    edges: [],
+    producer_owns_shape: false,
+  })),
   updateProject: vi.fn(async (pId: string, input: Record<string, unknown>) => {
     const p = state.projects.find((x) => x.id === pId)!;
     Object.assign(p, input, { updated_at: new Date().toISOString() });
