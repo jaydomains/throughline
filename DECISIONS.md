@@ -1093,3 +1093,31 @@ Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-se
 **Choice taken.** GraphView adopts the "Direction A · dark" tokens namespaced (`--gv-*`) and confined to `.graph-view`; the rest of the app keeps the current `styles.css`. Full design-system adoption (theme.css swap, `data-direction`/`data-theme`/`data-density`, settings keys, SSE hot-reload) is a separate, larger redesign pass and is out of Pass 1b scope. Recorded as implementation-shape per the spec-drift policy (CODE_SPEC-only); flagged here so the redesign pass reconciles the scoped tokens into the global system.
 
 **Resolution (UI redesign, Slice 1).** The dedicated redesign pass landed. `styles.css` now carries the full handoff token system (3 directions × 2 themes × 3 densities); the `--gv-*` block in `views/graph/graph.css` was deleted and every rule repointed to the global tokens. GraphView now follows `data-direction`/`data-theme`/`data-density` like the rest of the app. No scoped token system remains; nothing further deferred.
+
+### WN-clone-Q1 — Bundle location convention permits .throughline/bundle.md alongside externalised paths *(resolved 2026-05-24)*
+
+The just-completed bundle externalisation moved bundles out of Throughline's own repo (handover `2026-05-16-bundle-externalisation-refactor.md`) so that user-owned discipline does not enter Throughline's public codebase. That convention binds Throughline's repo, not the user's. A user-owned repo that carries `.throughline/bundle.md` is keeping its own discipline alongside its own code — a different concern entirely. The loader gains a third resolution arm: `<bundle_path>/bundle.md` (explicit external, current C-D14), `<repo_path>/.throughline/bundle.md` (per-repo carve-out, new), `<install>/methodologies/<bundle_id>/bundle.md` (default fallback). Resolved by → T-D51 (Phase 19).
+
+### WN-clone-Q2 — Bootstrap imports decisions as library notes, not items *(resolved 2026-05-24)*
+
+DECISIONS.md anchored entries (T-Dn, WN-x, equivalents in user bundles) are rationale records with anchor IDs, not work units. Items are work units with status lifecycles per `ItemPolicy.status_lifecycles`. Treating decisions as items would inflate work counts, corrupt every items-based metric, and conflate two different audit surfaces. Bootstrap places decisions in `library_entries` (type `note`, tagged `decision`); the Items view stays clean. Resolved by → T-D53 (Phase 20).
+
+### WN-clone-Q3 — Bootstrap is re-runnable via idempotent upsert keyed on deterministic bootstrap_id *(resolved 2026-05-24)*
+
+Bundles evolve post-launch; users will re-bootstrap as their methodology firms up. The import file gives every row a stable `bootstrap_id` derived deterministically from source content (e.g. hash of `(handover-filename, anchor-id)` for sessions, `(CHECKLIST-row-text, line-number)` for items). Re-import upserts on `(project_id, bootstrap_id)`. Three row states at import: new (insert); existing with no user edits since last import (update in place, audit `bootstrap_reimport`); existing with user edits since last import (surface conflict in review queue — user picks `keep_mine` / `take_theirs` / `merge_fields`). Rows whose `bootstrap_id` no longer appears in a later import get flagged `bootstrap_stale=true`; never auto-deleted. Specific derivation rules per source type are spec-author work in Session 3 (Phase 20 docs); the high-level model lands here. Resolved by → T-D54 (Phase 20).
+
+### WN-clone-Q4 — throughline init requires the backend running; CLI does not write SQLite directly *(resolved 2026-05-24)*
+
+Two write paths (HTTP backend + CLI direct-to-SQLite) would share schema knowledge and drift. The CLI probes `/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure. Single write path through existing project / secrets / bootstrap endpoints. Optional QoL flag `--start-backend` to spawn the backend itself is polish, deferred. Resolved by → T-D52 (Phase 19).
+
+### WN-clone-Q5 — Bootstrap prompt is generic and bundle-aware at run time, not per-bundle *(resolved 2026-05-24)*
+
+Throughline already adapts at run time per bundle: dump-zone extractor injects `ItemPolicy.types` / `status_lifecycles` into the Sonnet prompt (`packages/backend/src/dump-zone/extractor.ts`); discipline-drift scanners instantiate per bundle rules; gate firings dispatch off bundle's §5 moments. Bootstrap follows the same pattern. Per-bundle prompts would shift maintenance burden onto every external bundle author — hostile UX for a feature most users run once. The Throughline repo ships and maintains one prompt; the bundle parameterises it (the prompt reads the bound bundle's §2–§11 as preamble and adapts extraction heuristics accordingly). Resolved by → T-D55 (Phase 21).
+
+### WN-clone-Q6 — Discipline-drift scanners do not auto-run on bind; user invokes via "Run discipline scan" *(resolved 2026-05-24)*
+
+Discipline-drift scanners running automatically on bind against a months-old repo would produce hundreds of signals, overwhelming the drift inbox on day one and burying the bootstrap-imported items the user actually wants to see. SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling re-enables ongoing scanning post-bootstrap once the user has triaged what they care about. Existing on-bind behaviour for ongoing (non-bootstrapped) projects is unchanged. Resolved by → T-D57 (Phase 22).
+
+### WN-clone-Q7 — Clone-and-go shapes every future adoption, not just the spec author's SiteMesh adoption *(resolved 2026-05-24)*
+
+The Throughline repo goes public; clone-and-go shapes every future adoption story. Designing for the spec author's immediate SiteMesh adoption (e.g. handover format hardcoded to this repo's template) is a local-optimum trap. The bootstrap prompt and `.throughline/` config convention work against any bundle-aware repo, with quality degrading gracefully when sources are absent (e.g. freeform bundles surface less; missing handover dirs are skipped; absent ROADMAP.md is acceptable). Resolved by → informs design decisions across T-D51 through T-D57 (Phases 19–22) rather than a single anchor.
