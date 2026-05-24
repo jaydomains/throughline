@@ -1,4 +1,5 @@
-// Phase 18 Slice 2 — communication-model view endpoint + per-project settings writer.
+// Phase 18 Slices 2 + 3 — communication-model view endpoint, per-project
+// settings writer, and rule-level graph derivation endpoint.
 //
 // GET /api/projects/:id/communication-model
 //   → { bundle, contract_sources, module_tiers, resolved }
@@ -7,6 +8,9 @@
 //   body: { contract_sources?, module_tiers? }
 //   → { settings } (the project's full settings_json after the write)
 //
+// GET /api/projects/:id/communication-model/graph
+//   → { modules, edges, producer_owns_shape }
+//
 // Replace-semantics on PUT: the body REPLACES the entire `communication_model`
 // sub-block in settings_json (matching the wholesale settings_json replace the
 // project PATCH path already does in projects/service.ts). Other settings_json
@@ -14,6 +18,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import type {
+  CommunicationGraph,
   CommunicationModelView,
   UpdateCommunicationProjectSettingsInput,
 } from '@throughline/shared';
@@ -24,6 +29,7 @@ import {
   readCommunicationSettings,
   resolveCommunicationView,
 } from '../methodology/communication-model/view.js';
+import { deriveCommunicationGraph } from '../methodology/communication-model/graph.js';
 
 interface Deps {
   projects: ProjectsService;
@@ -82,6 +88,34 @@ export function registerCommunicationModelRoutes(app: FastifyInstance, deps: Dep
       };
       const updated = projects.update(project.id, { settings: nextSettings });
       return { settings: updated.settings_json };
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/communication-model/graph',
+    async (req, reply) => {
+      const project = projects.get(req.params.id);
+      if (!project) return reply.code(404).send({ error: 'project_not_found' });
+
+      const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      if (loaded.status !== 'loaded') {
+        return reply.code(500).send({ error: 'bundle_not_loaded', bundle_id: project.bundle_id });
+      }
+
+      const modules = items.modules(project.id);
+      const view: CommunicationModelView = resolveCommunicationView({
+        bundle: loaded.bundle.communication_model,
+        declared_tiers: loaded.bundle.project_layout.tiers,
+        modules,
+        repo_path: project.repo_path,
+        settings: readCommunicationSettings(project.settings_json),
+      });
+      const graph: CommunicationGraph = deriveCommunicationGraph({
+        bundle: loaded.bundle.communication_model,
+        modules,
+        module_tiers: view.resolved.module_tiers,
+      });
+      return graph;
     },
   );
 }
