@@ -71,6 +71,8 @@ import type {
   ChatSendRequest,
   ChatSendResult,
   ChatProposeRequest,
+  CommunicationModelView,
+  UpdateCommunicationProjectSettingsInput,
   Session,
   UpdateDirectiveInput,
   UpdateItemInput,
@@ -133,6 +135,15 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(entries),
     }),
+
+  // Phase 18 Slice 2 — per-project communication-model view + settings writer.
+  getCommunicationModel: (projectId: string) =>
+    jsonFetch<CommunicationModelView>(`/api/projects/${pid(projectId)}/communication-model`),
+  updateCommunicationModel: (projectId: string, input: UpdateCommunicationProjectSettingsInput) =>
+    jsonFetch<{ settings: Record<string, unknown> }>(
+      `/api/projects/${pid(projectId)}/communication-model`,
+      { method: 'PUT', body: JSON.stringify(input) },
+    ),
 
   // Phase 15 — secrets (T-D4: write-only from the browser; never read back).
   getSecrets: () => jsonFetch<SecretsPresenceResult>('/api/secrets'),

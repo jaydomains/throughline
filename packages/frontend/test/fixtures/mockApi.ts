@@ -2,6 +2,8 @@ import { vi } from 'vitest';
 import type {
   ApplyRequest,
   AttachedItemSummary,
+  CommunicationModelView,
+  UpdateCommunicationProjectSettingsInput,
   AuditEntry,
   ChecklistRun,
   CodeTodoScanResult,
@@ -257,6 +259,25 @@ export const mockApi = {
     state.settings = { ...state.settings, ...entries };
     return { settings: state.settings };
   }),
+
+  // Phase 18 Slice 2 — per-project communication-model view + settings writer.
+  // Default to a freeform-shaped empty view so tests that don't care about the
+  // surface stay quiet; opt-in tests pass `mockCommunicationModelView()` overrides.
+  getCommunicationModel: vi.fn(async (_projectId: string): Promise<CommunicationModelView> => ({
+    bundle: { status: 'none', edge_types: [], tier_routing: [], producer_ownership: null },
+    contract_sources: {},
+    module_tiers: {},
+    resolved: {
+      contract_sources: {},
+      module_tiers: {},
+      declared_tiers: [],
+    },
+  })),
+  updateCommunicationModel: vi.fn(
+    async (_pid: string, _input: UpdateCommunicationProjectSettingsInput) => ({
+      settings: state.settings,
+    }),
+  ),
   updateProject: vi.fn(async (pId: string, input: Record<string, unknown>) => {
     const p = state.projects.find((x) => x.id === pId)!;
     Object.assign(p, input, { updated_at: new Date().toISOString() });
