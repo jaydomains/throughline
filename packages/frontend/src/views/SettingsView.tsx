@@ -614,22 +614,28 @@ function CommunicationModelSection({
   const [view, setView] = useState<CommunicationModelView | null>(null);
   const [busy, setBusy] = useState(false);
 
+  // Returns the load promise so `save()` can await the post-write reload before
+  // releasing `busy`. Fire-and-forget here would race the next save's closure read
+  // of `view`: the second PUT (replace-semantics) would clobber the first edit
+  // (Gitar finding, PR #31 Slice-2 review).
   const load = useCallback(
-    (projectId: string) => {
+    async (projectId: string) => {
       if (!projectId) {
         setView(null);
         return;
       }
-      void api
-        .getCommunicationModel(projectId)
-        .then(setView)
-        .catch((e) => onError(e instanceof Error ? e.message : String(e)));
+      try {
+        const v = await api.getCommunicationModel(projectId);
+        setView(v);
+      } catch (e) {
+        onError(e instanceof Error ? e.message : String(e));
+      }
     },
     [onError],
   );
 
   useEffect(() => {
-    load(sel);
+    void load(sel);
   }, [sel, load]);
 
   const save = async (next: { contract_sources?: Record<string, string>; module_tiers?: Record<string, string> }) => {
@@ -637,7 +643,7 @@ function CommunicationModelSection({
     setBusy(true);
     try {
       await api.updateCommunicationModel(sel, next);
-      load(sel);
+      await load(sel);
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
     } finally {
