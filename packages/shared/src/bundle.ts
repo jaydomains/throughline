@@ -20,6 +20,11 @@ export interface PrimaryUnitSpec {
 export interface ProjectLayout {
   primary_unit: PrimaryUnitSpec | null;
   runtime_artefact_dirs: string[];
+  // T-D49 — architectural-tier vocabulary referenced by the communication model's
+  // `when:` clauses and `### Tier routing:` sub-sections. Distinct from a primary
+  // unit's item-count `tier_rules` (C-D13). Empty for bundles that declare no
+  // tiers (freeform).
+  tiers: string[];
 }
 
 export interface AnchorSystem {
@@ -66,11 +71,46 @@ export interface StateMachine {
   item_types: ItemTypeSpec[];
 }
 
+// T-D49 — §6 Communication model grammar.
+//
+// Bundles declare edge TYPES (rules) — concrete edge INSTANCES are derived from
+// the project's modules + items, not the bundle. An edge type has a tier-pair
+// `when` clause and a `direct` / `via <module-id>` mechanism. `contract_source`
+// declares THAT this edge type has a contract source; per-project settings
+// declare WHERE the contract files live (C-D14 split). `invariant: violation`
+// flags an edge type whose instantiation is an architectural violation —
+// parsed-and-carried in Phase 18; enforcement is a later phase (T-D50).
+export type TierPair = { kind: 'any' } | { kind: 'pair'; a: string; b: string };
+
+export type Mechanism = { kind: 'direct' } | { kind: 'via'; module_id: string };
+
+export interface CommunicationEdgeType {
+  name: string;
+  when: TierPair;
+  mechanism: Mechanism;
+  contract_source: string | null;
+  invariant: 'violation' | null;
+}
+
+// Tier-level routing override: any module of `tier` routes via the declared
+// mechanism, applied after edge-type `when:` expansion. Lets a methodology say
+// e.g. "this tier always routes directly, regardless of partner tier."
+export interface TierRoutingRule {
+  tier: string;
+  mechanism: Mechanism;
+  note: string | null;
+}
+
+export interface ProducerOwnership {
+  rule: 'producer-owns-shape';
+  notes: string | null;
+}
+
 export interface CommunicationModel {
   status: BundleSectionStatus;
-  edge_types?: string[];
-  routing_rules?: string[];
-  producer_ownership_rules?: string[];
+  edge_types: CommunicationEdgeType[];
+  tier_routing: TierRoutingRule[];
+  producer_ownership: ProducerOwnership | null;
 }
 
 export interface GatingModel {
