@@ -1112,6 +1112,70 @@ The CLI subcommand lives in the backend package (`packages/backend/src/cli/`), s
 
 ---
 
+## T-D53 — Bootstrap import file shape: structured per-source rows for items, sessions, and decision/note library entries; bundle-aware validation; secrets and runtime state excluded
+
+- **Date:** 2026-05-25
+- **Status:** active — to be implemented in Phase 20, resolves WN-clone-Q2
+- **Sections affected:** 7.27, 14
+
+### Decision
+The bootstrap import file is a structured artifact produced by Phase 21's Claude Code session against a user-owned repo's existing state (handover files, DECISIONS.md, ROADMAP.md, CHECKLIST.md and equivalents). It carries three entity types — items (work units), sessions (one per discovered handover), and library entries (each DECISIONS-style anchor tagged `decision`, narrative notes tagged otherwise). Every row carries a deterministic `bootstrap_id` (T-D54) and names its `source_type` (`decision`, `roadmap`, `handover`, `checklist`, `override`) so re-import can resolve identity per type.
+
+Required fields per row: `bootstrap_id`, `source_type`, plus entity-type-specific identity (`title` + `type` + `status` for items; `name` + optional `branch_ref` for sessions; `type` + `title` + `body` + `tags` for library entries). Optional fields are entity-shaped and validated against existing entity schemas. Bundle-awareness validation is mandatory: item `type` values must appear in the bound bundle's `ItemPolicy.types`; status values must appear in the bound bundle's `status_lifecycles` for that type; library tags including `decision` are accepted unconditionally. A bootstrap file landing against a project with no bundle bound is rejected up-front with a clear error pointing the user at clone-and-go init (§7.26).
+
+Explicitly excluded from the bootstrap file: API keys and secrets (T-D4 — stay in backend config, never on disk under the repo), audit log (rebuilt from re-import as `bootstrap_import` / `bootstrap_reimport` events per T-D54), embeddings and intelligence caches (regenerated lazily through existing indexing paths), telemetry and prompt fingerprints (per-install cache layer), settings, gate-firing history, methodology bindings (those come from clone-and-go init per T-D51 / T-D52).
+
+### Context
+WN-clone-Q2 surfaced the question of how decisions land in the bootstrap import (as `library_entries` of type `note` tagged `decision`, not items). The broader file-shape question came up alongside it: what entity types the file carries, what fields are required per row, how it validates against a project's bound methodology bundle, and what must stay out of it so secrets and runtime state never live on disk under a user-owned repo. Phase 20 builds the consumer side of the bootstrap pipeline; the producer (Phase 21's Claude Code session) needs a fixed target shape to emit against, so the file's contract is pinned here ahead of either side's build.
+
+### Rationale
+DECISIONS-style anchored rationale (`T-D…`, `WN-…`, equivalents in user bundles) is imported as library entries of type `note` tagged `decision`, never as items (WN-clone-Q2). Items are work units with status lifecycles; decisions are rationale records with anchor IDs. Conflating the two would inflate work counts and corrupt every items-based metric.
+
+### Implications
+Phase 21's Claude Code invocation is the *producer* of this file; bootstrap ingest is the *consumer* — the two are separately phased and independently testable. Implementation in C-D20.
+
+---
+
+## T-D54 — Bootstrap re-run is idempotent upsert on `(project_id, bootstrap_id)`; three row states; bootstrap_id derived per source type with a universal `@bootstrap-id:` override
+
+- **Date:** 2026-05-25
+- **Status:** active — to be implemented in Phase 20, resolves WN-clone-Q3
+- **Sections affected:** 7.27, 14
+
+### Decision
+Bundles evolve post-launch; users will re-bootstrap as their methodology firms up. Every row in the bootstrap import file (T-D53) carries a deterministic `bootstrap_id` and re-import upserts on `(project_id, bootstrap_id)`. The format is `<source-type>:<stable-key>` — the prefix prevents accidental cross-source collision and is human-readable for debugging. Each affected entity table (`items`, `sessions`, `library_entries`) gains a nullable `bootstrap_id TEXT` column with a unique partial index on `(project_id, bootstrap_id)` where non-null. Existing creation paths (manual `POST /api/projects/:id/items`, manual library/session creation, md-ingest at `(project_id, source_path)`) are unaffected — only bootstrap-imported rows carry a `bootstrap_id`.
+
+Derivation rules per source type:
+
+- `decision:<anchor-id>` — DECISIONS-style anchored rationale (`T-D…`, `WN-…`, equivalents in user bundles). Anchor ID is the stable key. Body edits and section moves preserve identity; anchor renames create new identity, which is correct because renames are semantically meaningful.
+- `roadmap:phase-<n>` — ROADMAP phase entries. Phase number is the stable key.
+- `handover:<filename>` — One identity per handover file. Where the bootstrap parser detects in-file session anchors, `handover:<filename>#<in-file-anchor>` disambiguates sub-sessions. Handover filenames are dated, append-only artifacts in practice; renames are rare and treated as new identity.
+- `checklist:<sha256-16-of-normalized-text>` — Normalized text is lowercase, whitespace collapsed, trailing punctuation stripped. Casing/whitespace/punctuation typo-fixes preserve identity for free; word-level semantic edits create new identity, and the stale-flag (below) surfaces the prior row for user ack.
+- `override:<user-slug>` — Any source row may carry `<!-- @bootstrap-id: my-slug -->`; the override wins over every derivation rule.
+
+`@bootstrap-id:` is the universal escape hatch for any case where the natural key shifts — CHECKLIST row word-level edits, ROADMAP phase renumbering, handover file renames or splits, anchor renames that should preserve identity. Costs ~10 lines in the parser; the user is expected to add overrides pre-emptively before a refactor they know will move natural keys, or to ack-stale the orphaned rows afterward.
+
+Hash convention: sha256, 16-char hex prefix, unsalted — distinct from the privacy-salted `promptFingerprint` (T-D24) and the change-detection `contentHash` / `hashContent`. Three named functions, three named purposes; the new `bootstrapId` helper lives in `packages/backend/src/bootstrap/derive-id.ts` (C-D20) with one resolver per source type. Two rows resolving to the same `bootstrap_id` in a single import file are rejected up-front with an error citing both source rows — the parser never silently collapses duplicates.
+
+Three row states at import time:
+
+1. **New** — `bootstrap_id` absent in `(project_id, bootstrap_id)`. Insert. Audit `bootstrap_import` with `source_type` and `bootstrap_id` in `trigger_context`.
+2. **Existing, no user edits since last import** — `bootstrap_id` present, and no non-`bootstrap_*` audit entries touch this entity since the prior `bootstrap_import` / `bootstrap_reimport`. Update in place. Audit `bootstrap_reimport`.
+3. **Existing, user edits since last import** — `bootstrap_id` present, and the user has touched the entity since the prior import. Do not auto-overwrite. Queue a per-row conflict in the review queue (C-D20). User picks `keep_mine` (drop incoming), `take_theirs` (overwrite, audit trail preserved), or `merge_fields` (per-field choice).
+
+Rows whose `bootstrap_id` appeared in a prior import but is absent from the current one are flagged `bootstrap_stale=true` on the entity; never auto-deleted. Stale entities surface in the review queue with `keep` / `archive` / `delete` actions.
+
+### Context
+WN-clone-Q3 surfaced the idempotent-upsert model for bootstrap re-run — `bootstrap_id`-keyed upsert with three row states and stale-flagging on rows that drop out — but explicitly deferred the per-source-type derivation rules and the universal override mechanism to Phase 20 docs (this session). Phase 20's build needs the derivation rules per source type, the override syntax, and the row-state classifier pinned before the schema migration and the import endpoint can be drafted.
+
+### Rationale
+The per-source-type prefix in `bootstrap_id` (`<source-type>:<stable-key>`) prevents accidental cross-source collision and stays human-readable for debugging. Pinning identity per source type means a CHECKLIST text edit and a ROADMAP phase renumbering each get a derivation rule that fits their semantics; the universal `@bootstrap-id:` override is the explicit escape hatch for any case where the natural key shifts. The three named hash functions (`promptFingerprint` salted for privacy, `contentHash` unsalted for change detection, `bootstrapId` unsalted for identity) read as siblings in the codebase precisely because each does one thing.
+
+### Implications
+Implementation in C-D20.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
@@ -1158,11 +1222,11 @@ The just-completed bundle externalisation moved bundles out of Throughline's own
 
 ### WN-clone-Q2 — Bootstrap imports decisions as library notes, not items *(resolved 2026-05-24)*
 
-DECISIONS.md anchored entries (T-Dn, WN-x, equivalents in user bundles) are rationale records with anchor IDs, not work units. Items are work units with status lifecycles per `ItemPolicy.status_lifecycles`. Treating decisions as items would inflate work counts, corrupt every items-based metric, and conflate two different audit surfaces. Bootstrap places decisions in `library_entries` (type `note`, tagged `decision`); the Items view stays clean. Resolved by → T-D53 (Phase 20).
+DECISIONS.md anchored entries (T-Dn, WN-x, equivalents in user bundles) are rationale records with anchor IDs, not work units. Items are work units with status lifecycles per `ItemPolicy.status_lifecycles`. Treating decisions as items would inflate work counts, corrupt every items-based metric, and conflate two different audit surfaces. Bootstrap places decisions in `library_entries` (type `note`, tagged `decision`); the Items view stays clean. Resolved by T-D53 (introduced 2026-05-25).
 
 ### WN-clone-Q3 — Bootstrap is re-runnable via idempotent upsert keyed on deterministic bootstrap_id *(resolved 2026-05-24)*
 
-Bundles evolve post-launch; users will re-bootstrap as their methodology firms up. The import file gives every row a stable `bootstrap_id` derived deterministically from source content (e.g. hash of `(handover-filename, anchor-id)` for sessions, `(CHECKLIST-row-text, line-number)` for items). Re-import upserts on `(project_id, bootstrap_id)`. Three row states at import: new (insert); existing with no user edits since last import (update in place, audit `bootstrap_reimport`); existing with user edits since last import (surface conflict in review queue — user picks `keep_mine` / `take_theirs` / `merge_fields`). Rows whose `bootstrap_id` no longer appears in a later import get flagged `bootstrap_stale=true`; never auto-deleted. Specific derivation rules per source type are spec-author work in Session 3 (Phase 20 docs); the high-level model lands here. Resolved by → T-D54 (Phase 20).
+Bundles evolve post-launch; users will re-bootstrap as their methodology firms up. The import file gives every row a stable `bootstrap_id` derived deterministically from source content (e.g. hash of `(handover-filename, anchor-id)` for sessions, `(CHECKLIST-row-text, line-number)` for items). Re-import upserts on `(project_id, bootstrap_id)`. Three row states at import: new (insert); existing with no user edits since last import (update in place, audit `bootstrap_reimport`); existing with user edits since last import (surface conflict in review queue — user picks `keep_mine` / `take_theirs` / `merge_fields`). Rows whose `bootstrap_id` no longer appears in a later import get flagged `bootstrap_stale=true`; never auto-deleted. Specific derivation rules per source type are spec-author work in Session 3 (Phase 20 docs); the high-level model lands here. Resolved by T-D54 (introduced 2026-05-25).
 
 ### WN-clone-Q4 — throughline init requires the backend running; CLI does not write SQLite directly *(resolved 2026-05-24)*
 

@@ -550,6 +550,31 @@ Eight surfaces is the minimum that delivers a clone-and-go cycle (`git clone …
 
 ---
 
+## C-D20 — Bootstrap ingest path: `bootstrap_id` columns + partial indices on items/sessions/library_entries, `POST /api/projects/:id/import` endpoint, transactional upsert with per-row conflict surfacing, review queue UI
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D53, T-D54; T-D4, T-D24, T-D36
+
+### Decision
+Phase 20 builds five surfaces that together realise bootstrap server-side ingest. The split is schema / endpoint / derivation / conflict-detection / review-UI — five named pieces with one canonical location each.
+
+- **Schema.** A new migration adds `bootstrap_id TEXT` (nullable) and a unique partial index `(project_id, bootstrap_id) WHERE bootstrap_id IS NOT NULL` to `items`, `sessions`, and `library_entries`. The nullable column preserves existing creation paths — manual `POST /api/projects/:id/items` (`packages/backend/src/items/routes.ts`), manual session and library creation, and the md-ingest path at `(project_id, source_path, type='imported_doc')` (`packages/backend/src/md-ingest/service.ts`) — only bootstrap-imported rows carry a `bootstrap_id`. The md-ingest upsert at `(project_id, source_path)` and the bootstrap upsert at `(project_id, bootstrap_id)` coexist on `library_entries` without collision because they key on different columns.
+- **Endpoint.** `POST /api/projects/:id/import` accepts the bootstrap file as a JSON body (schema per T-D53), validates it against the project's bound methodology bundle, runs the upsert in a single SQLite transaction, and returns a per-row result classification (`new` / `reimported` / `conflict` / `stale_flagged`). Validator structure mirrors `packages/backend/src/md-ingest/service.ts`: a stateless parser/validator layer feeds a stateful upsert layer that calls existing `items.create` / `sessions.create` / `library.create` for inserts and new `…upsertByBootstrapId` methods for updates. Audit entries are appended per row via existing `appendAudit` (`packages/backend/src/audit/log.ts`) with `field: 'bootstrap_import'` or `'bootstrap_reimport'` and `trigger_context_json` carrying `bootstrap_id`, `source_type`, and result status. Audit entity identity is the existing polymorphic `(entity_type, entity_id)` tuple (T-D36) — no schema change to `audit_log`.
+- **Derivation module.** `packages/backend/src/bootstrap/derive-id.ts` exports `bootstrapId(sourceType, key)` returning the `<source-type>:<stable-key>` form. One resolver per source type (`decision`, `roadmap`, `handover`, `checklist`, `override`). Content-hashed types (currently `checklist`) reuse `createHash('sha256').update(...).digest('hex').slice(0, 16)`; non-hashed types pass the stable key through. Unit-test heavy, runtime-light; lives adjacent to (not inside) `packages/backend/src/ai/fingerprint.ts` so the three hashing conventions remain readable as siblings.
+- **Conflict-detection predicate.** A service-layer helper `hasUserEditsSinceLastBootstrap(entityType, entityId)` is the single source of truth for "user-edited since last import" — both the API and the review queue UI consult it so they cannot disagree. The helper scans `audit_log` filtered by `(entity_type, entity_id)` (covered by the existing `idx_audit_entity` per `0001_init.sql`) and the row's prior `bootstrap_import` / `bootstrap_reimport` timestamp, excluding `field` values prefixed `bootstrap_`. The per-row scan runs once per imported row inside the import transaction; Phase 20 build may benefit from a covering index on `(entity_type, entity_id, timestamp, field)` if benchmarks show the predicate dominates import latency at realistic row counts, but the existing `idx_audit_entity` should suffice for v1.
+- **Review queue UI.** A new client surface lists conflicted rows from `POST /api/projects/:id/import` results with per-row resolution actions (`keep_mine` / `take_theirs` / `merge_fields` for conflicts; `keep` / `archive` / `delete` for stale rows). UI surface placement and visual treatment are deliberately not pinned here — the Phase 20 build slice owns those calls.
+
+### Rationale
+Five surfaces is the minimum that delivers a bootstrap-import cycle end-to-end against the existing backend without introducing a second write path. The schema choice — nullable `bootstrap_id` column plus a unique partial index — preserves every existing creation path on items, sessions, and library_entries: manual creation, md-ingest at `(project_id, source_path)`, and bootstrap at `(project_id, bootstrap_id)` coexist because they key on different columns. The validator/upsert split mirrors md-ingest's stateless-parser / stateful-upsert structure, so the bootstrap endpoint reuses the existing entity-creation contracts rather than introducing parallel write surfaces. The conflict-detection predicate lives in one helper (`hasUserEditsSinceLastBootstrap`) so the API and the review queue UI cannot disagree on what "user-edited since last import" means. The three hash conventions (`promptFingerprint` salted for privacy per T-D24, `contentHash` unsalted for change detection, the new unsalted `bootstrapId` for identity) live adjacent in the backend tree so a reader sees three named functions with three named purposes side by side.
+
+### Implications
+- The new migration is additive: nullable `bootstrap_id` column plus a unique partial index per table — no back-fill, no impact on existing rows or existing creation paths.
+- Audit entity identity stays on the existing polymorphic `(entity_type, entity_id)` tuple per T-D36 — no schema change to `audit_log`. Per-row audit entries ride `appendAudit` with `field: 'bootstrap_import'` / `'bootstrap_reimport'` and `bootstrap_id` / `source_type` / result status in `trigger_context_json`.
+- The conflict-detection predicate's per-row audit scan runs once per imported row inside the import transaction. The existing `idx_audit_entity` index (per `0001_init.sql`) should suffice for v1; a covering index on `(entity_type, entity_id, timestamp, field)` is a benchmark-driven follow-up if import latency dominates at realistic row counts.
+- Review queue UI surface placement and visual treatment are deliberately not pinned in C-D20 — the Phase 20 build slice owns those calls.
+
+---
+
 ## 1. Process model
 
 ```

@@ -465,6 +465,16 @@ The CLI surface for first-touch bind is `throughline init`. It requires the back
 
 Importing existing repo state (handovers, decisions, CHECKLIST rows) into a freshly-cloned project is the bootstrap surface, defined in a later phase.
 
+### 7.27 Bootstrap
+
+Bootstrap is the path by which a freshly-cloned Throughline-bound repo (§7.26) populates its project with the items, sessions, and decision/note library entries already living in the repo as handover files, DECISIONS.md anchors, ROADMAP phases, and CHECKLIST rows. It is idempotent and re-runnable: every imported row carries a deterministic `bootstrap_id` and re-import upserts on `(project_id, bootstrap_id)` (T-D54).
+
+The import file is a structured artifact, not a free-form export. Each row names its `source_type` (`decision`, `roadmap`, `handover`, `checklist`, `override`) and carries entity-shaped identity fields validated against the project's bound methodology bundle (T-D53). DECISIONS-style anchored rationale lands as library entries of type `note` tagged `decision`, never as items. A bootstrap file landing against a project with no bundle bound is rejected up-front with a pointer back to clone-and-go init.
+
+Re-import classifies every row into one of three states: new (insert), existing with no user edits since last import (update in place), and existing with user edits since last import (queued in the review queue for per-row resolution: `keep_mine`, `take_theirs`, or `merge_fields`). Rows whose `bootstrap_id` was present in a prior import but is absent from the current one are flagged `bootstrap_stale=true`; never auto-deleted. The review queue surfaces stale rows with `keep` / `archive` / `delete` actions.
+
+Bootstrap explicitly does not carry secrets (T-D4 — API keys and PATs stay in backend configuration, never on disk under the repo), audit history (rebuilt from re-import events), embeddings, telemetry, settings, or methodology bindings (those come from clone-and-go init per T-D51 / T-D52). The producer side — Phase 21's Claude Code session against the user-owned repo — is separately phased and documented in the (forthcoming) bootstrap-prompt section. The `.throughline/` config schema (`docs/.throughline-schema.md`) is adjacent but distinct: it covers init-time configuration, not bootstrap import format.
+
 ---
 
 ## 8. Data categories and relationships
@@ -663,6 +673,8 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D50 | Communication-model graph is rule-level: the bundle's edge types expand into edge instances over the synthesised module set (modules derived from items' `primary_unit_refs`, tiers from per-project settings), one per module pair whose tiers satisfy the `when:` clause; self-loops excluded. Tier-routing overrides replace the edge-type's mechanism on any edge touching a module of that tier; conflicts resolve deterministically. `invariant: violation` is parsed-and-carried and rendered as a styling hint — Phase-18 does not enforce routing invariants. The graph tracks current item state (coupled freshness): the module set and per-module item count re-derive when items change, since modules depend on items' `primary_unit_refs`. Concrete-instance edges parsed from contract files are deferred to a later phase. | 7.11 |
 | T-D51 | `.throughline/` is the per-repo config convention; bundle loader gains a third resolution arm (`<repo_path>/.throughline/bundle.md`) between the explicit `bundle_path` arm and the install-shipped fallback | 7.1, 7.2, 7.26 |
 | T-D52 | `throughline init` CLI requires the backend running; probes `/api/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure; CLI writes only via existing HTTP endpoints, never the datastore directly | 7.26, 10 |
+| T-D53 | Bootstrap import file shape: structured per-source rows for items, sessions, and decision/note library entries; bundle-aware validation; secrets and runtime state excluded | 7.27 |
+| T-D54 | Bootstrap re-run is idempotent upsert on `(project_id, bootstrap_id)`; three row states; bootstrap_id derived per source type with a universal `@bootstrap-id:` override | 7.27 |
 
 ---
 
