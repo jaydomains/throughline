@@ -521,6 +521,35 @@ The §6 communication-model parser is an h3-walking grammar reader, not a bullet
 
 ---
 
+## C-D19 — Clone-and-go runtime: `.throughline/` reader, third bundle-resolution arm, `throughline init` CLI
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D51, T-D52, T-D4; T-D41, T-D47; C-D3, C-D14
+
+### Decision
+Phase 19 builds eight surfaces that together realise clone-and-go. The split is bundle-resolution / per-repo config / CLI / UI / lifecycle — eight named pieces with one canonical location each.
+
+- **Bundle loader third arm.** `packages/backend/src/methodology/loader.ts` (and the registry's `resolveBundle` / `hasBundle`) gain a `repo_path` parameter and try `<repo_path>/.throughline/bundle.md` between the `bundle_path` arm (C-D14) and the install-shipped fallback. The chokidar watcher refcounts the per-repo file the same way it refcounts external `bundle_path` files. The cached key for an in-repo bundle is its absolute resolved path, so the same repo opened twice resolves to one watch target.
+- **`.throughline/project.json` init config reader.** `packages/backend/src/init/config-reader.ts` reads and validates the file against the schema documented in `docs/.throughline-schema.md`. Validation rejects unknown top-level keys (forward-compat by explicit version-bump, not silent acceptance), trims paths, and surfaces a structured `InitConfigError` discriminated union the CLI and UI both consume.
+- **Git-remote auto-detection.** `packages/backend/src/init/git-remote.ts` shells `git remote get-url origin` under `repo_path` and parses `github_owner` / `github_repo` from the URL (SSH and HTTPS forms). Used by the CLI and the project-create endpoint when `.throughline/project.json` omits `github_owner` / `github_repo`. An unrecognised remote is a soft failure: the user fills the fields in the UI.
+- **CLI `init` subcommand.** `packages/backend/src/cli/init/` is wired into `packages/backend/src/cli/index.ts`. Its only side effects are HTTP calls against the running backend (T-D52). The `/health` probe and the error string are hard-coded constants; the port reads from the backend's local-loopback config.
+- **NewProjectModal `bundle_path` field.** The existing modal in `packages/frontend/src/components/NewProjectModal.tsx` surfaces the existing C-D14 column as an optional field. No new endpoint — the field rides the existing project-create payload.
+- **SettingsView missing-config component.** `packages/frontend/src/views/SettingsView.tsx` gains a per-project block that surfaces whether `.throughline/` is absent, partial, or complete, with an explicit "re-read .throughline/" action. The block is the user's view of init state after the first bind.
+- **Re-init flow.** The project-update endpoint accepts a `reinit_throughline: true` flag that re-reads `.throughline/project.json`, re-runs git-remote auto-detection, and updates only the fields the file supplies — never overwriting items, sessions, library entries, secrets (T-D4), or audit history. Re-init writes a single audit row of kind `project_reinit` with the diff.
+- **Repo-path normalisation.** Project create and update normalise `repo_path` to an absolute, symlink-resolved canonical form before persisting. A second create attempt against an equivalent path collides on the existing project-id uniqueness check rather than producing two projects bound to the same repo.
+
+### Rationale
+Eight surfaces is the minimum that delivers a clone-and-go cycle (`git clone … && throughline init`) end-to-end against the existing backend, without introducing a second write path or migrating any existing convention. Putting all init-side code under `packages/backend/src/init/` and `packages/backend/src/cli/init/` keeps the new code one directory move away from removal if the spec author later reshapes init. Reusing the existing project-create / project-update endpoints means no new persistence layer learns about clone-and-go.
+
+### Implications
+- The bundle loader's existing `resolveBundle` signature gains an optional `repo_path` argument; callers without a repo context still resolve via arms 1 and 3. Project-create / project-update pass the project's `repo_path` through.
+- `repo_path` normalisation runs once on write; the canonical form is what subsequent code sees. Existing rows are not back-filled by the migration-less Phase 19 — they normalise lazily on next update.
+- The CLI ships inside the backend package (`packages/backend`), invocable via `pnpm --filter @throughline/backend exec throughline init`. A standalone install vector (e.g. `npm i -g`) is out of scope here; it can be added later without re-shaping the subcommand.
+- Audit entries for init-side writes ride the existing handler audit paths (T-D36). The CLI never writes audit rows; the backend handlers do.
+- Secrets (T-D4) remain backend-config only — `.throughline/` carries no key material, so `git diff .throughline/` is never a key-leak surface.
+
+---
+
 ## 1. Process model
 
 ```

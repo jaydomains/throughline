@@ -447,6 +447,24 @@ Keyboard navigation throughout: tab/shift-tab for indent/outdent in lists, arrow
 - **Cost meter** — running token spend and dollar estimate for the current day, week, and month, broken down by feature category. Visible in header at all times. Warns when daily threshold (configurable) is exceeded.
 - **Orphaned verifier rules panel** — methodology-defined (e.g. Semgrep rule files, when the bundle declares them); one-click PR-draft cleanup or dismiss-without-removal
 
+### 7.26 Clone-and-go
+
+Clone-and-go is the path by which a user-owned repo carrying a `.throughline/` directory at its root binds to Throughline on first run without bespoke setup (T-D51).
+
+`.throughline/` carries configuration only: a required `.throughline/project.json` (bundle binding, optional bundle path, optional GitHub coordinates, optional project name) and an optional `.throughline/bundle.md` (per-repo methodology bundle). Field-level detail lives in `docs/.throughline-schema.md`. Secrets stay out — API keys and PATs remain in backend configuration, never on disk under the repo (T-D4).
+
+The bundle loader resolves a project's bound `bundle_id` against three arms in order:
+
+1. `<bundle_path>/bundle.md` — explicit external path, when `bundle_path` is set on the project (C-D14).
+2. `<repo_path>/.throughline/bundle.md` — per-repo carve-out, when the project's repo carries one and `bundle_path` is unset.
+3. `<install-root>/methodologies/<bundle_id>/bundle.md` — install-shipped default fallback.
+
+Re-init re-reads `.throughline/` and updates only the fields the file supplies; items, sessions, library entries, secrets, and audit history are never overwritten.
+
+The CLI surface for first-touch bind is `throughline init`. It requires the backend to be running, probes `/api/health` before any write, and writes only via existing HTTP endpoints — never the datastore directly (T-D52).
+
+Importing existing repo state (handovers, decisions, CHECKLIST rows) into a freshly-cloned project is the bootstrap surface, defined in a later phase.
+
 ---
 
 ## 8. Data categories and relationships
@@ -643,6 +661,8 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D48 | Spec language is methodology-agnostic throughout. Runtime concepts are described first; bundle-specific terms appear only as parenthetical examples. Bundle authors reading the spec see what the runtime expects, not just what one particular bundle happens to do. | 7.14, 7.18, 7.13 |
 | T-D49 | Bundle §6 Communication model declares typed records, not free-form bullets: §2 enumerates the architectural-tier vocabulary the model resolves against (distinct from primary-unit item-count tier rules, C-D13); §6 declares `### Edge type:` sub-sections (each with a tier-pair or `any` `when:` clause, a `direct` / `via <module-id>` mechanism, an optional `contract_source:` slug, an optional `invariant: violation` flag), `### Tier routing:` sub-sections (per-tier mechanism overrides), and a `### Producer ownership` rule. Tier-name resolution against §2 happens at parse time. Per-project settings supply the path-on-disk for each `contract_source:`-declaring edge type and the architectural-tier assignment for each item-derived module; the bundle declares, the project supplies — same split as `bundle_path` (C-D14). | 7.11 |
 | T-D50 | Communication-model graph is rule-level: the bundle's edge types expand into edge instances over the synthesised module set (modules derived from items' `primary_unit_refs`, tiers from per-project settings), one per module pair whose tiers satisfy the `when:` clause; self-loops excluded. Tier-routing overrides replace the edge-type's mechanism on any edge touching a module of that tier; conflicts resolve deterministically. `invariant: violation` is parsed-and-carried and rendered as a styling hint — Phase-18 does not enforce routing invariants. The graph tracks current item state (coupled freshness): the module set and per-module item count re-derive when items change, since modules depend on items' `primary_unit_refs`. Concrete-instance edges parsed from contract files are deferred to a later phase. | 7.11 |
+| T-D51 | `.throughline/` is the per-repo config convention; bundle loader gains a third resolution arm (`<repo_path>/.throughline/bundle.md`) between the explicit `bundle_path` arm and the install-shipped fallback | 7.1, 7.2, 7.26 |
+| T-D52 | `throughline init` CLI requires the backend running; probes `/api/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure; CLI writes only via existing HTTP endpoints, never the datastore directly | 7.26, 10 |
 
 ---
 

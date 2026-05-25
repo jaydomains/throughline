@@ -1054,6 +1054,64 @@ Pure derivation `(bundle, modules, module_tiers) → { modules, edges, producer_
 
 ---
 
+## T-D51 — `.throughline/` per-repo config convention; third bundle-resolution arm
+
+- **Date:** 2026-05-25
+- **Status:** active — to be implemented in Phase 19, resolves WN-clone-Q1
+- **Sections affected:** 7.1, 7.2, 7.26
+
+### Decision
+A user-owned repo may carry a `.throughline/` directory at its root that holds the project's Throughline configuration alongside the repo's own code. The directory's v1 contents are documented in `docs/.throughline-schema.md`: a required `.throughline/project.json` (project config) and an optional `.throughline/bundle.md` (per-repo bundle). `.throughline/` is config only; no secrets (T-D4), no items, no sessions, no library, no audit log, no embeddings.
+
+The bundle loader gains a third resolution arm. For a project's bound `bundle_id`, the resolution order is now:
+
+1. `<bundle_path>/bundle.md` — explicit external path, when `bundle_path` is set on the project (current C-D14).
+2. `<repo_path>/.throughline/bundle.md` — per-repo carve-out, when the project's repo carries one and `bundle_path` is unset.
+3. `<install-root>/methodologies/<bundle_id>/bundle.md` — install-shipped default fallback (freeform, test-bundle).
+
+The third arm is what makes a user-owned repo's discipline travel with the repo: a fresh clone of a repo carrying `.throughline/bundle.md` resolves to that bundle without the user manually setting `bundle_path` after binding. Arm 1 retains precedence so an explicitly-configured external path (e.g. a shared bundle directory across multiple repos) keeps overriding the in-repo file.
+
+Out of scope for this decision: writing into `.throughline/` from Throughline (bootstrap-style imports, audit logs, item exports) is not part of `.throughline/`'s contract — that surface lives in later phases and uses different files outside `.throughline/`. The schema doc documents this explicitly.
+
+### Context
+The bundle externalisation refactor (handover `2026-05-16-bundle-externalisation-refactor.md`) removed user-owned bundles from Throughline's repo so the public codebase stays methodology-neutral. That convention bound Throughline's repo, not the user's. A user repo electing to keep its own discipline alongside its own code is a different concern — and is the path that makes clone-and-go work for any future user.
+
+### Rationale
+A repo-local convention with a fixed directory name lets a freshly-cloned repo carry enough configuration to bind to Throughline on first run without bespoke setup. Putting it at `.throughline/` (dotted, single name) matches established conventions (`.github/`, `.vscode/`) and signals tooling-config-not-source. The three-arm resolution preserves the existing two arms unchanged — externalisation (C-D14) and install-fallback (C-D3) — and inserts the new arm in the natural priority slot between them.
+
+### Implications
+A repo with `.throughline/bundle.md` and `bundle_path` set sees `bundle_path` win — explicit configuration overrides the carve-out, by design. A repo carrying `.throughline/bundle.md` whose bound `bundle_id` does not match the in-repo bundle's declared id is a project-create / project-update validation error (`bundle_id_mismatch`) so silent divergence cannot accrue. Implementation shape lives in C-D19.
+
+---
+
+## T-D52 — `throughline init` requires the running backend; CLI does not write the datastore directly
+
+- **Date:** 2026-05-25
+- **Status:** active — to be implemented in Phase 19, resolves WN-clone-Q4
+- **Sections affected:** 7.26, 10
+
+### Decision
+The `throughline init` CLI subcommand has a single write path: existing HTTP endpoints against the running backend (project create / update, secrets, future bootstrap). It does not open the SQLite datastore directly, does not import any backend modules that do, and does not embed schema knowledge.
+
+On invocation the CLI probes `GET /api/health` against the configured local-loopback port. On any probe failure (connection refused, timeout, non-2xx) the CLI prints exactly:
+
+> `Start the backend first: pnpm --filter @throughline/backend start`
+
+and exits non-zero. On probe success the CLI reads the repo's `.throughline/project.json`, auto-detects `github_owner` / `github_repo` from the git remote if absent, and issues the bootstrap calls against the backend.
+
+Out of scope for this decision: a `--start-backend` flag that would spawn the backend process itself is polish and is deferred — adding it later does not change this decision's shape, because the auto-spawn would only stand in for the manual `pnpm` command without altering the single-write-path invariant.
+
+### Context
+The clone-and-go shape (T-D51) requires a CLI surface for the first-touch bind step. The temptation to let the CLI write SQLite directly — "the backend is just a Node process, the CLI can be too" — would create a second write path that has to track every schema change. Discipline-drift between the two paths is the failure mode this avoids.
+
+### Rationale
+A single write path means every project carrying a Throughline binding lands through one set of validators (the HTTP endpoint handlers). A schema migration touches one writer; the CLI does not need to know SQLite, migration versions, or any backend-internal type. The `/health` probe with a fixed error string keeps the failure mode legible to the user: the next instruction is on screen, copy-paste runnable.
+
+### Implications
+The CLI subcommand lives in the backend package (`packages/backend/src/cli/`), so the backend's HTTP client is in-process — no extra dependency. The `init` flow's audit-log entries are written by the backend handlers it calls, not by the CLI; `actor` reflects the handler, with the CLI's invocation surfaced via the `trigger_context_json` shape the backend already supports (T-D24, T-D36). Implementation shape lives in C-D19.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
@@ -1096,7 +1154,7 @@ Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-se
 
 ### WN-clone-Q1 — Bundle location convention permits .throughline/bundle.md alongside externalised paths *(resolved 2026-05-24)*
 
-The just-completed bundle externalisation moved bundles out of Throughline's own repo (handover `2026-05-16-bundle-externalisation-refactor.md`) so that user-owned discipline does not enter Throughline's public codebase. That convention binds Throughline's repo, not the user's. A user-owned repo that carries `.throughline/bundle.md` is keeping its own discipline alongside its own code — a different concern entirely. The loader gains a third resolution arm: `<bundle_path>/bundle.md` (explicit external, current C-D14), `<repo_path>/.throughline/bundle.md` (per-repo carve-out, new), `<install>/methodologies/<bundle_id>/bundle.md` (default fallback). Resolved by → T-D51 (Phase 19).
+The just-completed bundle externalisation moved bundles out of Throughline's own repo (handover `2026-05-16-bundle-externalisation-refactor.md`) so that user-owned discipline does not enter Throughline's public codebase. That convention binds Throughline's repo, not the user's. A user-owned repo that carries `.throughline/bundle.md` is keeping its own discipline alongside its own code — a different concern entirely. The loader gains a third resolution arm: `<bundle_path>/bundle.md` (explicit external, current C-D14), `<repo_path>/.throughline/bundle.md` (per-repo carve-out, new), `<install>/methodologies/<bundle_id>/bundle.md` (default fallback). Resolved by T-D51 (introduced 2026-05-25).
 
 ### WN-clone-Q2 — Bootstrap imports decisions as library notes, not items *(resolved 2026-05-24)*
 
@@ -1108,7 +1166,7 @@ Bundles evolve post-launch; users will re-bootstrap as their methodology firms u
 
 ### WN-clone-Q4 — throughline init requires the backend running; CLI does not write SQLite directly *(resolved 2026-05-24)*
 
-Two write paths (HTTP backend + CLI direct-to-SQLite) would share schema knowledge and drift. The CLI probes `/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure. Single write path through existing project / secrets / bootstrap endpoints. Optional QoL flag `--start-backend` to spawn the backend itself is polish, deferred. Resolved by → T-D52 (Phase 19).
+Two write paths (HTTP backend + CLI direct-to-SQLite) would share schema knowledge and drift. The CLI probes `/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure. Single write path through existing project / secrets / bootstrap endpoints. Optional QoL flag `--start-backend` to spawn the backend itself is polish, deferred. Resolved by T-D52 (introduced 2026-05-25).
 
 ### WN-clone-Q5 — Bootstrap prompt is generic and bundle-aware at run time, not per-bundle *(resolved 2026-05-24)*
 
