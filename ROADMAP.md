@@ -367,6 +367,56 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 ---
 
+## Phase 19 — `.throughline/` config and CLI init
+
+**Scope.** Per-repo `.throughline/project.json` and optional `.throughline/bundle.md`; the bundle loader's third resolution arm (explicit external path → per-repo `.throughline/bundle.md` → install-shipped default); the `throughline init` CLI subcommand against the running backend.
+
+**Dependencies.** Phases 1–18 substantially complete; bundle loader and SettingsView present.
+
+**Done when:** a fresh clone of a repo carrying `.throughline/bundle.md` binds the bundle without manual `bundle_path` setup; `throughline init` writes via the existing HTTP endpoint with the backend running; auto-detection of `github_owner` / `github_repo` from git remote works when absent.
+
+**Sizing:** medium.
+
+---
+
+## Phase 20 — Bootstrap import file shape and idempotent re-run
+
+**Scope.** Bootstrap file schema (items, sessions, library entries per source type per T-D53); deterministic `bootstrap_id` derivation per source type plus the universal `@bootstrap-id:` override (T-D54); idempotent upsert on `(project_id, bootstrap_id)` with three row states (new, reimported, conflicted); bundle-aware ingest validation that rejects shapes violating the bound bundle's declarations; explicit exclusions of secrets, audit history, embeddings, settings, methodology bindings.
+
+**Dependencies.** Phase 19 complete (`.throughline/` config available).
+
+**Done when:** a bootstrap file produces an equivalent-state import on re-run; user-edited rows surface to a conflict queue rather than silent overwrite; bundle-aware validation rejects shapes that violate the bound bundle's item declarations; stale rows are flagged but never auto-deleted.
+
+**Sizing:** large.
+
+---
+
+## Phase 21 — Bootstrap prompt template and Claude Code invocation contract
+
+**Scope.** Repo-owned generic prompt template at `packages/backend/src/bootstrap/prompt-template.md` (T-D55); render endpoint that prepends the fixed parameter block and writes `.throughline/bootstrap-prompt.md`; file-mediated Claude Code invocation (T-D56) — Throughline writes the prompt, the user invokes Claude Code in their normal environment, Claude Code writes `.throughline/bootstrap-output.json`; chokidar watcher on the output file mirroring the inbox/watcher.ts pattern; archive-on-success / quarantine-on-failure worker; SettingsView init UX block surfacing bootstrap state.
+
+**Dependencies.** Phase 20 complete (bootstrap import pipeline ready).
+
+**Done when:** rendering a prompt and manually invoking Claude Code produces a valid `bootstrap-output.json` that ingests cleanly via the Phase 20 endpoint; archive captures successful ingests; failures land in quarantine with a sibling `.error.json` carrying the validator error.
+
+**Sizing:** medium.
+
+---
+
+## Phase 22 — Discipline-drift scan-on-demand for bootstrapped projects
+
+**Scope.** Discipline-scan state tracking on projects (pre-scan / running / complete, with a last-run timestamp); SettingsView "Run discipline scan" trigger surfaced prominently for bootstrap-imported projects pre-first-scan and as a re-scan affordance afterward; periodic-review scheduling gating on first-scan completion; on-bind scanner behaviour for non-bootstrapped projects unchanged.
+
+**Dependencies.** Phase 21 complete (bootstrap pipeline produces bootstrap-imported projects with the relevant state).
+
+**Done when:** projects created via the bootstrap pipeline do not auto-run discipline-drift scanners on bind; the user-invoked first scan flips the project's state to complete and re-enables periodic-review scheduling; on-bind scanning for non-bootstrapped projects continues unchanged.
+
+**Sizing:** small.
+
+The Phase 19–22 chain is linear — each phase depends on the prior phase's surfaces (Phase 22 on Phase 21's bootstrap-imported-project state; Phase 21 on Phase 20's ingest endpoint; Phase 20 on Phase 19's `.throughline/` directory contract). No parallelisation across the chain is intended; each phase ships before the next opens.
+
+---
+
 ## §13 adoption summary
 
 Recommended defaults from SPEC §13 adopted into the build at the phase level:
