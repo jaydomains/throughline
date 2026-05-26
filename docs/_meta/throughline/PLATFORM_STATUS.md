@@ -8,7 +8,7 @@
 
 ## Snapshot
 
-**As of 2026-05-26.** Five-session doc-authoring stream closed (PRs #32–#40); Phases 19–22 doc prerequisites complete (`pre-work-doc-complete`). Phase 18 communication-model is the most recent shipped feature (PR #31, 2026-05-24). No phase currently in flight. Next code work: Phase 19 (clone-and-go). Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-26.** Cohort-level heavy hardener pass complete (PR #43). Phases 19–22 doc prerequisites and Phase 18 communication-model promoted from `pre-work-doc-complete` / `feature-complete` to `production-ready`. No phase currently in flight. Next code work: Phase 19 (clone-and-go) — doc prerequisites at `production-ready`, build can open immediately. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
@@ -23,7 +23,7 @@
 
 ## Locked Decisions This Cycle
 
-T-D anchors minted since the previous PLATFORM_STATUS sign-off. One line each; full bodies in `DECISIONS.md`. *(Initial-population note: this section spans two cohorts — Phase 18 and the five-session doc-authoring stream — because this file is being created now with no prior PLATFORM_STATUS state. Subsequent cycles roll to one cohort per cycle.)*
+T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authoring stream). All entries below were promoted to `production-ready` 2026-05-26 by the cohort-level heavy hardener pass (PR #43). C-D anchors for the same cohort: C-D19, C-D20, C-D21. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. This table rolls when the next cohort's first new T-D / C-D anchor lands, so the just-promoted state stays visible across the immediately-next session.
 
 | Anchor | Phase | One-line |
 |---|---|---|
@@ -41,9 +41,8 @@ T-D anchors minted since the previous PLATFORM_STATUS sign-off. One line each; f
 
 ## Queued Work
 
-- **CODE_SPEC §1 anchor-count refresh** — narrative paragraph says "canonical at 48"; live total is 57. Drifted across Sessions 2–5 because per-slice hardener does not catch it. Cohort-level hardener-pass item.
-- **Phases 19–22 cohort-level hardener pass** — first cohort-level pass under the two-cadence model. Scope: anchor-count refresh, ROADMAP backfill, vocabulary drift across the five sessions, forward-pointer audit, build-prerequisite stress test against current state, handover-chain completeness audit (Session 1 / PR #32 landed without a handover — verify whether that gap should be backfilled or accepted as a stream-opening exception). Per user, the next workstream.
-- **Phase 19 build session** — gated only on user kickoff; doc prerequisites all on `main`.
+- **Phase 19 build session** — gated only on user kickoff; doc prerequisites at `production-ready` on `main`.
+- **Process clarification carry-forward** — cycle-reset semantics in `PLATFORM_STATUS.md` Update Protocol and `AUTHORING_DISCIPLINE.md` cohort-hardener checklist do not pin *when* the Locked-Decisions-This-Cycle table rolls. Practice established by PR #43: roll-off fires when the next cohort's first T-D / C-D anchor lands, not at hardener close. Small process-doc slice to encode this rule explicitly in both files; not urgent.
 
 ---
 
@@ -51,7 +50,7 @@ T-D anchors minted since the previous PLATFORM_STATUS sign-off. One line each; f
 
 Mirrors `SESSION_START.md` §"Known spec-author gaps". Current state of each:
 
-- **CODE_SPEC.md "Questions for the spec author" (seven items)** — gate-trigger mechanisms ×4, bundle markdown convention, companion-modes relationship, verifier-tool plurality. All still open.
+- **CODE_SPEC.md "Questions for the spec author" (two items)** — item 8 (voice input language default for the speech-recognition `lang` parameter, §13) and item 9 (cost meter daily threshold default value, §13 / §7.25). Items 1–7 closed by SPEC.md amendments and corresponding C-D anchors (refreshed by PR #43; the live state is in `CODE_SPEC.md`).
 - **`<!-- RATIONALE NEEDED -->` markers in `DECISIONS.md` (four)** — T-D10, T-D15, T-D17, T-D23. All still open.
 
 When work touches one of these, surface back to the spec author rather than picking an answer.
@@ -60,17 +59,20 @@ When work touches one of these, surface back to the spec author rather than pick
 
 ## Recent Slice History
 
-Last five merged PRs. One line each + handover path.
+Most recent merged PRs, one line each + handover path. Expanded to the full cohort chain for the immediate post-hardener sign-off; rolls back to the standard most-recent-five at the next refresh.
 
 | PR | Title | Handover |
 |---|---|---|
+| #43 | Cohort-level heavy hardener — Phases 19–22 doc prerequisites | `handovers/2026-05-26-cohort-hardener-phases-19-22.md` |
+| #42 | ROADMAP §17 / §18 backfill | _no separate handover_ (small mechanical follow-up to PR #41; substantive coverage in PR #43's handover) |
+| #41 | Platform discipline polish (PLATFORM_STATUS, AUTO_CONTINUE_WORKFLOW, AUTHORING_DISCIPLINE, SESSION_START) | `handovers/2026-05-26-platform-discipline-polish.md` |
 | #40 | Doc session 5 — Phase 22 prereqs + Phases 19–22 ROADMAP/CHECKLIST scaffolds | `handovers/2026-05-26-phase-22-and-scaffolding.md` |
 | #38 | Doc session 4 — Phase 21 prereqs (bootstrap prompt + invocation contract) | `handovers/2026-05-26-phase-21-bootstrap-prompt-and-invocation-prereqs.md` |
 | #36 | Doc session 3 — Phase 20 prereqs (bootstrap server-side ingest) | `handovers/2026-05-25-phase-20-bootstrap-server-prereqs.md` |
 | #34 | Doc session 2 — Phase 19 prereqs (clone-and-go) | `handovers/2026-05-25-phase-19-clone-and-go-doc-prereqs.md` |
-| #32 | Doc session 1 — promote seven open questions to working notes | _no handover_ (stream-opening slice; gap surfaced for cohort hardener-pass review) |
+| #32 | Doc session 1 — promote seven open questions to working notes | _no handover — accepted as stream-opening exception by PR #43 cohort hardener; substantive coverage retrospectively in Session 2's Phase 19 handover (PR #34)._ |
 
-(Prompt-artefact PRs #33, #35, #37, #39 omitted — they are single-use companions to the substantive sessions above.)
+(Prompt-artefact PRs #33, #35, #37, #39 omitted — they are single-use companions to the substantive sessions above. The "Last five" rule is loosened here for the immediate post-cohort sign-off so the just-promoted cohort's whole chain stays visible; rolls to the standard five at next refresh.)
 
 ---
 
@@ -80,6 +82,5 @@ Last five merged PRs. One line each + handover path.
 - **Every entry points at an artefact** — PR number, handover path, anchor ID, or file path. No floating claims.
 - **Mutable.** Unlike handovers (immutable per `HANDOVER_TEMPLATE.md` rule 8), this file is rewritten in place. The Phase-22 carve-out for handovers does not apply here.
 - **Roll semantics.** When entries roll (Recent Slice History past 5, Locked Decisions at cycle reset), older entries are *overwritten*. History lives in handovers and `git log`, not here.
-- **First-cycle exception.** This file's initial population spans two cohorts (Phase 18 + the five-session doc-authoring stream) because it is being created with no prior state. Subsequent cycles roll to one cohort per cycle under the normal cycle-reset rule below.
-- **Cycle reset.** "Locked Decisions This Cycle" rolls at a natural cohort boundary (phase close, multi-session stream close). The cohort-level hardener pass is the typical trigger.
+- **Cycle reset.** "Locked Decisions This Cycle" rolls at a natural cohort boundary (phase close, multi-session stream close). Roll-off fires when the *next* cohort's first new T-D / C-D anchor lands, not at hardener close — so the just-promoted cohort stays visible across the immediately-next session. The cohort-level hardener pass marks the transition; the next cohort's first decision triggers the roll-off. (Practice established by PR #43; this rule should be encoded in `AUTHORING_DISCIPLINE.md` by a future small process-doc slice — queued.)
 - **Cross-references.** `SESSION_START.md` (reading order); `AUTHORING_DISCIPLINE.md` (post-work gate includes refreshing this file); `AUTO_CONTINUE_WORKFLOW.md` (slice-chain that lands the work this file reports).
