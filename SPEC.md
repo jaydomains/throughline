@@ -473,7 +473,19 @@ The import file is a structured artifact, not a free-form export. Each row names
 
 Re-import classifies every row into one of three states: new (insert), existing with no user edits since last import (update in place), and existing with user edits since last import (queued in the review queue for per-row resolution: `keep_mine`, `take_theirs`, or `merge_fields`). Rows whose `bootstrap_id` was present in a prior import but is absent from the current one are flagged `bootstrap_stale=true`; never auto-deleted. The review queue surfaces stale rows with `keep` / `archive` / `delete` actions.
 
-Bootstrap explicitly does not carry secrets (T-D4 — API keys and PATs stay in backend configuration, never on disk under the repo), audit history (rebuilt from re-import events), embeddings, telemetry, settings, or methodology bindings (those come from clone-and-go init per T-D51 / T-D52). The producer side — Phase 21's Claude Code session against the user-owned repo — is separately phased and documented in the (forthcoming) bootstrap-prompt section. The `.throughline/` config schema (`docs/.throughline-schema.md`) is adjacent but distinct: it covers init-time configuration, not bootstrap import format.
+Bootstrap explicitly does not carry secrets (T-D4 — API keys and PATs stay in backend configuration, never on disk under the repo), audit history (rebuilt from re-import events), embeddings, telemetry, settings, or methodology bindings (those come from clone-and-go init per T-D51 / T-D52). The producer side — Phase 21's Claude Code session against the user-owned repo — is documented in §7.28 (bootstrap prompt and Claude Code invocation). The `.throughline/` config schema (`docs/.throughline-schema.md`) is adjacent but distinct: it covers init-time configuration, not bootstrap import format.
+
+### 7.28 Bootstrap prompt and Claude Code invocation
+
+The producer side of bootstrap. Where §7.27 covers the consumer half — Throughline's ingest of a structured import file — §7.28 covers how that import file is produced: a Claude Code session runs against the user-owned repo, reads its handovers, decisions, ROADMAP, and CHECKLIST, and emits a bootstrap import file of the T-D53 shape.
+
+The prompt template is a single repo-owned generic markdown file at `packages/backend/src/bootstrap/prompt-template.md` (T-D55). Throughline ships and maintains one template; per-bundle prompts are explicitly rejected. Bundle-awareness is achieved at run time — the prompt instructs Claude Code to read the project's resolved bundle file directly and apply its sections as extraction policy. Throughline does not run a bundle-section extractor; the only Throughline-side templating is a small fixed parameter block (resolved bundle file path, canonical repo root, declared output path) prepended at render time.
+
+Invocation is user-driven and file-mediated (T-D56). Throughline's render endpoint writes the rendered prompt to `<repo_path>/.throughline/bootstrap-prompt.md` and surfaces a copy-pasteable invocation command in SettingsView. The user runs Claude Code in their normal CLI / IDE environment against that prompt; Claude Code writes the bootstrap import file to `<repo_path>/.throughline/bootstrap-output.json`. A backend chokidar watcher detects the write and routes the file to the §7.27 ingest endpoint (C-D20). Subprocess-spawning Claude Code from Throughline is explicitly deferred (T-D56) — every existing backend subprocess invocation targets short-running deterministic-output tools and Claude Code does not fit that idiom.
+
+Successful ingest archives the output file under `<repo_path>/.throughline/bootstrap-archive/`; ingest failure quarantines under `<repo_path>/.throughline/bootstrap-quarantine/` with a sibling `.error.json` carrying the validator error (C-D21). The SettingsView init UX block surfaces both states. Re-bootstrap is the same flow re-run: regenerating the prompt is a no-op for identity, and T-D54's idempotent upsert handles row classification on re-ingest.
+
+Bootstrap prompt and output land in `.throughline/` as Throughline-managed transient files alongside the user-authored `project.json` and `bundle.md`; `docs/.throughline-schema.md` documents the transient-files contract and the Throughline-managed `.throughline/.gitignore` that keeps these paths out of the user's git history. Secrets remain backend-config only (T-D4); the prompt template and the rendered prompt carry no key material. Per-bundle prompt overrides are out of scope (WN-clone-Q5); implementation surfaces are pinned in C-D21.
 
 ---
 
@@ -675,6 +687,8 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D52 | `throughline init` CLI requires the backend running; probes `/api/health` and prints `Start the backend first: pnpm --filter @throughline/backend start` on failure; CLI writes only via existing HTTP endpoints, never the datastore directly | 7.26, 10 |
 | T-D53 | Bootstrap import file shape: structured per-source rows for items, sessions, and decision/note library entries; bundle-aware validation; secrets and runtime state excluded | 7.27 |
 | T-D54 | Bootstrap re-run is idempotent upsert on `(project_id, bootstrap_id)`; three row states; bootstrap_id derived per source type with a universal `@bootstrap-id:` override | 7.27 |
+| T-D55 | Bootstrap prompt is a repo-owned generic template at `packages/backend/src/bootstrap/prompt-template.md`; bundle-aware via runtime bundle-read, not Throughline-side templating | 7.28 |
+| T-D56 | Claude Code invocation contract: user-driven invocation, Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning explicitly deferred | 7.28 |
 
 ---
 
