@@ -19,12 +19,16 @@ This file sets the discipline floor for any Throughline build session — what t
 | `DECISIONS.md` | Rationale — the body of every T-D anchor, with context, rationale, implications. |
 | `CHECKLIST.md` | Build state — what is built, what is in flight, what is outstanding. |
 | `ROADMAP.md` | Sequencing — phase order, dependencies, parallelism, §13 adoptions. |
+| **Process docs** | |
+| `docs/_meta/throughline/PLATFORM_STATUS.md` | Current state — where the project is right now. Mutable. Refreshed every session sign-off. |
+| `docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` | Slice-chain rhythm — three-layer green gate, three halt classes, chain state shape. |
+| `docs/_meta/throughline/AUTHORING_DISCIPLINE.md` | Status taxonomy and the pre-work / post-work doc gates. |
 
 ---
 
 ## Reading order for a new build session
 
-SESSION_START → most recent handover → SPEC → CODE_SPEC → ROADMAP → CHECKLIST → DECISIONS (consult as needed, not read end-to-end).
+SESSION_START → PLATFORM_STATUS → most recent handover → SPEC → CODE_SPEC → ROADMAP → CHECKLIST → DECISIONS (consult as needed, not read end-to-end).
 
 ---
 
@@ -49,6 +53,18 @@ Plan mode first; the plan is shown for approval before code is written; user exp
 ## PR discipline
 
 PR opened at phase close (not before); PR description references the phase, the cited T-D / C-D anchors, and the CHECKLIST items closed.
+
+---
+
+## Auto-continue discipline
+
+Build work runs as slice chains — each slice a PR, each chain advanced automatically slice-to-slice once the user approves the chain shape at plan-mode. A slice merges only when the three-layer green gate (Gitar review + CI + GitHub mergeable) is simultaneously green. The chain halts only on three named conditions: spec drift, circuit breaker (three fix-rounds on the same finding), or explicit user pause via the `throughline:pause` kill switch. See `docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` for the full ruleset.
+
+---
+
+## Authoring discipline
+
+Deliverables progress through four explicit tiers: `spec-anchored` → `pre-work-doc-complete` → `feature-complete` → `production-ready`. Every build session opens through a pre-work doc prep gate and closes through a post-work doc hardening gate; the hardening gate runs at two cadences (per-slice light, cohort-level heavy). The two-cadence model is what catches cross-cohort drift like the `CODE_SPEC.md §1` "canonical at N" anchor-count staleness. See `docs/_meta/throughline/AUTHORING_DISCIPLINE.md` for the taxonomy and gate checklists.
 
 ---
 
