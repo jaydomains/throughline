@@ -41,7 +41,6 @@ T-D anchors minted since the previous PLATFORM_STATUS sign-off. One line each; f
 
 ## Queued Work
 
-- **ROADMAP §17 / §18 backfill** — Phases 17 (item mentions) and 18 (communication-model) are complete on disk and in `CHECKLIST.md` but never had ROADMAP prose sections appended. Small backfill PR. Flagged in `handovers/2026-05-26-phase-22-and-scaffolding.md` Drift Flags.
 - **CODE_SPEC §1 anchor-count refresh** — narrative paragraph says "canonical at 48"; live total is 57. Drifted across Sessions 2–5 because per-slice hardener does not catch it. Cohort-level hardener-pass item.
 - **Phases 19–22 cohort-level hardener pass** — first cohort-level pass under the two-cadence model. Scope: anchor-count refresh, ROADMAP backfill, vocabulary drift across the five sessions, forward-pointer audit, build-prerequisite stress test against current state, handover-chain completeness audit (Session 1 / PR #32 landed without a handover — verify whether that gap should be backfilled or accepted as a stream-opening exception). Per user, the next workstream.
 - **Phase 19 build session** — gated only on user kickoff; doc prerequisites all on `main`.
