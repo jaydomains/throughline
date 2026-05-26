@@ -571,3 +571,35 @@ Resolves the deferred communication-model graph layer from Pass 1b (DECISIONS WN
 - [x] Inline Gitar fold-in #1 (Slice-2 finding): stale-view-state in `CommunicationModelSection.save()` — `load()` made awaitable + `save()` awaits it (commit `0734e73`); follow-up fix-round closed the structural cause by reading `view` via a ref so the three call-site closures no longer capture render-time view (commit `61834ff`). Resolved on PR #31
 - [x] Inline Gitar fold-ins #2/#3 (Slice-4 findings): duplicated `edgeId` helper extracted to `views/graph/commUtils.ts`; comm-graph coupled-freshness via `commItemsKey` (a minimal deterministic projection of `ref → item_count` from items) added to the fetch effect's dependency array, so the graph refetches on module-set / item-count changes but not on item title / status / description edits. Spec-author reframed the freshness fix as a property of T-D50's render semantics, not just a refresh bug. Resolved on PR #31 (commit `c96ed73`)
 - [x] Full suite green — backend 315/315, frontend 143/143, `pnpm -r lint` clean, `pnpm -r typecheck` clean
+
+---
+
+## Phase 19 — `.throughline/` config and CLI init
+
+Phase 19 doc prerequisites landed in Session 2 of the doc-authoring stream (T-D51, T-D52, C-D19 minted; SPEC §7.26 + §14 amended; `docs/.throughline-schema.md` introduced). Build prerequisites are complete and this phase is ready to open.
+
+_Slice splits land when this phase's build session opens._
+
+---
+
+## Phase 20 — Bootstrap import file shape and idempotent re-run
+
+Phase 20 doc prerequisites landed in Session 3 of the doc-authoring stream (T-D53, T-D54, C-D20 minted; SPEC §7.27 + §14 amended; `docs/.throughline-schema.md` extended). Build prerequisites are complete and this phase is ready to open once Phase 19 lands.
+
+_Slice splits land when this phase's build session opens._
+
+---
+
+## Phase 21 — Bootstrap prompt template and Claude Code invocation contract
+
+Phase 21 doc prerequisites landed in Session 4 of the doc-authoring stream (T-D55, T-D56, C-D21 minted; SPEC §7.28 + §14 amended; `docs/.throughline-schema.md` Throughline-managed transient files section added). Build prerequisites are complete and this phase is ready to open once Phase 20 lands.
+
+_Slice splits land when this phase's build session opens._
+
+---
+
+## Phase 22 — Discipline-drift scan-on-demand for bootstrapped projects
+
+Phase 22 doc prerequisites landed in Session 5 of the doc-authoring stream (T-D57 minted; SPEC §7.14 scan-on-demand mini-section + §14 row added; WN-clone-Q6 back-referenced; WN-clone-Q7 reframed as a durable design principle). Build prerequisites are complete and this phase is ready to open once Phase 21 lands.
+
+_Slice splits land when this phase's build session opens._

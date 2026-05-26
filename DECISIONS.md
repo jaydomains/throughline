@@ -1252,6 +1252,34 @@ The producer side of the bootstrap pipeline — Phase 21's "Claude Code emits an
 
 ---
 
+## T-D57 — Discipline-drift scanners do not auto-run on bind for projects imported via bootstrap; SettingsView gains a "Run discipline scan" trigger
+
+- **Date:** 2026-05-26
+- **Status:** active — to be implemented in Phase 22, resolves WN-clone-Q6
+- **Sections affected:** 7.14, 14
+
+### Decision
+Discipline-drift scanners do not auto-run on bind for projects that were imported via the bootstrap pipeline (T-D53 / T-D54 / C-D20). Such projects surface in SettingsView with a "Run discipline scan" trigger that the user invokes once they have triaged the bootstrap-imported items. Periodic-review scheduling is gated on the first user-invoked scan: until that scan completes, scheduled re-scans are suppressed for the project. On-bind discipline-scan behaviour for ongoing (non-bootstrapped) projects is unchanged.
+
+### Context
+Bootstrap brings months — sometimes years — of project history into Throughline in a single transaction: DECISIONS anchors, ROADMAP phases, CHECKLIST items, handover directories. The bootstrap-imported rows are what the user wants to look at first. Discipline-drift scanners running automatically against a months-old repo on bind would produce hundreds of signals — stale CHECKLIST ticks, handovers that no longer match the current bundle's discipline declarations, drifted anchor references — and bury the imported items behind a wall of drift-inbox noise on day one of adoption. The clone-and-go bootstrap posture (WN-clone-Q7) explicitly accepts that day-one state is partial-knowledge: the user has imported their history but hasn't yet decided what they want Throughline to draw attention to. Auto-run-on-bind contradicts that posture.
+
+### Rationale
+- **Trigger ownership belongs to the user, not the bind event.** Auto-run-on-bind is appropriate when a project's discipline state is known to be current (ongoing projects whose drift was triaged yesterday). For bootstrapped projects the discipline state is unknown — the bundle may have moved since the imported sources were authored, or the imported sources may pre-date the project's adoption of the bundle entirely. Gating the first scan behind explicit user action ensures the drift inbox is meaningful from the moment the user looks at it.
+- **Periodic-review gating prevents background re-flooding.** Without gating periodic-review on the first user-invoked scan, the next periodic-review tick would produce the same flood the auto-run would have caused. Tying the periodic-review enable to the first user-invoked scan keeps the bootstrap-day-one inbox quiet without permanently disabling scanning for bootstrapped projects.
+- **Non-bootstrapped projects keep current behaviour.** On-bind discipline-scan behaviour for ongoing (non-bootstrapped) projects is unchanged — those projects have a known-current discipline state and benefit from immediate scanning. T-D57 does not alter the existing scanner behaviour; it only gates the *first scan* for bootstrap-imported projects.
+- **One trigger, two surfaces.** The "Run discipline scan" trigger in SettingsView serves both the bootstrap-day-one case (initial scan, prominent affordance) and the user-driven re-scan case (any project, any time; less prominent affordance once the project has completed its first scan). One UX surface, two contexts.
+
+### Implications
+- The project record gains discipline-scan state tracking with three distinct states: **pre-scan** (bootstrap default, applied to projects created via the bootstrap pipeline), **running** (a scan is in flight), and **complete** (with a last-run timestamp tracked alongside). The exact column shape — enum + nullable timestamp, single discriminated value, or other — is an implementation-shape choice for the build session; the requirement is the three-state distinction and the last-run timestamp. Ongoing (non-bootstrapped) projects skip the pre-scan state.
+- The bootstrap import pipeline (Phase 20, per T-D53 / T-D54 / C-D20) sets the new project's discipline-scan state to pre-scan as part of project creation.
+- SettingsView renders the "Run discipline scan" trigger conditionally: prominently when the project is in pre-scan; as a less prominent re-scan affordance once the project has reached complete.
+- Periodic-review scheduling reads the project's discipline-scan state and skips bootstrapped projects until they reach complete. From the first user-invoked scan onward, periodic-review behaves identically to ongoing projects.
+- **No companion C-D anchor for Phase 22.** Phase 22 is small enough (Sizing: small in ROADMAP) that the implementation-shape detail lives directly in T-D57's Implications rather than a separate C-D anchor. The other producer-side phases (19, 20, 21) each carry a companion C-D (C-D19, C-D20, C-D21) because their build surfaces are larger and benefit from a separate implementation-rationale layer; Phase 22 does not.
+- Existing discipline-drift scanners, the drift inbox, the audit log, and on-bind behaviour for non-bootstrapped projects are unchanged. This anchor only changes the *activation* of the first scan for bootstrap-imported projects, not the scan internals.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
@@ -1314,8 +1342,8 @@ Throughline already adapts at run time per bundle: dump-zone extractor injects `
 
 ### WN-clone-Q6 — Discipline-drift scanners do not auto-run on bind; user invokes via "Run discipline scan" *(resolved 2026-05-24)*
 
-Discipline-drift scanners running automatically on bind against a months-old repo would produce hundreds of signals, overwhelming the drift inbox on day one and burying the bootstrap-imported items the user actually wants to see. SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling re-enables ongoing scanning post-bootstrap once the user has triaged what they care about. Existing on-bind behaviour for ongoing (non-bootstrapped) projects is unchanged. Resolved by → T-D57 (Phase 22).
+Discipline-drift scanners running automatically on bind against a months-old repo would produce hundreds of signals, overwhelming the drift inbox on day one and burying the bootstrap-imported items the user actually wants to see. SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling re-enables ongoing scanning post-bootstrap once the user has triaged what they care about. Existing on-bind behaviour for ongoing (non-bootstrapped) projects is unchanged. Resolved by T-D57 (introduced 2026-05-26).
 
-### WN-clone-Q7 — Clone-and-go shapes every future adoption, not just the spec author's SiteMesh adoption *(resolved 2026-05-24)*
+### WN-clone-Q7 — Clone-and-go shapes every future adoption, not just the spec author's SiteMesh adoption *(design principle, 2026-05-24)*
 
-The Throughline repo goes public; clone-and-go shapes every future adoption story. Designing for the spec author's immediate SiteMesh adoption (e.g. handover format hardcoded to this repo's template) is a local-optimum trap. The bootstrap prompt and `.throughline/` config convention work against any bundle-aware repo, with quality degrading gracefully when sources are absent (e.g. freeform bundles surface less; missing handover dirs are skipped; absent ROADMAP.md is acceptable). Resolved by → informs design decisions across T-D51 through T-D57 (Phases 19–22) rather than a single anchor.
+The Throughline repo goes public; clone-and-go shapes every future adoption story. Designing for the spec author's immediate SiteMesh adoption (e.g. handover format hardcoded to this repo's template) is a local-optimum trap. The bootstrap prompt and `.throughline/` config convention work against any bundle-aware repo, with quality degrading gracefully when sources are absent (e.g. freeform bundles surface less; missing handover dirs are skipped; absent ROADMAP.md is acceptable). Informs design decisions across T-D51 through T-D57 (Phases 19–22) rather than resolving to a single anchor.

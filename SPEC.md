@@ -328,6 +328,8 @@ Two streams of drift detection running in parallel.
 
 Discipline drift surfaces in the methodology-gates view and as badges on affected primary units in the primary-units view. Items associated with primary units in discipline drift inherit a methodology-drift indicator.
 
+**Scan-on-demand for bootstrapped projects.** Discipline-drift scanners do not auto-run on bind for projects created via the bootstrap pipeline (§7.27). Such projects surface in SettingsView with a user-invoked "Run discipline scan" trigger; the first scan must complete before the project's drift inbox carries any discipline signals. Periodic-review scheduling is gated on the first user-invoked scan — until that scan completes, scheduled re-scans for the project are suppressed; from the first user-invoked scan onward, periodic-review behaves identically to ongoing projects. Non-bootstrapped projects retain on-bind scanner behaviour and immediate periodic-review scheduling; the activation gate applies only to bootstrap-imported projects, not to ongoing ones. The "Run discipline scan" trigger remains available afterward as a re-scan affordance (less prominent once the project has reached its complete state). The why — bootstrap brings months of history in one transaction and auto-run-on-bind would bury imported items behind drift noise on day one — is recorded in T-D57; see §14 → T-D57.
+
 **Manual item-to-PR linking** for tier-2 detection: auto-detect from the active git branch on the session, with user override available and skip acceptable. Items without PR association lose tier-2 only.
 
 **Drift re-verify**: every done item has a manual re-verify button; AI returns *still looks done / unclear / appears regressed*.
@@ -689,6 +691,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D54 | Bootstrap re-run is idempotent upsert on `(project_id, bootstrap_id)`; three row states; bootstrap_id derived per source type with a universal `@bootstrap-id:` override | 7.27 |
 | T-D55 | Bootstrap prompt is a repo-owned generic template at `packages/backend/src/bootstrap/prompt-template.md`; bundle-aware via runtime bundle-read, not Throughline-side templating | 7.28 |
 | T-D56 | Claude Code invocation contract: user-driven invocation, Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning explicitly deferred | 7.28 |
+| T-D57 | Discipline-drift scanners do not auto-run on bind for projects imported via bootstrap; SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling is gated on the first user-invoked scan; non-bootstrapped projects keep current on-bind behaviour | 7.14 |
 
 ---
 
