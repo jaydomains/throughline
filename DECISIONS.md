@@ -1176,6 +1176,82 @@ Implementation in C-D20.
 
 ---
 
+## T-D55 — Bootstrap prompt is a repo-owned generic template at `packages/backend/src/bootstrap/prompt-template.md`; bundle-aware via runtime bundle-read, not Throughline-side templating
+
+- **Date:** 2026-05-26
+- **Status:** active — to be implemented in Phase 21, resolves WN-clone-Q5
+- **Sections affected:** 7.28, 14
+
+### Decision
+The bootstrap prompt template is a single repo-owned markdown file at `packages/backend/src/bootstrap/prompt-template.md`. The Throughline repo ships and maintains exactly one prompt template; per-bundle prompts are explicitly rejected — they would shift maintenance burden onto every external bundle author for a feature most users run once (WN-clone-Q5).
+
+The template is generic. Bundle-awareness is achieved at run time by the prompt instructing Claude Code to read the project's resolved bundle file directly (at the path Throughline supplies as part of the prompt's parameter block) and walk its §2–§11 itself. The template does NOT carry `{{section-N}}`-style placeholders, and Throughline does NOT run a bundle-section extractor that inlines bundle sections into the prompt; the bundle grammar (T-D49 and predecessors) is plain h2/h3 markdown that an LLM with file-read access walks unaided. Mirrors the dump-zone extractor's per-bundle parameter-injection posture (`packages/backend/src/dump-zone/extractor.ts`), scaled to a larger payload where read-the-file beats extract-and-inline.
+
+The prompt template carries:
+
+- A preamble describing the bootstrap task (produce a structured import file matching the T-D53 shape against the bound bundle's policy).
+- Instructions to read the bound bundle file and apply its §2 project layout, §5 lifecycle, §6 communication-model grammar, §7 items policy, etc. as extraction policy.
+- The bootstrap-id derivation rules per source type (T-D54: `decision:<anchor-id>`, `roadmap:phase-<n>`, `handover:<filename>`, `checklist:<sha256-16-of-normalized-text>`, `override:<user-slug>`) and the `<!-- @bootstrap-id: my-slug -->` override convention.
+- The bootstrap import file's required and optional fields per row, per entity type (T-D53), and the explicit exclusions (secrets per T-D4, audit history, embeddings, settings, methodology bindings).
+- Graceful-degradation guidance: bundles without certain sections, repos without ROADMAP.md / CHECKLIST.md, handover directories absent — surface as fewer rows, not failure (informed by WN-clone-Q7).
+
+The only Throughline-side templating is a small fixed parameter block prepended to the template body at render time: the resolved bundle file path (via the existing three-arm resolver in `packages/backend/src/methodology/loader.ts` per C-D14 / C-D19), the canonical repo root, and the declared output file path (`.throughline/bootstrap-output.json` per T-D56). No general-purpose templating engine is introduced; the parameter block is a fixed-shape header rendered by string-substitution.
+
+### Context
+WN-clone-Q5 already settled the high-level shape — one prompt, bundle parameterises at run time, mirroring the dump-zone extractor pattern. The implementation surfaces — where the file lives in the repo, how the bundle is incorporated, what specifically the template carries vs what it pushes onto Claude Code's bundle-reading — were deferred to this phase. Pinning those choices ahead of the Phase 21 build prevents the prompt template landing in an arbitrary location and prevents Throughline shipping a templating engine the spec does not require.
+
+### Rationale
+- **Co-located with bootstrap code.** The prompt template is a runtime artefact loaded by Throughline at init time. `packages/backend/src/bootstrap/derive-id.ts` (per C-D20) already lives at this path; co-location follows Throughline's pattern of placing resource files next to the code that loads them — the bundle-parser modules adjacent to their grammar code is the nearest precedent.
+- **Not in `docs/_meta/throughline/prompts/`.** That directory is ephemeral by convention — session prompts self-delete after each session, and the directory does not exist on main between sessions. A durable template alongside ephemeral session prompts would mix two lifecycles in one directory and dilute the "this directory is for session prompts that get cleaned up" signal.
+- **Runtime bundle-read over Throughline-side section extraction.** The bundle's narrative sections (§2 project layout, §5 lifecycle, §6 communication model, §7 items) are many KB of prose. Templating those in would mean Throughline ships a bundle-section extractor for a single consumer, and the prompt template churns whenever the bundle grammar evolves. Pointing Claude Code at the file is simpler and stable; the bundle grammar is plain markdown that an LLM with file access walks unaided.
+- **Fixed parameter header is the right templating dose.** The bundle file path, repo root, and output file path vary per project and cannot be hard-coded into the template. Prepending them as a small fixed-shape parameter block at render time is the minimum templating that delivers the use case without growing a general-purpose engine.
+
+### Implications
+- Implementation surfaces (the template loader, the render endpoint, the parameter-block injection point, the chokidar watcher, the archive / quarantine convention, the SettingsView init block) live in C-D21.
+- Bundle evolution does not churn the prompt template — only the bundle file does. The template's only coupling to the bundle is the instruction "read the bundle at this path and apply its sections as extraction policy."
+- A future per-bundle prompt override (a bundle author wishing to ship their own prompt template) is explicitly out of scope — it would re-introduce the maintenance burden WN-clone-Q5 rejected. If a future user need surfaces, it lands as a separate decision.
+- The template ships under version control like any other code artefact; edits to the prompt are reviewable diffs against `packages/backend/src/bootstrap/prompt-template.md`.
+
+---
+
+## T-D56 — Claude Code invocation contract: user-driven invocation, Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning explicitly deferred
+
+- **Date:** 2026-05-26
+- **Status:** active — to be implemented in Phase 21
+- **Sections affected:** 7.28, 14
+
+### Decision
+Throughline does not spawn Claude Code as a subprocess. The invocation contract between Throughline and Claude Code is file-mediated: Throughline writes the rendered prompt to a known path under the project's `.throughline/` directory and declares the expected output path in the prompt's parameter block; the user invokes Claude Code against the prompt in their normal environment; Claude Code writes the bootstrap import file to the declared output path; Throughline detects the file via a chokidar watcher and hands it to the Phase 20 ingest endpoint.
+
+Concretely:
+
+- Throughline's render endpoint (C-D21) renders the prompt template (T-D55) against the project's resolved bundle and writes `<repo_path>/.throughline/bootstrap-prompt.md`. The expected output path `<repo_path>/.throughline/bootstrap-output.json` is declared in the prompt's parameter block; Claude Code is instructed to write its result there.
+- The user invokes Claude Code in their normal CLI / IDE environment, passing it the rendered prompt — the prompt itself includes the read-the-bundle instructions and the write-here output path.
+- A backend-side chokidar watcher (refcounted per project, mirroring the existing `packages/backend/src/inbox/watcher.ts` and `packages/backend/src/md-ingest/watcher.ts` idiom) detects `bootstrap-output.json` write completion and routes the file to the Phase 20 ingest path (`POST /api/projects/:id/import` per C-D20).
+- After successful ingest, the file is archived to `.throughline/bootstrap-archive/<timestamp>-bootstrap-output.json`, mirroring the inbox worker's archive-on-success pattern (`packages/backend/src/inbox/worker.ts`). Failures move the file to `.throughline/bootstrap-quarantine/<timestamp>-bootstrap-output.json` with a sibling `<timestamp>-bootstrap-output.error.json` carrying the validation error so the user can fix and re-run.
+- Re-bootstrap is the same flow re-run: regenerating the rendered prompt is a no-op for identity (the template is unchanged); writing a new `bootstrap-output.json` triggers the same watcher path; T-D54's idempotent upsert handles row classification across new / reimported / conflicted / stale states.
+
+Subprocess-spawning Claude Code from the backend is explicitly deferred. Every existing subprocess invocation in the backend — `packages/backend/src/github/local-git.ts`, `packages/backend/src/semble/client.ts`, `packages/backend/src/methodology/gates/checks.ts`, `packages/backend/src/methodology/gates/hook-installer.ts` — targets short-running deterministic-output tools with one-shot `execFile` + `promisify`. Claude Code is a long-running interactive agent with the user's auth context, tool-use approvals, and streaming output that does not fit this idiom; bridging it would be a phase of work in its own right and is not required for the v1 invocation contract.
+
+Manual paste is the floor and is NOT the contract — the file-watch path is the contract, and clone-and-go's UX cost is exactly one extra command for the user to run.
+
+### Context
+The producer side of the bootstrap pipeline — Phase 21's "Claude Code emits an import file against a user-owned repo" — needs a fixed invocation contract before Throughline's init flow can render a prompt with a known output path, and before the prompt itself can instruct Claude Code where to write. WN-clone-Q5 settled the prompt shape (one generic template, bundle-aware at run time) but did not address invocation; this anchor settles the invocation half of the producer side. No prior working note covers invocation, so T-D56 stands on its own without a `resolves` line.
+
+### Rationale
+- **Direct precedent in the repo.** `packages/backend/src/inbox/watcher.ts` + `packages/backend/src/inbox/worker.ts` is the existing "Claude Code writes a file, Throughline ingests" pattern — already in production for transcript ingestion via the `~/.throughline-inbox` directory. Bootstrap-output is the same shape with a different output path and a different downstream consumer (Phase 20's ingest endpoint instead of the transcript router).
+- **User's Claude Code, not Throughline's.** The user's local Claude Code install carries their auth, their model entitlements, their tool permissions. Subprocess-spawning from the backend would either inherit the user's environment fragilely or require re-doing auth on the backend side. File-mediated handoff respects the boundary cleanly.
+- **Bootstrap runs rarely.** Bootstrap fires once per fresh bind, occasionally on re-bootstrap when the bundle evolves. The UX gap between "click a button" and "run one command in your normal Claude Code environment" is small relative to the engineering cost of bridging it.
+- **`.throughline/` is the right surface.** Per T-D51, `.throughline/` carries config; secrets stay out (T-D4). Bootstrap prompt and output land in `.throughline/` because they are init-time transient artefacts adjacent to project configuration — the rendered prompt is regenerated each invocation, and the output file is archived after ingest.
+
+### Implications
+- The `.throughline/` directory's contract extends to carry bootstrap-init transient files (`bootstrap-prompt.md`, `bootstrap-output.json`, `bootstrap-archive/`, `bootstrap-quarantine/`). The `docs/.throughline-schema.md` schema doc gains a transient-files section documenting these as Throughline-managed (not user-authored), with a Throughline-managed `.throughline/.gitignore` so transient ingest state never enters the user's git history.
+- The watcher refcounts per project (mirroring the existing `inbox/watcher.ts` and `md-ingest/watcher.ts` idiom). Watcher lifecycle ties to project lifecycle: registered on render-endpoint first call for a project, unregistered on project delete.
+- Subprocess-spawning Claude Code remains a future polish path; should Throughline later grow that infrastructure, T-D56 is amended, not contradicted — the file-watch contract is the v1 floor.
+- Implementation surfaces (the render endpoint, the watcher, the worker, the archive / quarantine convention, the init UX block) live in C-D21.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
@@ -1234,7 +1310,7 @@ Two write paths (HTTP backend + CLI direct-to-SQLite) would share schema knowled
 
 ### WN-clone-Q5 — Bootstrap prompt is generic and bundle-aware at run time, not per-bundle *(resolved 2026-05-24)*
 
-Throughline already adapts at run time per bundle: dump-zone extractor injects `ItemPolicy.types` / `status_lifecycles` into the Sonnet prompt (`packages/backend/src/dump-zone/extractor.ts`); discipline-drift scanners instantiate per bundle rules; gate firings dispatch off bundle's §5 moments. Bootstrap follows the same pattern. Per-bundle prompts would shift maintenance burden onto every external bundle author — hostile UX for a feature most users run once. The Throughline repo ships and maintains one prompt; the bundle parameterises it (the prompt reads the bound bundle's §2–§11 as preamble and adapts extraction heuristics accordingly). Resolved by → T-D55 (Phase 21).
+Throughline already adapts at run time per bundle: dump-zone extractor injects `ItemPolicy.types` / `status_lifecycles` into the Sonnet prompt (`packages/backend/src/dump-zone/extractor.ts`); discipline-drift scanners instantiate per bundle rules; gate firings dispatch off bundle's §5 moments. Bootstrap follows the same pattern. Per-bundle prompts would shift maintenance burden onto every external bundle author — hostile UX for a feature most users run once. The Throughline repo ships and maintains one prompt; the bundle parameterises it (the prompt reads the bound bundle's §2–§11 as preamble and adapts extraction heuristics accordingly). Resolved by T-D55 (introduced 2026-05-26).
 
 ### WN-clone-Q6 — Discipline-drift scanners do not auto-run on bind; user invokes via "Run discipline scan" *(resolved 2026-05-24)*
 

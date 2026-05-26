@@ -575,6 +575,33 @@ Five surfaces is the minimum that delivers a bootstrap-import cycle end-to-end a
 
 ---
 
+## C-D21 — Bootstrap producer surfaces: prompt template, render endpoint, file watcher, archive/quarantine worker, re-bootstrap, init UX block
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D55, T-D56; T-D4, T-D51, T-D53, T-D54; C-D14, C-D19, C-D20
+
+### Decision
+Phase 21 builds six surfaces that together realise the bootstrap producer side. The split is template / render / watcher / worker / re-bootstrap / UX — six named pieces with one canonical location each.
+
+- **Prompt template.** `packages/backend/src/bootstrap/prompt-template.md` (per T-D55). Single repo-owned generic markdown file. Loaded at run time by the render endpoint; never edited per-bundle. Sits adjacent to `packages/backend/src/bootstrap/derive-id.ts` (per C-D20).
+- **Render endpoint.** `POST /api/projects/:id/bootstrap/render` reads the prompt template, prepends a small fixed parameter block (resolved bundle file path via the existing three-arm resolver in `packages/backend/src/methodology/loader.ts` per C-D14 / C-D19, canonical repo root, declared output path `<repo_path>/.throughline/bootstrap-output.json`), writes the rendered prompt to `<repo_path>/.throughline/bootstrap-prompt.md`, and returns the file path plus a copy-pasteable invocation command for the user. Repo root is repo-canonicalised (per C-D19's normalisation) before injection so the output file cannot be redirected outside the project's repo.
+- **Bootstrap-output watcher.** `packages/backend/src/bootstrap/watcher.ts` is a chokidar watcher mirroring the inbox watcher's shape (`packages/backend/src/inbox/watcher.ts`). Refcounted per project: registered on render-endpoint first call for a project, unregistered on project delete. Watches `<repo_path>/.throughline/bootstrap-output.json`. On detected write completion, hands off to the worker.
+- **Archive / quarantine worker.** `packages/backend/src/bootstrap/worker.ts` mirrors `packages/backend/src/inbox/worker.ts`. Routes the detected output file to the Phase 20 ingest path (`POST /api/projects/:id/import` per C-D20). On successful ingest, moves the file to `<repo_path>/.throughline/bootstrap-archive/<timestamp>-bootstrap-output.json`. On ingest failure, moves to `<repo_path>/.throughline/bootstrap-quarantine/<timestamp>-bootstrap-output.json` and writes a sibling `<timestamp>-bootstrap-output.error.json` carrying the validator error.
+- **Re-bootstrap.** Re-running the render endpoint regenerates `bootstrap-prompt.md`; the user re-invokes Claude Code; a new `bootstrap-output.json` write triggers the same watcher path. T-D54's idempotent upsert handles row classification (new / reimported / conflicted / stale); no special re-bootstrap code path is required.
+- **Init UX block.** SettingsView gains a per-project bootstrap block (alongside the C-D19 `.throughline/` missing-config component) surfacing bootstrap state: "no bootstrap output yet" / "ingested at `<timestamp>`: N new, M reimported, K conflicts" with a copy-paste invocation command. The block also surfaces quarantine state when present, linking the user to the error file.
+
+### Rationale
+Six surfaces is the minimum that delivers a bootstrap-producer cycle end-to-end against the existing backend without introducing a second AnthropicClient call site (Throughline does not call Anthropic for the bootstrap prompt; the user's Claude Code does), a backend-side subprocess for Claude Code (T-D56 explicitly defers), or any new persistence layer. The render endpoint, watcher, and worker each mirror an existing precedent: render reuses the bundle-resolver from C-D14 / C-D19; watcher mirrors `inbox/watcher.ts`; worker mirrors `inbox/worker.ts`. The `.throughline/` directory surface extension is additive — the directory already carries `project.json` and `bundle.md` per T-D51; bootstrap transient files (prompt, output, archive, quarantine) land alongside without renaming or restructuring.
+
+### Implications
+- The `docs/.throughline-schema.md` schema doc gains a "Throughline-managed transient files" section documenting `bootstrap-prompt.md`, `bootstrap-output.json`, `bootstrap-archive/`, `bootstrap-quarantine/`, and a Throughline-managed `.throughline/.gitignore` covering the transient paths so they never enter the user's git history.
+- The bootstrap watcher and worker share the `appendAudit` audit pattern (`packages/backend/src/audit/log.ts`); per-row audit entries land via the ingest endpoint per C-D20. The producer side adds no new audit field shape.
+- Quarantine files persist until the user clears them; the SettingsView init block is the user's surface for noticing and clearing them.
+- Render-endpoint security: both the rendered prompt path and the declared output path live under `<repo_path>/.throughline/`; the repo root is canonicalised before injection so the output file cannot be redirected outside the project's repo. The render endpoint never writes outside `<repo_path>/.throughline/`.
+- Future polish (subprocess-spawning Claude Code) lands as additional C-D anchors when T-D56 is amended; the file-watch path stays as the v1 floor either way.
+
+---
+
 ## 1. Process model
 
 ```
