@@ -90,7 +90,7 @@ Functional disagreement with code triggers a SPEC update or a code update (per S
 
 ## Known spec-author gaps — surface, do not silently resolve
 
-- Seven gaps in `CODE_SPEC.md` *Questions for the spec author* (items 1–7: four gate-trigger mechanisms, bundle markdown convention, companion-modes relationship, verifier-tool plurality).
+- Two gaps in `CODE_SPEC.md` *Questions for the spec author*: item 8 (voice input language default for the speech-recognition `lang` parameter, §13) and item 9 (cost meter daily threshold default value, §13 / §7.25). Items 1–7 closed by SPEC.md amendments and corresponding C-D anchors; the live state is in `CODE_SPEC.md`.
 - Four `<!-- RATIONALE NEEDED -->` markers in `DECISIONS.md` (T-D10, T-D15, T-D17, T-D23).
 
 When work touches one of these, raise it back to the spec author rather than picking an answer.
