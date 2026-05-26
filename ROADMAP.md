@@ -367,6 +367,49 @@ The freeform path from Phase 1–6 establishes that the runtime is methodology-a
 
 ---
 
+## Phase 17 — Item mentions as a first-class relation
+
+**Scope.** Cross-session-mention edges built as the resolution of working note WN-1b-a (deferred at Pass 1b). A new `item_mentions` join table mirrors `item_blockers`; mentions are a derived projection of description text via an explicit `@item:<id>` token. Capture lands at the single `items.create`/`items.update` chokepoint, so all §7.6 surfaces (manual, dump-zone, voice, inbox, code-TODO, reconcile) are covered without per-surface code. Item detail panel "Linked items" renders the four §7.17 groups (children / parents / mentioning / mentioned) via `GET …/items/:itemId/links`. GraphView gains a third edge kind `'mentions'` (non-structural — excluded from layering and "Show chains"). No SPEC.md functional edits in-phase — SPEC §7.11/§7.17 ratification is a separate follow-up clarification PR.
+
+**Cites:** WN-1b-a resolution; no new T-D or C-D anchor minted — implementation-shape detail recorded in CODE_SPEC §18 (Frontend implementation) and DECISIONS.md WN-1b-a Resolution per the spec-drift policy.
+
+**Dependencies.** Phase 3 (items + sessions, detail panel, the `items.create`/`items.update` chokepoint); Pass 1b GraphView (third edge kind reuses the layout substrate).
+
+**Done when:**
+- `item_mentions` join table + reverse index created via migration `0011_phase17_mentions.sql`.
+- `parseMentionRefs` extracts `@item:<id>` tokens (deduped, first-seen order); self-refs and out-of-project ids dropped.
+- Mentions sync on every create/update with an unchanged-set short-circuit (no spurious write/audit).
+- `GET /api/projects/:id/items/:itemId/links` returns `{ parents, children, mentioning, mentioned }` with batched lookup.
+- `ItemDetailPanel` renders the four §7.17 groups, clickable to cycle to the linked item.
+- GraphView renders mention edges with a distinct legend entry; excluded from layering and "Show chains".
+- Suite green — backend + frontend tests, lint, typecheck, build.
+
+**Sizing:** medium.
+
+---
+
+## Phase 18 — Communication-model graph layer
+
+**Scope.** Resolves working note WN-1b-b. Adds the typed §6 bundle grammar (h3 sub-sections for edge types, tier-routing rules, producer ownership) and the §2 `tiers:` line that supplies its vocabulary. The bundle declares shape; the project supplies concrete contract paths and module-tier assignments via `projects.settings_json.communication_model.{contract_sources, module_tiers}`. A pure derivation function builds a rule-level communication graph from bundle + synthesised module set + per-project tier assignments. GraphView gains a fourth-layer "Show communication model" toggle (tier swimlanes, mediated edges rendered as two arrows through the mediator, `invariant: violation` styled as danger, ModulePanel side panel). Freshness couples to item state — the graph refetches when the synthesised module set or per-ref item counts change, not on title/status edits. SettingsView gains a CommunicationModelSection per-project picker. Concrete-instance edges parsed from contract files and routing-invariant enforcement are explicitly deferred to a future phase.
+
+**Cites:** T-D49, T-D50, C-D18; SPEC §7.11 wording updated in-phase (the grammar+render scope is itself the spec answer WN-1b-b asked for); WN-1b-b resolved.
+
+**Dependencies.** Phase 7 (the rich `test-bundle` declares §6 grammar to parse against); Phase 3 / C-D13 (`items.modules()` synthesises the module set from `Item.methodology_context.primary_unit_refs`); Pass 1b GraphView (toolbar / canvas / pan-zoom substrate the fourth layer reuses).
+
+**Done when:**
+- §2 parses a top-level `tiers: <a>, <b>, …` line into `ProjectLayout.tiers: string[]`.
+- §6 h3-walker reads typed `CommunicationEdgeType` / `TierRoutingRule` / `ProducerOwnership` with parse-time tier-name resolution against §2.
+- `projects.settings_json.communication_model` stores per-project `contract_sources` and `module_tiers` with replace-semantics PUT.
+- `deriveCommunicationGraph` enumerates rule-level edges over unordered module pairs whose tiers satisfy `when:` (self-loops excluded); tier-routing overrides apply with lexicographic conflict-resolution; `producer_owns_shape` mirrors bundle declaration.
+- GraphView "Show communication model" toggle is hidden when the bundle's §6 is `none`; mutually exclusive with "Show chains".
+- Comm-graph fetch is keyed on `computeCommItemsKey(items)` so it refetches on module-set / per-ref item-count changes only.
+- SettingsView CommunicationModelSection surfaces contract paths + per-module tier dropdowns behind a "configured but not yet consumed in Phase 18" hint; freeform short-circuit (no section when §6 = none).
+- Suite green — backend + frontend tests, lint, typecheck.
+
+**Sizing:** medium.
+
+---
+
 ## Phase 19 — `.throughline/` config and CLI init
 
 **Scope.** Per-repo `.throughline/project.json` and optional `.throughline/bundle.md`; the bundle loader's third resolution arm (explicit external path → per-repo `.throughline/bundle.md` → install-shipped default); the `throughline init` CLI subcommand against the running backend.
