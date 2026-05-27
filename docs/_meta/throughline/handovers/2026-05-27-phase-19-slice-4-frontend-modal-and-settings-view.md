@@ -71,6 +71,7 @@ _none_
 ## Recently Resolved
 
 - **Slice 3 (Phase 19) merged** — was flagged in Slice 3's handover as "PR pending"; resolved by PR #49 merge with 0 fix-rounds.
+- **Gitar informational note — sync I/O per project in list endpoint** — Gitar review on PR #50 flagged that `computeThroughlineStatus` runs synchronous `existsSync` + (optional) small `readFileSync` per project on `GET /api/projects`. Gitar's own conclusion: "no immediate fix required unless project counts scale significantly" — the cost is microseconds per project for a local-first desktop app with few projects per user. PR status remained `👍 Approved with suggestions`; no code change. Captured here for forensic completeness. If project counts grow, the fix is either pagination or async fs + a small cache; landing site would be a future polish slice, not Phase 19.
 
 ---
 
