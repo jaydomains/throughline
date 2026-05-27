@@ -1145,6 +1145,26 @@ export const mockApi = {
     return { entry, changed: true };
   }),
 
+  // Phase 20 — bootstrap-ingest (C-D20).
+  importBootstrap: vi.fn(async (_projectId: string, _body: unknown) => ({
+    result: {
+      project_id: 'p',
+      rows: [],
+      counts: { new: 0, reimported: 0, conflict: 0, stale_flagged: 0 },
+    },
+  })),
+  listBootstrapConflicts: vi.fn(async (_projectId: string) => ({
+    result: { project_id: 'p', stale: [] as Array<{ entity_type: string; entity_id: string; bootstrap_id: string; title: string }> },
+  })),
+  resolveBootstrap: vi.fn(
+    async (
+      _projectId: string,
+      _body: { conflicts?: unknown[]; stale?: unknown[] },
+    ) => ({
+      result: { applied: 0, noop: 0, errors: [] as Array<{ entity_id: string; message: string }> },
+    }),
+  ),
+
   // Phase 8 — methodology gate runtime (C-D6).
   listGateFirings: vi.fn(async (_projectId: string) => ({ groups: [] as GateMomentGroup[] })),
   runGateMoment: vi.fn(async (_projectId: string, _moment: string) => ({

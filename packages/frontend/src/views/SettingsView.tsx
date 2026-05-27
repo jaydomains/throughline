@@ -10,6 +10,7 @@ import type {
 import { api, type MethodologySummary } from '../api.js';
 import { useProjects } from '../hooks/useProjects.js';
 import { useMethodologies } from '../hooks/useMethodologies.js';
+import { BootstrapReviewModal } from '../components/BootstrapReviewModal.js';
 
 // Phase 15 — settings panel (SPEC §7.25, CODE_SPEC §19). Covers every knob: secrets
 // (write-only, T-D4), backup (T-D28), cost meter threshold (T-D29), the global hygiene
@@ -593,6 +594,7 @@ function ProjectSection({
             />
           </label>
           <ThroughlineStatusBlock project={project} />
+          <BootstrapReviewBlock projectId={project.id} />
           <p className="settings-hint">
             Per-session branch fields are set on each session in the Sessions view.
           </p>
@@ -640,6 +642,60 @@ function ThroughlineStatusBlock({ project }: { project: Project }) {
         <strong>Clone-and-go config:</strong> {headline}
       </p>
       <p className="settings-hint" style={{ marginTop: 0 }}>{detail}</p>
+    </div>
+  );
+}
+
+// Phase 20 Slice 4 — bootstrap review entry block. Colocated with
+// `ThroughlineStatusBlock` (chosen as the lowest-architectural-cost
+// placement; C-D20 explicitly left placement open — could move to a
+// dedicated block if surfacing density grows). Surfaces the count of
+// currently-stale rows and a button to open the review modal.
+//
+// In-flight conflicts from a just-completed import are passed into the
+// modal via `lastImport` + `lastImportFile`; the SettingsView entry block
+// does not hold those (the user reaches this surface between imports, not
+// during one), so the modal opens with `lastImport: null` and the user
+// can resolve any stale rows the prior import flagged.
+function BootstrapReviewBlock({ projectId }: { projectId: string }) {
+  const [count, setCount] = useState<number | null>(null);
+  const [open, setOpen] = useState(false);
+  const refresh = useCallback(() => {
+    api
+      .listBootstrapConflicts(projectId)
+      .then((res) => setCount(res.result.stale.length))
+      .catch(() => setCount(null));
+  }, [projectId]);
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+  if (count === null) return null;
+  return (
+    <div className="settings-bootstrap-review" data-testid="bootstrap-review-block">
+      <p className="settings-hint" style={{ marginBottom: 4 }}>
+        <strong>Bootstrap review:</strong>{' '}
+        {count === 0
+          ? 'No stale rows.'
+          : `${count} stale row${count === 1 ? '' : 's'} pending review.`}
+      </p>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        data-testid="bootstrap-review-open"
+        disabled={count === 0}
+      >
+        Open bootstrap review
+      </button>
+      {open && (
+        <BootstrapReviewModal
+          open
+          projectId={projectId}
+          lastImport={null}
+          lastImportFile={null}
+          onClose={() => setOpen(false)}
+          onResolved={refresh}
+        />
+      )}
     </div>
   );
 }

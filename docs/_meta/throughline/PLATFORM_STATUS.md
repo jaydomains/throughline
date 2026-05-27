@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 20 build chain **open** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`); spec-author-approved decomposition is 4 slices. Slices 1 (schema migration) + 2 (derivation module) merged via PRs #53 / #54 (both 0 fix-rounds; Gitar approved with no findings). Slice 3 (validator + transactional upsert + endpoint + predicate) in flight; PR pending. C-D20 was updated in Slice 3 to reflect the inline-SQL choice in `bootstrap/service.ts` (vs the originally-planned `upsertByBootstrapId` methods on entity services) — see Drift Flags in Slice 3's handover for rationale. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 20 build chain **open** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`). Slices 1, 2, 3 merged via PRs #53, #54, #55 (1 fix-round total — Slice 3's same-millisecond predicate edge case folded inline via rowid tie-break). Slice 4 (review queue UI + GET /conflicts + POST /resolve + SettingsView entry block) in flight; PR pending. C-D20 was updated in Slice 3 to reflect the inline-SQL choice in `bootstrap/service.ts`. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
-**Phase:** 20 chain open.
-**Status:** Slice 3 of 4 in flight — bootstrap-ingest endpoint, validator, transactional upsert, and `hasUserEditsSinceLastBootstrap` predicate. Largest slice of the chain (~1100 lines, medium fix-round risk per chain calibration notes); ships `POST /api/projects/:id/import` plus per-row classification and stale-flag sweep.
-**Open slices on branch:** Slice 3 (`claude/phase-20-slice-3-endpoint-upsert-predicate`, PR pending).
-**Next concrete action:** open Slice 3 PR non-draft once primary work is committed; auto-continue per `AUTO_CONTINUE_WORKFLOW.md`.
+**Phase:** 20 chain open — final slice.
+**Status:** Slice 4 of 4 in flight — review queue UI surfacing in-flight conflicts (from last-import response) and persistent stale rows (from new GET endpoint); `POST /api/projects/:id/import/resolve` applies user resolutions (conflict: keep_mine / take_theirs; stale: keep / delete). V1 carve-outs: `merge_fields` (per-field choice UI) deferred; `archive` (no archive surface exists) deferred — documented in Slice 4's handover.
+**Open slices on branch:** Slice 4 (`claude/phase-20-slice-4-review-ui-and-resolve-endpoint`, PR pending).
+**Next concrete action:** open Slice 4 PR non-draft once primary work is committed; chain closes on merge.
 
 ---
 

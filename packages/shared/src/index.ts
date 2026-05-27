@@ -7,6 +7,7 @@ export * from './sessions.js';
 export * from './capture.js';
 export * from './library.js';
 export * from './md-ingest.js';
+export * from './bootstrap.js';
 export * from './directives.js';
 export * from './reconcile.js';
 export * from './gate.js';

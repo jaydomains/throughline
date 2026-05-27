@@ -595,7 +595,7 @@ Slices (per spec-author-approved decomposition):
 
 - [x] **Slice 1** — Schema migration: nullable `bootstrap_id TEXT` + `bootstrap_stale INTEGER` on items / sessions / library_entries, plus unique partial index per table on `(project_id, bootstrap_id) WHERE bootstrap_id IS NOT NULL` (C-D20 surface 1). PR #53, merged 2026-05-27, 0 fix-rounds. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-20-slice-1-schema-migration.md`.
 - [x] **Slice 2** — Derivation module `packages/backend/src/bootstrap/derive-id.ts`: per-source-type resolvers (`decision`, `roadmap`, `handover`, `checklist`, `override`) + universal `@bootstrap-id:` override (C-D20 surface 3). PR #54, merged 2026-05-27, 0 fix-rounds. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-20-slice-2-derive-id-module.md`.
-- [ ] **Slice 3** — `POST /api/projects/:id/import` endpoint with bundle-aware validator, transactional upsert, per-row classification, and `hasUserEditsSinceLastBootstrap` predicate (C-D20 surfaces 2 + 4). PR pending.
+- [x] **Slice 3** — `POST /api/projects/:id/import` endpoint with bundle-aware validator, transactional upsert, per-row classification, and `hasUserEditsSinceLastBootstrap` predicate (C-D20 surfaces 2 + 4). PR #55, merged 2026-05-27, 1 fix-round (same-millisecond predicate edge case folded inline via rowid tie-break). Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-20-slice-3-endpoint-upsert-predicate.md`.
 - [ ] **Slice 4** — Review queue UI (`BootstrapReviewModal`) + `GET /api/projects/:id/import/conflicts` + `POST /api/projects/:id/import/resolve` + SettingsView entry block (C-D20 surface 5). PR pending.
 
 ---

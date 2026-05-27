@@ -76,8 +76,73 @@ export class BootstrapNoBundleBoundError extends Error {
   }
 }
 
+// Slice 4 — review surface (C-D20 surface 5). `listConflicts` returns the
+// currently-stale rows (the persistent surface — rows whose bootstrap_id
+// dropped out of a prior import and were flagged `bootstrap_stale=1`).
+// In-flight conflicts from a just-completed import live in the
+// `BootstrapImportResult.rows` payload returned by `importBootstrap`; the
+// review modal consumes both sources.
+
+export interface StaleRow {
+  entity_type: BootstrapEntityType;
+  entity_id: string;
+  bootstrap_id: string;
+  title: string;
+}
+
+export interface ListConflictsResult {
+  project_id: string;
+  stale: StaleRow[];
+}
+
+// Resolution actions per T-D54.
+//   * conflict path: keep_mine (no-op), take_theirs (overwrite with the
+//     proposed row provided by the caller; the bootstrap result payload
+//     does not persist proposed rows, so the caller — typically the
+//     review modal — passes back what it received from the import call).
+//     merge_fields (per-field choice) is a v1 carve-out; left to a
+//     future polish slice once the modal UX takes shape.
+//   * stale path:    keep   (unflip bootstrap_stale; user accepts the row
+//                     stays as the canonical record),
+//                    delete (call entity-service delete; cascades the
+//                     row's tags/refs per FK constraints).
+//                    archive is deferred — no archive surface exists in
+//                     v1 to hide a kept-but-archived row; reopening when
+//                     a future archive surface lands.
+
+export type ConflictAction = 'keep_mine' | 'take_theirs';
+export type StaleAction = 'keep' | 'delete';
+
+export interface ConflictResolution {
+  entity_type: BootstrapEntityType;
+  entity_id: string;
+  bootstrap_id: string;
+  action: ConflictAction;
+  proposed?: unknown; // required when action='take_theirs'; must validate against the bound bundle.
+  source_type?: string; // optional, used for audit trigger_context when take_theirs is applied.
+}
+
+export interface StaleResolution {
+  entity_type: BootstrapEntityType;
+  entity_id: string;
+  bootstrap_id: string;
+  action: StaleAction;
+}
+
+export interface ResolveResult {
+  applied: number;
+  noop: number;
+  errors: Array<{ entity_id: string; message: string }>;
+}
+
 export interface BootstrapImportService {
   importBootstrap(projectId: string, input: unknown): BootstrapImportResult;
+  listConflicts(projectId: string): ListConflictsResult;
+  resolveConflicts(
+    projectId: string,
+    conflicts: ConflictResolution[],
+    stale: StaleResolution[],
+  ): ResolveResult;
 }
 
 interface DBService {
@@ -216,6 +281,21 @@ export function createBootstrapImportService(svc: DBService): BootstrapImportSer
         throw new BootstrapValidationFailedError(validation.errors);
       }
       return runImportTransaction(svc, projectId, validation.parsed);
+    },
+    listConflicts(projectId) {
+      const project = svc.projects.get(projectId);
+      if (!project) throw new BootstrapProjectNotFoundError(projectId);
+      return listStaleRows(svc.db, projectId);
+    },
+    resolveConflicts(projectId, conflicts, stale) {
+      // Bundle is required for take_theirs (we re-validate proposed rows
+      // against the bound bundle's ItemPolicy) but not for keep_mine /
+      // keep / delete. Resolving without a bundle present is allowed for
+      // the no-validation actions; take_theirs against no-bundle is
+      // rejected per-row with a clear error.
+      const project = svc.projects.get(projectId);
+      if (!project) throw new BootstrapProjectNotFoundError(projectId);
+      return runResolveTransaction(svc, projectId, conflicts, stale);
     },
   };
 }
@@ -391,6 +471,205 @@ function sweepStale(
     rows.push({ bootstrap_id, entity_type: entityType, entity_id: id, status: 'stale_flagged' });
     counts.stale_flagged += 1;
   }
+}
+
+function listStaleRows(db: DB, projectId: string): ListConflictsResult {
+  const stale: StaleRow[] = [];
+  type StaleQueryRow = { id: string; bootstrap_id: string; title: string };
+  const itemRows = db
+    .prepare(
+      `SELECT id, bootstrap_id, title FROM items
+       WHERE project_id = ? AND bootstrap_stale = 1 AND bootstrap_id IS NOT NULL
+       ORDER BY bootstrap_id`,
+    )
+    .all(projectId) as StaleQueryRow[];
+  for (const r of itemRows) {
+    stale.push({ entity_type: 'item', entity_id: r.id, bootstrap_id: r.bootstrap_id, title: r.title });
+  }
+  type StaleSessionRow = { id: string; bootstrap_id: string; name: string };
+  const sessionRows = db
+    .prepare(
+      `SELECT id, bootstrap_id, name FROM sessions
+       WHERE project_id = ? AND bootstrap_stale = 1 AND bootstrap_id IS NOT NULL
+       ORDER BY bootstrap_id`,
+    )
+    .all(projectId) as StaleSessionRow[];
+  for (const r of sessionRows) {
+    stale.push({ entity_type: 'session', entity_id: r.id, bootstrap_id: r.bootstrap_id, title: r.name });
+  }
+  const libraryRows = db
+    .prepare(
+      `SELECT id, bootstrap_id, title FROM library_entries
+       WHERE project_id = ? AND bootstrap_stale = 1 AND bootstrap_id IS NOT NULL
+       ORDER BY bootstrap_id`,
+    )
+    .all(projectId) as StaleQueryRow[];
+  for (const r of libraryRows) {
+    stale.push({ entity_type: 'library', entity_id: r.id, bootstrap_id: r.bootstrap_id, title: r.title });
+  }
+  return { project_id: projectId, stale };
+}
+
+function tableForEntity(t: BootstrapEntityType): 'items' | 'sessions' | 'library_entries' {
+  return t === 'item' ? 'items' : t === 'session' ? 'sessions' : 'library_entries';
+}
+
+function entityExists(
+  db: DB,
+  projectId: string,
+  entityType: BootstrapEntityType,
+  entityId: string,
+): boolean {
+  const row = db
+    .prepare(`SELECT 1 FROM ${tableForEntity(entityType)} WHERE id = ? AND project_id = ? LIMIT 1`)
+    .get(entityId, projectId);
+  return row !== undefined;
+}
+
+function runResolveTransaction(
+  svc: DBService,
+  projectId: string,
+  conflicts: ConflictResolution[],
+  stale: StaleResolution[],
+): ResolveResult {
+  const { db } = svc;
+  // Resolve policy lazily — only needed when at least one take_theirs lands.
+  // Avoids requiring a bound bundle for the keep_mine / keep / delete-only
+  // resolve case (matches the listConflicts contract above).
+  let policyCache: ItemPolicy | null = null;
+  function getPolicy(): ItemPolicy {
+    if (policyCache) return policyCache;
+    policyCache = resolvePolicy(svc, projectId);
+    return policyCache;
+  }
+
+  const result: ResolveResult = { applied: 0, noop: 0, errors: [] };
+  const tx = db.transaction(() => {
+    for (const c of conflicts) {
+      if (!entityExists(db, projectId, c.entity_type, c.entity_id)) {
+        result.errors.push({ entity_id: c.entity_id, message: 'entity_not_found' });
+        continue;
+      }
+      if (c.action === 'keep_mine') {
+        result.noop += 1;
+        continue;
+      }
+      // take_theirs — apply the proposed row, re-validating against the bound bundle.
+      const validation = validateBootstrapFile(
+        {
+          version: 1,
+          [c.entity_type === 'item' ? 'items' : c.entity_type === 'session' ? 'sessions' : 'library_entries']: [
+            c.proposed,
+          ],
+        },
+        getPolicy(),
+      );
+      if (!validation.ok) {
+        result.errors.push({
+          entity_id: c.entity_id,
+          message: `proposed row failed validation: ${validation.errors.map((e) => `${e.path}: ${e.message}`).join('; ')}`,
+        });
+        continue;
+      }
+      const parsed = validation.parsed;
+      if (c.entity_type === 'item') {
+        const row = parsed.items[0];
+        if (!row) {
+          result.errors.push({ entity_id: c.entity_id, message: 'proposed row missing for item' });
+          continue;
+        }
+        applyItemReimport(db, c.entity_id, row);
+        emitImportAudit(
+          db,
+          projectId,
+          'item',
+          c.entity_id,
+          c.bootstrap_id,
+          c.source_type ?? row.source_type,
+          'bootstrap_reimport',
+          'reimported',
+        );
+      } else if (c.entity_type === 'session') {
+        const row = parsed.sessions[0];
+        if (!row) {
+          result.errors.push({ entity_id: c.entity_id, message: 'proposed row missing for session' });
+          continue;
+        }
+        applySessionReimport(db, c.entity_id, row);
+        emitImportAudit(
+          db,
+          projectId,
+          'session',
+          c.entity_id,
+          c.bootstrap_id,
+          c.source_type ?? row.source_type,
+          'bootstrap_reimport',
+          'reimported',
+        );
+      } else {
+        const row = parsed.library_entries[0];
+        if (!row) {
+          result.errors.push({ entity_id: c.entity_id, message: 'proposed row missing for library entry' });
+          continue;
+        }
+        applyLibraryReimport(db, c.entity_id, row);
+        emitImportAudit(
+          db,
+          projectId,
+          'library',
+          c.entity_id,
+          c.bootstrap_id,
+          c.source_type ?? row.source_type,
+          'bootstrap_reimport',
+          'reimported',
+        );
+      }
+      result.applied += 1;
+    }
+
+    for (const s of stale) {
+      if (!entityExists(db, projectId, s.entity_type, s.entity_id)) {
+        result.errors.push({ entity_id: s.entity_id, message: 'entity_not_found' });
+        continue;
+      }
+      if (s.action === 'keep') {
+        // Unflip bootstrap_stale; emit bootstrap_reimport audit so the
+        // user-acknowledged state lives in the audit trail under the
+        // bootstrap_* family (preserving the predicate's reading on
+        // subsequent imports).
+        const table = tableForEntity(s.entity_type);
+        db.prepare(`UPDATE ${table} SET bootstrap_stale = 0, updated_at = ? WHERE id = ?`).run(
+          new Date().toISOString(),
+          s.entity_id,
+        );
+        const sourceType = s.bootstrap_id.split(':')[0] ?? 'unknown';
+        emitImportAudit(
+          db,
+          projectId,
+          s.entity_type,
+          s.entity_id,
+          s.bootstrap_id,
+          sourceType,
+          'bootstrap_reimport',
+          'reimported',
+        );
+        result.applied += 1;
+      } else {
+        // delete — go through the entity service so cascade audit /
+        // hooks fire (T-D33 orphan rules, mentions cascade, etc.).
+        if (s.entity_type === 'item') {
+          svc.items.delete(s.entity_id);
+        } else if (s.entity_type === 'session') {
+          svc.sessions.delete(s.entity_id);
+        } else {
+          svc.library.delete(s.entity_id);
+        }
+        result.applied += 1;
+      }
+    }
+  });
+  tx();
+  return result;
 }
 
 // Re-export for the routes layer + tests.

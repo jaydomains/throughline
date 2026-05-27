@@ -106,6 +106,39 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     expect(screen.queryByTestId('throughline-status')).toBeNull();
   });
 
+  // Phase 20 Slice 4 — bootstrap review entry block (C-D20 surface 5).
+  it('renders bootstrap-review block with stale count from the GET endpoint', async () => {
+    mockApi.listBootstrapConflicts.mockResolvedValueOnce({
+      result: {
+        project_id: 'p1',
+        stale: [
+          { entity_type: 'item', entity_id: 'i1', bootstrap_id: 'roadmap:phase-1', title: 'Stale item' },
+        ],
+      },
+    });
+    renderView();
+    const select = await screen.findByTestId('project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    const block = await screen.findByTestId('bootstrap-review-block');
+    await waitFor(() => expect(block.textContent).toMatch(/1 stale row pending review/));
+    // Button is enabled when count > 0.
+    const openBtn = screen.getByTestId('bootstrap-review-open');
+    expect((openBtn as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it('disables the bootstrap-review button when there are no stale rows', async () => {
+    mockApi.listBootstrapConflicts.mockResolvedValueOnce({
+      result: { project_id: 'p1', stale: [] },
+    });
+    renderView();
+    const select = await screen.findByTestId('project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    const block = await screen.findByTestId('bootstrap-review-block');
+    await waitFor(() => expect(block.textContent).toMatch(/No stale rows/));
+    const openBtn = screen.getByTestId('bootstrap-review-open');
+    expect((openBtn as HTMLButtonElement).disabled).toBe(true);
+  });
+
   it('grants OS notifications via a test fire', async () => {
     renderView();
     fireEvent.click(await screen.findByTestId('grant-notifications'));
