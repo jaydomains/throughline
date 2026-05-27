@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 20 build chain **open** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`); spec-author-approved decomposition is 4 slices. Slice 1 (schema migration `0012_phase20_bootstrap.sql`) merged via PR #53 (0 fix-rounds; Gitar approved with no findings). Slice 2 (derivation module `packages/backend/src/bootstrap/derive-id.ts`) in flight; PR pending. Phase 19 chain remains the most recently closed; carry-forwards cleanup in PR #51. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 20 build chain **open** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`); spec-author-approved decomposition is 4 slices. Slices 1 (schema migration) + 2 (derivation module) merged via PRs #53 / #54 (both 0 fix-rounds; Gitar approved with no findings). Slice 3 (validator + transactional upsert + endpoint + predicate) in flight; PR pending. C-D20 was updated in Slice 3 to reflect the inline-SQL choice in `bootstrap/service.ts` (vs the originally-planned `upsertByBootstrapId` methods on entity services) — see Drift Flags in Slice 3's handover for rationale. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
 **Phase:** 20 chain open.
-**Status:** Slice 2 of 4 in flight — derivation module exporting `bootstrapId(sourceType, key)` with per-source-type resolvers (`decision`, `roadmap`, `handover`, `checklist`, `override`) and the universal `@bootstrap-id:` override. Pure-function module; downstream consumed by Slice 3's validator and by Phase 21's prompt template.
-**Open slices on branch:** Slice 2 (`claude/phase-20-slice-2-derive-id`, PR pending).
-**Next concrete action:** open Slice 2 PR non-draft once primary work is committed; auto-continue per `AUTO_CONTINUE_WORKFLOW.md`.
+**Status:** Slice 3 of 4 in flight — bootstrap-ingest endpoint, validator, transactional upsert, and `hasUserEditsSinceLastBootstrap` predicate. Largest slice of the chain (~1100 lines, medium fix-round risk per chain calibration notes); ships `POST /api/projects/:id/import` plus per-row classification and stale-flag sweep.
+**Open slices on branch:** Slice 3 (`claude/phase-20-slice-3-endpoint-upsert-predicate`, PR pending).
+**Next concrete action:** open Slice 3 PR non-draft once primary work is committed; auto-continue per `AUTO_CONTINUE_WORKFLOW.md`.
 
 ---
 

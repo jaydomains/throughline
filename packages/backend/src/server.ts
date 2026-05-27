@@ -88,6 +88,8 @@ import {
 import { createMdIngestService } from './md-ingest/service.js';
 import { registerMdIngestRoutes } from './md-ingest/routes.js';
 import { createMdIngestWatcher, type MdIngestWatcher } from './md-ingest/watcher.js';
+import { createBootstrapImportService } from './bootstrap/service.js';
+import { registerBootstrapRoutes } from './bootstrap/routes.js';
 import { createGitHubApi } from './github/api.js';
 import { createLocalGit } from './github/local-git.js';
 import { createGithubStateCache } from './github/state-cache.js';
@@ -581,6 +583,15 @@ export async function startServer(
   registerReconcileRoutes(app, projects, reconcile);
   registerDirectiveRoutes(app, projects, directives);
   registerMdIngestRoutes(app, projects, mdIngest, mdIngestWatcher);
+  const bootstrapImport = createBootstrapImportService({
+    db,
+    projects,
+    items,
+    sessions,
+    library,
+    registry,
+  });
+  registerBootstrapRoutes(app, projects, bootstrapImport);
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 
