@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 19 build chain in flight — first chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46). Slices 1–3 merged (PR #47, PR #48, PR #49; two fix-rounds total). Slice 4 (frontend NewProjectModal `bundle_path` + SettingsView missing-config block) PR open — last slice in the chain. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 19 build chain **closed** — first full chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm landed end-to-end. All four slices merged (PR #47, PR #48, PR #49, PR #50; two fix-rounds total across the chain). Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46) closed. Doc carry-forwards from the chain cleaned up in a follow-on slice (this PR). Next workstream: Phase 20 (bootstrap server-side ingest) chain-open, awaiting plan-mode entry. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
-**Phase:** 19 (`.throughline/` config and CLI init / clone-and-go).
-**Status:** in flight — Slice 4 / 4 PR open (last slice).
-**Open slices on branch:** Slice 4 — `claude/phase-19-slice-4-frontend-modal-and-settings-view`.
-**Next concrete action:** await PR review + three-layer green. On merge, chain closes; tracking issue #46 closes; Phase 19 marked complete.
+**Phase:** 19 closed; Phase 20 pending plan-mode entry.
+**Status:** between chains. Phase 19 (`.throughline/` config and CLI init / clone-and-go) complete; Phase 20 (bootstrap server-side ingest) not yet opened.
+**Open slices on branch:** _none_.
+**Next concrete action:** plan-mode entry for the Phase 20 chain (shape, slice count, tracking-issue open).
 
 ---
 
@@ -41,9 +41,7 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 
 ## Queued Work
 
-- **Phase 19 build chain** — open. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46) (`Auto-continue: phase-19-clone-and-go`). Chain state: `.claude-code/auto-continue-state.json`. Currently on Slice 1 (loader third arm + repo-path normalisation).
-- **`AUTO_CONTINUE_WORKFLOW.md` line 74 wording fix.** The line says the tracking issue "carries the `throughline:pause` label across the chain's entire lifetime" — but applying that label *is* the kill switch. Spec-author-confirmed reading: the issue is the *durable surface* for the label when applied; the label is absent during normal run. Tighten the wording. Small doc carry-forward; not inside any Phase 19 slice scope.
-- **GitHub labels `auto-continue` and `throughline:pause`** — need to exist in `jaydomains/throughline` for the kill-switch mechanism to be fully usable. Both currently absent (verified 2026-05-27). Tracking issue #46 opened without labels as a result; chain remains operable via the marker file and `/pause` comment signals.
+- **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
 
 ---
 
@@ -64,6 +62,13 @@ Most recent merged PRs, one line each + handover path. Expanded to the full coho
 
 | PR | Title | Handover |
 |---|---|---|
+| #51 | Doc carry-forwards cleanup before Phase 20 chain-open | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-20.md` |
+| #50 | Phase 19 / Slice 4 — frontend `bundle_path` + SettingsView missing-config block (chain close) | `handovers/2026-05-27-phase-19-slice-4-frontend-modal-and-settings-view.md` |
+| #49 | Phase 19 / Slice 3 — CLI `throughline init` subcommand + T-D52 doc amendment | `handovers/2026-05-27-phase-19-slice-3-cli-init-subcommand.md` |
+| #48 | Phase 19 / Slice 2 — init readers and reinit flow | `handovers/2026-05-27-phase-19-slice-2-init-readers-and-reinit-flow.md` |
+| #47 | Phase 19 / Slice 1 — loader third arm + repo-path normalisation (chain open) | `handovers/2026-05-27-phase-19-slice-1-loader-third-arm-and-repo-path-normalisation.md` |
+| #45 | `AUTHORING_DISCIPLINE.md` cohort-hardener-checklist cycle-reset encoding (closes PR #43 carry-forward) | `handovers/2026-05-27-authoring-discipline-cycle-reset-encoding.md` |
+| #44 | `PLATFORM_STATUS.md` Update Protocol cycle-reset clarification (PR #43 carry-forward, first half) | `handovers/2026-05-26-cycle-reset-clarification.md` |
 | #43 | Cohort-level heavy hardener — Phases 19–22 doc prerequisites | `handovers/2026-05-26-cohort-hardener-phases-19-22.md` |
 | #42 | ROADMAP §17 / §18 backfill | _no separate handover_ (small mechanical follow-up to PR #41; substantive coverage in PR #43's handover) |
 | #41 | Platform discipline polish (PLATFORM_STATUS, AUTO_CONTINUE_WORKFLOW, AUTHORING_DISCIPLINE, SESSION_START) | `handovers/2026-05-26-platform-discipline-polish.md` |
