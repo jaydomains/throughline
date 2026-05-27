@@ -6,6 +6,7 @@ import {
   InvalidRepoPathError,
   type ProjectsService,
 } from './service.js';
+import { BundleIdMismatchError, InvalidProjectConfigError } from '../init/config-reader.js';
 import type { SettingsService } from '../settings/service.js';
 
 export function registerProjectRoutes(
@@ -85,6 +86,7 @@ export function registerProjectRoutes(
       github_repo?: string | null;
       state?: 'active' | 'archived';
       settings?: Record<string, unknown>;
+      reinit_throughline?: boolean;
     };
   }>('/api/projects/:id', async (req, reply) => {
     const existing = projects.get(req.params.id);
@@ -106,6 +108,14 @@ export function registerProjectRoutes(
       }
       if (err instanceof BundleNotLoadedError) {
         return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
+      }
+      if (err instanceof InvalidProjectConfigError) {
+        return reply.code(400).send({ error: 'invalid_project_config', detail: err.message, path: err.path });
+      }
+      if (err instanceof BundleIdMismatchError) {
+        return reply
+          .code(400)
+          .send({ error: 'bundle_id_mismatch', config_bundle_id: err.configBundleId, bundle_file_name: err.bundleFileName });
       }
       throw err;
     }

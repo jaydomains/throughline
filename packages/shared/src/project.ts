@@ -38,4 +38,9 @@ export interface UpdateProjectInput {
   github_repo?: string | null;
   state?: ProjectState;
   settings?: Record<string, unknown>;
+  // C-D19 surface 7 — when true, the backend re-reads `.throughline/project.json`
+  // from the project's persisted repo_path and applies the fields it supplies
+  // (T-D52 single-write-path discipline). Explicit fields in this same update
+  // body override the file. Never persisted; control flag only.
+  reinit_throughline?: boolean;
 }

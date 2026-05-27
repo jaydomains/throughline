@@ -4,6 +4,8 @@ import { isAbsolute, normalize } from 'node:path';
 import type { CreateProjectInput, Project, UpdateProjectInput } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
+import { readProjectConfig } from '../init/config-reader.js';
+import { detectGitHubRemote } from '../init/git-remote.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 
 const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
@@ -180,11 +182,48 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       const before = this.get(id);
       if (!before) throw new Error(`project ${id} not found`);
 
-      const nextBundleId = input.bundle_id ?? before.bundle_id;
+      // C-D19 surface 7 — backend is the single re-reader of
+      // `.throughline/project.json` (T-D52). The CLI sends `reinit_throughline:
+      // true` and (optionally) explicit override fields; the backend reads the
+      // file from the project's persisted repo_path and applies fields the
+      // file supplies. Explicit fields in the same input override the file —
+      // a human can PATCH `{ reinit_throughline: true, name: "..." }` to force
+      // a rename. Items, sessions, library, secrets, audit history are never
+      // touched on the update path regardless of this flag.
+      let effective = input;
+      if (input.reinit_throughline) {
+        const cfg = readProjectConfig(before.repo_path);
+        if (cfg) {
+          let owner = cfg.github_owner;
+          let repo = cfg.github_repo;
+          if (owner === null || repo === null) {
+            // Per T-D52 / schema doc: missing github coordinates are filled
+            // from the repo's origin remote when available. Silent null on
+            // any non-success exit — coordinates remain absent in that case.
+            const detected = detectGitHubRemote(before.repo_path);
+            if (detected) {
+              if (owner === null) owner = detected.owner;
+              if (repo === null) repo = detected.repo;
+            }
+          }
+          effective = {
+            ...input,
+            bundle_id: input.bundle_id ?? cfg.bundle_id,
+            bundle_path: input.bundle_path === undefined ? cfg.bundle_path : input.bundle_path,
+            github_owner: input.github_owner === undefined ? owner : input.github_owner,
+            github_repo: input.github_repo === undefined ? repo : input.github_repo,
+            name: input.name ?? cfg.project_name ?? before.name,
+          };
+        }
+      }
+
+      const nextBundleId = effective.bundle_id ?? before.bundle_id;
       const nextBundlePath =
-        input.bundle_path === undefined ? before.bundle_path : validateBundlePath(input.bundle_path);
+        effective.bundle_path === undefined
+          ? before.bundle_path
+          : validateBundlePath(effective.bundle_path);
       const nextRepoPath =
-        input.repo_path === undefined ? before.repo_path : validateRepoPath(input.repo_path);
+        effective.repo_path === undefined ? before.repo_path : validateRepoPath(effective.repo_path);
       if (nextRepoPath !== before.repo_path) {
         const existing = findProjectByRepoPath(db, nextRepoPath);
         if (existing && existing !== id) {
@@ -203,14 +242,14 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
 
       const next: Project = {
         ...before,
-        name: input.name ?? before.name,
+        name: effective.name ?? before.name,
         repo_path: nextRepoPath,
         bundle_id: nextBundleId,
         bundle_path: nextBundlePath,
-        github_owner: input.github_owner === undefined ? before.github_owner : input.github_owner,
-        github_repo: input.github_repo === undefined ? before.github_repo : input.github_repo,
-        state: input.state ?? before.state,
-        settings_json: input.settings ?? before.settings_json,
+        github_owner: effective.github_owner === undefined ? before.github_owner : effective.github_owner,
+        github_repo: effective.github_repo === undefined ? before.github_repo : effective.github_repo,
+        state: effective.state ?? before.state,
+        settings_json: effective.settings ?? before.settings_json,
         updated_at: new Date().toISOString(),
       };
       next.archived_at = next.state === 'archived' ? before.archived_at ?? next.updated_at : null;
