@@ -72,6 +72,7 @@ _none_
 ## Recently Resolved
 
 - **Slice 1 (Phase 19) merged** — was flagged in Slice 1's handover as "PR pending"; resolved by PR #47 merge with 1 fix-round folded inline.
+- **Fix-round 1 (Gitar) — `reinit_throughline` truthy check** — Gitar review on PR #48 flagged that the re-init path used `if (input.reinit_throughline)` on a field declared boolean in the shared type. A caller could send `"yes"` or `1` and slip through the type declaration into the re-init path. Folded inline at `packages/backend/src/projects/service.ts:198` with a strict `=== true` check; declared-type-boolean is now enforced at runtime. Regression test in `packages/backend/test/projects.test.ts` ("strict-boolean check — only `reinit_throughline === true` triggers the re-init path").
 
 ---
 
