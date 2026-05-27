@@ -230,6 +230,12 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
   // safe pattern: attempt the read directly, fold any fs failure into a normal
   // bundle-load error. The 'ENOENT' result is meaningful for the third arm —
   // resolveBundle uses it as the "fall through to install-shipped" signal.
+  //
+  // ENOENT is the *expected* state for clone-and-go projects whose repo has not
+  // yet gained a `.throughline/bundle.md` — those projects resolve via arm 3
+  // and there is no real binding event to record. Skip audit + notify on
+  // ENOENT so startup hydration does not produce per-project noise; non-ENOENT
+  // read failures (EACCES, EIO, …) remain auditable misconfigurations.
   function loadRepoFile(file: string, bundleId: string): BundleLoadResult {
     const prev = repoCache.get(file);
     let result: BundleLoadResult;
@@ -243,13 +249,13 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
         bundle_id: bundleId,
         errors: [{ bundle_id: bundleId, message: `cannot read bundle.md at ${file} (${code})` }],
       };
+      repoCache.set(file, result);
       if (code !== 'ENOENT') {
         logger?.error(`per-repo bundle "${bundleId}" unreadable at ${file} (${code})`);
+        const bound = projectsBoundToRepoFile(file);
+        writeLoadAudit(bundleId, bound, result, previousVersion(prev));
+        notifyReloaded(bundleId, bound);
       }
-      repoCache.set(file, result);
-      const bound = projectsBoundToRepoFile(file);
-      writeLoadAudit(bundleId, bound, result, previousVersion(prev));
-      notifyReloaded(bundleId, bound);
       return result;
     }
     result = parseBundle(bundleId, md);

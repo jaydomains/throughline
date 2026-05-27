@@ -228,6 +228,44 @@ describe('methodology loader', () => {
       }
     });
 
+    it('startup hydration of a project without `.throughline/bundle.md` writes no audit (ENOENT is quiet)', async () => {
+      // Regression: clone-and-go projects whose `.throughline/bundle.md` does
+      // not yet exist resolve via arm 3 at registration time. There is no
+      // binding event to record — registerProjectBundle + resolveBundle must
+      // not produce per-project audit rows on ENOENT.
+      const cfg = makeTmpConfig();
+      try {
+        plantFreeformBundle(cfg.methodologiesDir);
+        const repoDir = mkdtempSync(join(tmpdir(), 'throughline-repo-'));
+        try {
+          const db = openDb(cfg.dbPath);
+          runMigrations(db);
+          const registry = createMethodologyRegistry({
+            db,
+            methodologiesDir: cfg.methodologiesDir,
+            watch: false,
+            logger: { info: () => {}, warn: () => {}, error: () => {} },
+          });
+          // Clear audit rows seeded by the install-shipped bundle's initial scan,
+          // then exercise the arm-2 register + resolve paths.
+          db.prepare("DELETE FROM audit_log").run();
+          registry.registerProjectBundle('p-quiet', 'freeform', null, repoDir);
+          const result = registry.resolveBundle('freeform', null, repoDir);
+          expect(result.status).toBe('loaded'); // arm 3 fallback
+          const rows = db
+            .prepare("SELECT COUNT(*) AS n FROM audit_log WHERE entity_type = 'bundle_binding'")
+            .get() as { n: number };
+          expect(rows.n).toBe(0);
+          await registry.stop();
+          db.close();
+        } finally {
+          rmSync(repoDir, { recursive: true, force: true });
+        }
+      } finally {
+        cfg.cleanup();
+      }
+    });
+
     it('parse error in per-repo bundle.md falls through to arm 3 rather than throwing', async () => {
       const cfg = makeTmpConfig();
       try {
