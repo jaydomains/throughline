@@ -1,4 +1,7 @@
 import type { FastifyInstance } from 'fastify';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import type { Project, ThroughlineStatus } from '@throughline/shared';
 import {
   BundleNotLoadedError,
   DuplicateRepoPathError,
@@ -6,8 +9,30 @@ import {
   InvalidRepoPathError,
   type ProjectsService,
 } from './service.js';
-import { BundleIdMismatchError, InvalidProjectConfigError } from '../init/config-reader.js';
+import {
+  BundleIdMismatchError,
+  InvalidProjectConfigError,
+  readProjectConfig,
+} from '../init/config-reader.js';
 import type { SettingsService } from '../settings/service.js';
+
+// C-D19 surface 6 — clone-and-go config presence summary, computed at request
+// time. Cheap filesystem stat + parse attempt; safe to call on every list /
+// get response.
+export function computeThroughlineStatus(repoPath: string): ThroughlineStatus {
+  if (!existsSync(join(repoPath, '.throughline'))) return 'absent';
+  try {
+    const cfg = readProjectConfig(repoPath);
+    return cfg === null ? 'partial' : 'complete';
+  } catch {
+    // project.json present but unreadable / malformed / mismatched.
+    return 'partial';
+  }
+}
+
+function withStatus(project: Project): Project {
+  return { ...project, throughline_status: computeThroughlineStatus(project.repo_path) };
+}
 
 export function registerProjectRoutes(
   app: FastifyInstance,
@@ -17,13 +42,13 @@ export function registerProjectRoutes(
   app.get('/api/projects', async (req) => {
     const includeArchived =
       (req.query as { include_archived?: string } | undefined)?.include_archived === 'true';
-    return { projects: projects.list({ includeArchived }) };
+    return { projects: projects.list({ includeArchived }).map(withStatus) };
   });
 
   app.get<{ Params: { id: string } }>('/api/projects/:id', async (req, reply) => {
     const project = projects.get(req.params.id);
     if (!project) return reply.code(404).send({ error: 'not_found' });
-    return { project };
+    return { project: withStatus(project) };
   });
 
   app.post<{
@@ -55,7 +80,7 @@ export function registerProjectRoutes(
       if (body.github_repo !== undefined) input.github_repo = body.github_repo;
       if (body.settings !== undefined) input.settings = body.settings;
       const project = projects.create(input);
-      return reply.code(201).send({ project });
+      return reply.code(201).send({ project: withStatus(project) });
     } catch (err) {
       if (err instanceof InvalidBundlePathError) {
         return reply.code(400).send({ error: 'invalid_bundle_path' });
@@ -93,7 +118,7 @@ export function registerProjectRoutes(
     if (!existing) return reply.code(404).send({ error: 'not_found' });
     try {
       const project = projects.update(req.params.id, req.body ?? {});
-      return { project };
+      return { project: withStatus(project) };
     } catch (err) {
       if (err instanceof InvalidBundlePathError) {
         return reply.code(400).send({ error: 'invalid_bundle_path' });

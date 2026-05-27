@@ -488,6 +488,7 @@ function ProjectSection({
   const project = projects.find((p) => p.id === sel) ?? null;
   const [repoPath, setRepoPath] = useState('');
   const [bundleId, setBundleId] = useState('');
+  const [bundlePath, setBundlePath] = useState('');
   const [owner, setOwner] = useState('');
   const [repo, setRepo] = useState('');
   const [busy, setBusy] = useState(false);
@@ -496,6 +497,7 @@ function ProjectSection({
     if (project) {
       setRepoPath(project.repo_path);
       setBundleId(project.bundle_id);
+      setBundlePath(project.bundle_path ?? '');
       setOwner(project.github_owner ?? '');
       setRepo(project.github_repo ?? '');
     }
@@ -508,6 +510,7 @@ function ProjectSection({
       await api.updateProject(project.id, {
         repo_path: repoPath,
         bundle_id: bundleId,
+        bundle_path: bundlePath === '' ? null : bundlePath,
         github_owner: owner === '' ? null : owner,
         github_repo: repo === '' ? null : repo,
       });
@@ -565,6 +568,15 @@ function ProjectSection({
             </select>
           </label>
           <label className="settings-row">
+            <span>Bundle path (optional)</span>
+            <input
+              value={bundlePath}
+              onChange={(e) => setBundlePath(e.target.value)}
+              placeholder="/absolute/path/to/external/bundle-dir"
+              data-testid="project-bundle-path"
+            />
+          </label>
+          <label className="settings-row">
             <span>GitHub owner</span>
             <input
               value={owner}
@@ -580,6 +592,7 @@ function ProjectSection({
               data-testid="project-repo"
             />
           </label>
+          <ThroughlineStatusBlock project={project} />
           <p className="settings-hint">
             Per-session branch fields are set on each session in the Sessions view.
           </p>
@@ -589,6 +602,45 @@ function ProjectSection({
         </>
       )}
     </Section>
+  );
+}
+
+// C-D19 surface 6 — clone-and-go config status. Surfaces whether the project's
+// repo has a `.throughline/` directory and whether `.throughline/project.json`
+// is present and valid. `throughline_status` is computed by the backend at
+// request time; absent on pre-Phase-19 responses (legacy callers).
+function ThroughlineStatusBlock({ project }: { project: Project }) {
+  const status = project.throughline_status;
+  if (status === undefined) return null;
+  const labels: Record<NonNullable<Project['throughline_status']>, { headline: string; detail: string }> = {
+    absent: {
+      headline: 'No `.throughline/` directory found in this repo.',
+      detail:
+        'Clone-and-go config is not set up. Run `throughline init` from the repo root to create `.throughline/project.json`.',
+    },
+    partial: {
+      headline: '`.throughline/` directory present but config missing or invalid.',
+      detail:
+        '`.throughline/project.json` is absent or failed to parse. Run `throughline init` to (re-)write it, or fix it by hand.',
+    },
+    complete: {
+      headline: '`.throughline/project.json` present and valid.',
+      detail:
+        'Run `throughline init` again any time to re-apply file values to this binding (items, sessions, and audit history are never touched).',
+    },
+  };
+  const { headline, detail } = labels[status];
+  return (
+    <div
+      className="settings-throughline-status"
+      data-testid="throughline-status"
+      data-status={status}
+    >
+      <p className="settings-hint" style={{ marginBottom: 4 }}>
+        <strong>Clone-and-go config:</strong> {headline}
+      </p>
+      <p className="settings-hint" style={{ marginTop: 0 }}>{detail}</p>
+    </div>
   );
 }
 

@@ -366,6 +366,58 @@ describe('projects service', () => {
     });
   });
 
+  // C-D19 surface 6 — clone-and-go config status computed at GET time by the
+  // routes layer; helper exported for direct testability.
+  describe('throughline_status (C-D19 surface 6)', () => {
+    it('absent when the repo has no `.throughline/` directory', async () => {
+      const { computeThroughlineStatus } = await import('../src/projects/routes.js');
+      const repoPath = mkdtempSync(join(tmpdir(), 'throughline-status-'));
+      try {
+        expect(computeThroughlineStatus(repoPath)).toBe('absent');
+      } finally {
+        rmSync(repoPath, { recursive: true, force: true });
+      }
+    });
+
+    it('partial when `.throughline/` exists but project.json is missing', async () => {
+      const { computeThroughlineStatus } = await import('../src/projects/routes.js');
+      const repoPath = mkdtempSync(join(tmpdir(), 'throughline-status-'));
+      try {
+        mkdirSync(join(repoPath, '.throughline'), { recursive: true });
+        expect(computeThroughlineStatus(repoPath)).toBe('partial');
+      } finally {
+        rmSync(repoPath, { recursive: true, force: true });
+      }
+    });
+
+    it('complete when `.throughline/project.json` is present and valid', async () => {
+      const { computeThroughlineStatus } = await import('../src/projects/routes.js');
+      const repoPath = mkdtempSync(join(tmpdir(), 'throughline-status-'));
+      try {
+        mkdirSync(join(repoPath, '.throughline'), { recursive: true });
+        writeFileSync(
+          join(repoPath, '.throughline', 'project.json'),
+          JSON.stringify({ bundle_id: 'freeform' }),
+        );
+        expect(computeThroughlineStatus(repoPath)).toBe('complete');
+      } finally {
+        rmSync(repoPath, { recursive: true, force: true });
+      }
+    });
+
+    it('partial when project.json exists but is malformed (parse throws)', async () => {
+      const { computeThroughlineStatus } = await import('../src/projects/routes.js');
+      const repoPath = mkdtempSync(join(tmpdir(), 'throughline-status-'));
+      try {
+        mkdirSync(join(repoPath, '.throughline'), { recursive: true });
+        writeFileSync(join(repoPath, '.throughline', 'project.json'), '{not json');
+        expect(computeThroughlineStatus(repoPath)).toBe('partial');
+      } finally {
+        rmSync(repoPath, { recursive: true, force: true });
+      }
+    });
+  });
+
   it('cascade-deletes per-project rows', async () => {
     const cfg = makeTmpConfig();
     plantFreeformBundle(cfg.methodologiesDir);

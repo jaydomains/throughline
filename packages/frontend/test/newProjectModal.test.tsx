@@ -130,6 +130,37 @@ describe('NewProjectModal', () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it('passes optional bundle_path through to the create call when set', async () => {
+    // C-D19 surface 5 — bundle_path field surfaces an existing C-D14 column on
+    // the create form so a clone-and-go project can bind to an external bundle
+    // dir without a follow-up settings edit.
+    const user = userEvent.setup();
+    renderModal({ open: true });
+    await user.type(screen.getByTestId('new-project-name'), 'Beta');
+    await user.type(screen.getByTestId('new-project-repo'), '/tmp/beta');
+    await user.type(screen.getByTestId('new-project-bundle-path'), '/opt/bundles/beta');
+    await user.click(screen.getByTestId('new-project-submit'));
+    await waitFor(() => expect(mockApi.createProject).toHaveBeenCalledTimes(1));
+    expect(mockApi.createProject).toHaveBeenCalledWith({
+      name: 'Beta',
+      repo_path: '/tmp/beta',
+      bundle_id: 'freeform',
+      bundle_path: '/opt/bundles/beta',
+    });
+  });
+
+  it('omits bundle_path from the create call when the field is empty', async () => {
+    const user = userEvent.setup();
+    renderModal({ open: true });
+    await user.type(screen.getByTestId('new-project-name'), 'Gamma');
+    await user.type(screen.getByTestId('new-project-repo'), '/tmp/gamma');
+    // Leave bundle_path empty.
+    await user.click(screen.getByTestId('new-project-submit'));
+    await waitFor(() => expect(mockApi.createProject).toHaveBeenCalledTimes(1));
+    const arg = mockApi.createProject.mock.calls[0]?.[0];
+    expect(arg?.bundle_path).toBeUndefined();
+  });
+
   it('closes when the backdrop is clicked but not the modal body', async () => {
     const user = userEvent.setup();
     const onClose = vi.fn();

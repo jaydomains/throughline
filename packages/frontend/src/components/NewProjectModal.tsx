@@ -27,6 +27,11 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
   const [name, setName] = useState('');
   const [repoPath, setRepoPath] = useState('');
   const [bundleId, setBundleId] = useState(defaultBundleId);
+  // C-D19 surface 5 — optional external bundle directory. The C-D14 column
+  // has been on `projects` since Phase 15; this exposes it on the create
+  // surface so a clone-and-go project can bind to an external bundle without
+  // a follow-up settings edit.
+  const [bundlePath, setBundlePath] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -36,6 +41,7 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
       setName('');
       setRepoPath('');
       setBundleId(defaultBundleId);
+      setBundlePath('');
       setSubmitting(false);
       setError(null);
       // Focus after the modal mounts.
@@ -47,6 +53,7 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
 
   const trimmedName = name.trim();
   const trimmedRepo = repoPath.trim();
+  const trimmedBundlePath = bundlePath.trim();
   const canSubmit =
     !submitting && trimmedName.length > 0 && trimmedRepo.length > 0 && bundleId.length > 0;
 
@@ -61,6 +68,7 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
         repo_path: trimmedRepo,
         bundle_id: bundleId,
       };
+      if (trimmedBundlePath.length > 0) input.bundle_path = trimmedBundlePath;
       const { project } = await api.createProject(input);
       setSubmitting(false);
       onCreated(project);
@@ -125,6 +133,17 @@ export function NewProjectModal({ open, onClose, onCreated, bundles }: NewProjec
                 );
               })}
             </select>
+          </label>
+          <label className="form-row">
+            <span>Bundle path (optional)</span>
+            <input
+              type="text"
+              value={bundlePath}
+              onChange={(e) => setBundlePath(e.target.value)}
+              placeholder="/absolute/path/to/external/bundle-dir"
+              autoComplete="off"
+              data-testid="new-project-bundle-path"
+            />
           </label>
           {error && (
             <p className="form-error" role="alert" data-testid="new-project-error">
