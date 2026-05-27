@@ -77,7 +77,7 @@ export function createTier4Service(opts: CreateTier4Options): Tier4Service {
   function doneItems(projectId: string): Array<{ id: string; title: string; description: string }> {
     const project = projects.get(projectId);
     if (!project) return [];
-    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
     if (loaded.status !== 'loaded') return [];
     const done = bundleDoneStatus(bundleItemPolicy(loaded.bundle));
     return db
