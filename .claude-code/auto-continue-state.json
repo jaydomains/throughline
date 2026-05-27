@@ -19,18 +19,19 @@
     },
     {
       "id": "slice-3-cli-init-subcommand",
-      "status": "open",
-      "prNumber": null,
-      "fixRounds": 0
+      "status": "merged",
+      "prNumber": 49,
+      "fixRounds": 0,
+      "mergedAt": "2026-05-27T16:10:00Z"
     },
     {
       "id": "slice-4-frontend-modal-and-settings-view",
-      "status": "pending",
+      "status": "open",
       "prNumber": null,
       "fixRounds": 0
     }
   ],
-  "currentIndex": 2,
+  "currentIndex": 3,
   "lastPollAt": null,
   "haltReason": null
 }

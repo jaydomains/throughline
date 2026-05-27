@@ -1,5 +1,12 @@
 export type ProjectState = 'active' | 'archived';
 
+// C-D19 surface 6 — clone-and-go config presence summary. Computed at request
+// time from the filesystem under `repo_path/.throughline/`, never persisted.
+//   • absent  — no `.throughline/` directory.
+//   • partial — directory exists but project.json is missing or unparseable.
+//   • complete — `.throughline/project.json` present and valid.
+export type ThroughlineStatus = 'absent' | 'partial' | 'complete';
+
 export interface Project {
   id: string;
   name: string;
@@ -15,6 +22,9 @@ export interface Project {
   created_at: string;
   updated_at: string;
   archived_at: string | null;
+  // C-D19 surface 6 — computed at GET time, not persisted. Optional because
+  // pre-Phase-19 code paths may construct Project objects without it.
+  throughline_status?: ThroughlineStatus;
 }
 
 export interface CreateProjectInput {

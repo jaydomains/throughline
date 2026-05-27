@@ -67,6 +67,45 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     expect(patch).toHaveProperty('bundle_id');
   });
 
+  // C-D19 surface 5 — `bundle_path` settings field surfaces the C-D14 column on the settings panel.
+  it('sends bundle_path through updateProject (sets when present, nulls when cleared)', async () => {
+    renderView();
+    const select = await screen.findByTestId('project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    const input = await screen.findByTestId('project-bundle-path');
+    fireEvent.change(input, { target: { value: '/opt/bundles/demo' } });
+    fireEvent.click(screen.getByTestId('save-project'));
+    await waitFor(() => expect(mockApi.updateProject).toHaveBeenCalled());
+    const [, patch] = mockApi.updateProject.mock.calls[0]!;
+    expect(patch).toMatchObject({ bundle_path: '/opt/bundles/demo' });
+  });
+
+  // C-D19 surface 6 — clone-and-go config status block surfaces `throughline_status`.
+  it('renders the throughline-status block when the backend supplies the field', async () => {
+    // Reach into the mock store and override the seeded project to carry a status.
+    const initial = await mockApi.listProjects();
+    initial.projects[0]!.throughline_status = 'complete';
+    renderView();
+    const select = await screen.findByTestId('project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    const block = await screen.findByTestId('throughline-status');
+    expect(block.getAttribute('data-status')).toBe('complete');
+    expect(block.textContent).toMatch(/Clone-and-go config:/);
+  });
+
+  it('hides the throughline-status block on legacy responses without the field', async () => {
+    // DEFAULT_PROJECT in mockApi is a module-level singleton; previous tests
+    // may have mutated `throughline_status` on it. Clear it explicitly so this
+    // test exercises the "legacy response" shape unambiguously.
+    const initial = await mockApi.listProjects();
+    delete initial.projects[0]!.throughline_status;
+    renderView();
+    const select = await screen.findByTestId('project-select');
+    fireEvent.change(select, { target: { value: 'p1' } });
+    await screen.findByTestId('project-bundle');
+    expect(screen.queryByTestId('throughline-status')).toBeNull();
+  });
+
   it('grants OS notifications via a test fire', async () => {
     renderView();
     fireEvent.click(await screen.findByTestId('grant-notifications'));
