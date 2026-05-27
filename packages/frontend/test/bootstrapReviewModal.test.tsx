@@ -165,6 +165,55 @@ describe('BootstrapReviewModal — Phase 20 Slice 4 (C-D20 surface 5)', () => {
     await waitFor(() => expect(onClose).toHaveBeenCalled());
   });
 
+  it('preserves user conflict selections across parent re-renders (initialized-flag guard)', async () => {
+    // Regression for Gitar PR #56 finding: an unmemoized parent re-rendering
+    // with new lastImport/lastImportFile object references used to re-fire
+    // the init effect and wipe the user's per-row decisions. The fix guards
+    // re-initialization with an `initialized` state flag.
+    mockApi.listBootstrapConflicts.mockResolvedValueOnce({
+      result: { project_id: 'p1', stale: [] },
+    });
+    function Wrapper({ pass }: { pass: number }) {
+      return (
+        <BootstrapReviewModal
+          open
+          projectId="p1"
+          lastImport={{
+            project_id: 'p1',
+            rows: [
+              { bootstrap_id: 'roadmap:phase-1', entity_type: 'item', entity_id: 'i1', status: 'conflict' },
+            ],
+            counts: { new: 0, reimported: 0, conflict: 1, stale_flagged: 0 },
+          }}
+          lastImportFile={{
+            version: 1,
+            items: [
+              { bootstrap_id: 'roadmap:phase-1', source_type: 'roadmap', title: `pass ${pass}`, type: 'task', status: 'open' },
+            ],
+          }}
+          onClose={() => undefined}
+        />
+      );
+    }
+    // Use the `wrapper` option so the ModalStackProvider persists across
+    // rerender calls (passing the provider into renderModal would be
+    // replaced by rerender's new children).
+    const { rerender } = render(<Wrapper pass={1} />, { wrapper: ModalStackProvider });
+    await waitFor(() => expect(screen.getByText(/Conflicts \(1\)/)).toBeTruthy());
+    // User picks "Keep mine" on the conflict row.
+    fireEvent.click(screen.getAllByLabelText(/Keep mine/)[0]!);
+    const radio = screen.getAllByLabelText(/Keep mine/)[0] as HTMLInputElement;
+    expect(radio.checked).toBe(true);
+    // Parent re-renders with new object references for lastImport / lastImportFile;
+    // the modal should NOT re-fire the init effect and lose the user's selection.
+    rerender(<Wrapper pass={2} />);
+    // After the re-render the same radio is still checked.
+    const radioAfter = screen.getAllByLabelText(/Keep mine/)[0] as HTMLInputElement;
+    expect(radioAfter.checked).toBe(true);
+    // listBootstrapConflicts was called exactly once across both renders.
+    expect(mockApi.listBootstrapConflicts).toHaveBeenCalledTimes(1);
+  });
+
   it('surfaces resolve errors without closing the modal', async () => {
     mockApi.listBootstrapConflicts.mockResolvedValueOnce({
       result: {

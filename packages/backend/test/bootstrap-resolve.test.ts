@@ -166,6 +166,40 @@ describe('bootstrap resolveConflicts — stale actions (keep / delete)', () => {
     }
   });
 
+  it('rejects an invalid entity_type as a per-row error (does not silently treat as library)', async () => {
+    // Regression for Gitar PR #56 finding: a typo like `entity_type: "items"`
+    // (plural) used to silently fall through to library_entries and emerge
+    // as a confusing `entity_not_found`. The fix lands an explicit
+    // validation error up-front so the caller sees the typo.
+    const { backend, project, bootstrap } = await setup();
+    try {
+      const r = bootstrap.resolveConflicts(project.id, [], [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { entity_type: 'items' as any, entity_id: 'x', bootstrap_id: 'roadmap:phase-1', action: 'keep' },
+      ]);
+      expect(r.applied).toBe(0);
+      expect(r.errors).toHaveLength(1);
+      expect(r.errors[0]?.message).toContain('invalid entity_type "items"');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('rejects an invalid stale action as a per-row error', async () => {
+    const { backend, project, bootstrap } = await setup();
+    try {
+      const r = bootstrap.resolveConflicts(project.id, [], [
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { entity_type: 'item', entity_id: 'x', bootstrap_id: 'roadmap:phase-1', action: 'archive' as any },
+      ]);
+      expect(r.applied).toBe(0);
+      expect(r.errors).toHaveLength(1);
+      expect(r.errors[0]?.message).toContain('invalid stale action "archive"');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('reports entity_not_found error for unknown ids without aborting other resolutions', async () => {
     const { backend, project, bootstrap } = await setup();
     try {

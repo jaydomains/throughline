@@ -90,9 +90,22 @@ export function BootstrapReviewModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [applying, setApplying] = useState(false);
+  // Tracks whether the modal has initialized its state for the current
+  // open cycle. Guards against re-initialization (and the resulting loss
+  // of user selections) when the parent re-renders with new prop refs
+  // mid-edit — `lastImport` and `lastImportFile` are objects, so an
+  // unmemoized parent would otherwise re-fire this effect on every
+  // render. Resets to false when `open` goes back to false so the next
+  // open cycle starts fresh.
+  const [initialized, setInitialized] = useState(false);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      if (initialized) setInitialized(false);
+      return;
+    }
+    if (initialized) return;
+    setInitialized(true);
     // Seed conflicts from lastImport; load stale via GET endpoint.
     const conflictRows: ConflictRowState[] = (lastImport?.rows ?? [])
       .filter((r) => r.status === 'conflict' && r.entity_id !== null)
@@ -113,7 +126,7 @@ export function BootstrapReviewModal({
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
-  }, [open, projectId, lastImport, lastImportFile]);
+  }, [open, projectId, lastImport, lastImportFile, initialized]);
 
   if (!open) return null;
 

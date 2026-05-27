@@ -167,7 +167,13 @@ function resolvePolicy(svc: DBService, projectId: string): ItemPolicy {
 const BOOTSTRAP_ACTOR: AuditActor = 'system';
 
 function entityTypeForAudit(t: BootstrapEntityType): AuditEntityType {
-  return t === 'item' ? 'item' : t === 'session' ? 'session' : 'library';
+  // Exhaustive narrowing — the `never` branch traps any future
+  // BootstrapEntityType addition that lands without an audit mapping.
+  if (t === 'item') return 'item';
+  if (t === 'session') return 'session';
+  if (t === 'library') return 'library';
+  const exhaustive: never = t;
+  throw new Error(`bootstrap: unknown entity_type "${exhaustive as string}"`);
 }
 
 function emitImportAudit(
@@ -510,8 +516,21 @@ function listStaleRows(db: DB, projectId: string): ListConflictsResult {
   return { project_id: projectId, stale };
 }
 
+const VALID_ENTITY_TYPES: ReadonlySet<BootstrapEntityType> = new Set(['item', 'session', 'library']);
+
+function isBootstrapEntityType(v: unknown): v is BootstrapEntityType {
+  return typeof v === 'string' && VALID_ENTITY_TYPES.has(v as BootstrapEntityType);
+}
+
 function tableForEntity(t: BootstrapEntityType): 'items' | 'sessions' | 'library_entries' {
-  return t === 'item' ? 'items' : t === 'session' ? 'sessions' : 'library_entries';
+  // Exhaustive narrowing — defends against runtime payloads slipping past
+  // the up-front validation in `runResolveTransaction`. Invalid entity_type
+  // values land as per-row errors before reaching this helper.
+  if (t === 'item') return 'items';
+  if (t === 'session') return 'sessions';
+  if (t === 'library') return 'library_entries';
+  const exhaustive: never = t;
+  throw new Error(`bootstrap: unknown entity_type "${exhaustive as string}"`);
 }
 
 function entityExists(
@@ -546,6 +565,25 @@ function runResolveTransaction(
   const result: ResolveResult = { applied: 0, noop: 0, errors: [] };
   const tx = db.transaction(() => {
     for (const c of conflicts) {
+      // Up-front validation — invalid entity_type / action lands as a
+      // per-row error here (matching the tolerant-batch pattern) rather
+      // than reaching `tableForEntity` and either silently falling
+      // through to library_entries (the bug Gitar flagged on PR #56) or
+      // throwing out of the transaction.
+      if (!isBootstrapEntityType(c.entity_type)) {
+        result.errors.push({
+          entity_id: c.entity_id ?? '<missing>',
+          message: `invalid entity_type "${String(c.entity_type)}" (expected one of: item, session, library)`,
+        });
+        continue;
+      }
+      if (c.action !== 'keep_mine' && c.action !== 'take_theirs') {
+        result.errors.push({
+          entity_id: c.entity_id,
+          message: `invalid conflict action "${String(c.action)}" (expected one of: keep_mine, take_theirs)`,
+        });
+        continue;
+      }
       if (!entityExists(db, projectId, c.entity_type, c.entity_id)) {
         result.errors.push({ entity_id: c.entity_id, message: 'entity_not_found' });
         continue;
@@ -628,6 +666,20 @@ function runResolveTransaction(
     }
 
     for (const s of stale) {
+      if (!isBootstrapEntityType(s.entity_type)) {
+        result.errors.push({
+          entity_id: s.entity_id ?? '<missing>',
+          message: `invalid entity_type "${String(s.entity_type)}" (expected one of: item, session, library)`,
+        });
+        continue;
+      }
+      if (s.action !== 'keep' && s.action !== 'delete') {
+        result.errors.push({
+          entity_id: s.entity_id,
+          message: `invalid stale action "${String(s.action)}" (expected one of: keep, delete)`,
+        });
+        continue;
+      }
       if (!entityExists(db, projectId, s.entity_type, s.entity_id)) {
         result.errors.push({ entity_id: s.entity_id, message: 'entity_not_found' });
         continue;
