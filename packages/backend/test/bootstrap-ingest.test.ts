@@ -147,6 +147,43 @@ describe('bootstrap predicate — hasUserEditsSinceLastBootstrap (C-D20 surface 
     }
   });
 
+  it('detects a user edit landing in the same millisecond as the bootstrap audit (rowid tie-break)', async () => {
+    // Regression for Gitar PR #55 finding: strict `timestamp > ?` semantics
+    // missed user edits sharing a millisecond with the bootstrap audit.
+    // The fix uses `(timestamp, rowid)` ordering so insertion-order
+    // tie-breaks deterministically — both audits get the same forced
+    // timestamp here, but the user-edit INSERT runs second and gets a
+    // strictly greater SQLite rowid.
+    const { backend, project } = await setup();
+    try {
+      const eid = 'e-same-ms';
+      const forcedTs = '2026-05-27T19:55:55.555Z';
+      // Direct INSERT with forced timestamp so the two audit rows share the
+      // exact same `timestamp` column value (the production code path's
+      // `new Date().toISOString()` would yield identical timestamps within
+      // a single ms tick; this forces that condition deterministically).
+      backend.db
+        .prepare(
+          `INSERT INTO audit_log
+             (id, timestamp, project_id, entity_type, entity_id, actor, field,
+              old_value, new_value, trigger_context_json)
+           VALUES (?, ?, ?, 'item', ?, 'system', 'bootstrap_import', NULL, NULL, '{}')`,
+        )
+        .run('aud-bs-1', forcedTs, project.id, eid);
+      backend.db
+        .prepare(
+          `INSERT INTO audit_log
+             (id, timestamp, project_id, entity_type, entity_id, actor, field,
+              old_value, new_value, trigger_context_json)
+           VALUES (?, ?, ?, 'item', ?, 'user', 'title', 'old', 'new', '{}')`,
+        )
+        .run('aud-user-1', forcedTs, project.id, eid);
+      expect(hasUserEditsSinceLastBootstrap(backend.db, 'item', eid)).toBe(true);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('treats a non-bootstrap audit BEFORE the last bootstrap as already-imported (no conflict)', async () => {
     const { backend, project } = await setup();
     try {

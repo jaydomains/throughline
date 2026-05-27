@@ -28,9 +28,9 @@ import type { DB } from '../db/index.js';
 
 export type BootstrapEntityType = 'item' | 'session' | 'library';
 
-interface AuditRow {
+interface AuditRowRef {
   timestamp: string;
-  field: string;
+  rowid: number;
 }
 
 export function hasUserEditsSinceLastBootstrap(
@@ -38,38 +38,45 @@ export function hasUserEditsSinceLastBootstrap(
   entityType: BootstrapEntityType,
   entityId: string,
 ): boolean {
-  // Find the most recent bootstrap_import / bootstrap_reimport timestamp for
-  // this entity. The `field LIKE 'bootstrap\_%' ESCAPE '\'` clause matches
-  // any audit row Bootstrap wrote (currently `bootstrap_import`,
-  // `bootstrap_reimport`, `bootstrap_stale`); the LIKE excludes anything
-  // outside that family.
+  // Find the most recent bootstrap_import / bootstrap_reimport reference for
+  // this entity. Ordering is `(timestamp DESC, rowid DESC)` rather than
+  // `(timestamp DESC, id DESC)` because `audit_log.id` is a `nanoid` —
+  // randomly distributed across the URL-safe alphabet, NOT
+  // insertion-ordered. SQLite's implicit `rowid` is monotonically
+  // increasing per INSERT (the table is not `WITHOUT ROWID`), so it is the
+  // correct tie-break when two audits share a millisecond. Both queries
+  // here use the same `(timestamp, rowid)` ordering so the sinceRow and
+  // editRow checks are mutually consistent.
   const sinceRow = db
     .prepare(
-      `SELECT timestamp FROM audit_log
+      `SELECT timestamp, rowid FROM audit_log
        WHERE entity_type = ? AND entity_id = ?
          AND (field = 'bootstrap_import' OR field = 'bootstrap_reimport')
-       ORDER BY timestamp DESC, id DESC
+       ORDER BY timestamp DESC, rowid DESC
        LIMIT 1`,
     )
-    .get(entityType, entityId) as Pick<AuditRow, 'timestamp'> | undefined;
+    .get(entityType, entityId) as AuditRowRef | undefined;
 
   if (!sinceRow) return false;
 
-  // Any non-`bootstrap_*` audit after that timestamp counts as a user edit.
-  // We include rows with the same timestamp as the bootstrap row only when
-  // they sort after by `id` (lexicographic on nanoid). In practice the
-  // bootstrap audit is the last write before the next caller mutates the
-  // row, so ordering ties are vanishingly rare; the strict `> timestamp`
-  // condition keeps the predicate well-defined regardless.
+  // Any non-`bootstrap_*` audit strictly after the reference point counts
+  // as a user edit. The `(timestamp > ? OR (timestamp = ? AND rowid > ?))`
+  // form catches the same-millisecond edge case — a user edit landing in
+  // the same `Date().toISOString()` slice as the bootstrap audit (which
+  // happens whenever the bootstrap path and a user write share a single
+  // ms tick) gets a strictly greater `rowid` because better-sqlite3 is
+  // synchronous and INSERTs are linearised by call order.
   const editRow = db
     .prepare(
       `SELECT 1 FROM audit_log
        WHERE entity_type = ? AND entity_id = ?
-         AND timestamp > ?
+         AND (timestamp > ? OR (timestamp = ? AND rowid > ?))
          AND field NOT LIKE 'bootstrap\\_%' ESCAPE '\\'
        LIMIT 1`,
     )
-    .get(entityType, entityId, sinceRow.timestamp) as { 1: number } | undefined;
+    .get(entityType, entityId, sinceRow.timestamp, sinceRow.timestamp, sinceRow.rowid) as
+      | { 1: number }
+      | undefined;
 
   return editRow !== undefined;
 }
