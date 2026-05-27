@@ -589,9 +589,14 @@ Slices (per spec-author-approved decomposition):
 
 ## Phase 20 — Bootstrap import file shape and idempotent re-run
 
-Phase 20 doc prerequisites landed in Session 3 of the doc-authoring stream (T-D53, T-D54, C-D20 minted; SPEC §7.27 + §14 amended; `docs/.throughline-schema.md` extended). Build prerequisites are complete and this phase is ready to open once Phase 19 lands.
+Phase 20 doc prerequisites landed in Session 3 of the doc-authoring stream (T-D53, T-D54, C-D20 minted; SPEC §7.27 + §14 amended; `docs/.throughline-schema.md` extended). Build chain opened 2026-05-27 — tracking issue #52 (`Auto-continue: phase-20-bootstrap-ingest`), chain state `.claude-code/auto-continue-state.json`.
 
-_Slice splits land when this phase's build session opens._
+Slices (per spec-author-approved decomposition):
+
+- [ ] **Slice 1** — Schema migration: nullable `bootstrap_id TEXT` + `bootstrap_stale INTEGER` on items / sessions / library_entries, plus unique partial index per table on `(project_id, bootstrap_id) WHERE bootstrap_id IS NOT NULL` (C-D20 surface 1). PR pending.
+- [ ] **Slice 2** — Derivation module `packages/backend/src/bootstrap/derive-id.ts`: per-source-type resolvers (`decision`, `roadmap`, `handover`, `checklist`, `override`) + universal `@bootstrap-id:` override (C-D20 surface 3). PR pending.
+- [ ] **Slice 3** — `POST /api/projects/:id/import` endpoint with bundle-aware validator, transactional upsert, per-row classification, and `hasUserEditsSinceLastBootstrap` predicate (C-D20 surfaces 2 + 4). PR pending.
+- [ ] **Slice 4** — Review queue UI (`BootstrapReviewModal`) + `GET /api/projects/:id/import/conflicts` + `POST /api/projects/:id/import/resolve` + SettingsView entry block (C-D20 surface 5). PR pending.
 
 ---
 

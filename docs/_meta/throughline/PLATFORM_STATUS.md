@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 19 build chain **closed** — first full chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm landed end-to-end. All four slices merged (PR #47, PR #48, PR #49, PR #50; two fix-rounds total across the chain). Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46) closed. Doc carry-forwards from the chain cleaned up in a follow-on slice (this PR). Next workstream: Phase 20 (bootstrap server-side ingest) chain-open, awaiting plan-mode entry. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 20 build chain **open** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`); spec-author-approved decomposition is 4 slices (schema / derivation / endpoint+upsert+predicate / review-UI). Slice 1 (schema migration `0012_phase20_bootstrap.sql`) in flight; PR pending. Phase 19 chain remains the most recently closed (tracking issue [#46](https://github.com/jaydomains/throughline/issues/46) closed; PRs #47–#50 merged; carry-forwards cleanup in PR #51). Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
-**Phase:** 19 closed; Phase 20 pending plan-mode entry.
-**Status:** between chains. Phase 19 (`.throughline/` config and CLI init / clone-and-go) complete; Phase 20 (bootstrap server-side ingest) not yet opened.
-**Open slices on branch:** _none_.
-**Next concrete action:** plan-mode entry for the Phase 20 chain (shape, slice count, tracking-issue open).
+**Phase:** 20 chain open.
+**Status:** Slice 1 of 4 in flight — schema migration adding nullable `bootstrap_id` + `bootstrap_stale` columns and unique partial indexes on items / sessions / library_entries. No service-layer code in this slice; consumer code lands in slices 2–4.
+**Open slices on branch:** Slice 1 (`claude/phase-20-chain-open-plan-tzVDE`, PR pending).
+**Next concrete action:** open Slice 1 PR non-draft once primary work is committed; auto-continue per `AUTO_CONTINUE_WORKFLOW.md`.
 
 ---
 
@@ -42,6 +42,7 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
+- **`throughline:pause` label creation in `jaydomains/throughline` (second pass through this slot).** Still absent at Phase 20 chain-open 2026-05-27; spec author confirmed they will create it manually during the chain run. Until then, the chain operates on the two fallback kill-switch signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phase 19 ran clean on these. Re-surfaced here because this is the second consecutive chain to open without it; closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action).
 
 ---
 
