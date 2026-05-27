@@ -316,6 +316,30 @@ describe('projects service', () => {
       }
     });
 
+    it('strict-boolean check — only `reinit_throughline === true` triggers the re-init path', async () => {
+      // Regression: declared-type-boolean is enforced at runtime. A
+      // non-boolean truthy value (e.g. `"yes"`, `1`) must not activate
+      // re-init.
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'StrictBool', repo_path: repoPath });
+        writeProjectJson(repoPath, { bundle_id: 'freeform', project_name: 'Should not apply' });
+        // Cast: the shared type forbids these values; we deliberately exercise
+        // the wire-time defence-in-depth check.
+        const updated = projects.update(project.id, { reinit_throughline: 'yes' as unknown as boolean });
+        expect(updated.name).toBe('StrictBool');
+        const updated2 = projects.update(project.id, { reinit_throughline: 1 as unknown as boolean });
+        expect(updated2.name).toBe('StrictBool');
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
     it('does not touch items, sessions, or audit history on re-init', async () => {
       const cfg = makeTmpConfig();
       plantFreeformBundle(cfg.methodologiesDir);

@@ -191,7 +191,11 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       // a rename. Items, sessions, library, secrets, audit history are never
       // touched on the update path regardless of this flag.
       let effective = input;
-      if (input.reinit_throughline) {
+      // Strict-boolean check: `reinit_throughline` is declared boolean in the
+      // shared type, but the PATCH body is JSON parsed at the wire and a
+      // caller could send `"yes"` or `1`. Declared-type-boolean means
+      // declared-type-boolean — only `=== true` activates the re-init path.
+      if (input.reinit_throughline === true) {
         const cfg = readProjectConfig(before.repo_path);
         if (cfg) {
           let owner = cfg.github_owner;
