@@ -62,6 +62,7 @@ Most recent merged PRs, one line each + handover path. Expanded to the full coho
 
 | PR | Title | Handover |
 |---|---|---|
+| #51 | Doc carry-forwards cleanup before Phase 20 chain-open | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-20.md` |
 | #50 | Phase 19 / Slice 4 — frontend `bundle_path` + SettingsView missing-config block (chain close) | `handovers/2026-05-27-phase-19-slice-4-frontend-modal-and-settings-view.md` |
 | #49 | Phase 19 / Slice 3 — CLI `throughline init` subcommand + T-D52 doc amendment | `handovers/2026-05-27-phase-19-slice-3-cli-init-subcommand.md` |
 | #48 | Phase 19 / Slice 2 — init readers and reinit flow | `handovers/2026-05-27-phase-19-slice-2-init-readers-and-reinit-flow.md` |
