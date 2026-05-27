@@ -1,5 +1,8 @@
 #!/usr/bin/env node
+import { realpathSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { loadConfig } from '../config.js';
+import { InitError, runInit } from './init.js';
 
 const config = loadConfig();
 const BASE = `http://${config.host}:${config.port}`;
@@ -30,6 +33,7 @@ function helpText(): string {
       '',
       'Usage:',
       '  throughline health',
+      '  throughline init [--repo <path>]',
       '  throughline methodologies list',
       '  throughline projects list [--archived]',
       '  throughline projects create --name <name> --repo <path> [--bundle <id>]',
@@ -125,6 +129,32 @@ async function methodologiesCmd(ctx: CommandContext): Promise<void> {
   process.stdout.write(JSON.stringify(data.methodologies, null, 2) + '\n');
 }
 
+async function initCmd(ctx: CommandContext): Promise<void> {
+  const repoFlag = parseFlag(ctx.args, '--repo');
+  const rawRepo = repoFlag ?? process.cwd();
+  // Canonicalise the path so the lookup against the backend's normalised
+  // repo_path column (Slice 1) matches reliably. If the path doesn't exist
+  // yet, fall back to absolute-resolve.
+  let repoPath: string;
+  try {
+    repoPath = realpathSync.native(rawRepo);
+  } catch {
+    repoPath = resolve(rawRepo);
+  }
+  try {
+    const result = await runInit({ baseUrl: BASE, repoPath });
+    process.stdout.write(
+      `${result.action === 'created' ? 'Created' : 'Re-initialised'} project ${result.projectId} for ${repoPath}\n`,
+    );
+  } catch (err) {
+    if (err instanceof InitError) {
+      process.stderr.write(`${err.message}\n`);
+      process.exit(err.exitCode);
+    }
+    throw err;
+  }
+}
+
 async function main(): Promise<void> {
   const [cmd, ...rest] = process.argv.slice(2);
   if (cmd === '--help' || cmd === '-h' || cmd === 'help') printHelp();
@@ -134,6 +164,8 @@ async function main(): Promise<void> {
       case 'health':
         process.stdout.write(JSON.stringify(await call('GET', '/health'), null, 2) + '\n');
         return;
+      case 'init':
+        return initCmd({ args: rest });
       case 'methodologies':
         return methodologiesCmd({ args: rest });
       case 'projects':

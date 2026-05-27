@@ -1093,7 +1093,7 @@ A repo with `.throughline/bundle.md` and `bundle_path` set sees `bundle_path` wi
 ### Decision
 The `throughline init` CLI subcommand has a single write path: existing HTTP endpoints against the running backend (project create / update, secrets, future bootstrap). It does not open the SQLite datastore directly, does not import any backend modules that do, and does not embed schema knowledge.
 
-On invocation the CLI probes `GET /api/health` against the configured local-loopback port. On any probe failure (connection refused, timeout, non-2xx) the CLI prints exactly:
+On invocation the CLI probes `GET /health` against the configured local-loopback port. On any probe failure (connection refused, timeout, non-2xx) the CLI prints exactly:
 
 > `Start the backend first: pnpm --filter @throughline/backend start`
 

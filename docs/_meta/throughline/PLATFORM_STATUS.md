@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 19 build chain in flight — first chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46). Slice 1 merged (PR #47, 1 fix-round); Slice 2 (init readers + re-init flow) PR open. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 19 build chain in flight — first chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46). Slices 1 + 2 merged (PR #47, PR #48; one fix-round each). Slice 3 (CLI `throughline init` + T-D52 doc amendment) PR open. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
 **Phase:** 19 (`.throughline/` config and CLI init / clone-and-go).
-**Status:** in flight — Slice 2 / 4 PR open.
-**Open slices on branch:** Slice 2 — `claude/phase-19-slice-2-init-readers-and-reinit-flow`.
-**Next concrete action:** await PR review + three-layer green; on merge, runner auto-advances to Slice 3 (CLI `throughline init`).
+**Status:** in flight — Slice 3 / 4 PR open.
+**Open slices on branch:** Slice 3 — `claude/phase-19-slice-3-cli-init-subcommand`.
+**Next concrete action:** await PR review + three-layer green; on merge, runner auto-advances to Slice 4 (frontend NewProjectModal + SettingsView missing-config).
 
 ---
 

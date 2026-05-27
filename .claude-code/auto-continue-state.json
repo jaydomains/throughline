@@ -12,14 +12,14 @@
     },
     {
       "id": "slice-2-init-readers-and-reinit-flow",
-      "status": "open",
+      "status": "merged",
       "prNumber": 48,
       "fixRounds": 1,
-      "lastFinding": "gitar — reinit_throughline truthy check let non-boolean values activate re-init (service.ts:194); strict === true check applied"
+      "mergedAt": "2026-05-27T16:03:00Z"
     },
     {
       "id": "slice-3-cli-init-subcommand",
-      "status": "pending",
+      "status": "open",
       "prNumber": null,
       "fixRounds": 0
     },
@@ -30,7 +30,7 @@
       "fixRounds": 0
     }
   ],
-  "currentIndex": 1,
+  "currentIndex": 2,
   "lastPollAt": null,
   "haltReason": null
 }
