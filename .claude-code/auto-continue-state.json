@@ -5,16 +5,17 @@
   "slices": [
     {
       "id": "slice-1-loader-third-arm-and-repo-path-normalisation",
-      "status": "open",
+      "status": "merged",
       "prNumber": 47,
       "fixRounds": 1,
-      "lastFinding": "gitar — loadRepoFile ENOENT noise on startup hydration (loader.ts:233-247); folded inline by gating audit/notify on code !== 'ENOENT'"
+      "mergedAt": "2026-05-27T15:50:00Z"
     },
     {
       "id": "slice-2-init-readers-and-reinit-flow",
-      "status": "pending",
-      "prNumber": null,
-      "fixRounds": 0
+      "status": "open",
+      "prNumber": 48,
+      "fixRounds": 1,
+      "lastFinding": "gitar — reinit_throughline truthy check let non-boolean values activate re-init (service.ts:194); strict === true check applied"
     },
     {
       "id": "slice-3-cli-init-subcommand",
@@ -29,7 +30,7 @@
       "fixRounds": 0
     }
   ],
-  "currentIndex": 0,
+  "currentIndex": 1,
   "lastPollAt": null,
   "haltReason": null
 }

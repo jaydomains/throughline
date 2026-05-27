@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -8,6 +9,7 @@ import {
   InvalidRepoPathError,
   createProjectsService,
 } from '../src/projects/service.js';
+import { BundleIdMismatchError, InvalidProjectConfigError } from '../src/init/config-reader.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -172,6 +174,193 @@ describe('projects service', () => {
         const refreshed = projects.update(a.id, { repo_path: '/tmp/repo-A' });
         expect(refreshed.repo_path).toBe('/tmp/repo-A');
       } finally {
+        await backend.cleanup();
+      }
+    });
+  });
+
+  // C-D19 surface 7 — re-init via PATCH `reinit_throughline: true`.
+  describe('re-init flow (C-D19 surface 7)', () => {
+    function makeRealRepo(): { repoPath: string; cleanup: () => void } {
+      const repoPath = mkdtempSync(join(tmpdir(), 'throughline-reinit-'));
+      mkdirSync(join(repoPath, '.throughline'), { recursive: true });
+      return {
+        repoPath,
+        cleanup: () => rmSync(repoPath, { recursive: true, force: true }),
+      };
+    }
+    function writeProjectJson(repoPath: string, body: object): void {
+      writeFileSync(join(repoPath, '.throughline', 'project.json'), JSON.stringify(body));
+    }
+
+    it('backend re-reads `.throughline/project.json` from persisted repo_path and applies fields', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Original', repo_path: repoPath });
+        // Author project.json after create — re-init picks it up.
+        writeProjectJson(repoPath, {
+          bundle_id: 'freeform',
+          github_owner: 'acme',
+          github_repo: 'widgets',
+          project_name: 'Renamed by config',
+        });
+        const updated = projects.update(project.id, { reinit_throughline: true });
+        expect(updated.name).toBe('Renamed by config');
+        expect(updated.github_owner).toBe('acme');
+        expect(updated.github_repo).toBe('widgets');
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('returns the project unchanged when `.throughline/project.json` is absent', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'NoConfig', repo_path: repoPath });
+        // Note: makeRealRepo creates `.throughline/` but no project.json inside.
+        const updated = projects.update(project.id, { reinit_throughline: true });
+        expect(updated.name).toBe('NoConfig');
+        expect(updated.bundle_id).toBe(project.bundle_id);
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('explicit input fields override file fields on re-init', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Mixed', repo_path: repoPath });
+        writeProjectJson(repoPath, { bundle_id: 'freeform', project_name: 'File says this' });
+        const updated = projects.update(project.id, {
+          reinit_throughline: true,
+          name: 'Caller insists on this',
+        });
+        expect(updated.name).toBe('Caller insists on this');
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('auto-detects github_owner/github_repo from origin remote when project.json is silent', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        execFileSync('git', ['-C', repoPath, 'init', '-q'], { stdio: 'ignore' });
+        execFileSync(
+          'git',
+          ['-C', repoPath, 'remote', 'add', 'origin', 'git@github.com:acme/widgets.git'],
+          { stdio: 'ignore' },
+        );
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Auto', repo_path: repoPath });
+        writeProjectJson(repoPath, { bundle_id: 'freeform' });
+        const updated = projects.update(project.id, { reinit_throughline: true });
+        expect(updated.github_owner).toBe('acme');
+        expect(updated.github_repo).toBe('widgets');
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('surfaces InvalidProjectConfigError when project.json is malformed', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Bad', repo_path: repoPath });
+        writeFileSync(join(repoPath, '.throughline', 'project.json'), '{not valid');
+        expect(() => projects.update(project.id, { reinit_throughline: true })).toThrow(InvalidProjectConfigError);
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('surfaces BundleIdMismatchError when project.json disagrees with sibling bundle.md', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Mismatch', repo_path: repoPath });
+        // Plant a sibling bundle.md whose §1 Identity name is "freeform"...
+        const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
+        copyFileSync(FREEFORM_BUNDLE_PATH, join(repoPath, '.throughline', 'bundle.md'));
+        // ...but project.json claims a different bundle_id.
+        writeProjectJson(repoPath, { bundle_id: 'not-freeform' });
+        expect(() => projects.update(project.id, { reinit_throughline: true })).toThrow(BundleIdMismatchError);
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('strict-boolean check — only `reinit_throughline === true` triggers the re-init path', async () => {
+      // Regression: declared-type-boolean is enforced at runtime. A
+      // non-boolean truthy value (e.g. `"yes"`, `1`) must not activate
+      // re-init.
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'StrictBool', repo_path: repoPath });
+        writeProjectJson(repoPath, { bundle_id: 'freeform', project_name: 'Should not apply' });
+        // Cast: the shared type forbids these values; we deliberately exercise
+        // the wire-time defence-in-depth check.
+        const updated = projects.update(project.id, { reinit_throughline: 'yes' as unknown as boolean });
+        expect(updated.name).toBe('StrictBool');
+        const updated2 = projects.update(project.id, { reinit_throughline: 1 as unknown as boolean });
+        expect(updated2.name).toBe('StrictBool');
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('does not touch items, sessions, or audit history on re-init', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Preserved', repo_path: repoPath });
+        backend.db
+          .prepare(
+            'INSERT INTO items (id, project_id, type, title, status, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)',
+          )
+          .run('it-keep', project.id, 'task', 'must survive', 'open', new Date().toISOString(), new Date().toISOString());
+        writeProjectJson(repoPath, { bundle_id: 'freeform', project_name: 'After re-init' });
+        projects.update(project.id, { reinit_throughline: true });
+        const itemRow = backend.db
+          .prepare('SELECT title FROM items WHERE id = ?')
+          .get('it-keep') as { title: string } | undefined;
+        expect(itemRow?.title).toBe('must survive');
+      } finally {
+        rmRepo();
         await backend.cleanup();
       }
     });

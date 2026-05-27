@@ -580,8 +580,8 @@ Phase 19 doc prerequisites landed in Session 2 of the doc-authoring stream (T-D5
 
 Slices (per spec-author-approved decomposition):
 
-- [ ] **Slice 1** — Bundle loader third arm + repo-path normalisation (C-D19 surfaces 1 + 8). Loader gains optional `repoPath` parameter and a refcounted per-repo watch arm between explicit `bundle_path` and the install-shipped fallback. Projects service normalises `repo_path` to absolute, symlink-resolved canonical form on create/update, with uniqueness enforced at application level. PR pending.
-- [ ] **Slice 2** — Init config-reader + git-remote auto-detect + re-init flow (C-D19 surfaces 2 + 3 + 7). Backend modules under `packages/backend/src/init/`; project-update endpoint honours `reinit_throughline: true` (backend re-reads `.throughline/project.json` from persisted `repo_path`).
+- [x] **Slice 1** — Bundle loader third arm + repo-path normalisation (C-D19 surfaces 1 + 8). PR #47, merged 2026-05-27, 1 fix-round. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-19-slice-1-loader-third-arm-and-repo-path-normalisation.md`.
+- [ ] **Slice 2** — Init config-reader + git-remote auto-detect + re-init flow (C-D19 surfaces 2 + 3 + 7). Backend modules under `packages/backend/src/init/`; project-update endpoint honours `reinit_throughline: true` (backend re-reads `.throughline/project.json` from persisted `repo_path`). PR pending.
 - [ ] **Slice 3** — CLI `throughline init` subcommand (C-D19 surface 4). HTTP-only side effects; reads via Slice 2 modules. Fold-in: amend T-D52 health-probe path from `/api/health` to `/health` to match implementation.
 - [ ] **Slice 4** — Frontend NewProjectModal `bundle_path` field + SettingsView missing-config block (C-D19 surfaces 5 + 6). Backend extends `GET /api/projects/:id` response with a `throughline_status` field computed at request time.
 
