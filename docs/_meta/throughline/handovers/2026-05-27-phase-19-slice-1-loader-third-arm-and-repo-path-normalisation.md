@@ -76,6 +76,7 @@ _none_
 
 - **Phase 19 build chain open** — was flagged in `2026-05-26-cohort-hardener-phases-19-22.md` as "build session can open immediately after this PR merges"; resolved by this slice (chain opened with tracking issue #46 and state file `.claude-code/auto-continue-state.json`).
 - **First implementation chain under codified auto-continue workflow** — was implicit in `2026-05-26-platform-discipline-polish.md` (PR #41 codified the workflow); resolved by this slice as the first chain run under the documented mechanics.
+- **Fix-round 1 (Gitar) — `loadRepoFile` ENOENT noise on startup hydration** — Gitar review on PR #47 flagged that arm-2 register-time probe wrote an audit row + fired `notifyReloaded` on ENOENT, which is the expected state for clone-and-go projects. Folded inline at `packages/backend/src/methodology/loader.ts:228-262` by gating audit + notify on `code !== 'ENOENT'` (mirrors the pre-existing logger gate at the same site). Regression test: `packages/backend/test/loader.test.ts` — "startup hydration of a project without `.throughline/bundle.md` writes no audit (ENOENT is quiet)". Gitar's second finding (trailing-slash paths in `validateRepoPath`) was an informational note — Gitar explicitly stated "No actual bug here — noting for completeness that the validation is sound"; no action required.
 
 ---
 
