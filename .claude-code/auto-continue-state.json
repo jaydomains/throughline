@@ -5,13 +5,14 @@
   "slices": [
     {
       "id": "slice-1-schema-migration",
-      "status": "open",
+      "status": "merged",
       "prNumber": 53,
-      "fixRounds": 0
+      "fixRounds": 0,
+      "mergedAt": "2026-05-27T19:29:00Z"
     },
     {
       "id": "slice-2-derive-id-module",
-      "status": "pending",
+      "status": "open",
       "prNumber": null,
       "fixRounds": 0
     },
@@ -28,11 +29,11 @@
       "fixRounds": 0
     }
   ],
-  "currentIndex": 0,
+  "currentIndex": 1,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
-    "previousChain": "phase-19-clone-and-go closed via PR #50 (tracking issue #46 closed); the prior .claude-code/auto-continue-state.json was not refreshed at chain-close and is overwritten here.",
+    "previousChain": "phase-19-clone-and-go closed via PR #50 (tracking issue #46 closed); the prior .claude-code/auto-continue-state.json was not refreshed at chain-close and was overwritten at Phase 20 chain-open.",
     "labelGap": "throughline:pause label still absent in repo; chain operates on the two fallback signals (marker file + /pause comment) per spec-author confirmation 2026-05-27.",
     "slice3Sizing": "Slice 3 estimated 900-1100 lines is the calibration data point of this chain. Phase 19's biggest slice ran ~700 lines clean with one fix-round. If three fix-rounds fire on Slice 3, circuit-breaker rationale prescribes retroactive split rather than pre-emptive split.",
     "slice4Placement": "SettingsView colocation with ThroughlineStatusBlock is a placement decision C-D20 explicitly left open; Slice 4's handover documents the choice with a 'could move to dedicated block if surfacing density grows' caveat."

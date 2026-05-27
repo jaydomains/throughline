@@ -593,7 +593,7 @@ Phase 20 doc prerequisites landed in Session 3 of the doc-authoring stream (T-D5
 
 Slices (per spec-author-approved decomposition):
 
-- [ ] **Slice 1** — Schema migration: nullable `bootstrap_id TEXT` + `bootstrap_stale INTEGER` on items / sessions / library_entries, plus unique partial index per table on `(project_id, bootstrap_id) WHERE bootstrap_id IS NOT NULL` (C-D20 surface 1). PR pending.
+- [x] **Slice 1** — Schema migration: nullable `bootstrap_id TEXT` + `bootstrap_stale INTEGER` on items / sessions / library_entries, plus unique partial index per table on `(project_id, bootstrap_id) WHERE bootstrap_id IS NOT NULL` (C-D20 surface 1). PR #53, merged 2026-05-27, 0 fix-rounds. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-20-slice-1-schema-migration.md`.
 - [ ] **Slice 2** — Derivation module `packages/backend/src/bootstrap/derive-id.ts`: per-source-type resolvers (`decision`, `roadmap`, `handover`, `checklist`, `override`) + universal `@bootstrap-id:` override (C-D20 surface 3). PR pending.
 - [ ] **Slice 3** — `POST /api/projects/:id/import` endpoint with bundle-aware validator, transactional upsert, per-row classification, and `hasUserEditsSinceLastBootstrap` predicate (C-D20 surfaces 2 + 4). PR pending.
 - [ ] **Slice 4** — Review queue UI (`BootstrapReviewModal`) + `GET /api/projects/:id/import/conflicts` + `POST /api/projects/:id/import/resolve` + SettingsView entry block (C-D20 surface 5). PR pending.
