@@ -163,7 +163,7 @@ export function createGateRuntime(opts: CreateGateRuntimeOptions): GateRuntime {
   ): Promise<GateFiring[]> {
     const project = projects.get(projectId);
     if (!project) return [];
-    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
     if (loaded.status !== 'loaded') return [];
     const gates = loaded.bundle.state_machine.gates_by_moment[moment] ?? [];
     if (gates.length === 0) return [];
@@ -245,7 +245,7 @@ export function createGateRuntime(opts: CreateGateRuntimeOptions): GateRuntime {
   function listFirings(projectId: string): GateFiringsResult {
     const project = projects.get(projectId);
     if (!project) return { groups: [] };
-    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
     if (loaded.status !== 'loaded') return { groups: [] };
     const groups: GateMomentGroup[] = [];
     for (const moment of MOMENTS) {

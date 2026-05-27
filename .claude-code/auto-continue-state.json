@@ -1,0 +1,35 @@
+{
+  "chainId": "phase-19-clone-and-go",
+  "chainOpenedAt": "2026-05-27T00:00:00Z",
+  "trackingIssue": 46,
+  "slices": [
+    {
+      "id": "slice-1-loader-third-arm-and-repo-path-normalisation",
+      "status": "open",
+      "prNumber": 47,
+      "fixRounds": 1,
+      "lastFinding": "gitar — loadRepoFile ENOENT noise on startup hydration (loader.ts:233-247); folded inline by gating audit/notify on code !== 'ENOENT'"
+    },
+    {
+      "id": "slice-2-init-readers-and-reinit-flow",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
+    },
+    {
+      "id": "slice-3-cli-init-subcommand",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
+    },
+    {
+      "id": "slice-4-frontend-modal-and-settings-view",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
+    }
+  ],
+  "currentIndex": 0,
+  "lastPollAt": null,
+  "haltReason": null
+}

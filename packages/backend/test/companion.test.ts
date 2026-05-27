@@ -270,7 +270,7 @@ describe('Phase 12 — companion review runtime (C-D8, T-D45)', () => {
     try {
       const other = projects.create({
         name: 'other',
-        repo_path: project.repo_path,
+        repo_path: `${project.repo_path}-other`,
         bundle_id: 'test-bundle',
       });
       const run = engine.startRun(project.id, 'review');

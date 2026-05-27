@@ -107,7 +107,7 @@ export function createChatService(opts: CreateOptions): ChatService {
   function sessionContext(projectId: string, sessionId: string): string {
     const its = items.list({ project_id: projectId, session_id: sessionId });
     const p = projects.get(projectId);
-    const loaded = p ? registry.resolveBundle(p.bundle_id, p.bundle_path) : null;
+    const loaded = p ? registry.resolveBundle(p.bundle_id, p.bundle_path, p.repo_path) : null;
     const bundleName =
       loaded && loaded.status === 'loaded' ? loaded.bundle.identity.name : 'freeform';
     const anchors = new Set<string>();

@@ -1,4 +1,5 @@
 import { nanoid } from 'nanoid';
+import { realpathSync } from 'node:fs';
 import { isAbsolute, normalize } from 'node:path';
 import type { CreateProjectInput, Project, UpdateProjectInput } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
@@ -10,6 +11,18 @@ const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
 export class InvalidBundlePathError extends Error {
   constructor(public bundlePath: string) {
     super(`invalid bundle_path "${bundlePath}"`);
+  }
+}
+
+export class InvalidRepoPathError extends Error {
+  constructor(public repoPath: string) {
+    super(`invalid repo_path "${repoPath}"`);
+  }
+}
+
+export class DuplicateRepoPathError extends Error {
+  constructor(public repoPath: string, public existingProjectId: string) {
+    super(`repo_path "${repoPath}" is already bound to project "${existingProjectId}"`);
   }
 }
 
@@ -29,6 +42,35 @@ function validateBundlePath(bundlePath: string | null | undefined): string | nul
     throw new InvalidBundlePathError(bundlePath);
   }
   return normalize(bundlePath);
+}
+
+// C-D19 surface 8 — every project create/update normalises `repo_path` to a
+// canonical absolute, symlink-resolved form so two creates against equivalent
+// paths (different symlink chains, redundant separators, etc.) land on the
+// same persisted value and collide on the uniqueness check.
+//
+// Realpath fallback: if the path does not yet exist on disk, fall back to
+// `normalize()`. Callers may legitimately bind a project before its repo is
+// materialised (e.g. tests, scripted setup); we cannot demand existence.
+function validateRepoPath(repoPath: string): string {
+  if (typeof repoPath !== 'string' || repoPath.trim().length === 0) {
+    throw new InvalidRepoPathError(String(repoPath));
+  }
+  if (!isAbsolute(repoPath) || repoPath.split(/[/\\]/).includes('..')) {
+    throw new InvalidRepoPathError(repoPath);
+  }
+  try {
+    return realpathSync.native(repoPath);
+  } catch {
+    return normalize(repoPath);
+  }
+}
+
+function findProjectByRepoPath(db: DB, repoPath: string): string | null {
+  const row = db
+    .prepare('SELECT id FROM projects WHERE repo_path = ? LIMIT 1')
+    .get(repoPath) as { id: string } | undefined;
+  return row?.id ?? null;
 }
 
 interface ProjectRow {
@@ -95,7 +137,12 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
     create(input) {
       const bundleId = input.bundle_id ?? DEFAULT_BUNDLE_ID;
       const bundlePath = validateBundlePath(input.bundle_path);
-      if (!registry.hasBundle(bundleId, bundlePath)) {
+      const repoPath = validateRepoPath(input.repo_path);
+      const existing = findProjectByRepoPath(db, repoPath);
+      if (existing) {
+        throw new DuplicateRepoPathError(repoPath, existing);
+      }
+      if (!registry.hasBundle(bundleId, bundlePath, repoPath)) {
         throw new BundleNotLoadedError(bundleId);
       }
       const now = new Date().toISOString();
@@ -107,7 +154,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       ).run(
         id,
         input.name,
-        input.repo_path,
+        repoPath,
         input.github_owner ?? null,
         input.github_repo ?? null,
         bundleId,
@@ -116,7 +163,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         now,
         now,
       );
-      registry.registerProjectBundle(id, bundleId, bundlePath);
+      registry.registerProjectBundle(id, bundleId, bundlePath, repoPath);
       appendAudit(db, {
         projectId: id,
         entityType: 'project',
@@ -124,7 +171,7 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         actor: 'user',
         field: 'create',
         newValue: input.name,
-        triggerContext: { bundle_id: bundleId, bundle_path: bundlePath, repo_path: input.repo_path },
+        triggerContext: { bundle_id: bundleId, bundle_path: bundlePath, repo_path: repoPath },
       });
       return this.get(id)!;
     },
@@ -136,16 +183,28 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       const nextBundleId = input.bundle_id ?? before.bundle_id;
       const nextBundlePath =
         input.bundle_path === undefined ? before.bundle_path : validateBundlePath(input.bundle_path);
+      const nextRepoPath =
+        input.repo_path === undefined ? before.repo_path : validateRepoPath(input.repo_path);
+      if (nextRepoPath !== before.repo_path) {
+        const existing = findProjectByRepoPath(db, nextRepoPath);
+        if (existing && existing !== id) {
+          throw new DuplicateRepoPathError(nextRepoPath, existing);
+        }
+      }
       const bundleChanged =
         nextBundleId !== before.bundle_id || nextBundlePath !== before.bundle_path;
-      if (bundleChanged && !registry.hasBundle(nextBundleId, nextBundlePath)) {
+      const repoPathChanged = nextRepoPath !== before.repo_path;
+      // Watcher must re-bind when arm 2 inputs shift even if the bundle id/path
+      // didn't: a moved repo_path means a different `<repo_path>/.throughline/bundle.md`.
+      const bindingChanged = bundleChanged || (nextBundlePath === null && repoPathChanged);
+      if (bundleChanged && !registry.hasBundle(nextBundleId, nextBundlePath, nextRepoPath)) {
         throw new BundleNotLoadedError(nextBundleId);
       }
 
       const next: Project = {
         ...before,
         name: input.name ?? before.name,
-        repo_path: input.repo_path ?? before.repo_path,
+        repo_path: nextRepoPath,
         bundle_id: nextBundleId,
         bundle_path: nextBundlePath,
         github_owner: input.github_owner === undefined ? before.github_owner : input.github_owner,
@@ -174,9 +233,9 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
         id,
       );
 
-      if (bundleChanged) {
+      if (bindingChanged) {
         registry.unregisterProjectBundle(id);
-        registry.registerProjectBundle(id, next.bundle_id, next.bundle_path);
+        registry.registerProjectBundle(id, next.bundle_id, next.bundle_path, next.repo_path);
       }
 
       for (const [field, oldV, newV] of [

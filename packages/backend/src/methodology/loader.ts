@@ -11,12 +11,20 @@ export interface MethodologyRegistry {
   get(bundleId: string): BundleLoadResult | undefined;
   has(bundleId: string): boolean;
   reload(bundleId: string): BundleLoadResult | undefined;
-  // C-D14 — resolve a project's bundle: external `bundlePath/bundle.md` when set,
-  // else the install-shipped `methodologies/<bundleId>/bundle.md`.
-  resolveBundle(bundleId: string, bundlePath?: string | null): BundleLoadResult;
-  hasBundle(bundleId: string, bundlePath?: string | null): boolean;
-  // C-D14 — external bundle dirs become watch targets, refcounted by project.
-  registerProjectBundle(projectId: string, bundleId: string, bundlePath?: string | null): void;
+  // C-D14 + C-D19 — resolve a project's bundle. Precedence:
+  //   1. <bundlePath>/bundle.md (C-D14)
+  //   2. <repoPath>/.throughline/bundle.md (T-D51, C-D19 surface 1)
+  //   3. install-shipped methodologies/<bundleId>/bundle.md (T-D41)
+  resolveBundle(bundleId: string, bundlePath?: string | null, repoPath?: string | null): BundleLoadResult;
+  hasBundle(bundleId: string, bundlePath?: string | null, repoPath?: string | null): boolean;
+  // C-D14 + C-D19 — bundle source files become watch targets, refcounted by project.
+  // Arm 1 watches <bundlePath>/bundle.md; arm 2 watches <repoPath>/.throughline/bundle.md.
+  registerProjectBundle(
+    projectId: string,
+    bundleId: string,
+    bundlePath?: string | null,
+    repoPath?: string | null,
+  ): void;
   unregisterProjectBundle(projectId: string): void;
   stop(): Promise<void>;
 }
@@ -67,6 +75,13 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
   // as at least one project needs it.
   const externalCache = new Map<string, BundleLoadResult>();
   const externalMeta = new Map<string, { bundleId: string; refs: Set<string> }>();
+  // C-D19 surface 1 — per-repo `<repo_path>/.throughline/bundle.md` arm.
+  // Same refcounted-watch shape as externalCache/externalMeta; the second-arm
+  // file lives inside the project's repo rather than at an arbitrary external
+  // path. Resolution falls through to install-shipped (arm 3) when the
+  // per-repo file is absent or parses as an error.
+  const repoCache = new Map<string, BundleLoadResult>();
+  const repoMeta = new Map<string, { bundleId: string; refs: Set<string> }>();
 
   function loadOne(bundleId: string): BundleLoadResult {
     const md = readBundleFile(methodologiesDir, bundleId);
@@ -96,6 +111,24 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
     return (
       db.prepare('SELECT id FROM projects WHERE bundle_path = ?').all(bundleDir) as Array<{ id: string }>
     ).map((r) => r.id);
+  }
+
+  // C-D19 surface 1 — audit binding helper for the per-repo arm. Projects on
+  // arm 2 have NULL bundle_path and a repo_path whose `.throughline/bundle.md`
+  // matches the watched file.
+  function projectsBoundToRepoFile(file: string): string[] {
+    return (
+      db
+        .prepare(
+          "SELECT id FROM projects WHERE bundle_path IS NULL AND repo_path = ?",
+        )
+        .all(repoDirFromFile(file)) as Array<{ id: string }>
+    ).map((r) => r.id);
+  }
+
+  function repoDirFromFile(file: string): string {
+    // <repoPath>/.throughline/bundle.md → <repoPath>
+    return dirname(dirname(file));
   }
 
   function writeLoadAudit(
@@ -146,6 +179,10 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
     return join(bundlePath, 'bundle.md');
   }
 
+  function repoFileFor(repoPath: string): string {
+    return join(repoPath, '.throughline', 'bundle.md');
+  }
+
   function loadExternalFile(file: string, bundleId: string): BundleLoadResult {
     const prev = externalCache.get(file);
     let result: BundleLoadResult;
@@ -189,6 +226,57 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
     return result;
   }
 
+  // C-D19 surface 1 — per-repo bundle load. Mirrors loadExternalFile's TOCTOU-
+  // safe pattern: attempt the read directly, fold any fs failure into a normal
+  // bundle-load error. The 'ENOENT' result is meaningful for the third arm —
+  // resolveBundle uses it as the "fall through to install-shipped" signal.
+  //
+  // ENOENT is the *expected* state for clone-and-go projects whose repo has not
+  // yet gained a `.throughline/bundle.md` — those projects resolve via arm 3
+  // and there is no real binding event to record. Skip audit + notify on
+  // ENOENT so startup hydration does not produce per-project noise; non-ENOENT
+  // read failures (EACCES, EIO, …) remain auditable misconfigurations.
+  function loadRepoFile(file: string, bundleId: string): BundleLoadResult {
+    const prev = repoCache.get(file);
+    let result: BundleLoadResult;
+    let md: string;
+    try {
+      md = readFileSync(file, 'utf8');
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code ?? 'EUNKNOWN';
+      result = {
+        status: 'error',
+        bundle_id: bundleId,
+        errors: [{ bundle_id: bundleId, message: `cannot read bundle.md at ${file} (${code})` }],
+      };
+      repoCache.set(file, result);
+      if (code !== 'ENOENT') {
+        logger?.error(`per-repo bundle "${bundleId}" unreadable at ${file} (${code})`);
+        const bound = projectsBoundToRepoFile(file);
+        writeLoadAudit(bundleId, bound, result, previousVersion(prev));
+        notifyReloaded(bundleId, bound);
+      }
+      return result;
+    }
+    result = parseBundle(bundleId, md);
+    if (result.status === 'error') {
+      logger?.error(
+        `per-repo bundle "${bundleId}" (${file}) failed to load: ${result.errors
+          .map((e) => e.message)
+          .join('; ')}`,
+      );
+    } else {
+      logger?.info(
+        `per-repo bundle "${bundleId}" loaded from ${file} (version ${result.bundle.identity.version}).`,
+      );
+    }
+    repoCache.set(file, result);
+    const bound = projectsBoundToRepoFile(file);
+    writeLoadAudit(bundleId, bound, result, previousVersion(prev));
+    notifyReloaded(bundleId, bound);
+    return result;
+  }
+
   // Initial scan of install-shipped bundles.
   for (const id of discoverBundleIds(methodologiesDir)) {
     reload(id);
@@ -210,21 +298,50 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
         return;
       }
       // External per-project bundle file (C-D14).
-      const meta = externalMeta.get(filePath);
-      if (!meta) return;
-      if (event === 'unlink') {
-        externalCache.delete(filePath);
+      const externalMetaEntry = externalMeta.get(filePath);
+      if (externalMetaEntry) {
+        if (event === 'unlink') {
+          externalCache.delete(filePath);
+          return;
+        }
+        loadExternalFile(filePath, externalMetaEntry.bundleId);
         return;
       }
-      loadExternalFile(filePath, meta.bundleId);
+      // Per-repo bundle file (C-D19 surface 1).
+      const repoMetaEntry = repoMeta.get(filePath);
+      if (!repoMetaEntry) return;
+      if (event === 'unlink') {
+        repoCache.delete(filePath);
+        // Notify projects bound to this repo so they reload via arm 3 fallback.
+        const bound = projectsBoundToRepoFile(filePath);
+        notifyReloaded(repoMetaEntry.bundleId, bound);
+        return;
+      }
+      loadRepoFile(filePath, repoMetaEntry.bundleId);
     });
   }
 
-  function resolveBundle(bundleId: string, bundlePath?: string | null): BundleLoadResult {
+  function resolveBundle(
+    bundleId: string,
+    bundlePath?: string | null,
+    repoPath?: string | null,
+  ): BundleLoadResult {
+    // Arm 1 — explicit external bundle_path.
     if (bundlePath) {
       const file = externalFileFor(bundlePath);
       return externalCache.get(file) ?? loadExternalFile(file, bundleId);
     }
+    // Arm 2 — per-repo `<repoPath>/.throughline/bundle.md`.
+    if (repoPath) {
+      const file = repoFileFor(repoPath);
+      const cached = repoCache.get(file);
+      const result = cached ?? loadRepoFile(file, bundleId);
+      // Only count arm 2 as a hit when the file loaded successfully. ENOENT
+      // (and other read errors) fall through to arm 3 so the install-shipped
+      // bundle remains the safety net.
+      if (result.status === 'loaded') return result;
+    }
+    // Arm 3 — install-shipped fallback.
     return (
       cache.get(bundleId) ?? {
         status: 'error',
@@ -234,21 +351,50 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
     );
   }
 
-  function hasBundle(bundleId: string, bundlePath?: string | null): boolean {
-    return resolveBundle(bundleId, bundlePath).status === 'loaded';
+  function hasBundle(
+    bundleId: string,
+    bundlePath?: string | null,
+    repoPath?: string | null,
+  ): boolean {
+    return resolveBundle(bundleId, bundlePath, repoPath).status === 'loaded';
   }
 
-  function registerProjectBundle(projectId: string, bundleId: string, bundlePath?: string | null): void {
-    if (!bundlePath) return;
-    const file = externalFileFor(bundlePath);
-    let meta = externalMeta.get(file);
-    if (!meta) {
-      meta = { bundleId, refs: new Set() };
-      externalMeta.set(file, meta);
-      if (watcher) watcher.add(file);
-      if (!externalCache.has(file)) loadExternalFile(file, bundleId);
+  function registerProjectBundle(
+    projectId: string,
+    bundleId: string,
+    bundlePath?: string | null,
+    repoPath?: string | null,
+  ): void {
+    // Arm 1 wins: when bundle_path is set, only that file is watched per project.
+    if (bundlePath) {
+      const file = externalFileFor(bundlePath);
+      let meta = externalMeta.get(file);
+      if (!meta) {
+        meta = { bundleId, refs: new Set() };
+        externalMeta.set(file, meta);
+        if (watcher) watcher.add(file);
+        if (!externalCache.has(file)) loadExternalFile(file, bundleId);
+      }
+      meta.refs.add(projectId);
+      return;
     }
-    meta.refs.add(projectId);
+    // Arm 2 — watch the per-repo file even if it doesn't currently exist; a
+    // future creation fires chokidar's `add` event and shifts the binding from
+    // arm 3 to arm 2 reactively (clone-and-go intent: a repo gaining
+    // `.throughline/bundle.md` later in its life should bind without manual
+    // re-init).
+    if (repoPath) {
+      const file = repoFileFor(repoPath);
+      let meta = repoMeta.get(file);
+      if (!meta) {
+        meta = { bundleId, refs: new Set() };
+        repoMeta.set(file, meta);
+        if (watcher) watcher.add(file);
+        if (!repoCache.has(file)) loadRepoFile(file, bundleId);
+      }
+      meta.refs.add(projectId);
+    }
+    // Else arm 3 — install-shipped methodologies dir already watched globally.
   }
 
   function unregisterProjectBundle(projectId: string): void {
@@ -259,6 +405,15 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
         if (watcher) watcher.unwatch(file);
         externalMeta.delete(file);
         externalCache.delete(file);
+      }
+    }
+    for (const [file, meta] of repoMeta) {
+      if (!meta.refs.has(projectId)) continue;
+      meta.refs.delete(projectId);
+      if (meta.refs.size === 0) {
+        if (watcher) watcher.unwatch(file);
+        repoMeta.delete(file);
+        repoCache.delete(file);
       }
     }
   }

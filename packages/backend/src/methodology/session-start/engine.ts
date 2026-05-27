@@ -103,7 +103,7 @@ export function createSessionStartEngine(
   function bundleFor(projectId: string): LoadedBundle | null {
     const p = projects.get(projectId);
     if (!p) return null;
-    const loaded = registry.resolveBundle(p.bundle_id, p.bundle_path);
+    const loaded = registry.resolveBundle(p.bundle_id, p.bundle_path, p.repo_path);
     return loaded.status === 'loaded' ? loaded.bundle : null;
   }
 

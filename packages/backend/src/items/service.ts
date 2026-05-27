@@ -233,16 +233,18 @@ function bundleFor(
   registry: MethodologyRegistry,
   bundleId: string,
   bundlePath: string | null,
+  repoPath: string | null,
 ): BundleLoadResult {
-  return registry.resolveBundle(bundleId, bundlePath);
+  return registry.resolveBundle(bundleId, bundlePath, repoPath);
 }
 
 function policyFor(
   registry: MethodologyRegistry,
   bundleId: string,
   bundlePath: string | null,
+  repoPath: string | null,
 ): ItemPolicy {
-  const r = bundleFor(registry, bundleId, bundlePath);
+  const r = bundleFor(registry, bundleId, bundlePath, repoPath);
   if (r.status !== 'loaded') {
     throw new Error(`bundle "${bundleId}" failed to load`);
   }
@@ -368,13 +370,13 @@ export function createItemsService(
     policy(projectId) {
       const project = projects.get(projectId);
       if (!project) throw new ProjectNotFoundError(projectId);
-      return policyFor(registry, project.bundle_id, project.bundle_path);
+      return policyFor(registry, project.bundle_id, project.bundle_path, project.repo_path);
     },
 
     modules(projectId) {
       const project = projects.get(projectId);
       if (!project) throw new ProjectNotFoundError(projectId);
-      const loaded = bundleFor(registry, project.bundle_id, project.bundle_path);
+      const loaded = bundleFor(registry, project.bundle_id, project.bundle_path, project.repo_path);
       if (loaded.status !== 'loaded') throw new Error(`bundle "${project.bundle_id}" failed to load`);
       const primaryUnit = loaded.bundle.project_layout.primary_unit;
       if (!primaryUnit) {
@@ -506,7 +508,7 @@ export function createItemsService(
     create(input) {
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
-      const policy = policyFor(registry, project.bundle_id, project.bundle_path);
+      const policy = policyFor(registry, project.bundle_id, project.bundle_path, project.repo_path);
       const type = input.type ?? policy.types[0];
       if (type === undefined || !policy.types.includes(type)) {
         throw new ItemPolicyError(`item type "${input.type}" not allowed by bundle ${policy.bundle_id}`, 'type');
@@ -571,7 +573,7 @@ export function createItemsService(
       if (!before) throw new ItemNotFoundError(id);
       const project = projects.get(before.project_id);
       if (!project) throw new ProjectNotFoundError(before.project_id);
-      const policy = policyFor(registry, project.bundle_id, project.bundle_path);
+      const policy = policyFor(registry, project.bundle_id, project.bundle_path, project.repo_path);
 
       const next: ItemRow = {
         ...before,

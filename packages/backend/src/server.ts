@@ -150,9 +150,14 @@ export async function startServer(
     },
   });
   const projects = createProjectsService(db, registry);
-  // C-D14 — re-attach external bundle watch targets for projects already on disk.
+  // C-D14 + C-D19 — re-attach bundle watch targets for projects already on disk.
+  // Both the external arm (bundle_path) and the per-repo arm (repo_path) refcount
+  // their watch targets; registerProjectBundle picks the right arm based on which
+  // input is set.
   for (const p of projects.list({ includeArchived: true })) {
-    if (p.bundle_path) registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path);
+    if (p.bundle_path || p.repo_path) {
+      registry.registerProjectBundle(p.id, p.bundle_id, p.bundle_path, p.repo_path);
+    }
   }
   // SSE fan-out hub (UI redesign Slice 4). The events route registers each
   // connection; settings writes for the theme keys broadcast `settings-changed`

@@ -1,5 +1,11 @@
 import type { FastifyInstance } from 'fastify';
-import { BundleNotLoadedError, InvalidBundlePathError, type ProjectsService } from './service.js';
+import {
+  BundleNotLoadedError,
+  DuplicateRepoPathError,
+  InvalidBundlePathError,
+  InvalidRepoPathError,
+  type ProjectsService,
+} from './service.js';
 import type { SettingsService } from '../settings/service.js';
 
 export function registerProjectRoutes(
@@ -53,6 +59,14 @@ export function registerProjectRoutes(
       if (err instanceof InvalidBundlePathError) {
         return reply.code(400).send({ error: 'invalid_bundle_path' });
       }
+      if (err instanceof InvalidRepoPathError) {
+        return reply.code(400).send({ error: 'invalid_repo_path' });
+      }
+      if (err instanceof DuplicateRepoPathError) {
+        return reply
+          .code(409)
+          .send({ error: 'duplicate_repo_path', repo_path: err.repoPath, project_id: err.existingProjectId });
+      }
       if (err instanceof BundleNotLoadedError) {
         return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
       }
@@ -81,6 +95,14 @@ export function registerProjectRoutes(
     } catch (err) {
       if (err instanceof InvalidBundlePathError) {
         return reply.code(400).send({ error: 'invalid_bundle_path' });
+      }
+      if (err instanceof InvalidRepoPathError) {
+        return reply.code(400).send({ error: 'invalid_repo_path' });
+      }
+      if (err instanceof DuplicateRepoPathError) {
+        return reply
+          .code(409)
+          .send({ error: 'duplicate_repo_path', repo_path: err.repoPath, project_id: err.existingProjectId });
       }
       if (err instanceof BundleNotLoadedError) {
         return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });

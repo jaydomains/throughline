@@ -8,16 +8,16 @@
 
 ## Snapshot
 
-**As of 2026-05-26.** Cohort-level heavy hardener pass complete (PR #43). Phases 19–22 doc prerequisites and Phase 18 communication-model promoted from `pre-work-doc-complete` / `feature-complete` to `production-ready`. No phase currently in flight. Next code work: Phase 19 (clone-and-go) — doc prerequisites at `production-ready`, build can open immediately. Most recent decision: T-D57 (2026-05-26).
+**As of 2026-05-27.** Phase 19 build chain opened — first chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46). Slice 1 (loader third arm + repo-path normalisation) implementation complete; PR open. Snapshot of state: cohort-level heavy hardener pass complete (PR #43) — Phases 19–22 doc prerequisites and Phase 18 communication-model at `production-ready`. Most recent decision: T-D57 (2026-05-26).
 
 ---
 
 ## Current Phase
 
-**Phase:** _None in flight._
-**Status:** awaiting Phase 19 kickoff.
-**Open slices on branch:** _none_.
-**Next concrete action:** open Phase 19 build session — slice 1.
+**Phase:** 19 (`.throughline/` config and CLI init / clone-and-go).
+**Status:** in flight — Slice 1 / 4 PR open.
+**Open slices on branch:** Slice 1 — `claude/phase-19-chain-open-UZrqh` (loader third arm + repo-path normalisation).
+**Next concrete action:** await PR review + three-layer green; on merge, runner auto-advances to Slice 2 (init readers + re-init flow).
 
 ---
 
@@ -41,7 +41,9 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 
 ## Queued Work
 
-- **Phase 19 build session** — gated only on user kickoff; doc prerequisites at `production-ready` on `main`.
+- **Phase 19 build chain** — open. Tracking issue [#46](https://github.com/jaydomains/throughline/issues/46) (`Auto-continue: phase-19-clone-and-go`). Chain state: `.claude-code/auto-continue-state.json`. Currently on Slice 1 (loader third arm + repo-path normalisation).
+- **`AUTO_CONTINUE_WORKFLOW.md` line 74 wording fix.** The line says the tracking issue "carries the `throughline:pause` label across the chain's entire lifetime" — but applying that label *is* the kill switch. Spec-author-confirmed reading: the issue is the *durable surface* for the label when applied; the label is absent during normal run. Tighten the wording. Small doc carry-forward; not inside any Phase 19 slice scope.
+- **GitHub labels `auto-continue` and `throughline:pause`** — need to exist in `jaydomains/throughline` for the kill-switch mechanism to be fully usable. Both currently absent (verified 2026-05-27). Tracking issue #46 opened without labels as a result; chain remains operable via the marker file and `/pause` comment signals.
 
 ---
 

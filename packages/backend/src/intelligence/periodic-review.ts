@@ -124,7 +124,7 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
     // each declared category with its open-signal count so a category with zero signals
     // is still visible as a hygiene dimension.
     const p = projects.get(projectId);
-    const loaded = p ? registry.resolveBundle(p.bundle_id, p.bundle_path) : null;
+    const loaded = p ? registry.resolveBundle(p.bundle_id, p.bundle_path, p.repo_path) : null;
     const declared =
       loaded && loaded.status === 'loaded'
         ? loaded.bundle.validation_rules.discipline_drift_categories
