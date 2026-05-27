@@ -92,7 +92,7 @@ Runs after a coherent cohort closes (phase complete, multi-session stream comple
 - [ ] `SESSION_START.md` "Known spec-author gaps" list refreshed against current `DECISIONS.md` / `CODE_SPEC.md` state
 - [ ] `SPEC.md §14` anchor index audited for stale or duplicate rows
 - [ ] **Build-prerequisite stress test** — read the cohort's docs as if opening a fresh build session cold against the next phase, and surface anything that would block it. Specifically: are all cited anchors resolvable in `DECISIONS.md` / `CODE_SPEC.md`? Are all `WN-*` forward-pointers either closed (back-reference form) or explicitly carried forward as known unresolved? Does the next phase's `ROADMAP.md` entry name a concrete Done-when, not a placeholder? Are the named Dependencies actually satisfied by prior-phase state? Are there spec-author gaps that would block build but aren't surfaced in `PLATFORM_STATUS.md`'s Open Spec-Author Gaps section?
-- [ ] `PLATFORM_STATUS.md` cohort-roll — older entries overwritten per Update Protocol; cohort transition is the natural rollover point
+- [ ] `PLATFORM_STATUS.md` cohort transition prepared — Snapshot updated to mark the cohort `production-ready`; Recent Slice History rolls per Update Protocol. The Locked Decisions This Cycle table does **not** roll in this pass: per the Update Protocol "Cycle reset" rule, the table retains the just-promoted cohort entries and only rolls when the next cohort's first T-D / C-D anchor lands.
 
 A cohort that closes without the heavy hardener is `feature-complete` but not `production-ready`. Carrying multiple `feature-complete`-but-not-`production-ready` cohorts is permitted but accrues debt; the unpaid debt is exactly what produced the "canonical at 48" drift.
 

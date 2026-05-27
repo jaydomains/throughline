@@ -42,7 +42,6 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Phase 19 build session** — gated only on user kickoff; doc prerequisites at `production-ready` on `main`.
-- **Process clarification carry-forward (`AUTHORING_DISCIPLINE.md` half)** — `PLATFORM_STATUS.md` Update Protocol now pins the cycle-reset trigger (this PR). The matching encoding in `AUTHORING_DISCIPLINE.md`'s cohort-hardener checklist — making explicit that the heavy hardener does not itself roll the Locked Decisions table — is still outstanding. Small process-doc slice; not urgent.
 
 ---
 
@@ -82,5 +81,5 @@ Most recent merged PRs, one line each + handover path. Expanded to the full coho
 - **Every entry points at an artefact** — PR number, handover path, anchor ID, or file path. No floating claims.
 - **Mutable.** Unlike handovers (immutable per `HANDOVER_TEMPLATE.md` rule 8), this file is rewritten in place. The Phase-22 carve-out for handovers does not apply here.
 - **Roll semantics.** When entries roll (Recent Slice History past 5, Locked Decisions at cycle reset), older entries are *overwritten*. History lives in handovers and `git log`, not here.
-- **Cycle reset.** "Locked Decisions This Cycle" rolls at a natural cohort boundary (phase close, multi-session stream close). The reset is triggered by the *next* cohort's first decision, not by the cohort-hardener pass itself. The hardener pass marks the cohort `production-ready`; the table retains the just-promoted cohort entries until the next phase mints its first T-D / C-D anchor, at which point the production-ready cohort rolls off and the new cycle begins. The matching encoding in `AUTHORING_DISCIPLINE.md`'s cohort-hardener checklist is still outstanding — see Queued Work.
+- **Cycle reset.** "Locked Decisions This Cycle" rolls at a natural cohort boundary (phase close, multi-session stream close). The reset is triggered by the *next* cohort's first decision, not by the cohort-hardener pass itself. The hardener pass marks the cohort `production-ready`; the table retains the just-promoted cohort entries until the next phase mints its first T-D / C-D anchor, at which point the production-ready cohort rolls off and the new cycle begins.
 - **Cross-references.** `SESSION_START.md` (reading order); `AUTHORING_DISCIPLINE.md` (post-work gate includes refreshing this file); `AUTO_CONTINUE_WORKFLOW.md` (slice-chain that lands the work this file reports).
