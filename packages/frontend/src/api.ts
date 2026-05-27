@@ -79,6 +79,11 @@ import type {
   UpdateItemInput,
   UpdateLibraryEntryInput,
   UpdateSessionInput,
+  BootstrapImportResult,
+  BootstrapListConflictsResult,
+  BootstrapConflictResolution,
+  BootstrapStaleResolution,
+  BootstrapResolveResult,
 } from '@throughline/shared';
 
 export interface MethodologySummary {
@@ -528,6 +533,25 @@ export const api = {
     jsonFetch<{ entry: LibraryEntry; changed: boolean }>(
       `/api/projects/${pid(projectId)}/md-ingest/entries/${encodeURIComponent(entryId)}/reingest`,
       { method: 'POST' },
+    ),
+
+  // Phase 20 — bootstrap-ingest review surface (C-D20 surface 5).
+  importBootstrap: (projectId: string, body: unknown) =>
+    jsonFetch<{ result: BootstrapImportResult }>(
+      `/api/projects/${pid(projectId)}/import`,
+      { method: 'POST', body: JSON.stringify(body) },
+    ),
+  listBootstrapConflicts: (projectId: string) =>
+    jsonFetch<{ result: BootstrapListConflictsResult }>(
+      `/api/projects/${pid(projectId)}/import/conflicts`,
+    ),
+  resolveBootstrap: (
+    projectId: string,
+    body: { conflicts?: BootstrapConflictResolution[]; stale?: BootstrapStaleResolution[] },
+  ) =>
+    jsonFetch<{ result: BootstrapResolveResult }>(
+      `/api/projects/${pid(projectId)}/import/resolve`,
+      { method: 'POST', body: JSON.stringify(body) },
     ),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {

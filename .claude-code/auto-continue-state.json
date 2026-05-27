@@ -19,19 +19,21 @@
     },
     {
       "id": "slice-3-endpoint-upsert-predicate",
-      "status": "open",
+      "status": "merged",
       "prNumber": 55,
       "fixRounds": 1,
+      "mergedAt": "2026-05-27T20:01:00Z",
       "lastFinding": "Gitar PR #55: strict `timestamp > ?` in predicate missed same-millisecond user edits. Folded inline via rowid-based tie-break (nanoid id is random, not insertion-ordered; SQLite rowid is monotonic per INSERT). +1 regression test."
     },
     {
       "id": "slice-4-review-ui-and-resolve-endpoint",
-      "status": "pending",
-      "prNumber": null,
-      "fixRounds": 0
+      "status": "open",
+      "prNumber": 56,
+      "fixRounds": 1,
+      "lastFinding": "Gitar PR #56: 2 findings. (1) Backend `tableForEntity` silently fell through to library_entries on unknown entity_type — fixed via exhaustive switch + up-front per-row validation in resolveConflicts so typos land as clear per-row errors. (2) Frontend init useEffect re-fired on parent re-renders with new lastImport/lastImportFile object refs, wiping user selections — fixed with an `initialized` state-flag guard. +3 regression tests."
     }
   ],
-  "currentIndex": 2,
+  "currentIndex": 3,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
