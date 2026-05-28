@@ -16,6 +16,7 @@ import {
   renderBootstrapPrompt,
   type BootstrapRenderDeps,
 } from './render.js';
+import { readBootstrapState, type BootstrapWorkerWithState } from './worker.js';
 import type { ProjectsService } from '../projects/service.js';
 
 // C-D20 surface 2 — `POST /api/projects/:id/import` (Slice 3) — accepts the
@@ -48,6 +49,11 @@ export function registerBootstrapRoutes(
   projects: ProjectsService,
   service: BootstrapImportService,
   render: BootstrapRenderDeps,
+  // C-D21 surface 4 — `GET /bootstrap/state` consumes the worker's last-
+  // ingest map. Optional so existing tests can omit it (state endpoint
+  // returns null `lastIngest` when worker absent — fs-derived fields still
+  // populate).
+  worker?: BootstrapWorkerWithState,
 ): void {
   app.post<{ Params: { id: string }; Body: unknown }>(
     '/api/projects/:id/import',
@@ -110,6 +116,36 @@ export function registerBootstrapRoutes(
         }
         throw err;
       }
+    },
+  );
+
+  app.get<{ Params: { id: string } }>(
+    '/api/projects/:id/bootstrap/state',
+    async (req, reply) => {
+      const project = projects.get(req.params.id);
+      if (!project) {
+        return reply.code(404).send({ error: 'project_not_found' });
+      }
+      if (!project.repo_path) {
+        // Project hasn't bound a repo yet (T-D51): bootstrap surface is
+        // entirely fs-derived from <repo_path>/.throughline/, so there's
+        // nothing to read. Slice 4 surfaces this state as "bind a repo to
+        // enable bootstrap" rather than throwing.
+        return {
+          result: {
+            throughlineDir: 'absent' as const,
+            promptRendered: false,
+            pendingOutput: false,
+            lastIngest: null,
+            archiveCount: 0,
+            quarantineCount: 0,
+            promptPath: null,
+            outputPath: null,
+          },
+        };
+      }
+      const lastIngest = worker?.getLastIngest(req.params.id) ?? null;
+      return { result: readBootstrapState(project.repo_path, lastIngest) };
     },
   );
 
