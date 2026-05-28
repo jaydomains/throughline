@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BackupStatus,
+  BootstrapState,
   CommunicationModelView,
   CostSummary,
   OrphanedRule,
@@ -593,8 +594,7 @@ function ProjectSection({
               data-testid="project-repo"
             />
           </label>
-          <ThroughlineStatusBlock project={project} />
-          <BootstrapReviewBlock projectId={project.id} />
+          <BootstrapBlock project={project} />
           <p className="settings-hint">
             Per-session branch fields are set on each session in the Sessions view.
           </p>
@@ -607,94 +607,215 @@ function ProjectSection({
   );
 }
 
-// C-D19 surface 6 — clone-and-go config status. Surfaces whether the project's
-// repo has a `.throughline/` directory and whether `.throughline/project.json`
-// is present and valid. `throughline_status` is computed by the backend at
-// request time; absent on pre-Phase-19 responses (legacy callers).
-function ThroughlineStatusBlock({ project }: { project: Project }) {
-  const status = project.throughline_status;
-  if (status === undefined) return null;
-  const labels: Record<NonNullable<Project['throughline_status']>, { headline: string; detail: string }> = {
-    absent: {
-      headline: 'No `.throughline/` directory found in this repo.',
-      detail:
-        'Clone-and-go config is not set up. Run `throughline init` from the repo root to create `.throughline/project.json`.',
-    },
-    partial: {
-      headline: '`.throughline/` directory present but config missing or invalid.',
-      detail:
-        '`.throughline/project.json` is absent or failed to parse. Run `throughline init` to (re-)write it, or fix it by hand.',
-    },
-    complete: {
-      headline: '`.throughline/project.json` present and valid.',
-      detail:
-        'Run `throughline init` again any time to re-apply file values to this binding (items, sessions, and audit history are never touched).',
-    },
-  };
-  const { headline, detail } = labels[status];
-  return (
-    <div
-      className="settings-throughline-status"
-      data-testid="throughline-status"
-      data-status={status}
-    >
-      <p className="settings-hint" style={{ marginBottom: 4 }}>
-        <strong>Clone-and-go config:</strong> {headline}
-      </p>
-      <p className="settings-hint" style={{ marginTop: 0 }}>{detail}</p>
-    </div>
-  );
-}
-
-// Phase 20 Slice 4 — bootstrap review entry block. Colocated with
-// `ThroughlineStatusBlock` (chosen as the lowest-architectural-cost
-// placement; C-D20 explicitly left placement open — could move to a
-// dedicated block if surfacing density grows). Surfaces the count of
-// currently-stale rows and a button to open the review modal.
+// C-D21 surface 6 (Phase 21 Slice 4 — chain-close) — unified Bootstrap &
+// clone-and-go block. Consolidates the previous `ThroughlineStatusBlock`
+// (C-D19 clone-and-go config status) and `BootstrapReviewBlock` (C-D20
+// stale-row review surface) into a single component, plus the new
+// render-prompt affordance for Phase 21's producer pipeline. C-D20
+// explicitly left placement open; Phase 21 is when surfacing density
+// grew to the point that three sibling blocks became one consolidated
+// block — the rationale spec-author locked at chain-open.
 //
-// In-flight conflicts from a just-completed import are passed into the
-// modal via `lastImport` + `lastImportFile`; the SettingsView entry block
-// does not hold those (the user reaches this surface between imports, not
-// during one), so the modal opens with `lastImport: null` and the user
-// can resolve any stale rows the prior import flagged.
-function BootstrapReviewBlock({ projectId }: { projectId: string }) {
-  const [count, setCount] = useState<number | null>(null);
-  const [open, setOpen] = useState(false);
-  const refresh = useCallback(() => {
+// Retained behaviour the consolidation must preserve (carry-forward from
+// chain-open + verified in BootstrapBlock.test.tsx):
+//   • Status banner accuracy across the three `.throughline/` states
+//     (absent / partial / complete) — drives the headline + detail text.
+//   • Review-queue link still navigates to the BootstrapReviewModal
+//     conflict-resolution UI; disabled when there are no stale rows.
+//   • Stale-row count still displayed alongside the review button.
+//
+// New affordance (Phase 21):
+//   • Render button → POST /bootstrap/render writes the prompt and
+//     returns a copy-pasteable invocation command.
+//   • Last-ingest summary (timestamp + per-status counts) from the
+//     GET /bootstrap/state endpoint slice 3 added.
+//   • Quarantine alert when bootstrap-quarantine/ holds failed-ingest
+//     files awaiting manual inspection.
+
+const STATUS_LABELS: Record<NonNullable<Project['throughline_status']>, { headline: string; detail: string }> = {
+  absent: {
+    headline: 'No `.throughline/` directory found in this repo.',
+    detail:
+      'Clone-and-go config is not set up. Run `throughline init` from the repo root to create `.throughline/project.json`.',
+  },
+  partial: {
+    headline: '`.throughline/` directory present but config missing or invalid.',
+    detail:
+      '`.throughline/project.json` is absent or failed to parse. Run `throughline init` to (re-)write it, or fix it by hand.',
+  },
+  complete: {
+    headline: '`.throughline/project.json` present and valid.',
+    detail:
+      'Run `throughline init` again any time to re-apply file values to this binding (items, sessions, and audit history are never touched).',
+  },
+};
+
+export function BootstrapBlock({ project }: { project: Project }) {
+  const projectId = project.id;
+  const status = project.throughline_status;
+  const [staleCount, setStaleCount] = useState<number | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [renderState, setRenderState] = useState<{
+    invocationCommand: string;
+    promptPath: string;
+  } | null>(null);
+  const [rendering, setRendering] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const [bootstrapState, setBootstrapState] = useState<BootstrapState | null>(null);
+
+  const refreshConflicts = useCallback(() => {
     api
       .listBootstrapConflicts(projectId)
-      .then((res) => setCount(res.result.stale.length))
-      .catch(() => setCount(null));
+      .then((res) => setStaleCount(res.result.stale.length))
+      .catch(() => setStaleCount(null));
   }, [projectId]);
+
+  const refreshState = useCallback(() => {
+    api
+      .getBootstrapState(projectId)
+      .then((res) => setBootstrapState(res.result))
+      .catch(() => setBootstrapState(null));
+  }, [projectId]);
+
   useEffect(() => {
-    refresh();
-  }, [refresh]);
-  if (count === null) return null;
+    refreshConflicts();
+    refreshState();
+  }, [refreshConflicts, refreshState]);
+
+  const onRender = useCallback(async () => {
+    setRendering(true);
+    setRenderError(null);
+    try {
+      const res = await api.renderBootstrapPrompt(projectId);
+      setRenderState({
+        invocationCommand: res.result.invocationCommand,
+        promptPath: res.result.promptPath,
+      });
+      // Render is the natural moment to re-fetch state — the prompt now
+      // exists on disk and the watcher armed.
+      refreshState();
+    } catch (err) {
+      setRenderError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRendering(false);
+    }
+  }, [projectId, refreshState]);
+
+  // Status banner — carried forward from the previous ThroughlineStatusBlock.
+  // Show nothing if the backend response is pre-Phase-19 (legacy callers).
+  const statusLabel = status !== undefined ? STATUS_LABELS[status] : null;
+
   return (
-    <div className="settings-bootstrap-review" data-testid="bootstrap-review-block">
-      <p className="settings-hint" style={{ marginBottom: 4 }}>
-        <strong>Bootstrap review:</strong>{' '}
-        {count === 0
-          ? 'No stale rows.'
-          : `${count} stale row${count === 1 ? '' : 's'} pending review.`}
-      </p>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        data-testid="bootstrap-review-open"
-        disabled={count === 0}
-      >
-        Open bootstrap review
-      </button>
-      {open && (
-        <BootstrapReviewModal
-          open
-          projectId={projectId}
-          lastImport={null}
-          lastImportFile={null}
-          onClose={() => setOpen(false)}
-          onResolved={refresh}
-        />
+    <div
+      className="settings-bootstrap-block"
+      data-testid="bootstrap-block"
+      data-status={status ?? 'unknown'}
+    >
+      {statusLabel && (
+        <div
+          className="settings-throughline-status"
+          data-testid="throughline-status"
+          data-status={status}
+        >
+          <p className="settings-hint" style={{ marginBottom: 4 }}>
+            <strong>Clone-and-go config:</strong> {statusLabel.headline}
+          </p>
+          <p className="settings-hint" style={{ marginTop: 0 }}>{statusLabel.detail}</p>
+        </div>
+      )}
+
+      {/* Phase 21 render affordance. Surface only when the project has a
+          bound bundle (status complete or partial — the backend rejects
+          render on no_bundle_bound, so partial would 400; we still let the
+          user try and surface the error inline). */}
+      {status !== 'absent' && (
+        <div className="settings-bootstrap-render" data-testid="bootstrap-render">
+          <p className="settings-hint" style={{ marginBottom: 4 }}>
+            <strong>Bootstrap producer:</strong>{' '}
+            {bootstrapState?.promptRendered
+              ? 'Prompt rendered. Run Claude Code against it to populate this project.'
+              : 'Render the bootstrap prompt to start populating this project from its docs.'}
+          </p>
+          <button
+            type="button"
+            onClick={onRender}
+            disabled={rendering}
+            data-testid="bootstrap-render-button"
+          >
+            {rendering ? 'Rendering…' : bootstrapState?.promptRendered ? 'Re-render prompt' : 'Render bootstrap prompt'}
+          </button>
+          {renderError && (
+            <p className="error" data-testid="bootstrap-render-error">
+              {renderError}
+            </p>
+          )}
+          {renderState && (
+            <div className="settings-bootstrap-invocation" data-testid="bootstrap-invocation">
+              <p className="settings-hint" style={{ marginBottom: 4 }}>
+                Prompt written to <code>{renderState.promptPath}</code>. Run this command in your normal Claude Code environment:
+              </p>
+              <code className="settings-bootstrap-invocation-cmd" data-testid="bootstrap-invocation-cmd">
+                {renderState.invocationCommand}
+              </code>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Last-ingest summary — populated after the worker archives a
+          successful run. Backend cache is in-memory; null after a restart
+          until the next ingest runs. */}
+      {bootstrapState?.lastIngest && (
+        <p className="settings-hint" data-testid="bootstrap-last-ingest" style={{ marginBottom: 4 }}>
+          <strong>Last ingest:</strong> {new Date(bootstrapState.lastIngest.at).toLocaleString()} —{' '}
+          {bootstrapState.lastIngest.counts.new} new,{' '}
+          {bootstrapState.lastIngest.counts.reimported} reimported,{' '}
+          {bootstrapState.lastIngest.counts.conflict} conflict,{' '}
+          {bootstrapState.lastIngest.counts.stale_flagged} stale.
+        </p>
+      )}
+
+      {/* Quarantine alert — files in bootstrap-quarantine/ that failed
+          ingest. User clears them manually after inspecting the sibling
+          .error.json. */}
+      {bootstrapState && bootstrapState.quarantineCount > 0 && (
+        <p className="error" data-testid="bootstrap-quarantine-alert" style={{ marginBottom: 4 }}>
+          <strong>Quarantine:</strong> {bootstrapState.quarantineCount} failed-ingest file
+          {bootstrapState.quarantineCount === 1 ? '' : 's'} awaiting manual clearance in{' '}
+          <code>.throughline/bootstrap-quarantine/</code>.
+        </p>
+      )}
+
+      {/* Stale-row review — carried forward from the previous
+          BootstrapReviewBlock. Suppressed when the GET fails (staleCount
+          null) so the block doesn't show a dangling "loading…" affordance. */}
+      {staleCount !== null && (
+        <div className="settings-bootstrap-review" data-testid="bootstrap-review-block">
+          <p className="settings-hint" style={{ marginBottom: 4 }}>
+            <strong>Bootstrap review:</strong>{' '}
+            {staleCount === 0
+              ? 'No stale rows.'
+              : `${staleCount} stale row${staleCount === 1 ? '' : 's'} pending review.`}
+          </p>
+          <button
+            type="button"
+            onClick={() => setReviewOpen(true)}
+            data-testid="bootstrap-review-open"
+            disabled={staleCount === 0}
+          >
+            Open bootstrap review
+          </button>
+          {reviewOpen && (
+            <BootstrapReviewModal
+              open
+              projectId={projectId}
+              lastImport={null}
+              lastImportFile={null}
+              onClose={() => setReviewOpen(false)}
+              onResolved={refreshConflicts}
+            />
+          )}
+        </div>
       )}
     </div>
   );

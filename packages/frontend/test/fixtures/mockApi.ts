@@ -1165,6 +1165,28 @@ export const mockApi = {
     }),
   ),
 
+  // Phase 21 — bootstrap producer pipeline (C-D21).
+  renderBootstrapPrompt: vi.fn(async (_projectId: string) => ({
+    result: {
+      promptPath: '/tmp/repo/.throughline/bootstrap-prompt.md',
+      outputPath: '/tmp/repo/.throughline/bootstrap-output.json',
+      bundlePath: '/tmp/methodologies/freeform/bundle.md',
+      invocationCommand: 'cat "/tmp/repo/.throughline/bootstrap-prompt.md" | claude',
+    },
+  })),
+  getBootstrapState: vi.fn(async (_projectId: string) => ({
+    result: {
+      throughlineDir: 'absent' as const,
+      promptRendered: false,
+      pendingOutput: false,
+      lastIngest: null as null | { at: string; counts: { new: number; reimported: number; conflict: number; stale_flagged: number } },
+      archiveCount: 0,
+      quarantineCount: 0,
+      promptPath: null as string | null,
+      outputPath: null as string | null,
+    },
+  })),
+
   // Phase 8 — methodology gate runtime (C-D6).
   listGateFirings: vi.fn(async (_projectId: string) => ({ groups: [] as GateMomentGroup[] })),
   runGateMoment: vi.fn(async (_projectId: string, _moment: string) => ({
