@@ -76,7 +76,7 @@ _none_
 
 ## Recently Resolved
 
-- **Phase 22 chain-close.** Both slices merged. The chain ran clean on the fallback kill-switch signals; zero halt-class triggers; **zero fix-rounds** (both slice 1 and slice 2 first-Gitar-review clean — first chain in the codified rhythm with zero fix-rounds across all slices).
+- **Phase 22 chain-close.** Both slices merged. The chain ran clean on the fallback kill-switch signals; zero halt-class triggers; one fix-round total (slice 1 first-Gitar-review clean; slice 2 one inline fold-in for a small resilience finding about symmetric optimistic-state revert in the error path).
 - **Spec-author Q3A from chain-open** (SettingsView trigger placement) — landed in this slice as the sibling `DisciplineScanBlock` inside `ProjectSection`, not folded into `BootstrapBlock`.
 - **Slice 1's frontend-consumer hand-off** (extended `DisciplineDriftRescanResult` response shape; `api.rescanDisciplineDrift` retyped; `Project.settings_json` carrying `discipline_scan_state` + `discipline_scan_last_run_at`) — all consumed in this slice's `DisciplineScanBlock` + tests.
 
@@ -89,13 +89,13 @@ Per `AUTO_CONTINUE_WORKFLOW.md` chain-close convention:
 | Slice | PR | Merged | Fix-rounds | Net lines |
 |---|---|---|---|---|
 | 1 — Discipline-scan-state backend lifecycle (bootstrap pre-scan flip + rescan try/finally + periodic-review two-site shared gate + T-D57 Implications amendment) | [#64](https://github.com/jaydomains/throughline/pull/64) | 2026-05-28 | 0 | 768 |
-| 2 — SettingsView `DisciplineScanBlock` (chain-close) | [#TBD](https://github.com/jaydomains/throughline/pull/TBD) | pending | 0 | ~330 |
+| 2 — SettingsView `DisciplineScanBlock` (chain-close) | [#65](https://github.com/jaydomains/throughline/pull/65) | pending | 1 | ~330 |
 
-**Chain totals:** 2 slices over ~30 minutes; **0 fix-rounds total** (both slices first-Gitar-review clean — the first chain in the codified rhythm to ship with zero fix-rounds across all slices); 0 halt-class triggers; ~1100 net lines (within the chain-open `small` sizing projection of ~900–1300). T-D57's four implementation surfaces (`discipline_scan_state` field + bootstrap-ingest pre-scan + rescan-endpoint lifecycle + periodic-review gate) + the T-D57 Implications one-line amendment + the SettingsView trigger all landed across the two slices.
+**Chain totals:** 2 slices over ~30 minutes; **1 fix-round total** (slice 1 first-Gitar-review clean; slice 2 one inline fold-in for a small Gitar finding about symmetric optimistic-state revert in `onRunScan`'s catch block); 0 halt-class triggers; ~1100 net lines (within the chain-open `small` sizing projection of ~900–1300). T-D57's four implementation surfaces (`discipline_scan_state` field + bootstrap-ingest pre-scan + rescan-endpoint lifecycle + periodic-review gate) + the T-D57 Implications one-line amendment + the SettingsView trigger all landed across the two slices.
 
 **Findings folded inline (all Gitar):**
 - **PR #64 (slice 1)** — zero findings on first Gitar review.
-- **PR #TBD (slice 2)** — zero findings on first Gitar review.
+- **PR #65 (slice 2)** — one finding on first Gitar review (low-risk-today resilience finding: catch block in `onRunScan` reverted `localState` but not `localLastRun`, and `persistedLastRun` was missing from the `useCallback` deps). Gitar itself flagged it low-risk because the catch block doesn't reference `persistedLastRun` and `localLastRun` is never set before the await — purely a resilience-to-future-edits finding. Folded inline by adding the symmetric `setLocalLastRun(persistedLastRun)` revert + the missing dep. Test suite unaffected (existing error-path test renders with `pre-scan` + null `last_run_at` so the symmetric revert is a no-op observable; adding a regression test for the hypothetical future bug would over-engineer).
 
 **Spec-author decisions locked at chain-open** (all four followed by implementation):
 - **Q1A** — flat enum + nullable timestamp inside `settings_json` (matches `periodic_review_interval_days` precedent). ✓ (`packages/shared/src/discipline-scan.ts`)
@@ -107,7 +107,7 @@ Per `AUTO_CONTINUE_WORKFLOW.md` chain-close convention:
 - Gate condition written as "suppress when `pre-scan` or `running`" — NOT "surface only when `complete`". The "absent ≡ complete" implicit-mapping preserves non-bootstrap behaviour exactly. The slice 1 load-bearing test's failure message ("non-bootstrap projects must still surface discipline signals — gate must be 'suppress when pre-scan or running', NOT 'surface only when complete'") guards against the inversion.
 - Periodic-review's two suppression sites (`drift.listOpenDisciplineSignals` and the bundle-declared hygiene categories block) wired to **one shared** `shouldSuppressDisciplineSignals(state)` condition computed once at the top of `buckets()`. They cannot drift apart.
 
-**Sizing calibration data point:** Phase 22 estimated ~600–900 raw / ~900–1300 actual at chain-open (T-D57 sized `small`). Actual chain: **~1100 net lines** — within projection. Phase 22 is the **first chain in the codified rhythm to ship with zero fix-rounds across all slices** — clean sizing + clean execution. Sized correctly + executed cleanly. T-D57's "no companion C-D anchor" minimal-scaffolding approach proved sufficient for a small phase; the next small phase can mirror this shape.
+**Sizing calibration data point:** Phase 22 estimated ~600–900 raw / ~900–1300 actual at chain-open (T-D57 sized `small`). Actual chain: **~1100 net lines** — within projection. **One fix-round total** (slice 2's symmetric-revert resilience finding) — under Phase 21's three-fix-round total. Sized correctly + executed cleanly. T-D57's "no companion C-D anchor" minimal-scaffolding approach proved sufficient for a small phase; the next small phase can mirror this shape.
 
 ---
 

@@ -890,11 +890,15 @@ export function DisciplineScanBlock({ project, onScanned }: {
     } catch (err) {
       // try/finally in the slice 1 backend transitions out of running even on
       // a crash, so the next refresh shows the recovered state. Optimistic
-      // local flip-back keeps the UI responsive in the meantime.
+      // local flip-back keeps the UI responsive in the meantime. Revert both
+      // state and last_run_at symmetrically — neither is set before the await
+      // today, but a future edit that pre-sets localLastRun would otherwise
+      // leak stale data through the error path (Gitar PR #65).
       setLocalState(persistedState);
+      setLocalLastRun(persistedLastRun);
       setError(err instanceof Error ? err.message : String(err));
     }
-  }, [projectId, onScanned, persistedState]);
+  }, [projectId, onScanned, persistedState, persistedLastRun]);
 
   return (
     <div
