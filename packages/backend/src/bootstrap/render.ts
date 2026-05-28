@@ -5,6 +5,7 @@ import type { Project } from '@throughline/shared';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import { assertPathInsideThroughline } from './path-guard.js';
+import type { BootstrapWatcherRegistry } from './watcher.js';
 
 // C-D21 surface 1+2 — single repo-owned generic prompt template (T-D55)
 // rendered by the render endpoint (T-D56). The template lives adjacent to this
@@ -47,6 +48,10 @@ export interface BootstrapRenderDeps {
   projects: ProjectsService;
   registry: MethodologyRegistry;
   methodologiesDir: string;
+  // C-D21 surface 3 — register the bootstrap-output watcher for this project
+  // on first render call. Optional so existing tests can omit it; production
+  // server.ts wires the real registry.
+  watcher?: BootstrapWatcherRegistry;
 }
 
 export interface BootstrapRenderResult {
@@ -125,6 +130,13 @@ export function renderBootstrapPrompt(
   if (!existsSync(gitignorePath) || readFileSync(gitignorePath, 'utf8') !== GITIGNORE_PAYLOAD) {
     writeFileSync(gitignorePath, GITIGNORE_PAYLOAD, 'utf8');
   }
+
+  // C-D21 surface 3 — arm the chokidar watcher for this project (idempotent).
+  // Registration is render-driven; the projects.service.delete() path
+  // unregisters; server-boot startupScan() handles restart recovery. The
+  // accepted-leak case (user renders then abandons Claude Code) leaves the
+  // watcher live until project delete or backend restart — see watcher.ts.
+  deps.watcher?.register(projectId, project.repo_path);
 
   // T-D56 — user runs Claude Code in their normal CLI/IDE against the
   // rendered prompt. Stdin-pipe is the most portable invocation across CLI

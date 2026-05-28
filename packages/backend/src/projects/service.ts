@@ -7,6 +7,7 @@ import type { DB } from '../db/index.js';
 import { readProjectConfig } from '../init/config-reader.js';
 import { detectGitHubRemote } from '../init/git-remote.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
+import type { BootstrapWatcherRegistry } from '../bootstrap/watcher.js';
 
 const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
 
@@ -121,7 +122,14 @@ export interface ProjectsService {
   delete(id: string): void;
 }
 
-export function createProjectsService(db: DB, registry: MethodologyRegistry): ProjectsService {
+export function createProjectsService(
+  db: DB,
+  registry: MethodologyRegistry,
+  // C-D21 surface 3 — optional bootstrap-watcher registry. delete() fires
+  // unregister so a deleted project's chokidar instance is closed. Existing
+  // unit-test callers that don't exercise the watcher omit this argument.
+  bootstrapWatcher?: BootstrapWatcherRegistry,
+): ProjectsService {
   return {
     list({ includeArchived = false } = {}) {
       const sql = includeArchived
@@ -312,6 +320,11 @@ export function createProjectsService(db: DB, registry: MethodologyRegistry): Pr
       // FK ON DELETE CASCADE handles per-project entity tables (C-D5).
       db.prepare('DELETE FROM projects WHERE id = ?').run(id);
       registry.unregisterProjectBundle(id);
+      // C-D21 surface 3 — close the bootstrap-output watcher (if any). Fire-
+      // and-forget: the registry's unregister awaits chokidar.close()
+      // internally; keeping delete() synchronous matches the existing
+      // service surface and the call site behaviour.
+      void bootstrapWatcher?.unregister(id);
       appendAudit(db, {
         projectId: null,
         entityType: 'project',
