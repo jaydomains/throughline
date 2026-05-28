@@ -106,14 +106,22 @@ export function createBootstrapWorker(opts: BootstrapWorkerOptions): BootstrapWo
     const stamp = timestampPrefix();
     const jsonPath = join(dir, `${stamp}-${BOOTSTRAP_OUTPUT_FILENAME}`);
     const errorPath = join(dir, `${stamp}-bootstrap-output.error.json`);
+    // Always emit the .error.json so the user can see what the worker
+    // observed even if the payload move fails (permissions on the
+    // quarantine dir, disk full, etc.).
+    writeFileSync(errorPath, `${JSON.stringify(errorPayload, null, 2)}\n`, 'utf8');
     try {
       copyFileSync(filePath, jsonPath);
     } catch (err) {
+      // Copy failed — leave the source file in place so the user can
+      // inspect / retry the failing payload manually. Mirrors the inbox
+      // precedent (inbox/worker.ts:92-101): copy + rm sit inside one try
+      // so a failed copy aborts the delete.
       logger?.warn(
         `bootstrap quarantine copy failed for ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
       );
+      return { jsonPath, errorPath };
     }
-    writeFileSync(errorPath, `${JSON.stringify(errorPayload, null, 2)}\n`, 'utf8');
     rmSync(filePath, { force: true });
     return { jsonPath, errorPath };
   }
