@@ -62,25 +62,17 @@ export interface BootstrapRenderResult {
 //   3. <methodologiesDir>/<bundle_id>/bundle.md (T-D41)
 // The registry's resolveBundle returns the loaded result but not the file
 // path it loaded; the render endpoint needs the path to inject into the
-// prompt's parameter block. Same precedence, derived path.
-function resolveBundleFile(
-  registry: MethodologyRegistry,
-  methodologiesDir: string,
-  project: Project,
-): string {
+// prompt's parameter block. Caller has already gated on resolveBundle ==
+// 'loaded', so we just walk the precedence to pick the file path — no
+// second resolveBundle here (a redundant call would open a race window
+// where the two resolutions could disagree mid-flight).
+function resolveBundleFile(methodologiesDir: string, project: Project): string {
   if (project.bundle_path) {
     return join(project.bundle_path, 'bundle.md');
   }
   if (project.repo_path) {
     const arm2 = join(project.repo_path, '.throughline', 'bundle.md');
-    if (existsSync(arm2)) {
-      const status = registry.resolveBundle(
-        project.bundle_id,
-        project.bundle_path,
-        project.repo_path,
-      );
-      if (status.status === 'loaded') return arm2;
-    }
+    if (existsSync(arm2)) return arm2;
   }
   return join(methodologiesDir, project.bundle_id, 'bundle.md');
 }
@@ -105,7 +97,7 @@ export function renderBootstrapPrompt(
     throw new BootstrapRenderNoBundleBoundError(projectId);
   }
 
-  const bundleFile = resolveBundleFile(deps.registry, deps.methodologiesDir, project);
+  const bundleFile = resolveBundleFile(deps.methodologiesDir, project);
   const throughlineDir = join(project.repo_path, '.throughline');
   const promptPath = join(throughlineDir, 'bootstrap-prompt.md');
   const outputPath = join(throughlineDir, 'bootstrap-output.json');
