@@ -4,10 +4,12 @@ import type {
   BootstrapState,
   CommunicationModelView,
   CostSummary,
+  DisciplineScanState,
   OrphanedRule,
   Project,
   SecretsPresenceResult,
 } from '@throughline/shared';
+import { readDisciplineScan } from '@throughline/shared';
 import { api, type MethodologySummary } from '../api.js';
 import { useProjects } from '../hooks/useProjects.js';
 import { useMethodologies } from '../hooks/useMethodologies.js';
@@ -595,6 +597,7 @@ function ProjectSection({
             />
           </label>
           <BootstrapBlock project={project} />
+          <DisciplineScanBlock project={project} onScanned={onSaved} />
           <p className="settings-hint">
             Per-session branch fields are set on each session in the Sessions view.
           </p>
@@ -816,6 +819,121 @@ export function BootstrapBlock({ project }: { project: Project }) {
             />
           )}
         </div>
+      )}
+    </div>
+  );
+}
+
+// Phase 22 Slice 2 — DisciplineScanBlock (T-D57; SPEC §7.14
+// "Scan-on-demand for bootstrapped projects"). Sibling of BootstrapBlock
+// inside ProjectSection rather than nested inside it (per Q3A locked at
+// chain-open): discipline scanning is "one trigger, two surfaces" —
+// prominent for the bootstrap-day-one case, demoted re-scan affordance
+// otherwise — and applies to ALL projects, not just bootstrap-imported
+// ones. Folding into the bootstrap-named block would show non-bootstrap
+// projects a scan trigger inside a "Bootstrap" block, which is wrong.
+//
+// State-driven affordance shape (slice 1 backend writes the state):
+//   • pre-scan — prominent CTA: "Bootstrap import done. Run discipline
+//     scan to surface drift signals." Bootstrap-day-one case; until the
+//     user runs this, periodic-review suppresses discipline signals for
+//     this project (single shared gate in periodic-review.ts).
+//   • running — disabled "Scanning…" button. The slice 1 try/finally
+//     guarantees recovery even on scanner crash; the UI flips back to
+//     complete once the rescan response lands.
+//   • complete (or absent ≡ complete-implicit) — demoted "Re-run discipline
+//     scan" affordance + "Last scanned" timestamp. The absent state is the
+//     non-bootstrap case; non-bootstrap projects retain on-bind scanner
+//     behaviour and use this surface as a manual re-scan trigger.
+//
+// Consumes the slice 1 backend response shape (DisciplineDriftRescanResult)
+// to refresh state inline without a round-trip; calls onScanned() so the
+// outer ProjectsList re-fetches the project record (which carries the
+// updated settings_json.discipline_scan_state + last_run_at).
+export function DisciplineScanBlock({ project, onScanned }: {
+  project: Project;
+  onScanned: () => Promise<void> | void;
+}) {
+  const projectId = project.id;
+  const { state: persistedState, last_run_at: persistedLastRun } =
+    readDisciplineScan(project.settings_json);
+  // Local optimistic state lets the affordance flip to "running" immediately
+  // on click without waiting for a re-fetch of the project record; on
+  // resolution we adopt the response's state + timestamp and call onScanned
+  // so the outer list re-fetches and the next render reads the persisted
+  // value. Reset whenever the project (or its persisted state) changes.
+  const [localState, setLocalState] = useState<DisciplineScanState | undefined>(undefined);
+  const [localLastRun, setLocalLastRun] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    setLocalState(undefined);
+    setLocalLastRun(null);
+    setError(null);
+  }, [projectId, persistedState, persistedLastRun]);
+
+  const state: DisciplineScanState | undefined = localState ?? persistedState;
+  const lastRunAt = localLastRun ?? persistedLastRun;
+  const isRunning = state === 'running';
+  const isPreScan = state === 'pre-scan';
+
+  const onRunScan = useCallback(async () => {
+    setLocalState('running');
+    setError(null);
+    try {
+      const res = await api.rescanDisciplineDrift(projectId);
+      setLocalState(res.discipline_scan_state);
+      setLocalLastRun(res.discipline_scan_last_run_at);
+      // Re-fetch the project record so the next render sees the persisted
+      // state from settings_json (the optimistic local overlay then resets
+      // via the persistedState effect dependency on the next refresh).
+      await onScanned();
+    } catch (err) {
+      // try/finally in the slice 1 backend transitions out of running even on
+      // a crash, so the next refresh shows the recovered state. Optimistic
+      // local flip-back keeps the UI responsive in the meantime.
+      setLocalState(persistedState);
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [projectId, onScanned, persistedState]);
+
+  return (
+    <div
+      className="settings-discipline-scan-block"
+      data-testid="discipline-scan-block"
+      data-state={state ?? 'absent'}
+      data-prominence={isPreScan ? 'prominent' : 'demoted'}
+    >
+      {isPreScan ? (
+        <p className="settings-hint" style={{ marginBottom: 4 }}>
+          <strong>Discipline scan pending.</strong>{' '}
+          Bootstrap brought this project's history in; discipline-drift signals
+          are suppressed until you run the first scan. Run it once you have
+          triaged what you want Throughline to flag.
+        </p>
+      ) : (
+        <p className="settings-hint" style={{ marginBottom: 4 }}>
+          <strong>Discipline scan:</strong>{' '}
+          {lastRunAt
+            ? `Last scanned ${new Date(lastRunAt).toLocaleString()}.`
+            : 'Run a discipline scan to surface drift signals against the bound bundle.'}
+        </p>
+      )}
+      <button
+        type="button"
+        onClick={onRunScan}
+        disabled={isRunning}
+        data-testid="discipline-scan-button"
+      >
+        {isRunning
+          ? 'Scanning…'
+          : isPreScan
+            ? 'Run discipline scan'
+            : 'Re-run discipline scan'}
+      </button>
+      {error && (
+        <p className="error" data-testid="discipline-scan-error">
+          {error}
+        </p>
       )}
     </div>
   );

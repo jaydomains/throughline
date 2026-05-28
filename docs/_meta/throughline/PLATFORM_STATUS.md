@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Phase 22 build chain **opened** — fourth implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63) (`Auto-continue: phase-22-build-enchanted-plum`). Two slices approved at plan-mode: backend `discipline_scan_state` lifecycle (slice 1) + frontend `DisciplineScanBlock` (slice 2). Slice 1 in flight; ~PR TBD. T-D57's Implications one-line correction folded into slice 1 ("as part of project creation" → "on the first successful bootstrap import for the project") per Phase 19 Slice 3's T-D52 amendment precedent. Most recent decision: T-D57 (unchanged in content; amended for build-time wording match).
+**As of 2026-05-28.** Phase 22 build chain **closed** — fourth implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm ran end-to-end clean. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63) (`Auto-continue: phase-22-build-enchanted-plum`) closes on Slice 2 merge. Two slices merged via PRs #64 (slice 1) and #TBD (slice 2); zero fix-rounds total (both first-Gitar-review clean); zero halt-class triggers. Net ~1100 net lines across the chain (matches the chain-open `small` sizing projection). The discipline-drift scan-on-demand gate is live end-to-end: bootstrap-imported projects start at `pre-scan` (silent drift inbox on day one); SettingsView's new `DisciplineScanBlock` surfaces a prominent CTA for the first scan, demoted re-scan affordance afterward; periodic-review's two suppression sites are wired to one shared `shouldSuppressDisciplineSignals` condition so partial day-one noise cannot leak; non-bootstrap projects retain on-bind behaviour entirely. T-D57's Implications one-line correction folded into slice 1 ("as part of project creation" → "on the first successful bootstrap import for the project") per Phase 19 Slice 3's T-D52 amendment precedent. Phases 19–22 build cohort now feature-complete end-to-end; cohort-level heavy hardener pass triggers next to promote the cohort's anchors to `production-ready`.
 
 ---
 
 ## Current Phase
 
-**Phase:** Phase 22 (`discipline-drift scan-on-demand for bootstrapped projects`) — chain opened 2026-05-28 as `phase-22-build-enchanted-plum`. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63).
-**Status:** Slice 1 (backend `discipline_scan_state` lifecycle) PR open (non-draft); Slice 2 pending. Spec-author Q1A/Q2A/Q3A/Q4A locked at chain-open.
-**Next concrete action:** slice 1 PR runs the three-layer green gate (Gitar review + CI + GitHub mergeable). On merge, slice 2 (frontend `DisciplineScanBlock`) auto-opens.
+**Phase:** none in flight. Phase 22 closed 2026-05-28.
+**Status:** Phases 19–22 build cohort feature-complete end-to-end. Cohort-level heavy hardener pass over the Phase 19–22 build outputs is the next scheduled work (promotes T-D51 / T-D52 / T-D53 / T-D54 / T-D55 / T-D56 / T-D57 + C-D19 / C-D20 / C-D21 to `production-ready`). No open slices, no open PRs.
+**Next concrete action:** spec author triggers the cohort-level heavy hardener pass (or queues the next phase). No build phase is currently open.
 
 ---
 
@@ -41,8 +41,8 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
-- **`throughline:pause` label creation in `jaydomains/throughline` (fifth pass through this slot).** Still absent at Phase 22 chain-open 2026-05-28. Phase 22 chain proceeds on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19, 20, and 21 all ran clean on these; spec author committed at Phase 22 chain-open to create the label out-of-band during this chain. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action).
-- **Pre-existing frontend `bootstrapBlock.test.tsx` strict-typecheck errors observed but not fixed in Phase 22 Slice 1.** `pnpm --filter @throughline/frontend build` (which runs `tsc -b`) fails on five errors in `packages/frontend/test/bootstrapBlock.test.tsx` (lines 72, 188, 207, 232, 250) under Phase 21 Slice 4's introduction of `exactOptionalPropertyTypes` strictness on `Project.throughline_status`. The test suite itself passes (`pnpm --filter @throughline/frontend test` → 174 tests passing) because vitest does not run strict typecheck. Pre-existing on `main` post-Phase-21-Slice-4 — confirmed by `git stash` test. Surface here for the cohort-level heavy hardener pass at Phase 22 close to either fix or carry forward.
+- **`throughline:pause` label creation in `jaydomains/throughline` (fifth pass through this slot).** Still absent at Phase 22 chain-close 2026-05-28. Phase 22 chain ran end-to-end clean on the two fallback kill-switch signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19/20/21/22 all ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Will become the sixth-pass entry if the next chain opens without it.
+- **Pre-existing frontend `bootstrapBlock.test.tsx` strict-typecheck errors carried through Phase 22.** `pnpm --filter @throughline/frontend build` (which runs `tsc -b`) fails on five errors in `packages/frontend/test/bootstrapBlock.test.tsx` (lines 72, 188, 207, 232, 250) under Phase 21 Slice 4's introduction of `exactOptionalPropertyTypes` strictness on `Project.throughline_status`. The test suite itself passes (vitest does not run strict typecheck — Phase 22 added +8 tests → 182/182 across both slices). Pre-existing on `main` post-Phase-21-Slice-4 — confirmed by `git stash` test at Phase 22 chain-open. Carried into the cohort-level heavy hardener pass over Phases 19–22 — landing site to either fix or accept as a known carry-forward.
 
 ---
 
@@ -63,13 +63,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
+| _this PR_ | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
+| #64 | Phase 22 / Slice 1 — discipline-scan-state backend lifecycle (chain open) | `handovers/2026-05-28-phase-22-slice-1-discipline-scan-state-lifecycle.md` |
+| #62 | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
 | #61 | Phase 21 / Slice 3 — bootstrap archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring | `handovers/2026-05-28-phase-21-slice-3-worker-and-state-endpoint.md` |
 | #60 | Phase 21 / Slice 2 — bootstrap-output chokidar watcher (refcounted registry + startup-scan) | `handovers/2026-05-28-phase-21-slice-2-bootstrap-output-watcher.md` |
-| #59 | Phase 21 / Slice 1 — bootstrap prompt template + render endpoint + path-guard + `.gitignore` (chain open) | `handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md` |
-| #57 | Doc carry-forwards cleanup at Phase 20 → Phase 21 boundary | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-21.md` |
 
-(PR #56 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
+(PR #59 and #57 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 

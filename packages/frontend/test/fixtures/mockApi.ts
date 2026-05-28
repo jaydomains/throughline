@@ -351,6 +351,8 @@ export const mockApi = {
         created_at: string;
       }>;
     }>,
+    discipline_scan_state: 'complete' as const,
+    discipline_scan_last_run_at: '2026-05-28T14:00:00.000Z' as string | null,
   })),
 
   // Phase 12 — companion review runtime (C-D8). Default to no declared checklists so the
