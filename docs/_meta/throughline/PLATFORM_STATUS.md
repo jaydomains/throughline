@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Phase 21 build chain **opened** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`), four-slice decomposition (template + render endpoint / chokidar watcher / archive-quarantine worker / unified SettingsView block). Slice 1 (prompt template + render endpoint + path-guard + `.gitignore`) ships C-D21 surfaces 1, 2, and the `.gitignore` write from the implications block via PR [#59](https://github.com/jaydomains/throughline/pull/59); 1 fix-round (Gitar finding on redundant `resolveBundle` call in `resolveBundleFile` folded inline). Slices 2–4 pending. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
+**As of 2026-05-28.** Phase 21 build chain **in flight** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`). Two slices merged: PR #59 (slice 1 — prompt template + render endpoint + path-guard + `.gitignore`; 1 fix-round on redundant `resolveBundle`) and PR #60 (slice 2 — bootstrap-output chokidar watcher with refcounted registry + startup-scan; 1 fix-round on `register()` after `stop()` late-register race). Slices 3 (archive/quarantine worker + `GET /bootstrap/state`) and 4 (unified Bootstrap & clone-and-go SettingsView block) pending. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
 
 ---
 
 ## Current Phase
 
 **Phase:** Phase 21 (`bootstrap prompt template + Claude Code invocation contract`) in flight. Chain opened 2026-05-28.
-**Status:** Slice 1 (template + render endpoint + path-guard + `.gitignore`) PR #59 open and green-gate-passing (Gitar approved post fix-round 1; mergeable_state clean). Slices 2–4 pending: chokidar watcher / archive-quarantine worker + GET /bootstrap/state / unified Bootstrap & clone-and-go SettingsView block.
-**Next concrete action:** Slice 1 merges; chain runner auto-advances to Slice 2 (chokidar watcher). At slice 2 open, surface and document the watcher-cleanup policy for the abandoned-render case (spec-author lean: accept the leak).
+**Status:** Slices 1 and 2 merged. Slice 2 (`bootstrap/watcher.ts` chokidar registry) PR #60 closed with 1 fix-round on the `register()`-after-`stop()` late-register leak (Gitar finding folded inline via `stopping` flag guard). Slices 3 (worker + `GET /bootstrap/state`) and 4 (unified Bootstrap & clone-and-go SettingsView block) pending.
+**Next concrete action:** Chain runner auto-advances to slice 3. Slice 3 will land the real `createBootstrapWorker()`, thread it through `createBootstrapWatcherRegistry`, wire the registry into `server.ts` + `createProjectsService` + `BootstrapRenderDeps` (populating the optional fields slice 2 added), call `bootstrapWatcher.startupScan(projects)` after server start, and add `GET /api/projects/:id/bootstrap/state` for slice 4's consumption.
 
 ---
 
@@ -62,13 +62,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase 21 / Slice 1 — bootstrap prompt template + render endpoint + path-guard + `.gitignore` (chain open) | `handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md` |
+| _this PR_ | Phase 21 / Slice 2 — bootstrap-output chokidar watcher (refcounted registry + startup-scan) | `handovers/2026-05-28-phase-21-slice-2-bootstrap-output-watcher.md` |
+| #59 | Phase 21 / Slice 1 — bootstrap prompt template + render endpoint + path-guard + `.gitignore` (chain open) | `handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md` |
 | #57 | Doc carry-forwards cleanup at Phase 20 → Phase 21 boundary | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-21.md` |
 | #56 | Phase 20 / Slice 4 — review queue UI + GET /conflicts + POST /resolve + SettingsView entry block (chain close) | `handovers/2026-05-27-phase-20-slice-4-review-ui-and-resolve-endpoint.md` |
 | #55 | Phase 20 / Slice 3 — `POST /import` endpoint + transactional upsert + same-ms predicate | `handovers/2026-05-27-phase-20-slice-3-endpoint-upsert-predicate.md` |
-| #54 | Phase 20 / Slice 2 — bootstrap-id derivation module | `handovers/2026-05-27-phase-20-slice-2-derive-id-module.md` |
 
-(PR #53 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`. Last-five rule resumes its normal cadence.)
+(PR #54 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
 
 ---
 

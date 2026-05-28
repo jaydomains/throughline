@@ -5,16 +5,18 @@
   "slices": [
     {
       "id": "slice-1-prompt-template-render-endpoint-path-guard",
-      "status": "open",
+      "status": "merged",
       "prNumber": 59,
       "fixRounds": 1,
+      "mergedAt": "2026-05-28T10:21:00Z",
       "lastFinding": "Gitar PR #59: resolveBundleFile called registry.resolveBundle redundantly after the outer renderBootstrapPrompt had already gated on status === 'loaded'; opened a race window where the two calls could disagree (e.g. bundle file deleted between calls would cause the inner call to fall through to arm 3 silently). Folded inline in commit 53377e6 by removing the inner resolveBundle call entirely — outer call's loaded-gate plus arm 2 existsSync alone correctly captures the registry's arm precedence. Helper signature simplified (registry parameter dropped)."
     },
     {
       "id": "slice-2-bootstrap-output-watcher",
-      "status": "pending",
-      "prNumber": null,
-      "fixRounds": 0
+      "status": "open",
+      "prNumber": 60,
+      "fixRounds": 1,
+      "lastFinding": "Gitar PR #60: register() after stop() could leak a chokidar instance. Between stop()'s entries iteration and its trailing entries.clear(), a late register() inserts an entry whose Map reference is dropped by clear() but whose FSWatcher keeps running un-closed. Folded inline in commit dba1d4f via a `stopping` flag guard at register() entry; +1 regression test 'register after stop is a no-op'."
     },
     {
       "id": "slice-3-archive-quarantine-worker-and-bootstrap-state-endpoint",
@@ -29,13 +31,13 @@
       "fixRounds": 0
     }
   ],
-  "currentIndex": 0,
+  "currentIndex": 1,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
     "previousChain": "phase-20-bootstrap-ingest closed via PR #56 (tracking issue #52 closed 2026-05-27); the prior .claude-code/auto-continue-state.json was overwritten at Phase 21 chain-open.",
     "labelGap": "throughline:pause label still absent in repo at Phase 21 chain-open (fourth consecutive chain boundary without it). Spec-author confirmed at chain-open: create the label manually out-of-band; chain operates on the two fallback signals (marker file + /pause comment).",
-    "slice2WatcherCleanup": "Spec-author lean at Phase 21 chain-open: accept the watcher-leak for the 'user renders prompt then never runs Claude Code' case; document explicitly when slice 2 opens. Chokidar depth: 0 on a single file is near-free; backend restart self-clears the registry; render is a rare action — over-engineering self-clearing cleanup is the wrong cost trade.",
+    "slice2WatcherCleanup": "Locked at chain-open and documented in watcher.ts module header + register() comment: accept the watcher-leak for the 'user renders prompt then never runs Claude Code' abandonment case. Chokidar depth: 0 on a single directory is near-free; backend restart self-clears the registry; render is a rare action — over-engineering self-clearing cleanup is the wrong cost trade.",
     "slice4RegressionRisk": "Slice 4 replaces working components (ThroughlineStatusBlock + BootstrapReviewBlock) with a unified block, not greenfield UI. Slice 4's BootstrapBlock.test.tsx must explicitly cover retained behaviour from the old blocks (status banner across .throughline/ states; review-queue link still navigates correctly; stale-row count still displayed) — surfaced for slice 4's PR review."
   }
 }
