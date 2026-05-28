@@ -8,21 +8,21 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Phase 22 build chain **closed** — fourth implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm ran end-to-end clean. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63) (`Auto-continue: phase-22-build-enchanted-plum`) closes on Slice 2 merge. Two slices merged via PRs #64 (slice 1) and #TBD (slice 2); one fix-round total (slice 1 first-Gitar-review clean; slice 2 one inline fold-in for a small Gitar finding about symmetric optimistic-state revert in `onRunScan`'s catch block); zero halt-class triggers. Net ~1100 net lines across the chain (matches the chain-open `small` sizing projection). The discipline-drift scan-on-demand gate is live end-to-end: bootstrap-imported projects start at `pre-scan` (silent drift inbox on day one); SettingsView's new `DisciplineScanBlock` surfaces a prominent CTA for the first scan, demoted re-scan affordance afterward; periodic-review's two suppression sites are wired to one shared `shouldSuppressDisciplineSignals` condition so partial day-one noise cannot leak; non-bootstrap projects retain on-bind behaviour entirely. T-D57's Implications one-line correction folded into slice 1 ("as part of project creation" → "on the first successful bootstrap import for the project") per Phase 19 Slice 3's T-D52 amendment precedent. Phases 19–22 build cohort now feature-complete end-to-end; cohort-level heavy hardener pass triggers next to promote the cohort's anchors to `production-ready`.
+**As of 2026-05-28.** Cohort-level heavy hardener pass over **Phases 19–22 build outputs** complete (second cohort hardener under the two-cadence model; PR #43 covered the doc prereqs). Phases 19–22 build cohort now **production-ready end-to-end** — the bootstrap-and-clone-and-go arc is shippable as a single coherent feature. T-D51 / T-D52 / T-D53 / T-D54 / T-D55 / T-D56 / T-D57 + C-D19 / C-D20 / C-D21 promoted to `production-ready`. The pass landed: (1) the strict-tsc fix for the six pre-existing errors in `bootstrapBlock.test.tsx` (5 known) and `gatesView.test.tsx` (1 surfaced this pass via a CI-hole sweep — Phase 22 Slice 1's `rescanDisciplineDrift` retyping missed an inline mock); (2) `.github/workflows/ci.yml` running `pnpm -r typecheck && pnpm -r test && pnpm -r lint && pnpm -r build` so the gate's CI layer stops being a documented aspiration with no enforcement (advisory until the spec author sets it as a required status check in branch protection); (3) AUTO_CONTINUE_WORKFLOW.md kill-switch demotion of `throughline:pause` to optional/future per the five-pass run-clean evidence (marker file + `/pause` comments confirmed as the two canonical signals); (4) inline parenthetical amendments on C-D19 surface 6 / C-D20 surface 5 / C-D21 surface 6 documenting the Phase 21 Slice 4 unified-BootstrapBlock consolidation (T-D57 amendment precedent); (5) one-line authoring-discipline note capturing the "small phases may use T-D Implications in lieu of a companion C-D anchor" precedent (Phase 22 / T-D57); (6) three mechanical backfills — CHECKLIST §19 Slice 4 ticked (was `[ ]` despite PR #50 merged), PLATFORM_STATUS Recent Slice History rolled, Snapshot rewritten. Pre-fix CI-hole sweep result for the record: 6 typecheck errors / 0 lint errors / 500 backend + 182 frontend tests passing — blast radius across four chains run without enforced CI was six type errors, zero in shipped non-test code.
 
 ---
 
 ## Current Phase
 
-**Phase:** none in flight. Phase 22 closed 2026-05-28.
-**Status:** Phases 19–22 build cohort feature-complete end-to-end. Cohort-level heavy hardener pass over the Phase 19–22 build outputs is the next scheduled work (promotes T-D51 / T-D52 / T-D53 / T-D54 / T-D55 / T-D56 / T-D57 + C-D19 / C-D20 / C-D21 to `production-ready`). No open slices, no open PRs.
-**Next concrete action:** spec author triggers the cohort-level heavy hardener pass (or queues the next phase). No build phase is currently open.
+**Phase:** none in flight. Phase 22 closed 2026-05-28; cohort-level heavy hardener pass over the Phase 19–22 build outputs closed 2026-05-28.
+**Status:** Phases 19–22 build cohort `production-ready` end-to-end. No open slices, no open PRs (other than this hardener PR itself).
+**Next concrete action:** spec author queues the next build phase (or triggers the next out-of-band action — branch-protection required-check setting for the new CI workflow; see Queued Work).
 
 ---
 
 ## Locked Decisions This Cycle
 
-T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authoring stream). All entries below were promoted to `production-ready` 2026-05-26 by the cohort-level heavy hardener pass (PR #43). C-D anchors for the same cohort: C-D19, C-D20, C-D21. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. This table rolls when the next cohort's first new T-D / C-D anchor lands, so the just-promoted state stays visible across the immediately-next session.
+T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authoring stream + the Phases 19–22 build cohort). Doc-prereq anchors (T-D49…T-D57) promoted to `production-ready` 2026-05-26 by PR #43; the seven build-cohort T-D anchors plus C-D19 / C-D20 / C-D21 promoted to `production-ready` 2026-05-28 by this hardener pass over the build outputs. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. This table rolls when the next cohort's first new T-D / C-D anchor lands, so the just-promoted state stays visible across the immediately-next session.
 
 | Anchor | Phase | One-line |
 |---|---|---|
@@ -40,9 +40,8 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 
 ## Queued Work
 
-- **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
-- **`throughline:pause` label creation in `jaydomains/throughline` (fifth pass through this slot).** Still absent at Phase 22 chain-close 2026-05-28. Phase 22 chain ran end-to-end clean on the two fallback kill-switch signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19/20/21/22 all ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Will become the sixth-pass entry if the next chain opens without it.
-- **Pre-existing frontend `bootstrapBlock.test.tsx` strict-typecheck errors carried through Phase 22.** `pnpm --filter @throughline/frontend build` (which runs `tsc -b`) fails on five errors in `packages/frontend/test/bootstrapBlock.test.tsx` (lines 72, 188, 207, 232, 250) under Phase 21 Slice 4's introduction of `exactOptionalPropertyTypes` strictness on `Project.throughline_status`. The test suite itself passes (vitest does not run strict typecheck — Phase 22 added +8 tests → 182/182 across both slices). Pre-existing on `main` post-Phase-21-Slice-4 — confirmed by `git stash` test at Phase 22 chain-open. Carried into the cohort-level heavy hardener pass over Phases 19–22 — landing site to either fix or accept as a known carry-forward.
+- **Branch-protection required-check setting for `.github/workflows/ci.yml`** (manual repo-admin action). The hardener pass added the workflow; the spec author still needs to set it as a required status check in Settings → Branches → protection rule for it to actually gate merges. Until then the workflow runs advisory and the chain runner's local `pnpm -r typecheck && pnpm -r test && pnpm -r lint && pnpm -r build` pass remains the load-bearing check. Same out-of-band action class as the now-demoted label slot.
+- **`throughline:pause` label — formally accepted-and-stop-surfacing** (this hardener pass). The slot was open for five consecutive PLATFORM_STATUS rolls. Across Phases 19/20/21/22 the cohort ran end-to-end clean on the two canonical fallback signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments). Per the PR #43 Session-1-handover-gap adjudication precedent, this hardener pass demoted `throughline:pause` in `AUTO_CONTINUE_WORKFLOW.md` to optional/future rather than carrying the gap forward to a sixth pass. The label remains a valid third signal if the spec author later creates it; no further Queued Work entry until then. Recorded for posterity, not as work to do.
 
 ---
 
@@ -63,13 +62,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
+| _this PR_ | Cohort-level heavy hardener — Phases 19–22 build outputs | `handovers/2026-05-28-cohort-hardener-phases-19-22-build.md` |
+| #65 | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
 | #64 | Phase 22 / Slice 1 — discipline-scan-state backend lifecycle (chain open) | `handovers/2026-05-28-phase-22-slice-1-discipline-scan-state-lifecycle.md` |
 | #62 | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
 | #61 | Phase 21 / Slice 3 — bootstrap archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring | `handovers/2026-05-28-phase-21-slice-3-worker-and-state-endpoint.md` |
-| #60 | Phase 21 / Slice 2 — bootstrap-output chokidar watcher (refcounted registry + startup-scan) | `handovers/2026-05-28-phase-21-slice-2-bootstrap-output-watcher.md` |
 
-(PR #59 and #57 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PRs #59 and #60 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 

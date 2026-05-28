@@ -1,0 +1,53 @@
+name: CI
+
+# Runs the three-layer green gate's CI layer per
+# docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md: typecheck, test suite,
+# lint, and build all passing. Pre-existed only as policy until the
+# 2026-05-28 cohort-level heavy hardener pass over Phases 19–22 added this
+# workflow.
+#
+# Enforcement note: this workflow runs on every push and pull_request, but
+# it gates merges only if the spec author sets it as a required status
+# check in branch protection (Settings → Branches). Until that repo-admin
+# action lands the workflow is advisory; the chain runner's local pre-PR
+# pass remains the load-bearing check.
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - 'claude/**'
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9.0.0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm -r typecheck
+
+      - name: Test
+        run: pnpm -r test
+
+      - name: Lint
+        run: pnpm -r lint
+
+      - name: Build
+        run: pnpm -r build

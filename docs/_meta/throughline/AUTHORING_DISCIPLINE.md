@@ -44,6 +44,8 @@ A deliverable progresses through four explicit states:
 
 Per-deliverable current tier is tracked in `PLATFORM_STATUS.md`, not enumerated here — this file owns the rules; `PLATFORM_STATUS.md` owns the live state.
 
+**Anchor scaffolding for small phases.** Small-sized phases (Sizing: `small` in `ROADMAP.md`) may use a T-D anchor's Implications block as the implementation spec in lieu of a companion C-D anchor. Phase 22 / T-D57 is the canonical precedent: T-D57's Implications named the four implementation surfaces directly, no C-D anchor was minted, and both slices ran first-Gitar-review-clean. Larger phases that exceed the small-sizing threshold should mint a companion C-D anchor so the implementation-rationale layer stays separable from the functional-decision layer (Phases 19, 20, 21 — each medium or larger — followed this convention via C-D19 / C-D20 / C-D21).
+
 ---
 
 ## Pre-Work Doc Prep Gate

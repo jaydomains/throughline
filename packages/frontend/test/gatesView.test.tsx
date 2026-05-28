@@ -273,7 +273,11 @@ describe('Phase 8 — methodology-gates view', () => {
         },
       ],
     });
-    mockApi.rescanDisciplineDrift.mockResolvedValue({ groups: [] });
+    mockApi.rescanDisciplineDrift.mockResolvedValue({
+      groups: [],
+      discipline_scan_state: 'complete',
+      discipline_scan_last_run_at: '2026-05-28T14:00:00.000Z',
+    });
     renderAt(richSummary, 'rich');
     await waitFor(() =>
       expect(screen.getByTestId('drift-category-banned-strings')).toBeInTheDocument(),
