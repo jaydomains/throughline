@@ -165,6 +165,23 @@ describe('bootstrap watcher registry — lifecycle without chokidar', () => {
     await expect(first).resolves.toBeUndefined();
   });
 
+  it('register after stop is a no-op (no leaked watcher entry)', async () => {
+    // Gitar PR #60 edge case: between stop()'s entries iteration and its
+    // trailing entries.clear(), a late register() could insert an entry
+    // whose chokidar instance would never be closed. Guarded by the
+    // `stopping` flag — late registrations drop on the floor.
+    const worker = createStubWorker();
+    const reg = track(createBootstrapWatcherRegistry({ worker, watch: false }));
+    const { repoPath, outputPath } = makeRepo('late');
+    writeFileSync(outputPath, '{"version":1}', 'utf8');
+
+    await reg.stop();
+    reg.register('proj-late', repoPath);
+
+    // No enqueue for the late-registered project's existing file.
+    expect(worker.enqueued).toEqual([]);
+  });
+
   it('startupScan registers each project with a repo_path; skips those without', async () => {
     const worker = createStubWorker();
     const reg = track(createBootstrapWatcherRegistry({ worker, watch: false }));

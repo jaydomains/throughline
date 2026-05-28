@@ -136,6 +136,11 @@ export function createBootstrapWatcherRegistry(
 
   const registry: BootstrapWatcherRegistry = {
     register(projectId, repoPath) {
+      // Once stop() has been initiated, reject late registrations: stop's
+      // entries iteration has already passed (or its trailing entries.clear()
+      // is about to fire), so a new entry would drop out of the map but its
+      // chokidar instance would keep running un-closed.
+      if (stopping) return;
       if (entries.has(projectId)) return; // idempotent — accept the leak
       enqueueIfPresent(projectId, repoPath);
       void scheduleDrain();
