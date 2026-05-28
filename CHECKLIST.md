@@ -583,7 +583,7 @@ Slices (per spec-author-approved decomposition):
 - [x] **Slice 1** — Bundle loader third arm + repo-path normalisation (C-D19 surfaces 1 + 8). PR #47, merged 2026-05-27, 1 fix-round. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-19-slice-1-loader-third-arm-and-repo-path-normalisation.md`.
 - [x] **Slice 2** — Init config-reader + git-remote auto-detect + re-init flow (C-D19 surfaces 2 + 3 + 7). PR #48, merged 2026-05-27, 1 fix-round. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-19-slice-2-init-readers-and-reinit-flow.md`.
 - [x] **Slice 3** — CLI `throughline init` subcommand + T-D52 doc amendment (C-D19 surface 4). PR #49, merged 2026-05-27, 0 fix-rounds. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-19-slice-3-cli-init-subcommand.md`.
-- [ ] **Slice 4** — Frontend NewProjectModal `bundle_path` field + SettingsView missing-config block (C-D19 surfaces 5 + 6). Backend extends `GET /api/projects/:id` response with `throughline_status` (absent / partial / complete) computed at request time. PR pending.
+- [x] **Slice 4** — Frontend NewProjectModal `bundle_path` field + SettingsView missing-config block (C-D19 surfaces 5 + 6). Backend extends `GET /api/projects/:id` response with `throughline_status` (absent / partial / complete) computed at request time. PR #50, merged 2026-05-27, 0 fix-rounds. Handover: `docs/_meta/throughline/handovers/2026-05-27-phase-19-slice-4-frontend-modal-and-settings-view.md`. Chain `phase-19-clone-and-go` closed on this PR's merge. (CHECKLIST tick backfilled in 2026-05-28 cohort-level heavy hardener pass; the per-slice light hardener missed it.)
 
 ---
 

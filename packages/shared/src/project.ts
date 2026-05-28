@@ -23,8 +23,11 @@ export interface Project {
   updated_at: string;
   archived_at: string | null;
   // C-D19 surface 6 — computed at GET time, not persisted. Optional because
-  // pre-Phase-19 code paths may construct Project objects without it.
-  throughline_status?: ThroughlineStatus;
+  // pre-Phase-19 code paths may construct Project objects without it. The
+  // explicit `| undefined` is required under `exactOptionalPropertyTypes`
+  // (Phase 21 Slice 4) so test fixtures can pass `{ throughline_status:
+  // undefined }` to exercise the legacy-undefined path.
+  throughline_status?: ThroughlineStatus | undefined;
 }
 
 export interface CreateProjectInput {

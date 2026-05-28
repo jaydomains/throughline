@@ -21,8 +21,8 @@ The rhythm has been running live since the Phase 18 / doc-authoring cycle but wa
 A slice is mergeable only when **all three layers are simultaneously green**:
 
 1. **Gitar review** — no open findings. Findings folded inline as additional commits on the same branch; no separate fix-round branches.
-2. **CI** — typecheck, test suite, lint, and build all passing.
-3. **GitHub mergeable** — no merge conflicts; branch is up to date with base; no `throughline:pause` label; no protected-branch blocker.
+2. **CI** — `pnpm -r typecheck`, `pnpm -r test`, `pnpm -r lint`, and `pnpm -r build` all passing. The chain runner runs these four commands locally before opening the PR non-draft, and `.github/workflows/ci.yml` re-runs them on every push so the gate stays meaningful even when the chain runner skips the local pass. The CI workflow becomes an enforcing gate (vs an advisory one) only when set as a required status check in branch protection; until that repo-settings action lands, the local pre-PR pass is the load-bearing check.
+3. **GitHub mergeable** — no merge conflicts; branch is up to date with base; no kill-switch pause signal present (see Kill Switch); no protected-branch blocker.
 
 Two-of-three is not enough. Green-then-red is not green. The gate evaluates state at the moment of merge.
 
@@ -67,15 +67,15 @@ Reviewer-stall is **not** a halt class. A long-running Gitar review is normal; t
 
 ## Kill Switch (any-of)
 
-Three signals are checked at slice boundaries (post-merge, pre-next-slice-open). Any one present = halt:
+Two canonical signals are checked at slice boundaries (post-merge, pre-next-slice-open). Any one present = halt:
 
 1. **Marker file** at `.claude-code/auto-continue-pause`. Contents optional; presence alone is the signal. Lives in `.claude-code/` alongside the chain state file — Throughline-build tooling namespace, distinct from user-facing `.throughline/` config (per T-D51 namespace discipline).
 
-2. **`throughline:pause` label on the chain's tracking issue.** Each chain has a long-lived GitHub issue titled `Auto-continue: <chainId>` (e.g. `Auto-continue: phase-19-clone-and-go`) opened at chain start and closed at chain end. The tracking issue is the durable label-bearing surface — it persists across the chain's entire lifetime, ready to carry the `throughline:pause` label whenever the user applies it. Applying the label is the halt signal; removing it (alongside the user re-running the chain command) is the resume. This solves the between-slice edge case where no PR is currently open. The issue body doubles as a live progress log, updated after each slice merge (slice ID, PR number, merge timestamp, fix-round count). Chains become discoverable via the GitHub issue list filtered by the `auto-continue` label. The same `throughline:pause` label may also be applied to the currently-open slice PR as a transient signal during a single slice — both forms are valid; the tracking-issue label is the durable signal, the PR label is convenience.
+2. **PR/issue comment** beginning with `/pause`. Any commenter; first comment matching the prefix in the active PR's thread (or the tracking issue's thread, between slices) is sufficient. The comment body after `/pause` is captured as a pause reason if present.
 
-3. **PR comment** beginning with `/pause`. Any commenter; first comment matching the prefix in the active PR's thread (or the tracking issue's thread, between slices) is sufficient. The comment body after `/pause` is captured as a pause reason if present.
+Both signals are equivalent — `any-of` semantics. Resuming requires removing the active signal(s) and the user re-running the chain command.
 
-All three signals are equivalent — `any-of` semantics. The `throughline:` namespace prefix on the label avoids conflicts with other tooling. Resuming requires removing the active signal(s) and the user re-running the chain command.
+**Optional / future:** a `throughline:pause` label on the chain's tracking issue or the active slice PR. Each chain has a long-lived GitHub issue titled `Auto-continue: <chainId>` opened at chain start and closed at chain end; that issue is the durable label-bearing surface. The label was the original primary mechanism — but across the Phases 19/20/21/22 build cohort the label was never actually created in the `jaydomains/throughline` repo (five passes through the gap in successive PLATFORM_STATUS rolls), and all four chains ran end-to-end clean on the marker file + `/pause` comment signals alone. The 2026-05-28 cohort-level heavy hardener pass formally accepted-and-demoted the label per the PR #43 Session-1-handover-gap adjudication precedent: the label remains a valid third signal if the repo carries it, but the two canonical signals above are sufficient by themselves. Chains that need the label can re-promote it without doc surgery — apply the label, the runner picks it up; the demotion is a documentation reality check, not a behaviour change.
 
 ---
 

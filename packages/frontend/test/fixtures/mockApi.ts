@@ -2,6 +2,7 @@ import { vi } from 'vitest';
 import type {
   ApplyRequest,
   AttachedItemSummary,
+  BootstrapState,
   CommunicationGraph,
   CommunicationModelView,
   UpdateCommunicationProjectSettingsInput,
@@ -1176,18 +1177,20 @@ export const mockApi = {
       invocationCommand: 'cat "/tmp/repo/.throughline/bootstrap-prompt.md" | claude',
     },
   })),
-  getBootstrapState: vi.fn(async (_projectId: string) => ({
-    result: {
-      throughlineDir: 'absent' as const,
-      promptRendered: false,
-      pendingOutput: false,
-      lastIngest: null as null | { at: string; counts: { new: number; reimported: number; conflict: number; stale_flagged: number } },
-      archiveCount: 0,
-      quarantineCount: 0,
-      promptPath: null as string | null,
-      outputPath: null as string | null,
-    },
-  })),
+  getBootstrapState: vi.fn(
+    async (_projectId: string): Promise<{ result: BootstrapState }> => ({
+      result: {
+        throughlineDir: 'absent',
+        promptRendered: false,
+        pendingOutput: false,
+        lastIngest: null,
+        archiveCount: 0,
+        quarantineCount: 0,
+        promptPath: null,
+        outputPath: null,
+      },
+    }),
+  ),
 
   // Phase 8 — methodology gate runtime (C-D6).
   listGateFirings: vi.fn(async (_projectId: string) => ({ groups: [] as GateMomentGroup[] })),
