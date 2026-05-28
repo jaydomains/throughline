@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Phase 21 build chain **in flight** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`). Three slices merged: PR #59 (slice 1 — prompt template + render endpoint + path-guard + `.gitignore`), PR #60 (slice 2 — chokidar watcher with refcounted registry + startup-scan), PR #61 (slice 3 — archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring that resolves the construction cycle). Three fix-rounds total, one per slice (redundant `resolveBundle` / `register()`-after-`stop()` race / `quarantine()` deleting source on copy failure). Slice 4 (unified Bootstrap & clone-and-go SettingsView block) pending — chain-close slice. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
+**As of 2026-05-28.** Phase 21 build chain **closed** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm ran end-to-end clean. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`) closes on Slice 4 merge. Four slices merged via PRs #59, #60, #61, #62; three fix-rounds total (one per slices 1, 2, 3 — slice 4 first-Gitar-review clean); zero halt-class triggers. Net ~2585 lines (under the chain-open projection of 3500–4400; no slice exceeded 900 net lines). C-D21's six surfaces + the `.gitignore` write from the implications block all landed. The producer half of bootstrap is live: a user with a freshly-cloned + `throughline init`-ed repo can now click "Render bootstrap prompt", run the displayed command in Claude Code, and have the resulting `bootstrap-output.json` ingested + archived automatically. Phase 22 (discipline-drift scan-on-demand for bootstrapped projects) is next; doc prerequisites complete. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
 
 ---
 
 ## Current Phase
 
-**Phase:** Phase 21 (`bootstrap prompt template + Claude Code invocation contract`) in flight. Chain opened 2026-05-28.
-**Status:** Slices 1, 2, and 3 merged. Slice 3 (`bootstrap/worker.ts` + `GET /bootstrap/state` + server.ts wiring) PR #61 closed with 1 fix-round on the `quarantine()`-deletes-source-on-copy-failure case (Gitar finding folded inline by restructuring quarantine to write `.error.json` first, then copy+rm in a guarded try). The worker is now live in production: the watcher arms on first render call, startupScan picks up restart-recovery files before `app.listen`, and the unregister callback fires on project delete. Slice 4 (unified Bootstrap & clone-and-go SettingsView block, chain-close) pending.
-**Next concrete action:** Chain runner auto-advances to slice 4 (the chain's final slice). Slice 4 will replace `ThroughlineStatusBlock` + `BootstrapReviewBlock` in `packages/frontend/src/views/SettingsView.tsx` with a single `BootstrapBlock` that polls `GET /bootstrap/state` and surfaces the render button + copy-paste invocation panel + last-ingest summary + quarantine alerts. Per carry-forward: slice 4's `BootstrapBlock.test.tsx` must cover retained behaviour from the old blocks (status banner accuracy, review-queue link, stale-row count) — not just the new init affordance. Slice 4 handover closes the chain with the standard four-slice summary table.
+**Phase:** none in flight. Phase 21 closed 2026-05-28.
+**Status:** Phase 22 (`discipline-drift scan-on-demand for bootstrapped projects`) ready to chain-open — doc prerequisites complete (T-D57 minted; SPEC §7.14 scan-on-demand mini-section + §14 row added; WN-clone-Q6 back-referenced; WN-clone-Q7 reframed as a durable design principle). No open slices, no open PRs.
+**Next concrete action:** spec author opens Phase 22 tracking issue and approves chain shape; chain runs under the standard `AUTO_CONTINUE_WORKFLOW.md` rhythm.
 
 ---
 
@@ -41,7 +41,7 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
-- **`throughline:pause` label creation in `jaydomains/throughline` (fourth pass through this slot).** Still absent at Phase 21 chain-open 2026-05-28. Spec author committed at chain-open to create the label manually out-of-band; Phase 21 chain operates on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phase 19 and Phase 20 both ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Re-surfaced because this is now the fourth consecutive chain boundary to roll without it.
+- **`throughline:pause` label creation in `jaydomains/throughline` (fourth pass through this slot).** Still absent at Phase 21 chain-close 2026-05-28. Phase 21 chain ran end-to-end on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19, 20, and 21 all ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Will become the fifth-pass entry if Phase 22 opens without it.
 
 ---
 
@@ -62,13 +62,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase 21 / Slice 3 — bootstrap archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring | `handovers/2026-05-28-phase-21-slice-3-worker-and-state-endpoint.md` |
+| _this PR_ | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
+| #61 | Phase 21 / Slice 3 — bootstrap archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring | `handovers/2026-05-28-phase-21-slice-3-worker-and-state-endpoint.md` |
 | #60 | Phase 21 / Slice 2 — bootstrap-output chokidar watcher (refcounted registry + startup-scan) | `handovers/2026-05-28-phase-21-slice-2-bootstrap-output-watcher.md` |
 | #59 | Phase 21 / Slice 1 — bootstrap prompt template + render endpoint + path-guard + `.gitignore` (chain open) | `handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md` |
 | #57 | Doc carry-forwards cleanup at Phase 20 → Phase 21 boundary | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-21.md` |
-| #56 | Phase 20 / Slice 4 — review queue UI + GET /conflicts + POST /resolve + SettingsView entry block (chain close) | `handovers/2026-05-27-phase-20-slice-4-review-ui-and-resolve-endpoint.md` |
 
-(PR #55 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
+(PR #56 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
 
 ---
 
