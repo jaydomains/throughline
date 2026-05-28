@@ -64,3 +64,28 @@ export interface BootstrapResolveResult {
   noop: number;
   errors: Array<{ entity_id: string; message: string }>;
 }
+
+// Phase 21 — bootstrap render endpoint return (C-D21 surface 2).
+export interface BootstrapRenderResult {
+  promptPath: string;
+  outputPath: string;
+  bundlePath: string;
+  invocationCommand: string;
+}
+
+// Phase 21 — GET /api/projects/:id/bootstrap/state response (C-D21 surface 4).
+export interface BootstrapStateLastIngest {
+  at: string;
+  counts: BootstrapImportCounts;
+}
+
+export interface BootstrapState {
+  throughlineDir: 'absent' | 'present';
+  promptRendered: boolean;
+  pendingOutput: boolean;
+  lastIngest: BootstrapStateLastIngest | null;
+  archiveCount: number;
+  quarantineCount: number;
+  promptPath: string | null;
+  outputPath: string | null;
+}

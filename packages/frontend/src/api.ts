@@ -84,6 +84,8 @@ import type {
   BootstrapConflictResolution,
   BootstrapStaleResolution,
   BootstrapResolveResult,
+  BootstrapRenderResult,
+  BootstrapState,
 } from '@throughline/shared';
 
 export interface MethodologySummary {
@@ -552,6 +554,17 @@ export const api = {
     jsonFetch<{ result: BootstrapResolveResult }>(
       `/api/projects/${pid(projectId)}/import/resolve`,
       { method: 'POST', body: JSON.stringify(body) },
+    ),
+
+  // Phase 21 — bootstrap producer pipeline (C-D21).
+  renderBootstrapPrompt: (projectId: string) =>
+    jsonFetch<{ result: BootstrapRenderResult }>(
+      `/api/projects/${pid(projectId)}/bootstrap/render`,
+      { method: 'POST' },
+    ),
+  getBootstrapState: (projectId: string) =>
+    jsonFetch<{ result: BootstrapState }>(
+      `/api/projects/${pid(projectId)}/bootstrap/state`,
     ),
 
   listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {
