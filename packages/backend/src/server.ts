@@ -90,6 +90,8 @@ import { registerMdIngestRoutes } from './md-ingest/routes.js';
 import { createMdIngestWatcher, type MdIngestWatcher } from './md-ingest/watcher.js';
 import { createBootstrapImportService } from './bootstrap/service.js';
 import { registerBootstrapRoutes } from './bootstrap/routes.js';
+import { createBootstrapWatcherRegistry, type BootstrapWatcherRegistry } from './bootstrap/watcher.js';
+import { createBootstrapWorker } from './bootstrap/worker.js';
 import { createGitHubApi } from './github/api.js';
 import { createLocalGit } from './github/local-git.js';
 import { createGithubStateCache } from './github/state-cache.js';
@@ -151,7 +153,15 @@ export async function startServer(
       error: (m) => app.log.error(m),
     },
   });
-  const projects = createProjectsService(db, registry);
+  // C-D21 surface 3 — bootstrap-output watcher gets injected via a callback
+  // because the construction order is cyclic: the watcher needs a worker,
+  // the worker needs the import service, and the import service needs
+  // `projects`. `bootstrapWatcher` is populated below; the callback closes
+  // over it and resolves to a no-op until the watcher exists.
+  let bootstrapWatcher: BootstrapWatcherRegistry | null = null;
+  const projects = createProjectsService(db, registry, (projectId) => {
+    void bootstrapWatcher?.unregister(projectId);
+  });
   // C-D14 + C-D19 — re-attach bundle watch targets for projects already on disk.
   // Both the external arm (bundle_path) and the per-repo arm (repo_path) refcount
   // their watch targets; registerProjectBundle picks the right arm based on which
@@ -591,11 +601,42 @@ export async function startServer(
     library,
     registry,
   });
-  registerBootstrapRoutes(app, projects, bootstrapImport, {
-    projects,
-    registry,
-    methodologiesDir: config.methodologiesDir,
+  // C-D21 surfaces 3 + 4 — wire the bootstrap watcher + worker. Order:
+  //   1. worker holds the import service (already constructed above)
+  //   2. watcher registry wraps the worker
+  //   3. populate the let-bound watcher reference so projects.delete can
+  //      reach unregister
+  //   4. render endpoint deps get the watcher so first-render arms it
+  //   5. startupScan kicks after server.listen — closes the restart-mid-wait
+  //      data-loss gap (spec-author Q2 at chain-open)
+  const bootstrapWorker = createBootstrapWorker({
+    importService: bootstrapImport,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
   });
+  bootstrapWatcher = createBootstrapWatcherRegistry({
+    worker: bootstrapWorker,
+    logger: {
+      info: (m) => app.log.info(m),
+      warn: (m) => app.log.warn(m),
+      error: (m) => app.log.error(m),
+    },
+  });
+  registerBootstrapRoutes(
+    app,
+    projects,
+    bootstrapImport,
+    {
+      projects,
+      registry,
+      methodologiesDir: config.methodologiesDir,
+      watcher: bootstrapWatcher,
+    },
+    bootstrapWorker,
+  );
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 
@@ -604,6 +645,13 @@ export async function startServer(
   mdIngestWatcher.start();
   disciplineDrift.start();
   githubPoller.start();
+
+  // C-D21 surface 3 — startup-scan closes the restart-mid-wait data-loss
+  // gap: if Claude Code wrote a bootstrap-output.json while the backend was
+  // down, this picks it up before listen() so requests don't race with
+  // ingest. enqueueIfPresent inside register() is synchronous; the awaited
+  // drain processes them.
+  await bootstrapWatcher.startupScan(projects);
 
   await app.listen({ host: config.host, port: config.port });
   // Derive the bound port from the listening socket so callers requesting port 0
@@ -659,6 +707,7 @@ export async function startServer(
       await app.close();
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();
+      await bootstrapWatcher!.stop();
       await disciplineDrift.stop();
       githubPoller.stop();
       await registry.stop();

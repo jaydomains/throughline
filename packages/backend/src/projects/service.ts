@@ -7,7 +7,6 @@ import type { DB } from '../db/index.js';
 import { readProjectConfig } from '../init/config-reader.js';
 import { detectGitHubRemote } from '../init/git-remote.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
-import type { BootstrapWatcherRegistry } from '../bootstrap/watcher.js';
 
 const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
 
@@ -122,13 +121,18 @@ export interface ProjectsService {
   delete(id: string): void;
 }
 
+// C-D21 surface 3 — slice 3 wires the watcher into projects via a callback
+// rather than a direct reference so server.ts can resolve the construction
+// cycle: the watcher needs a worker, the worker needs the import service,
+// the import service needs `projects`. The callback closes over a let-bound
+// watcher that's populated after `projects` exists. Existing unit-test
+// callers that don't exercise the watcher omit this argument.
+export type BootstrapWatcherUnregisterHook = (projectId: string) => void;
+
 export function createProjectsService(
   db: DB,
   registry: MethodologyRegistry,
-  // C-D21 surface 3 — optional bootstrap-watcher registry. delete() fires
-  // unregister so a deleted project's chokidar instance is closed. Existing
-  // unit-test callers that don't exercise the watcher omit this argument.
-  bootstrapWatcher?: BootstrapWatcherRegistry,
+  onBootstrapUnregister?: BootstrapWatcherUnregisterHook,
 ): ProjectsService {
   return {
     list({ includeArchived = false } = {}) {
@@ -320,11 +324,11 @@ export function createProjectsService(
       // FK ON DELETE CASCADE handles per-project entity tables (C-D5).
       db.prepare('DELETE FROM projects WHERE id = ?').run(id);
       registry.unregisterProjectBundle(id);
-      // C-D21 surface 3 — close the bootstrap-output watcher (if any). Fire-
-      // and-forget: the registry's unregister awaits chokidar.close()
-      // internally; keeping delete() synchronous matches the existing
-      // service surface and the call site behaviour.
-      void bootstrapWatcher?.unregister(id);
+      // C-D21 surface 3 — close the bootstrap-output watcher (if any). The
+      // callback closes over a server.ts-scope watcher reference; if the
+      // server constructed projects before the watcher was created (the
+      // standard ordering), the callback no-ops until the watcher is wired.
+      onBootstrapUnregister?.(id);
       appendAudit(db, {
         projectId: null,
         entityType: 'project',
