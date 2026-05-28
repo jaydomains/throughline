@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-27.** Phase 20 build chain **closed** — second implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm ran end-to-end clean. Tracking issue [#52](https://github.com/jaydomains/throughline/issues/52) (`Auto-continue: phase-20-bootstrap-ingest`) closed on Slice 4 merge. Four slices merged via PRs #53, #54, #55, #56; two fix-rounds total (Slice 3 same-millisecond predicate edge case via rowid tie-break; Slice 4 entity_type narrowing + modal init-guard); zero halt-class triggers. C-D20 was updated in Slice 3 to reflect the inline-SQL choice in `bootstrap/service.ts` (implementation-shape refinement under spec-drift policy; no T-D change). Phase 21 (bootstrap prompt template + Claude Code invocation contract) is next; doc prerequisites already landed in Session 4 of the doc-authoring stream. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 20 minted zero new T-D anchors).
+**As of 2026-05-28.** Phase 21 build chain **opened** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`), four-slice decomposition (template + render endpoint / chokidar watcher / archive-quarantine worker / unified SettingsView block). Slice 1 (prompt template + render endpoint + path-guard + `.gitignore`) ships C-D21 surfaces 1, 2, and the `.gitignore` write from the implications block via PR [#59](https://github.com/jaydomains/throughline/pull/59); 1 fix-round (Gitar finding on redundant `resolveBundle` call in `resolveBundleFile` folded inline). Slices 2–4 pending. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
 
 ---
 
 ## Current Phase
 
-**Phase:** none in flight. Phase 20 closed 2026-05-27.
-**Status:** Phase 21 (`bootstrap prompt template + Claude Code invocation contract`) ready to chain-open — doc prerequisites complete (T-D55, T-D56, C-D21 minted; SPEC §7.28 + §14 amended; `docs/.throughline-schema.md` Throughline-managed transient files section added). No open slices, no open PRs.
-**Next concrete action:** spec author opens Phase 21 tracking issue and approves chain shape; chain runs under the standard `AUTO_CONTINUE_WORKFLOW.md` rhythm.
+**Phase:** Phase 21 (`bootstrap prompt template + Claude Code invocation contract`) in flight. Chain opened 2026-05-28.
+**Status:** Slice 1 (template + render endpoint + path-guard + `.gitignore`) PR #59 open and green-gate-passing (Gitar approved post fix-round 1; mergeable_state clean). Slices 2–4 pending: chokidar watcher / archive-quarantine worker + GET /bootstrap/state / unified Bootstrap & clone-and-go SettingsView block.
+**Next concrete action:** Slice 1 merges; chain runner auto-advances to Slice 2 (chokidar watcher). At slice 2 open, surface and document the watcher-cleanup policy for the abandoned-render case (spec-author lean: accept the leak).
 
 ---
 
@@ -41,7 +41,7 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
-- **`throughline:pause` label creation in `jaydomains/throughline` (third pass through this slot).** Still absent at Phase 20 chain-close 2026-05-27 (re-verified via `mcp__github__get_label` → 404). Manual spec-author step still pending; Phase 20 chain ran end-to-end on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — both Phase 19 and Phase 20 ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Re-surfaced because this is now the third consecutive chain boundary to roll without it.
+- **`throughline:pause` label creation in `jaydomains/throughline` (fourth pass through this slot).** Still absent at Phase 21 chain-open 2026-05-28. Spec author committed at chain-open to create the label manually out-of-band; Phase 21 chain operates on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phase 19 and Phase 20 both ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Re-surfaced because this is now the fourth consecutive chain boundary to roll without it.
 
 ---
 
@@ -62,13 +62,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Doc carry-forwards cleanup at Phase 20 → Phase 21 boundary | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-21.md` |
+| _this PR_ | Phase 21 / Slice 1 — bootstrap prompt template + render endpoint + path-guard + `.gitignore` (chain open) | `handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md` |
+| #57 | Doc carry-forwards cleanup at Phase 20 → Phase 21 boundary | `handovers/2026-05-27-carry-forwards-cleanup-pre-phase-21.md` |
 | #56 | Phase 20 / Slice 4 — review queue UI + GET /conflicts + POST /resolve + SettingsView entry block (chain close) | `handovers/2026-05-27-phase-20-slice-4-review-ui-and-resolve-endpoint.md` |
 | #55 | Phase 20 / Slice 3 — `POST /import` endpoint + transactional upsert + same-ms predicate | `handovers/2026-05-27-phase-20-slice-3-endpoint-upsert-predicate.md` |
 | #54 | Phase 20 / Slice 2 — bootstrap-id derivation module | `handovers/2026-05-27-phase-20-slice-2-derive-id-module.md` |
-| #53 | Phase 20 / Slice 1 — schema migration (bootstrap_id + bootstrap_stale columns + unique partial indexes, chain open) | `handovers/2026-05-27-phase-20-slice-1-schema-migration.md` |
 
-(PR #51 and the Phase 19 / cohort-hardener / doc-authoring stream rows roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. This is the first refresh under the standard last-five rule since the post-hardener cohort expansion in PR #51.)
+(PR #53 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`. Last-five rule resumes its normal cadence.)
 
 ---
 
