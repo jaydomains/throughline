@@ -27,13 +27,15 @@
     },
     {
       "id": "slice-4-review-ui-and-resolve-endpoint",
-      "status": "open",
+      "status": "merged",
       "prNumber": 56,
       "fixRounds": 1,
+      "mergedAt": "2026-05-27T20:26:00Z",
       "lastFinding": "Gitar PR #56: 2 findings. (1) Backend `tableForEntity` silently fell through to library_entries on unknown entity_type — fixed via exhaustive switch + up-front per-row validation in resolveConflicts so typos land as clear per-row errors. (2) Frontend init useEffect re-fired on parent re-renders with new lastImport/lastImportFile object refs, wiping user selections — fixed with an `initialized` state-flag guard. +3 regression tests."
     }
   ],
-  "currentIndex": 3,
+  "currentIndex": 4,
+  "chainClosedAt": "2026-05-27T20:26:00Z",
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
