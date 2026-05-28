@@ -602,9 +602,14 @@ Slices (per spec-author-approved decomposition):
 
 ## Phase 21 — Bootstrap prompt template and Claude Code invocation contract
 
-Phase 21 doc prerequisites landed in Session 4 of the doc-authoring stream (T-D55, T-D56, C-D21 minted; SPEC §7.28 + §14 amended; `docs/.throughline-schema.md` Throughline-managed transient files section added). Build prerequisites are complete and this phase is ready to open once Phase 20 lands.
+Phase 21 doc prerequisites landed in Session 4 of the doc-authoring stream (T-D55, T-D56, C-D21 minted; SPEC §7.28 + §14 amended; `docs/.throughline-schema.md` Throughline-managed transient files section added). Build chain opened 2026-05-28 — tracking issue #58 (`Auto-continue: phase-21-build-immutable-riddle`), chain state `.claude-code/auto-continue-state.json`.
 
-_Slice splits land when this phase's build session opens._
+Slices (per spec-author-approved decomposition):
+
+- [x] **Slice 1** — Prompt template (`packages/backend/src/bootstrap/prompt-template.md`, T-D55) + `POST /api/projects/:id/bootstrap/render` endpoint + idempotent `.throughline/.gitignore` write + defence-in-depth path-guard utility (C-D21 surfaces 1, 2, and the `.gitignore` write from the implications block). PR #59, merged 2026-05-28, 1 fix-round (redundant `resolveBundle` call in `resolveBundleFile` folded inline by removing the inner call entirely; outer `loaded`-gate plus arm-2 `existsSync` correctly captures registry arm precedence). Handover: `docs/_meta/throughline/handovers/2026-05-28-phase-21-slice-1-prompt-template-render-endpoint-path-guard.md`.
+- [ ] **Slice 2** — Bootstrap-output chokidar watcher (`packages/backend/src/bootstrap/watcher.ts`, mirrors `inbox/watcher.ts`). Refcounted per project; startup-scan mirrors inbox `enqueueExistingFiles()`. Exposes `BootstrapWorker` interface for slice 3 wiring (C-D21 surface 3).
+- [ ] **Slice 3** — Archive/quarantine worker (`packages/backend/src/bootstrap/worker.ts`) + `GET /api/projects/:id/bootstrap/state` read endpoint. Direct call to `BootstrapImportService.importBootstrap` (no HTTP self-call, inbox precedent). Archive on success, quarantine + `.error.json` on failure (C-D21 surface 4).
+- [ ] **Slice 4** — Unified Bootstrap & clone-and-go SettingsView block. Consolidates the existing `ThroughlineStatusBlock` + new init affordance + existing `BootstrapReviewBlock` into a single component (resolves the placement question C-D20 left open) (C-D21 surface 6). Re-bootstrap (C-D21 surface 5) has no new code — same flow re-run; idempotency covered by slice 3 integration test.
 
 ---
 

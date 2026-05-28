@@ -1,48 +1,41 @@
 {
-  "chainId": "phase-20-bootstrap-ingest",
-  "chainOpenedAt": "2026-05-27T17:00:00Z",
-  "trackingIssue": 52,
+  "chainId": "phase-21-build-immutable-riddle",
+  "chainOpenedAt": "2026-05-28T07:48:07Z",
+  "trackingIssue": 58,
   "slices": [
     {
-      "id": "slice-1-schema-migration",
-      "status": "merged",
-      "prNumber": 53,
-      "fixRounds": 0,
-      "mergedAt": "2026-05-27T19:29:00Z"
-    },
-    {
-      "id": "slice-2-derive-id-module",
-      "status": "merged",
-      "prNumber": 54,
-      "fixRounds": 0,
-      "mergedAt": "2026-05-27T19:37:00Z"
-    },
-    {
-      "id": "slice-3-endpoint-upsert-predicate",
-      "status": "merged",
-      "prNumber": 55,
+      "id": "slice-1-prompt-template-render-endpoint-path-guard",
+      "status": "open",
+      "prNumber": 59,
       "fixRounds": 1,
-      "mergedAt": "2026-05-27T20:01:00Z",
-      "lastFinding": "Gitar PR #55: strict `timestamp > ?` in predicate missed same-millisecond user edits. Folded inline via rowid-based tie-break (nanoid id is random, not insertion-ordered; SQLite rowid is monotonic per INSERT). +1 regression test."
+      "lastFinding": "Gitar PR #59: resolveBundleFile called registry.resolveBundle redundantly after the outer renderBootstrapPrompt had already gated on status === 'loaded'; opened a race window where the two calls could disagree (e.g. bundle file deleted between calls would cause the inner call to fall through to arm 3 silently). Folded inline in commit 53377e6 by removing the inner resolveBundle call entirely — outer call's loaded-gate plus arm 2 existsSync alone correctly captures the registry's arm precedence. Helper signature simplified (registry parameter dropped)."
     },
     {
-      "id": "slice-4-review-ui-and-resolve-endpoint",
-      "status": "merged",
-      "prNumber": 56,
-      "fixRounds": 1,
-      "mergedAt": "2026-05-27T20:26:00Z",
-      "lastFinding": "Gitar PR #56: 2 findings. (1) Backend `tableForEntity` silently fell through to library_entries on unknown entity_type — fixed via exhaustive switch + up-front per-row validation in resolveConflicts so typos land as clear per-row errors. (2) Frontend init useEffect re-fired on parent re-renders with new lastImport/lastImportFile object refs, wiping user selections — fixed with an `initialized` state-flag guard. +3 regression tests."
+      "id": "slice-2-bootstrap-output-watcher",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
+    },
+    {
+      "id": "slice-3-archive-quarantine-worker-and-bootstrap-state-endpoint",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
+    },
+    {
+      "id": "slice-4-unified-bootstrap-clone-and-go-settings-block",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
     }
   ],
-  "currentIndex": 4,
-  "chainClosedAt": "2026-05-27T20:26:00Z",
+  "currentIndex": 0,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
-    "previousChain": "phase-19-clone-and-go closed via PR #50 (tracking issue #46 closed); the prior .claude-code/auto-continue-state.json was not refreshed at chain-close and was overwritten at Phase 20 chain-open.",
-    "labelGap": "throughline:pause label still absent in repo; chain operates on the two fallback signals (marker file + /pause comment) per spec-author confirmation 2026-05-27.",
-    "slice3Sizing": "Slice 3 estimated 900-1100 lines is the calibration data point of this chain. Phase 19's biggest slice ran ~700 lines clean with one fix-round. If three fix-rounds fire on Slice 3, circuit-breaker rationale prescribes retroactive split rather than pre-emptive split.",
-    "slice3CodeSpecUpdate": "C-D20 updated in Slice 3 to reflect the inline-SQL implementation-shape choice in packages/backend/src/bootstrap/service.ts; the originally-prescribed `upsertByBootstrapId` methods on each entity service would have introduced asymmetric audit semantics and one-caller surface; per spec-drift policy this is an implementation-shape choice (C-D anchor update, no T-D change).",
-    "slice4Placement": "SettingsView colocation with ThroughlineStatusBlock is a placement decision C-D20 explicitly left open; Slice 4's handover documents the choice with a 'could move to dedicated block if surfacing density grows' caveat."
+    "previousChain": "phase-20-bootstrap-ingest closed via PR #56 (tracking issue #52 closed 2026-05-27); the prior .claude-code/auto-continue-state.json was overwritten at Phase 21 chain-open.",
+    "labelGap": "throughline:pause label still absent in repo at Phase 21 chain-open (fourth consecutive chain boundary without it). Spec-author confirmed at chain-open: create the label manually out-of-band; chain operates on the two fallback signals (marker file + /pause comment).",
+    "slice2WatcherCleanup": "Spec-author lean at Phase 21 chain-open: accept the watcher-leak for the 'user renders prompt then never runs Claude Code' case; document explicitly when slice 2 opens. Chokidar depth: 0 on a single file is near-free; backend restart self-clears the registry; render is a rare action — over-engineering self-clearing cleanup is the wrong cost trade.",
+    "slice4RegressionRisk": "Slice 4 replaces working components (ThroughlineStatusBlock + BootstrapReviewBlock) with a unified block, not greenfield UI. Slice 4's BootstrapBlock.test.tsx must explicitly cover retained behaviour from the old blocks (status banner across .throughline/ states; review-queue link still navigates correctly; stale-row count still displayed) — surfaced for slice 4's PR review."
   }
 }
