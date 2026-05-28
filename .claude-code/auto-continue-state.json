@@ -5,27 +5,31 @@
   "slices": [
     {
       "id": "slice-1-discipline-scan-state-lifecycle",
-      "status": "open",
+      "status": "merged",
       "prNumber": 64,
       "fixRounds": 0,
-      "lastFinding": null
+      "mergedAt": "2026-05-28T14:22:00Z",
+      "lastFinding": "Gitar PR #64 first review clean (zero findings)."
     },
     {
       "id": "slice-2-settings-discipline-scan-block",
-      "status": "pending",
-      "prNumber": null,
-      "fixRounds": 0
+      "status": "open",
+      "prNumber": 65,
+      "fixRounds": 1,
+      "lastFinding": "Gitar PR #65: catch block in onRunScan didn't revert localLastRun symmetrically with localState, and persistedLastRun was missing from useCallback deps. Low-risk today (catch doesn't reference persistedLastRun and localLastRun is never set before the await) but correct for resilience to future edits. Folded inline symmetrically."
     }
   ],
-  "currentIndex": 0,
+  "currentIndex": 1,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
     "previousChain": "phase-21-build-immutable-riddle closed via PRs #59/#60/#61/#62 (tracking issue #58 closed 2026-05-28). Prior .claude-code/auto-continue-state.json overwritten at Phase 22 chain-open.",
-    "labelGap": "throughline:pause label still absent in repo at Phase 22 chain-open (fifth consecutive chain boundary without it). Spec author committed at chain-open to create it out-of-band during this chain. Phase 22 chain runs end-to-end on the two fallback signals (marker file + /pause comment) regardless.",
+    "labelGap": "throughline:pause label still absent in repo at Phase 22 chain-close (fifth consecutive chain boundary without it). Phase 22 chain ran end-to-end on the two fallback signals (marker file + /pause comment). Will become sixth-pass entry if next chain opens without it.",
     "decisionsLocked": "Q1A: flat enum + nullable timestamp in settings_json. Q2A: bootstrap importBootstrap sets pre-scan on first ingest idempotently; T-D57 Implications one-line amendment folded into slice 1 (Phase 19 Slice 3 precedent). Q3A: new DisciplineScanBlock sibling within ProjectSection. Q4A: proceed on fallback kill-switch signals.",
-    "executionNotes": "(1) Gate condition written as 'suppress when pre-scan or running' — NOT 'surface only when complete' — so absent state maps to complete-implicit and non-bootstrap projects retain on-bind behaviour exactly. The 'non-bootstrap projects must still surface discipline signals' test failure message is explicit. (2) Periodic-review gate has two suppression sites (drift.listOpenDisciplineSignals and bundle-declared hygiene categories block) wired to ONE shared `shouldSuppressDisciplineSignals(state)` condition; cannot partial-leak.",
-    "preExistingFrontendTscDrift": "packages/frontend/test/bootstrapBlock.test.tsx has five strict-typecheck errors under exactOptionalPropertyTypes on Project.throughline_status. Pre-existing on main post-Phase-21-Slice-4 (confirmed via `git stash` test). Frontend test suite passes 174/174 (vitest does not run strict tsc). Surfaced in PLATFORM_STATUS.md Queued Work for the cohort-level heavy hardener pass at Phase 22 close.",
-    "sizing": "Phase 22 sized 'small' in ROADMAP. Plan-mode projection: slice 1 ~350-500 net lines, slice 2 ~250-400. No migration required (settings_json is existing TEXT JSON blob)."
+    "executionNotes": "(1) Gate condition written as 'suppress when pre-scan or running' — NOT 'surface only when complete' — so absent state maps to complete-implicit and non-bootstrap projects retain on-bind behaviour exactly. (2) Periodic-review gate has two suppression sites (drift.listOpenDisciplineSignals and bundle-declared hygiene categories block) wired to ONE shared `shouldSuppressDisciplineSignals(state)` condition computed once at top of buckets(); cannot partial-leak.",
+    "chainTotals": "2 slices, 1 fix-round total (slice 1 first-Gitar-review clean; slice 2 one inline fold-in for a Gitar resilience finding about symmetric optimistic-state revert in onRunScan's catch block), 0 halt-class triggers. Net ~1100 lines matches chain-open 'small' sizing. T-D57's four implementation surfaces + the T-D57 Implications one-line amendment all landed.",
+    "preExistingFrontendTscDrift": "packages/frontend/test/bootstrapBlock.test.tsx has five strict-typecheck errors under exactOptionalPropertyTypes on Project.throughline_status. Pre-existing on main post-Phase-21-Slice-4 (confirmed via `git stash` test at Phase 22 chain-open). Frontend test suite passes 182/182 (vitest does not run strict tsc). Surfaced in PLATFORM_STATUS.md Queued Work for the cohort-level heavy hardener pass over Phases 19-22 to either fix or carry forward.",
+    "nextChain": "Phases 19-22 cohort hardener pass triggers next (per AUTHORING_DISCIPLINE.md). No build phase currently queued; spec author drives the next cohort opening.",
+    "sizingCalibration": "Phase 22 estimated 'small' (~600-900 raw / ~900-1300 actual) at chain-open. Actual chain: ~1100 net lines — within projection. One fix-round total (slice 2's symmetric-revert resilience finding) — under Phase 21's three-fix-round total. Sized correctly + executed cleanly."
   }
 }
