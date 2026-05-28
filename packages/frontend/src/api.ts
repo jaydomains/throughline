@@ -15,6 +15,7 @@ import type {
   CreateLibraryEntryInput,
   CreateProjectInput,
   CreateSessionInput,
+  DisciplineDriftRescanResult,
   DisciplineDriftResult,
   DriftInboxResult,
   DriftReverifyResult,
@@ -654,7 +655,7 @@ export const api = {
   getDisciplineDrift: (projectId: string) =>
     jsonFetch<DisciplineDriftResult>(`/api/projects/${pid(projectId)}/discipline-drift`),
   rescanDisciplineDrift: (projectId: string) =>
-    jsonFetch<DisciplineDriftResult>(
+    jsonFetch<DisciplineDriftRescanResult>(
       `/api/projects/${pid(projectId)}/discipline-drift/rescan`,
       { method: 'POST' },
     ),

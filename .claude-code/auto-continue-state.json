@@ -1,51 +1,31 @@
 {
-  "chainId": "phase-21-build-immutable-riddle",
-  "chainOpenedAt": "2026-05-28T07:48:07Z",
-  "trackingIssue": 58,
+  "chainId": "phase-22-build-enchanted-plum",
+  "chainOpenedAt": "2026-05-28T14:00:00Z",
+  "trackingIssue": 63,
   "slices": [
     {
-      "id": "slice-1-prompt-template-render-endpoint-path-guard",
-      "status": "merged",
-      "prNumber": 59,
-      "fixRounds": 1,
-      "mergedAt": "2026-05-28T10:21:00Z",
-      "lastFinding": "Gitar PR #59: resolveBundleFile called registry.resolveBundle redundantly. Folded inline in commit 53377e6."
-    },
-    {
-      "id": "slice-2-bootstrap-output-watcher",
-      "status": "merged",
-      "prNumber": 60,
-      "fixRounds": 1,
-      "mergedAt": "2026-05-28T10:43:00Z",
-      "lastFinding": "Gitar PR #60: register() after stop() could leak a chokidar instance. Folded inline in commit dba1d4f via a `stopping` flag guard; +1 regression test."
-    },
-    {
-      "id": "slice-3-archive-quarantine-worker-and-bootstrap-state-endpoint",
-      "status": "merged",
-      "prNumber": 61,
-      "fixRounds": 1,
-      "mergedAt": "2026-05-28T11:00:00Z",
-      "lastFinding": "Gitar PR #61: quarantine() deleted source file even when copyFileSync failed. Folded inline in commit 72fe972 by restructuring quarantine to write .error.json first, then copy+rm in a guarded try."
-    },
-    {
-      "id": "slice-4-unified-bootstrap-clone-and-go-settings-block",
+      "id": "slice-1-discipline-scan-state-lifecycle",
       "status": "open",
-      "prNumber": 62,
+      "prNumber": null,
       "fixRounds": 0,
-      "lastFinding": "Gitar PR #62 first review clean (zero findings). Chain-close slice — consolidates ThroughlineStatusBlock + BootstrapReviewBlock into unified BootstrapBlock + Phase 21 render/state/quarantine affordances."
+      "lastFinding": null
+    },
+    {
+      "id": "slice-2-settings-discipline-scan-block",
+      "status": "pending",
+      "prNumber": null,
+      "fixRounds": 0
     }
   ],
-  "currentIndex": 3,
-  "chainClosedAt": "2026-05-28T11:07:00Z",
+  "currentIndex": 0,
   "lastPollAt": null,
   "haltReason": null,
   "notes": {
-    "previousChain": "phase-20-bootstrap-ingest closed via PR #56 (tracking issue #52 closed 2026-05-27); the prior .claude-code/auto-continue-state.json was overwritten at Phase 21 chain-open.",
-    "labelGap": "throughline:pause label still absent in repo at Phase 21 chain-close (fourth consecutive chain boundary without it). Phase 21 chain ran end-to-end clean on the two fallback signals (marker file + /pause comment).",
-    "slice2WatcherCleanup": "Locked at chain-open and documented in watcher.ts module header + register() comment: accept the watcher-leak for the 'user renders prompt then never runs Claude Code' abandonment case.",
-    "slice3ProjectsServiceRefactor": "Slice 2's bootstrapWatcher?: BootstrapWatcherRegistry direct parameter on createProjectsService was replaced in slice 3 with an onBootstrapUnregister?: (projectId: string) => void callback. The construction cycle (watcher needs worker, worker needs import service, import service needs projects) couldn't be resolved with a direct-reference param.",
-    "chainTotals": "4 slices, 3 fix-rounds (one per slices 1, 2, 3 — slice 4 first-review clean), 0 halt-class triggers. Net ~2585 lines under chain-open projection of 3500-4400. C-D21's six surfaces + .gitignore write all landed.",
-    "sizingCalibration": "Phase 21 estimated ~2200 raw / ~3500-4400 actual at chain-open (1.3-1.5× multiplier carried forward from Phases 19+20). Actual chain came in under projection because every slice consumed substantial existing precedent (inbox watcher + worker; existing canonicalisation; existing fastify routes). Phases 22+ should not assume the same headroom; this chain's discount was precedent-driven.",
-    "nextChain": "Phase 22 (discipline-drift scan-on-demand for bootstrapped projects). Doc prerequisites complete (T-D57 minted; SPEC §7.14 scan-on-demand mini-section + §14 row added). Next action: spec-author plan-mode entry for Phase 22 chain-open."
+    "previousChain": "phase-21-build-immutable-riddle closed via PRs #59/#60/#61/#62 (tracking issue #58 closed 2026-05-28). Prior .claude-code/auto-continue-state.json overwritten at Phase 22 chain-open.",
+    "labelGap": "throughline:pause label still absent in repo at Phase 22 chain-open (fifth consecutive chain boundary without it). Spec author committed at chain-open to create it out-of-band during this chain. Phase 22 chain runs end-to-end on the two fallback signals (marker file + /pause comment) regardless.",
+    "decisionsLocked": "Q1A: flat enum + nullable timestamp in settings_json. Q2A: bootstrap importBootstrap sets pre-scan on first ingest idempotently; T-D57 Implications one-line amendment folded into slice 1 (Phase 19 Slice 3 precedent). Q3A: new DisciplineScanBlock sibling within ProjectSection. Q4A: proceed on fallback kill-switch signals.",
+    "executionNotes": "(1) Gate condition written as 'suppress when pre-scan or running' — NOT 'surface only when complete' — so absent state maps to complete-implicit and non-bootstrap projects retain on-bind behaviour exactly. The 'non-bootstrap projects must still surface discipline signals' test failure message is explicit. (2) Periodic-review gate has two suppression sites (drift.listOpenDisciplineSignals and bundle-declared hygiene categories block) wired to ONE shared `shouldSuppressDisciplineSignals(state)` condition; cannot partial-leak.",
+    "preExistingFrontendTscDrift": "packages/frontend/test/bootstrapBlock.test.tsx has five strict-typecheck errors under exactOptionalPropertyTypes on Project.throughline_status. Pre-existing on main post-Phase-21-Slice-4 (confirmed via `git stash` test). Frontend test suite passes 174/174 (vitest does not run strict tsc). Surfaced in PLATFORM_STATUS.md Queued Work for the cohort-level heavy hardener pass at Phase 22 close.",
+    "sizing": "Phase 22 sized 'small' in ROADMAP. Plan-mode projection: slice 1 ~350-500 net lines, slice 2 ~250-400. No migration required (settings_json is existing TEXT JSON blob)."
   }
 }

@@ -1,7 +1,9 @@
-import type {
-  HygieneBucket,
-  PeriodicReviewResult,
-  PeriodicReviewSynthesis,
+import {
+  type HygieneBucket,
+  type PeriodicReviewResult,
+  type PeriodicReviewSynthesis,
+  readDisciplineScan,
+  shouldSuppressDisciplineSignals,
 } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
@@ -96,6 +98,22 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
   function buckets(projectId: string): HygieneBucket[] {
     const out: HygieneBucket[] = [];
 
+    // Phase 22 / T-D57 — discipline-drift scan-on-demand gate. Read the
+    // project's `discipline_scan_state` ONCE at the top and route both
+    // discipline-drift suppression sites below through the same condition
+    // check so a project in `pre-scan` or `running` cannot have partial day-one
+    // noise leak through one site while being suppressed at the other.
+    //
+    // The gate is written as "suppress when pre-scan or running" — NOT
+    // "surface only when complete" — so absent state (every non-bootstrap
+    // project pre-Phase-22, plus every project that goes through the standard
+    // create-project flow without bootstrap) maps to complete-implicit and
+    // retains existing on-bind behaviour exactly. Non-bootstrap projects MUST
+    // still surface discipline signals.
+    const p = projects.get(projectId);
+    const { state: scanState } = readDisciplineScan(p?.settings_json);
+    const suppressDiscipline = shouldSuppressDisciplineSignals(scanState);
+
     const code = drift.listOpenCodeSignals(projectId);
     out.push({
       category: 'code-drift',
@@ -104,7 +122,7 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
       entries: code.map((s) => ({ ref: s.id, detail: `${s.category}: ${s.reason}` })),
     });
 
-    const disc = drift.listOpenDisciplineSignals(projectId);
+    const disc = suppressDiscipline ? [] : drift.listOpenDisciplineSignals(projectId);
     out.push({
       category: 'discipline-drift',
       label: 'Open discipline-drift signals',
@@ -122,14 +140,15 @@ export function createPeriodicReviewService(opts: CreateOptions): PeriodicReview
 
     // Bundle-declared discipline-drift categories (SPEC §7.18 "bundle's rules"): surface
     // each declared category with its open-signal count so a category with zero signals
-    // is still visible as a hygiene dimension.
-    const p = projects.get(projectId);
+    // is still visible as a hygiene dimension. Same Phase 22 suppression gate as the
+    // discipline-drift bucket above — bound to a single shared condition so the two
+    // sites can't drift apart.
     const loaded = p ? registry.resolveBundle(p.bundle_id, p.bundle_path, p.repo_path) : null;
     const declared =
       loaded && loaded.status === 'loaded'
         ? loaded.bundle.validation_rules.discipline_drift_categories
         : [];
-    if (declared.length > 0) {
+    if (declared.length > 0 && !suppressDiscipline) {
       const byCat = new Map<string, number>();
       for (const s of disc) byCat.set(s.category, (byCat.get(s.category) ?? 0) + 1);
       out.push({

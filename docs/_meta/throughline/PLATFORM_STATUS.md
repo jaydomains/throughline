@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Phase 21 build chain **closed** — third implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm ran end-to-end clean. Tracking issue [#58](https://github.com/jaydomains/throughline/issues/58) (`Auto-continue: phase-21-build-immutable-riddle`) closes on Slice 4 merge. Four slices merged via PRs #59, #60, #61, #62; three fix-rounds total (one per slices 1, 2, 3 — slice 4 first-Gitar-review clean); zero halt-class triggers. Net ~2585 lines (under the chain-open projection of 3500–4400; no slice exceeded 900 net lines). C-D21's six surfaces + the `.gitignore` write from the implications block all landed. The producer half of bootstrap is live: a user with a freshly-cloned + `throughline init`-ed repo can now click "Render bootstrap prompt", run the displayed command in Claude Code, and have the resulting `bootstrap-output.json` ingested + archived automatically. Phase 22 (discipline-drift scan-on-demand for bootstrapped projects) is next; doc prerequisites complete. Most recent decision: T-D57 (2026-05-26, unchanged — Phase 21 minted zero new T-D anchors).
+**As of 2026-05-28.** Phase 22 build chain **opened** — fourth implementation chain under the codified `AUTO_CONTINUE_WORKFLOW.md` rhythm. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63) (`Auto-continue: phase-22-build-enchanted-plum`). Two slices approved at plan-mode: backend `discipline_scan_state` lifecycle (slice 1) + frontend `DisciplineScanBlock` (slice 2). Slice 1 in flight; ~PR TBD. T-D57's Implications one-line correction folded into slice 1 ("as part of project creation" → "on the first successful bootstrap import for the project") per Phase 19 Slice 3's T-D52 amendment precedent. Most recent decision: T-D57 (unchanged in content; amended for build-time wording match).
 
 ---
 
 ## Current Phase
 
-**Phase:** none in flight. Phase 21 closed 2026-05-28.
-**Status:** Phase 22 (`discipline-drift scan-on-demand for bootstrapped projects`) ready to chain-open — doc prerequisites complete (T-D57 minted; SPEC §7.14 scan-on-demand mini-section + §14 row added; WN-clone-Q6 back-referenced; WN-clone-Q7 reframed as a durable design principle). No open slices, no open PRs.
-**Next concrete action:** spec author opens Phase 22 tracking issue and approves chain shape; chain runs under the standard `AUTO_CONTINUE_WORKFLOW.md` rhythm.
+**Phase:** Phase 22 (`discipline-drift scan-on-demand for bootstrapped projects`) — chain opened 2026-05-28 as `phase-22-build-enchanted-plum`. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63).
+**Status:** Slice 1 (backend `discipline_scan_state` lifecycle) PR open (non-draft); Slice 2 pending. Spec-author Q1A/Q2A/Q3A/Q4A locked at chain-open.
+**Next concrete action:** slice 1 PR runs the three-layer green gate (Gitar review + CI + GitHub mergeable). On merge, slice 2 (frontend `DisciplineScanBlock`) auto-opens.
 
 ---
 
@@ -41,7 +41,8 @@ T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authori
 ## Queued Work
 
 - **Cohort-level heavy hardener pass over Phases 19–22 build outputs (triggered at Phase 22 close).** The next scheduled hardener pass covers the full Phases 19–22 build cohort cumulatively, not Phase 22 alone — same shape as PR #43 covered the Phases 19–22 *doc-prereqs* cohort. Triggers at Phase 22 close; promotes the cohort's anchors to `production-ready` and rolls `PLATFORM_STATUS.md` accordingly.
-- **`throughline:pause` label creation in `jaydomains/throughline` (fourth pass through this slot).** Still absent at Phase 21 chain-close 2026-05-28. Phase 21 chain ran end-to-end on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19, 20, and 21 all ran clean on these. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action). Will become the fifth-pass entry if Phase 22 opens without it.
+- **`throughline:pause` label creation in `jaydomains/throughline` (fifth pass through this slot).** Still absent at Phase 22 chain-open 2026-05-28. Phase 22 chain proceeds on the two fallback kill-switch signals as planned (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments) — Phases 19, 20, and 21 all ran clean on these; spec author committed at Phase 22 chain-open to create the label out-of-band during this chain. Closes when `gh label create throughline:pause` runs against the repo (or the equivalent admin UI action).
+- **Pre-existing frontend `bootstrapBlock.test.tsx` strict-typecheck errors observed but not fixed in Phase 22 Slice 1.** `pnpm --filter @throughline/frontend build` (which runs `tsc -b`) fails on five errors in `packages/frontend/test/bootstrapBlock.test.tsx` (lines 72, 188, 207, 232, 250) under Phase 21 Slice 4's introduction of `exactOptionalPropertyTypes` strictness on `Project.throughline_status`. The test suite itself passes (`pnpm --filter @throughline/frontend test` → 174 tests passing) because vitest does not run strict typecheck. Pre-existing on `main` post-Phase-21-Slice-4 — confirmed by `git stash` test. Surface here for the cohort-level heavy hardener pass at Phase 22 close to either fix or carry forward.
 
 ---
 

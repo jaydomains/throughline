@@ -118,6 +118,14 @@ export interface ProjectsService {
   get(id: string): Project | null;
   create(input: CreateProjectInput): Project;
   update(id: string, input: UpdateProjectInput): Project;
+  // Merge-update a subset of fields inside `settings_json` without touching
+  // sibling fields. Phase 22 uses it for the discipline-scan state lifecycle
+  // (bootstrap-ingest sets pre-scan; rescan endpoint drives running → complete)
+  // because the existing `update()` replaces `settings_json` wholesale via
+  // `effective.settings ?? before.settings_json`, which would clobber siblings
+  // like `periodic_review_interval_days`. Idempotent; no audit row written
+  // (settings_json mutations are implementation-managed, not user-edits).
+  updateSettings(id: string, partial: Record<string, unknown>): Project;
   delete(id: string): void;
 }
 
@@ -315,6 +323,17 @@ export function createProjectsService(
         }
       }
 
+      return this.get(id)!;
+    },
+
+    updateSettings(id, partial) {
+      const before = this.get(id);
+      if (!before) throw new Error(`project ${id} not found`);
+      const merged = { ...before.settings_json, ...partial };
+      const now = new Date().toISOString();
+      db.prepare(
+        'UPDATE projects SET settings_json = ?, updated_at = ? WHERE id = ?',
+      ).run(JSON.stringify(merged), now, id);
       return this.get(id)!;
     },
 
