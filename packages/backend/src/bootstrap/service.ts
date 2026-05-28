@@ -1,4 +1,9 @@
-import type { AuditActor, AuditEntityType, ItemPolicy } from '@throughline/shared';
+import {
+  type AuditActor,
+  type AuditEntityType,
+  type ItemPolicy,
+  readDisciplineScan,
+} from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
@@ -286,7 +291,32 @@ export function createBootstrapImportService(svc: DBService): BootstrapImportSer
       if (!validation.ok) {
         throw new BootstrapValidationFailedError(validation.errors);
       }
-      return runImportTransaction(svc, projectId, validation.parsed);
+      const result = runImportTransaction(svc, projectId, validation.parsed);
+      // T-D57 / Phase 22 Q2 — first bootstrap import for the project flips
+      // `discipline_scan_state` to `pre-scan`. Idempotent: re-imports do not
+      // overwrite an existing state (a project mid-rescan stays `running`; a
+      // re-bootstrapped project that already completed its first scan stays
+      // `complete`). Runs post-transaction so a failed import leaves no state
+      // residue. Non-bootstrap projects never reach this code path, so their
+      // `discipline_scan_state` stays absent and is treated as `complete` by
+      // the periodic-review gate (preserving existing on-bind behaviour).
+      //
+      // T-D57's Implications block originally read "as part of project
+      // creation"; the spec-author-confirmed amendment at this slice's
+      // chain-open re-phrased that to "on the first successful bootstrap
+      // import for the project" because Phase 20's importBootstrap upserts
+      // into existing projects rather than creating them. See DECISIONS.md
+      // T-D57 (amended this slice) and Phase 19 Slice 3's T-D52
+      // `/api/health` → `/health` precedent for the in-slice doc-amendment
+      // pattern.
+      const project = svc.projects.get(projectId);
+      if (project) {
+        const { state } = readDisciplineScan(project.settings_json);
+        if (state === undefined) {
+          svc.projects.updateSettings(projectId, { discipline_scan_state: 'pre-scan' });
+        }
+      }
+      return result;
     },
     listConflicts(projectId) {
       const project = svc.projects.get(projectId);
