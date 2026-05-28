@@ -591,7 +591,11 @@ export async function startServer(
     library,
     registry,
   });
-  registerBootstrapRoutes(app, projects, bootstrapImport);
+  registerBootstrapRoutes(app, projects, bootstrapImport, {
+    projects,
+    registry,
+    methodologiesDir: config.methodologiesDir,
+  });
   // Static-serve registers a catch-all and must come last so API routes win.
   if (serveFrontend) registerWebRoutes(app);
 

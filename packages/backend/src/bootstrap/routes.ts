@@ -7,6 +7,15 @@ import {
   type ConflictResolution,
   type StaleResolution,
 } from './service.js';
+import {
+  BootstrapPathEscapeError,
+} from './path-guard.js';
+import {
+  BootstrapRenderNoBundleBoundError,
+  BootstrapRenderProjectNotFoundError,
+  renderBootstrapPrompt,
+  type BootstrapRenderDeps,
+} from './render.js';
 import type { ProjectsService } from '../projects/service.js';
 
 // C-D20 surface 2 — `POST /api/projects/:id/import` (Slice 3) — accepts the
@@ -20,6 +29,14 @@ import type { ProjectsService } from '../projects/service.js';
 // import). `POST /api/projects/:id/import/resolve` applies per-row
 // resolutions: keep_mine / take_theirs for conflicts; keep / delete for
 // stale (archive is deferred — no archive surface in v1).
+//
+// C-D21 surface 2 — `POST /api/projects/:id/bootstrap/render` (Phase 21
+// Slice 1) — renders the generic prompt template (T-D55) against the
+// project's resolved bundle, prepends the fixed parameter block (bundle file
+// path, canonical repo root, declared output path), writes
+// `<repo_path>/.throughline/bootstrap-prompt.md`, maintains the
+// Throughline-managed `.throughline/.gitignore`, and returns a
+// copy-pasteable invocation command for the user's Claude Code session.
 
 interface ResolveBody {
   conflicts?: ConflictResolution[];
@@ -30,6 +47,7 @@ export function registerBootstrapRoutes(
   app: FastifyInstance,
   projects: ProjectsService,
   service: BootstrapImportService,
+  render: BootstrapRenderDeps,
 ): void {
   app.post<{ Params: { id: string }; Body: unknown }>(
     '/api/projects/:id/import',
@@ -89,6 +107,27 @@ export function registerBootstrapRoutes(
         }
         if (err instanceof BootstrapNoBundleBoundError) {
           return reply.code(400).send({ error: 'no_bundle_bound' });
+        }
+        throw err;
+      }
+    },
+  );
+
+  app.post<{ Params: { id: string } }>(
+    '/api/projects/:id/bootstrap/render',
+    async (req, reply) => {
+      try {
+        const result = renderBootstrapPrompt(req.params.id, render);
+        return { result };
+      } catch (err) {
+        if (err instanceof BootstrapRenderProjectNotFoundError) {
+          return reply.code(404).send({ error: 'project_not_found' });
+        }
+        if (err instanceof BootstrapRenderNoBundleBoundError) {
+          return reply.code(400).send({ error: 'no_bundle_bound' });
+        }
+        if (err instanceof BootstrapPathEscapeError) {
+          return reply.code(400).send({ error: 'path_escape' });
         }
         throw err;
       }
