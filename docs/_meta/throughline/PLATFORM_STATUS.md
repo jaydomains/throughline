@@ -8,33 +8,25 @@
 
 ## Snapshot
 
-**As of 2026-05-28.** Cohort-level heavy hardener pass over **Phases 19–22 build outputs** complete (second cohort hardener under the two-cadence model; PR #43 covered the doc prereqs). Phases 19–22 build cohort now **production-ready end-to-end** — the bootstrap-and-clone-and-go arc is shippable as a single coherent feature. T-D51 / T-D52 / T-D53 / T-D54 / T-D55 / T-D56 / T-D57 + C-D19 / C-D20 / C-D21 promoted to `production-ready`. The pass landed: (1) the strict-tsc fix for the six pre-existing errors in `bootstrapBlock.test.tsx` (5 known) and `gatesView.test.tsx` (1 surfaced this pass via a CI-hole sweep — Phase 22 Slice 1's `rescanDisciplineDrift` retyping missed an inline mock); (2) `.github/workflows/ci.yml` running `pnpm -r typecheck && pnpm -r test && pnpm -r lint && pnpm -r build` so the gate's CI layer stops being a documented aspiration with no enforcement (advisory until the spec author sets it as a required status check in branch protection); (3) AUTO_CONTINUE_WORKFLOW.md kill-switch demotion of `throughline:pause` to optional/future per the five-pass run-clean evidence (marker file + `/pause` comments confirmed as the two canonical signals); (4) inline parenthetical amendments on C-D19 surface 6 / C-D20 surface 5 / C-D21 surface 6 documenting the Phase 21 Slice 4 unified-BootstrapBlock consolidation (T-D57 amendment precedent); (5) one-line authoring-discipline note capturing the "small phases may use T-D Implications in lieu of a companion C-D anchor" precedent (Phase 22 / T-D57); (6) three mechanical backfills — CHECKLIST §19 Slice 4 ticked (was `[ ]` despite PR #50 merged), PLATFORM_STATUS Recent Slice History rolled, Snapshot rewritten. Pre-fix CI-hole sweep result for the record: 6 typecheck errors / 0 lint errors / 500 backend + 182 frontend tests passing — blast radius across four chains run without enforced CI was six type errors, zero in shipped non-test code.
+**As of 2026-05-29.** Audit-fix **Phase A** (foundation fixes) landed — first of four sequential audit-fix workstreams (A → B → C → D) derived from the 2026-05 five-audit cycle (build, bugs, functional, silent-failure, improvements). Single PR in the cohort-hardener shape (not a multi-slice chain). Five deliverables: **(1) F1** — `@throughline/shared` gains a dual-condition `exports` map (`types` / `development` → src, `default` → built `dist/`) so the build artifact is runnable under plain `node` while every dev/typecheck/test/bundle path stays on source; backend `dev` / `start` pass `--conditions=development` to keep tsx on source. Verified end-to-end: `node` → `dist` (17 exports), `tsx --conditions=development` → `src` with `dist` absent, plain `tsx` crashes without `dist` (proving the flag is load-bearing — tsx does not honour `development` by default). Convention recorded as **C-D22**; resolves the dead-weight-`dist` concern (it now has a real consumer). **(2) I1** — backend `test/**` brought into typecheck via new `packages/backend/tsconfig.test.json` (src + test, `noEmit`) wired into the backend `typecheck` script; the one pre-existing type error surfaced (`bootstrap-watcher.test.ts` — a `Partial<Project> & {repo_path: string | null}` intersection collapsed `repo_path` to non-nullable) fixed with `Omit`. Blast radius was 1 error, far under the 30-error halt threshold. Closes the green-gate's backend-test-typecheck blind spot and unblocks Phase D regression tests. **(3) W2** — `engines.node ">=22"` pinned, `.github/workflows/ci.yml` aligned to Node 22, `@types/node` bumped `^20`→`^22` (root + backend) to match the v22.22 dev runtime. **(4) W4** — React Router `v7_startTransition` + `v7_relativeSplatPath` future flags opted in across `main.tsx` and 27 test `MemoryRouter`s (the actual source of the warnings); frontend test stderr now warning-free. **(5)** AUTHORING_DISCIPLINE.md gains a "Green-Gate Coverage — Known Gaps (this cohort)" section honestly scoping what the four-command gate proves vs. doesn't — gap 1 (backend `test/**` excluded from typecheck) closed here; gap 2 (wire-contract response types frontend-local, `jsonFetch<T>(…) as T` unvalidated cast) to be closed by Phase D. Green gate verified: 3 typecheck scopes, 500 backend + 182 frontend tests, lint, build all green. C-D22 is the audit-fix cohort's first new anchor, so the Locked Decisions table rolls per the cycle-reset rule.
 
 ---
 
 ## Current Phase
 
-**Phase:** none in flight. Phase 22 closed 2026-05-28; cohort-level heavy hardener pass over the Phase 19–22 build outputs closed 2026-05-28.
-**Status:** Phases 19–22 build cohort `production-ready` end-to-end. No open slices, no open PRs (other than this hardener PR itself).
-**Next concrete action:** spec author queues the next build phase (or triggers the next out-of-band action — branch-protection required-check setting for the new CI workflow; see Queued Work).
+**Phase:** Audit-fix **Phase A** (foundation fixes) landed 2026-05-29 (single PR). Phases B / C / D queued (sequential; B/C/D scopes derive from the same 2026-05 audit cycle).
+**Status:** Phase A `feature-complete` — foundation fixes merged, green gate verified. Phases 19–22 build cohort remains `production-ready` end-to-end.
+**Next concrete action:** spec author opens audit-fix Phase B (next workstream). Branch-protection required-check setting for `.github/workflows/ci.yml` still pending (see Queued Work) — now more material, since Phase A widened CI's true typecheck coverage.
 
 ---
 
 ## Locked Decisions This Cycle
 
-T-D anchors minted in the current cycle (Phase 18 + the five-session doc-authoring stream + the Phases 19–22 build cohort). Doc-prereq anchors (T-D49…T-D57) promoted to `production-ready` 2026-05-26 by PR #43; the seven build-cohort T-D anchors plus C-D19 / C-D20 / C-D21 promoted to `production-ready` 2026-05-28 by this hardener pass over the build outputs. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. This table rolls when the next cohort's first new T-D / C-D anchor lands, so the just-promoted state stays visible across the immediately-next session.
+**C-D22** is the audit-fix cohort's first new anchor, minted by Phase A — per the Update Protocol cycle-reset rule it rolls off the just-promoted Phases 19–22 build cohort entries (T-D49…T-D57, C-D19…C-D21, all `production-ready` since 2026-05-28; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and in `git log`). The new audit-fix cycle starts minimal. One line each; full bodies in `CODE_SPEC.md`. This table rolls again when audit-fix Phase B (or later) mints its first new anchor.
 
 | Anchor | Phase | One-line |
 |---|---|---|
-| T-D49 | 18 | §6 bundle grammar ratified (typed edge-types, tier-routing, producer-ownership); bundles declare shape, projects supply concrete contract paths. |
-| T-D50 | 18 | Communication graph renders at rule-level (not instance-level); mediated-edge two-arrow rendering; freshness coupled to item state. |
-| T-D51 | 19 | Loader gains a third bundle-resolution arm: `<repo_path>/.throughline/bundle.md` (per-repo carve-out), between explicit-external and install-default. |
-| T-D52 | 19 | `throughline init` requires the running backend; CLI calls HTTP endpoints, never writes SQLite directly (single write path). |
-| T-D53 | 20 | Bootstrap import file = structured per-source rows for items, sessions, and library entries; bundle-aware validation; secrets and runtime state excluded. |
-| T-D54 | 20 | Bootstrap re-run is idempotent upsert on `(project_id, bootstrap_id)`; three row states; `bootstrap_id` derived per source type with universal `@bootstrap-id:` override. |
-| T-D55 | 21 | Bootstrap prompt is a single repo-owned generic template; bundle-awareness at run time via LLM bundle-read, not Throughline-side templating. |
-| T-D56 | 21 | Claude Code invocation is user-driven; Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning deferred. |
-| T-D57 | 22 | Discipline-drift scanners do not auto-run on bind for bootstrap projects; SettingsView gains "Run discipline scan" trigger; periodic-review gated on first user-invoked scan. |
+| C-D22 | Audit-fix A | Dual-condition `exports` for TS-source workspace packages: `types` / `development` → `src`, `default` → built `dist/`; backend tsx kept on source via `--conditions=development`. Makes `dist` node-runnable without forcing a build into the dev loop. |
 
 ---
 
@@ -62,13 +54,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Cohort-level heavy hardener — Phases 19–22 build outputs | `handovers/2026-05-28-cohort-hardener-phases-19-22-build.md` |
+| _this PR_ | Audit-fix Phase A — foundation fixes (F1 dist resolution, I1 backend test typecheck, W2 Node 22 pin, W4 RR v7 flags) | `handovers/2026-05-29-audit-fix-phase-a-foundation-fixes.md` |
+| #66 | Cohort-level heavy hardener — Phases 19–22 build outputs | `handovers/2026-05-28-cohort-hardener-phases-19-22-build.md` |
 | #65 | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
 | #64 | Phase 22 / Slice 1 — discipline-scan-state backend lifecycle (chain open) | `handovers/2026-05-28-phase-22-slice-1-discipline-scan-state-lifecycle.md` |
 | #62 | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
-| #61 | Phase 21 / Slice 3 — bootstrap archive/quarantine worker + `GET /bootstrap/state` + server.ts wiring | `handovers/2026-05-28-phase-21-slice-3-worker-and-state-endpoint.md` |
 
-(PRs #59 and #60 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PR #61 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
 
 ---
 

@@ -20,7 +20,7 @@ beforeEach(() => {
 function renderInRoute(initial: string, element: React.ReactNode) {
   return render(
     <ModalStackProvider>
-      <MemoryRouter initialEntries={[initial]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[initial]}>
         <Routes>
           <Route path="/projects/:id/sessions/:sessionId" element={element} />
           <Route path="/projects/:id/sessions" element={<SessionsIndex />} />
@@ -92,7 +92,7 @@ describe('SessionsIndex', () => {
   it('creates a session and navigates to its route', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter initialEntries={['/projects/p1/sessions']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/sessions']}>
         <Routes>
           <Route path="/projects/:id/sessions" element={<SessionsIndex />} />
           <Route path="/projects/:id/sessions/:sessionId" element={<div>session-target</div>} />

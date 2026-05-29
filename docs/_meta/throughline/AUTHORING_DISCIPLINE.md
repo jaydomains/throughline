@@ -112,6 +112,20 @@ The Phase 22 handover's two "observed but not fixed" Drift Flags (CODE_SPEC anch
 
 ---
 
+## Green-Gate Coverage — Known Gaps (this cohort)
+
+The green gate — `pnpm -r typecheck && pnpm -r test && pnpm -r lint && pnpm -r build`, per `AUTO_CONTINUE_WORKFLOW.md` — proves less than its four-command breadth implies. The 2026-05 audit cycle surfaced two gaps between what the gate runs and what it actually verifies. Both are being closed within the current audit-fix cohort (Phases A–D); this section names them honestly while they are open and is revised as the closing work lands.
+
+1. **Backend `test/**` was excluded from typecheck.** `packages/backend/tsconfig.json` carried `exclude: ["test/**/*", …]`, so ~12.8k LOC of backend test code never passed `tsc`. The gate's `typecheck` step stayed green while a large fraction of the backend's typed surface went unchecked — and regression tests added by later hardening would have inherited that blind spot. **Closed by Phase A** (this cohort) via a dedicated `packages/backend/tsconfig.test.json` (src + test, `noEmit`) wired into the backend `typecheck` script.
+
+2. **Wire-contract response types are partially frontend-local, and the fetch boundary casts unsafely.** Response shapes for several endpoints are declared in the frontend rather than sourced from `@throughline/shared`, and `jsonFetch<T>(…) as T` performs an unvalidated cast at the network boundary — the compiler trusts the annotation, but nothing checks the runtime payload against it. The gate's `typecheck` proves the frontend is internally consistent with its *assumptions* about the wire, not that those assumptions match what the backend sends. **To be closed by Phase D** (this cohort): response types move to `@throughline/shared` and a wire-contract test asserts the agreement.
+
+Until Phase D lands, read a green gate as: "the code the gate sees is type-consistent, tested, lint-clean, and builds" — not "every typed surface is checked" and not "the client/server wire contract is verified end-to-end." Even after Phase D, the gate proves the contract at compile time *and* via a wire-contract test — not runtime omniscience over every payload. This section is revised when Phase D closes, at which point the gate's coverage matches what its four-command shape promises.
+
+(The same Phase A pass also records the monorepo's source-vs-built export-resolution convention as **C-D22** in `CODE_SPEC.md` — the dual-condition exports map that makes a TS-source package's `dist` runnable under plain `node` while dev tooling stays on source. That convention is implementation hygiene rather than a gate-coverage gap, but C-D22 is its durable home.)
+
+---
+
 ## Cross-references
 
 - `SESSION_START.md` — discipline floor; this file's gates sit inside that floor.

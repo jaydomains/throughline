@@ -49,7 +49,7 @@ describe('Phase 7 — rich-bundle-bound UI', () => {
 
     render(
       <ModalStackProvider>
-        <MemoryRouter initialEntries={['/projects/p1/sessions/s1']}>
+        <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/sessions/s1']}>
           <Routes>
             <Route path="/projects/:id/sessions/:sessionId" element={<SessionView />} />
           </Routes>
@@ -78,7 +78,7 @@ describe('Phase 7 — rich-bundle-bound UI', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/projects/p1/modules']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/modules']}>
         <Routes>
           <Route
             path="/projects/:id/modules"
@@ -104,7 +104,7 @@ describe('Phase 7 — rich-bundle-bound UI', () => {
     });
 
     render(
-      <MemoryRouter initialEntries={['/projects/p1/modules']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/modules']}>
         <Routes>
           <Route
             path="/projects/:id/modules"

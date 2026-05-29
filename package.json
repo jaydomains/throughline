@@ -5,6 +5,9 @@
   "version": "0.0.0",
   "description": "Local single-user methodology runtime for AI-assisted software development.",
   "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "dev": "pnpm --filter @throughline/backend dev",
     "dev:web": "pnpm --filter @throughline/frontend dev",
@@ -15,7 +18,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9",
-    "@types/node": "^20.12.7",
+    "@types/node": "^22",
     "eslint": "^9.0.0",
     "prettier": "^3.2.5",
     "typescript": "^5.4.5",

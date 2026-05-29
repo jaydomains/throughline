@@ -27,7 +27,7 @@ beforeEach(() => {
 function renderDirectives(projectId = 'p1') {
   return render(
     <ModalStackProvider>
-      <MemoryRouter initialEntries={[`/projects/${projectId}/directives`]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[`/projects/${projectId}/directives`]}>
         <Routes>
           <Route path="/projects/:id/directives" element={<DirectivesView />} />
         </Routes>
@@ -39,7 +39,7 @@ function renderDirectives(projectId = 'p1') {
 function renderLibrary(projectId = 'p1') {
   return render(
     <ModalStackProvider>
-      <MemoryRouter initialEntries={[`/projects/${projectId}/library`]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[`/projects/${projectId}/library`]}>
         <Routes>
           <Route path="/projects/:id/library" element={<LibraryView />} />
         </Routes>
@@ -226,7 +226,7 @@ describe('Sidebar directives count', () => {
     seedDirective({ id: 'd1', project_id: 'p1', parent_type: 'item', parent_id: 'i1', kind: 'pin' });
     seedDirective({ id: 'd2', project_id: 'p1', parent_type: 'item', parent_id: 'i1', kind: 'include_prompt' });
     render(
-      <MemoryRouter initialEntries={['/projects/p1']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1']}>
         <Sidebar activeProjectId="p1" bundle={undefined} />
       </MemoryRouter>,
     );
