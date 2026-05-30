@@ -666,6 +666,31 @@ Per-route `try/catch` blocks that hand-rolled domain-error → status mapping ar
 
 ---
 
+## C-D24 — `useResource` / `usePolledResource` frontend data-fetching hook pair
+
+- **Status:** active (implementation-only)
+- **Cites:** —
+- **Spans:** Phase C slice 1 (the hook pair + three proof adopters) and slice 2 (remaining adopters + consumer error rendering).
+
+### Decision
+Every frontend data hook is built on one of two primitives in `packages/frontend/src/hooks/useResource.ts`, both returning the single `ResourceState<T>` contract `{ data, loading, error, refresh }`:
+- **`useResource<T>(fetcher, initial)`** — fetch once per `fetcher` identity and on `refresh()`. The canonical replacement for the hand-rolled `useState` triple + `alive` unmount guard + imperative refresh that every fetch-once hook repeated.
+- **`usePolledResource<T>(fetcher, initial, intervalMs)`** — same contract, re-run on a fixed interval. Subsequent ticks do not toggle `loading` (no flicker); a successful tick clears a prior `error`, a failed tick sets it.
+
+The `fetcher` is `(() => Promise<T>) | null`; callers build it with `useMemo` keyed on the inputs it closes over, and pass `null` to mean "disabled — reset to `initial`". The hook owns the `alive` guard, error capture (`e instanceof Error ? e : new Error(String(e))`), and a stable `refresh`.
+
+### Rationale
+- **The `error` slot was the SF6 surface.** SF6-01..12 were all instances of the same shape: hooks exposed (or silently dropped) an `error` that consumers never rendered. Owning the triple once makes the error slot uniform and unavoidable, so consumers can rely on a single contract rather than each hook inventing its own (some exposing `error`, some swallowing to empty/`EMPTY`).
+- **One unmount-guard pattern.** The `let alive = true; … return () => { alive = false }` idiom was copied across six-plus hooks; centralising it removes the per-hook drift and the chance of a missed guard.
+- **`useMemo`-nullable fetcher, not `enabled` flag.** A `null` fetcher both disables the fetch and types the "no input yet" case (e.g. `projectId === null`) without threading a separate boolean or asserting non-null inside the fetcher body.
+
+### Implications
+- New data hooks wrap a memoised fetcher in `useResource` / `usePolledResource` rather than re-deriving the triple; consumers read `error` and render it.
+- An unmemoised fetcher re-fetches every render — the one footgun, documented at the call site.
+- Polled hooks that previously swallowed errors silently (`useCostMeter`, `useBackupStatus`, `useBackendHealth`) adopt `usePolledResource` in slice 2, gaining an `error` slot without changing their poll cadence.
+
+---
+
 ## 1. Process model
 
 ```

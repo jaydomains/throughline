@@ -1,35 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import type { ItemPolicy } from '@throughline/shared';
 import { api } from '../api.js';
+import { useResource } from './useResource.js';
 
 export function useItemPolicy(projectId: string | null) {
-  const [policy, setPolicy] = useState<ItemPolicy | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const fetcher = useMemo<(() => Promise<ItemPolicy>) | null>(
+    () => (projectId ? () => api.getPolicy(projectId).then((r) => r.policy) : null),
+    [projectId],
+  );
 
-  useEffect(() => {
-    if (!projectId) {
-      setPolicy(null);
-      setLoading(false);
-      return;
-    }
-    let alive = true;
-    setLoading(true);
-    api
-      .getPolicy(projectId)
-      .then((r) => {
-        if (alive) setPolicy(r.policy);
-      })
-      .catch((e: unknown) => {
-        if (alive) setError(e instanceof Error ? e : new Error(String(e)));
-      })
-      .finally(() => {
-        if (alive) setLoading(false);
-      });
-    return () => {
-      alive = false;
-    };
-  }, [projectId]);
-
-  return { policy, loading, error };
+  const { data, loading, error } = useResource<ItemPolicy | null>(fetcher, null);
+  return { policy: data, loading, error };
 }
