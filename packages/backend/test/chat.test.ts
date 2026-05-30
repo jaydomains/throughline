@@ -8,7 +8,8 @@ import type { DumpZoneProposal } from '@throughline/shared';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
 import { createSessionsService } from '../src/sessions/service.js';
-import { createChatService, ProjectNotFoundError } from '../src/intelligence/chat.js';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { createChatService } from '../src/intelligence/chat.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');

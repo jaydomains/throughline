@@ -6,6 +6,7 @@ import type {
   ItemCodeRef,
   SembleHit,
 } from '@throughline/shared';
+import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -29,18 +30,6 @@ import type { SembleClient } from './client.js';
 const QA_MODEL = 'claude-sonnet-4-6';
 const QA_MAX_TOKENS = 700;
 const QA_HIT_LIMIT = 8;
-
-export class ItemNotFoundError extends Error {
-  constructor(id: string) {
-    super(`item ${id} not found`);
-  }
-}
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 interface CodeRefRow {
   id: string;

@@ -6,13 +6,10 @@ import type { GitHubApi } from './api.js';
 import type { GithubStateCache } from './state-cache.js';
 import type { GitHubPoller } from './poller.js';
 import type { PrLinkingService } from './pr-linking.js';
-import { ItemNotFoundError } from './pr-linking.js';
 import type { OrphanRulesService } from './orphan-rules.js';
-import { GithubNotConfiguredError, OrphanRuleNotFoundError } from './orphan-rules.js';
 import type { AutoReconcileService } from './auto-reconcile.js';
 import { UndoError } from './auto-reconcile.js';
 import type { DriftReverifyService } from './reverify.js';
-import { SignalNotFoundError } from './reverify.js';
 
 // Phase 10 surface (C-D16; SPEC §7.13/7.14/7.16). All project-scoped; everything degrades
 // to an empty/!configured response when github_owner/github_repo or the PAT is absent.
@@ -78,12 +75,7 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     '/api/projects/:id/items/:itemId/pr-link/detect',
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        return await prLinking.detect(req.params.itemId);
-      } catch (e) {
-        if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
-        throw e;
-      }
+      return await prLinking.detect(req.params.itemId);
     },
   );
 
@@ -96,25 +88,15 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     if (typeof prNumber !== 'number' || !Number.isInteger(prNumber) || prNumber <= 0) {
       return reply.code(400).send({ error: 'pr_number_required' });
     }
-    try {
-      return prLinking.set(req.params.itemId, prNumber, req.body?.auto_detected === true);
-    } catch (e) {
-      if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
-      throw e;
-    }
+    return prLinking.set(req.params.itemId, prNumber, req.body?.auto_detected === true);
   });
 
   app.delete<{ Params: { id: string; itemId: string } }>(
     '/api/projects/:id/items/:itemId/pr-link',
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        prLinking.unset(req.params.itemId);
-        return reply.code(204).send();
-      } catch (e) {
-        if (e instanceof ItemNotFoundError) return reply.code(404).send({ error: 'item_not_found' });
-        throw e;
-      }
+      prLinking.unset(req.params.itemId);
+      return reply.code(204).send();
     },
   );
 
@@ -150,13 +132,7 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     '/api/projects/:id/drift/signals/:sid/reverify',
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        return await reverify.reverify(req.params.id, req.params.sid);
-      } catch (e) {
-        if (e instanceof SignalNotFoundError)
-          return reply.code(404).send({ error: 'signal_not_found' });
-        throw e;
-      }
+      return await reverify.reverify(req.params.id, req.params.sid);
     },
   );
 
@@ -174,14 +150,8 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     '/api/projects/:id/orphan-rules/:rid/dismiss',
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        orphanRules.dismiss(req.params.rid);
-        return { ok: true };
-      } catch (e) {
-        if (e instanceof OrphanRuleNotFoundError)
-          return reply.code(404).send({ error: 'orphan_rule_not_found' });
-        throw e;
-      }
+      orphanRules.dismiss(req.params.rid);
+      return { ok: true };
     },
   );
 
@@ -189,15 +159,7 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     '/api/projects/:id/orphan-rules/:rid/cleanup-pr',
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        return await orphanRules.draftCleanupPr(req.params.rid);
-      } catch (e) {
-        if (e instanceof OrphanRuleNotFoundError)
-          return reply.code(404).send({ error: 'orphan_rule_not_found' });
-        if (e instanceof GithubNotConfiguredError)
-          return reply.code(409).send({ error: 'github_not_configured' });
-        throw e;
-      }
+      return await orphanRules.draftCleanupPr(req.params.rid);
     },
   );
 

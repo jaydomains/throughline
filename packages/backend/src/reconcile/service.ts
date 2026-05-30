@@ -8,6 +8,8 @@ import type {
   ReconcileRunStatus,
   ReconcileSource,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -15,7 +17,7 @@ import { recordCost } from '../cost/telemetry.js';
 import type { DB } from '../db/index.js';
 import type { DriftService } from '../drift/service.js';
 import type { ItemsService } from '../items/service.js';
-import type { MethodologyRegistry } from '../methodology/loader.js';
+import { resolveProjectBundle, type MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import type { SessionsService } from '../sessions/service.js';
 import { bundleItemPolicy } from '../items/policy.js';
@@ -49,28 +51,23 @@ function rowToRun(row: ReconcileRunRow): ReconcileRun {
   };
 }
 
-export class ProjectNotFoundError extends Error {
+export class ReconcileRunNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`project ${id} not found`);
+    super(`reconcile run ${id} not found`, 'reconcile_run_not_found');
   }
 }
 
-export class ReconcileRunNotFoundError extends Error {
-  constructor(id: string) {
-    super(`reconcile run ${id} not found`);
-  }
-}
-
-export class ReconcileRunStateError extends Error {
+export class ReconcileRunStateError extends DomainError {
   constructor(id: string, state: string) {
-    super(`reconcile run ${id} is ${state}, cannot apply`);
+    super(`reconcile run ${id} is ${state}, cannot apply`, { statusCode: 409, code: 'run_not_pending' });
   }
 }
 
-export class CrossProjectMutationError extends Error {
+export class CrossProjectMutationError extends DomainError {
   constructor(public itemIds: string[], public projectId: string) {
     super(
       `reconcile apply rejected: items ${itemIds.join(', ')} do not belong to project ${projectId}`,
+      { statusCode: 422, code: 'cross_project_mutation', details: { item_ids: itemIds } },
     );
   }
 }
@@ -121,7 +118,7 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
     async propose(input) {
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
-      const bundleResult = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      const bundleResult = resolveProjectBundle(registry, project);
       if (bundleResult.status !== 'loaded') {
         throw new Error(`bundle "${project.bundle_id}" not loaded`);
       }

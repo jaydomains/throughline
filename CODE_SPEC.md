@@ -639,6 +639,33 @@ Before this, `main` / `types` / `exports` all pointed at `./src/index.ts`. Every
 
 ---
 
+## C-D23 — Central Fastify error handler + canonical `ErrorResponse` body shape
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D58
+- **Spans:** Phase B slice 1 (the `@throughline/shared` `DomainError` hierarchy) and slice 3 (this handler + the response body shape). Single anchor; the implementation deliberately crosses two slices.
+
+### Decision
+A single Fastify `setErrorHandler` (registered in `server.ts` immediately after the app is created, before any route) is the one place that turns a thrown domain error into an HTTP response. It lives in `packages/backend/src/http/error-handler.ts`. The handler:
+- For any `err instanceof DomainError` (T-D58): replies `err.statusCode` with the canonical body `{ error: err.code, message: err.message, ...err.details }`.
+- For any other thrown error: preserves Fastify semantics — an explicit `err.statusCode` (4xx) is kept; everything else is a logged 500. Body shape `{ error, message }`.
+
+The canonical body is the `ErrorResponse` interface exported from `@throughline/shared` (`{ error: string; message?: string; [k: string]: unknown }`) — shared so frontend and backend reference one wire contract (partial progress on the wire-contract gap; full closure is Phase D).
+
+Per-route `try/catch` blocks that hand-rolled domain-error → status mapping are deleted; routes `await` the service and let domain errors propagate. Inline pre-condition guards that `return reply.code(...).send(...)` directly (not via a thrown error) are unchanged — they never reached an error handler and still don't.
+
+### Rationale
+- **One mapping site eliminates status drift.** With the status on the error class (T-D58) and one handler reading it, the same error cannot return different statuses from different routes (audit SF6-09). The 63 hand-rolled blocks across 20 files collapse to one handler.
+- **Only thrown errors route here.** No Fastify schema validation is in use, so inline `reply.code(...)` validation replies bypass the handler entirely and are untouched — keeping the blast radius to genuine thrown domain errors.
+- **`details` carries context.** Errors that previously had route-added context fields (`duplicate_repo_path` → `repo_path`/`project_id`; `bundle_not_loaded` → `bundle_id`; `bundle_id_mismatch`; `invalid_project_config` → `path`; `cross_project_mutation` → `item_ids`; `validation_failed` → `errors`; `policy_violation` → `field`) now carry that context in `DomainError.details`, which the handler spreads into the body — preserving the responses.
+
+### Implications
+- New endpoints throw domain errors (defined in `@throughline/shared` or extending its base) rather than catching-and-mapping; no per-route error plumbing.
+- Canonical `code` strings are the wire contract for the `error` field. The frontend currently does not branch on them (`jsonFetch` throws a generic `Error` on `!res.ok`), so the slice-3 normalization of generic `not_found` codes to specific ones is frontend-safe; this is verified, not assumed.
+- Exceptions deliberately left route-local: `UndoError` (overloaded — 409 `undo_unavailable` in undo vs 404 `run_not_found` in approve — cannot carry one canonical status; its two `github/routes.ts` catches stay) and the generic-`Error` catches in `settings`/`notifier`/`backup` routes (they catch non-domain failures with bespoke handling).
+
+---
+
 ## 1. Process model
 
 ```

@@ -8,6 +8,8 @@ import type {
   ReminderPayload,
   UpdateDirectiveInput,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import {
   advanceRecurrence,
   computeNextFireAt,
@@ -25,45 +27,39 @@ import type { ProjectsService } from '../projects/service.js';
 // uses the OS notification capability layer (T-D32) via the scheduler; this service
 // owns CRUD + the next_fire_at lifecycle.
 
-export class DirectiveNotFoundError extends Error {
+export class DirectiveNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`directive ${id} not found`);
+    super(`directive ${id} not found`, 'directive_not_found');
   }
 }
 
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
-
-export class ParentNotFoundError extends Error {
+export class ParentNotFoundError extends NotFoundError {
   constructor(parentType: DirectiveParentType, parentId: string) {
-    super(`${parentType} ${parentId} not found`);
+    super(`${parentType} ${parentId} not found`, 'parent_not_found');
   }
 }
 
-export class CrossProjectDirectiveError extends Error {
+export class CrossProjectDirectiveError extends DomainError {
   constructor(projectId: string, parentProjectId: string) {
-    super(`cross-project directive refused: project ${projectId} ≠ parent project ${parentProjectId}`);
+    super(`cross-project directive refused: project ${projectId} ≠ parent project ${parentProjectId}`, { statusCode: 422, code: 'cross_project_directive' });
   }
 }
 
-export class InvalidPayloadError extends Error {
+export class InvalidPayloadError extends DomainError {
   constructor(message: string) {
-    super(`invalid directive payload: ${message}`);
+    super(`invalid directive payload: ${message}`, { statusCode: 400, code: 'invalid_payload' });
   }
 }
 
-export class InvalidKindError extends Error {
+export class InvalidKindError extends DomainError {
   constructor(kind: string) {
-    super(`invalid directive kind "${kind}"`);
+    super(`invalid directive kind "${kind}"`, { statusCode: 400, code: 'invalid_kind' });
   }
 }
 
-export class InvalidParentTypeError extends Error {
+export class InvalidParentTypeError extends DomainError {
   constructor(parentType: string) {
-    super(`invalid directive parent_type "${parentType}"`);
+    super(`invalid directive parent_type "${parentType}"`, { statusCode: 400, code: 'invalid_parent_type' });
   }
 }
 

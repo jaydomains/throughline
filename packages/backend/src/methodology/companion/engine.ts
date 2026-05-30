@@ -9,6 +9,8 @@ import type {
   CompanionChecklistsResult,
   LoadedBundle,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../../audit/log.js';
 import { recordCost } from '../../cost/telemetry.js';
 import { promptFingerprint } from '../../ai/fingerprint.js';
@@ -36,34 +38,29 @@ import type { CompanionJudge } from './judgement.js';
 // run-summary library-note id are recovered from the run's audit trail, which is the
 // canonical companion-review record (T-D45 — queryable via the audit RAG substrate).
 
-export class ProjectNotFoundError extends Error {
+export class ChecklistNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`project ${id} not found`);
+    super(`checklist ${id} not declared by the project's bundle`, 'checklist_not_found');
   }
 }
-export class ChecklistNotFoundError extends Error {
+export class RunNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`checklist ${id} not declared by the project's bundle`);
+    super(`checklist run ${id} not found`, 'run_not_found');
   }
 }
-export class RunNotFoundError extends Error {
+export class StepNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`checklist run ${id} not found`);
+    super(`checklist run step ${id} not found`, 'step_not_found');
   }
 }
-export class StepNotFoundError extends Error {
-  constructor(id: string) {
-    super(`checklist run step ${id} not found`);
-  }
-}
-export class StepKindError extends Error {
+export class StepKindError extends DomainError {
   constructor(stepId: string, expected: string) {
-    super(`step ${stepId} is not a ${expected} step`);
+    super(`step ${stepId} is not a ${expected} step`, { statusCode: 400, code: 'step_kind' });
   }
 }
-export class RunCompletedError extends Error {
+export class RunCompletedError extends DomainError {
   constructor(id: string) {
-    super(`checklist run ${id} is already completed`);
+    super(`checklist run ${id} is already completed`, { statusCode: 400, code: 'run_completed' });
   }
 }
 

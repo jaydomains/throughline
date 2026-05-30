@@ -7,13 +7,15 @@ import type {
   ProposalSource,
   ProposalTarget,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
 import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
 import type { LibraryService } from '../library/service.js';
-import type { MethodologyRegistry } from '../methodology/loader.js';
+import { resolveProjectBundle, type MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import { bundleItemPolicy } from '../items/policy.js';
 import { recordCost } from '../cost/telemetry.js';
@@ -56,21 +58,15 @@ function rowToProposal(row: ProposalRow): DumpZoneProposal {
   };
 }
 
-export class ProjectNotFoundError extends Error {
+export class ProposalNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`project ${id} not found`);
+    super(`proposal ${id} not found`, 'proposal_not_found');
   }
 }
 
-export class ProposalNotFoundError extends Error {
-  constructor(id: string) {
-    super(`proposal ${id} not found`);
-  }
-}
-
-export class ProposalStateError extends Error {
+export class ProposalStateError extends DomainError {
   constructor(id: string, state: string) {
-    super(`proposal ${id} is ${state}, cannot apply`);
+    super(`proposal ${id} is ${state}, cannot apply`, { statusCode: 409, code: 'proposal_not_pending' });
   }
 }
 
@@ -131,7 +127,7 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
     async propose(input) {
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
-      const bundleResult = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      const bundleResult = resolveProjectBundle(registry, project);
       if (bundleResult.status !== 'loaded') {
         throw new Error(`bundle "${project.bundle_id}" not loaded`);
       }

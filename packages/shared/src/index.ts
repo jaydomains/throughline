@@ -1,3 +1,4 @@
+export * from './errors.js';
 export * from './bundle.js';
 export * from './communication.js';
 export * from './project.js';

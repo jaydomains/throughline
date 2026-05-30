@@ -7,13 +7,6 @@ import {
   type DirectivePayload,
 } from '@throughline/shared';
 import {
-  CrossProjectDirectiveError,
-  DirectiveNotFoundError,
-  InvalidKindError,
-  InvalidParentTypeError,
-  InvalidPayloadError,
-  ParentNotFoundError,
-  ProjectNotFoundError,
   type DirectivesService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -92,30 +85,14 @@ export function registerDirectiveRoutes(
       if (typeof body.parent_id !== 'string' || body.parent_id.length === 0) {
         return reply.code(400).send({ error: 'parent_id_required' });
       }
-      try {
-        const directive = service.create({
-          project_id: req.params.id,
-          parent_type: body.parent_type,
-          parent_id: body.parent_id,
-          kind: body.kind,
-          ...(body.payload !== undefined ? { payload: body.payload } : {}),
-        });
-        return reply.code(201).send({ directive });
-      } catch (err) {
-        if (err instanceof InvalidKindError)
-          return reply.code(400).send({ error: 'invalid_kind' });
-        if (err instanceof InvalidParentTypeError)
-          return reply.code(400).send({ error: 'invalid_parent_type' });
-        if (err instanceof InvalidPayloadError)
-          return reply.code(400).send({ error: 'invalid_payload', message: err.message });
-        if (err instanceof ProjectNotFoundError)
-          return reply.code(404).send({ error: 'project_not_found' });
-        if (err instanceof ParentNotFoundError)
-          return reply.code(404).send({ error: 'parent_not_found' });
-        if (err instanceof CrossProjectDirectiveError)
-          return reply.code(422).send({ error: 'cross_project_directive' });
-        throw err;
-      }
+      const directive = service.create({
+        project_id: req.params.id,
+        parent_type: body.parent_type,
+        parent_id: body.parent_id,
+        kind: body.kind,
+        ...(body.payload !== undefined ? { payload: body.payload } : {}),
+      });
+      return reply.code(201).send({ directive });
     },
   );
 
@@ -125,16 +102,8 @@ export function registerDirectiveRoutes(
       const existing = service.get(req.params.directiveId);
       if (!existing || existing.project_id !== req.params.id)
         return reply.code(404).send({ error: 'not_found' });
-      try {
-        const directive = service.update(req.params.directiveId, req.body ?? {});
-        return { directive };
-      } catch (err) {
-        if (err instanceof InvalidPayloadError)
-          return reply.code(400).send({ error: 'invalid_payload', message: err.message });
-        if (err instanceof DirectiveNotFoundError)
-          return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      const directive = service.update(req.params.directiveId, req.body ?? {});
+      return { directive };
     },
   );
 

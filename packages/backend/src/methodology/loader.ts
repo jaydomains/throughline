@@ -1,7 +1,7 @@
 import chokidar, { type FSWatcher } from 'chokidar';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, sep } from 'node:path';
-import type { BundleLoadResult } from '@throughline/shared';
+import type { BundleLoadResult, Project } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import { parseBundle } from './bundle-parser/index.js';
@@ -27,6 +27,20 @@ export interface MethodologyRegistry {
   ): void;
   unregisterProjectBundle(projectId: string): void;
   stop(): Promise<void>;
+}
+
+/**
+ * Canonical project→bundle resolution (T-D51, C-D19). Takes the project so `repo_path` is
+ * always threaded into the resolver — arm 2 (`<repo_path>/.throughline/bundle.md`) can never
+ * be silently skipped. Prefer this over calling `registry.resolveBundle(...)` with a
+ * project's fields by hand: omitting `repo_path` at the call site is exactly the F1-01 /
+ * S5-02 defect this helper makes structurally impossible.
+ */
+export function resolveProjectBundle(
+  registry: MethodologyRegistry,
+  project: Pick<Project, 'bundle_id' | 'bundle_path' | 'repo_path'>,
+): BundleLoadResult {
+  return registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
 }
 
 function readBundleFile(methodologiesDir: string, bundleId: string): string | null {

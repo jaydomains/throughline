@@ -3,15 +3,9 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { Project, ThroughlineStatus } from '@throughline/shared';
 import {
-  BundleNotLoadedError,
-  DuplicateRepoPathError,
-  InvalidBundlePathError,
-  InvalidRepoPathError,
   type ProjectsService,
 } from './service.js';
 import {
-  BundleIdMismatchError,
-  InvalidProjectConfigError,
   readProjectConfig,
 } from '../init/config-reader.js';
 import type { SettingsService } from '../settings/service.js';
@@ -69,35 +63,17 @@ export function registerProjectRoutes(
     if (typeof body.repo_path !== 'string' || body.repo_path.length === 0) {
       return reply.code(400).send({ error: 'repo_path_required' });
     }
-    try {
-      const input: Parameters<typeof projects.create>[0] = {
-        name: body.name,
-        repo_path: body.repo_path,
-      };
-      if (body.bundle_id !== undefined) input.bundle_id = body.bundle_id;
-      if (body.bundle_path !== undefined) input.bundle_path = body.bundle_path;
-      if (body.github_owner !== undefined) input.github_owner = body.github_owner;
-      if (body.github_repo !== undefined) input.github_repo = body.github_repo;
-      if (body.settings !== undefined) input.settings = body.settings;
-      const project = projects.create(input);
-      return reply.code(201).send({ project: withStatus(project) });
-    } catch (err) {
-      if (err instanceof InvalidBundlePathError) {
-        return reply.code(400).send({ error: 'invalid_bundle_path' });
-      }
-      if (err instanceof InvalidRepoPathError) {
-        return reply.code(400).send({ error: 'invalid_repo_path' });
-      }
-      if (err instanceof DuplicateRepoPathError) {
-        return reply
-          .code(409)
-          .send({ error: 'duplicate_repo_path', repo_path: err.repoPath, project_id: err.existingProjectId });
-      }
-      if (err instanceof BundleNotLoadedError) {
-        return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
-      }
-      throw err;
-    }
+    const input: Parameters<typeof projects.create>[0] = {
+      name: body.name,
+      repo_path: body.repo_path,
+    };
+    if (body.bundle_id !== undefined) input.bundle_id = body.bundle_id;
+    if (body.bundle_path !== undefined) input.bundle_path = body.bundle_path;
+    if (body.github_owner !== undefined) input.github_owner = body.github_owner;
+    if (body.github_repo !== undefined) input.github_repo = body.github_repo;
+    if (body.settings !== undefined) input.settings = body.settings;
+    const project = projects.create(input);
+    return reply.code(201).send({ project: withStatus(project) });
   });
 
   app.patch<{
@@ -116,34 +92,8 @@ export function registerProjectRoutes(
   }>('/api/projects/:id', async (req, reply) => {
     const existing = projects.get(req.params.id);
     if (!existing) return reply.code(404).send({ error: 'not_found' });
-    try {
-      const project = projects.update(req.params.id, req.body ?? {});
-      return { project: withStatus(project) };
-    } catch (err) {
-      if (err instanceof InvalidBundlePathError) {
-        return reply.code(400).send({ error: 'invalid_bundle_path' });
-      }
-      if (err instanceof InvalidRepoPathError) {
-        return reply.code(400).send({ error: 'invalid_repo_path' });
-      }
-      if (err instanceof DuplicateRepoPathError) {
-        return reply
-          .code(409)
-          .send({ error: 'duplicate_repo_path', repo_path: err.repoPath, project_id: err.existingProjectId });
-      }
-      if (err instanceof BundleNotLoadedError) {
-        return reply.code(400).send({ error: 'bundle_not_loaded', bundle_id: err.bundleId });
-      }
-      if (err instanceof InvalidProjectConfigError) {
-        return reply.code(400).send({ error: 'invalid_project_config', detail: err.message, path: err.path });
-      }
-      if (err instanceof BundleIdMismatchError) {
-        return reply
-          .code(400)
-          .send({ error: 'bundle_id_mismatch', config_bundle_id: err.configBundleId, bundle_file_name: err.bundleFileName });
-      }
-      throw err;
-    }
+    const project = projects.update(req.params.id, req.body ?? {});
+    return { project: withStatus(project) };
   });
 
   app.delete<{ Params: { id: string } }>('/api/projects/:id', async (req, reply) => {

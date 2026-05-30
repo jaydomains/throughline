@@ -12,6 +12,8 @@ import type {
   MdScanCandidate,
   MdScanResult,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -53,45 +55,39 @@ const IGNORED_DIR_NAMES = new Set([
   'target',
 ]);
 
-export class ProjectNotFoundError extends Error {
+export class FolderNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`project ${id} not found`);
+    super(`md-ingest folder ${id} not found`, 'folder_not_found');
   }
 }
 
-export class FolderNotFoundError extends Error {
-  constructor(id: string) {
-    super(`md-ingest folder ${id} not found`);
-  }
-}
-
-export class FolderOutsideRepoError extends Error {
+export class FolderOutsideRepoError extends DomainError {
   constructor(relPath: string) {
-    super(`folder "${relPath}" resolves outside the project's repo_path (C-D10)`);
+    super(`folder "${relPath}" resolves outside the project's repo_path (C-D10)`, { statusCode: 400, code: 'folder_outside_repo' });
   }
 }
 
-export class FolderMissingError extends Error {
+export class FolderMissingError extends DomainError {
   constructor(relPath: string) {
-    super(`folder "${relPath}" does not exist on disk`);
+    super(`folder "${relPath}" does not exist on disk`, { statusCode: 400, code: 'folder_missing' });
   }
 }
 
-export class NotAnImportedDocError extends Error {
+export class NotAnImportedDocError extends DomainError {
   constructor(entryId: string, type: string) {
-    super(`library entry ${entryId} is type "${type}", not an ingested imported_doc`);
+    super(`library entry ${entryId} is type "${type}", not an ingested imported_doc`, { statusCode: 400, code: 'not_an_imported_doc' });
   }
 }
 
-export class EntryNotFoundError extends Error {
+export class EntryNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`library entry ${id} not found`);
+    super(`library entry ${id} not found`, 'entry_not_found');
   }
 }
 
-export class SourceFileMissingError extends Error {
+export class SourceFileMissingError extends DomainError {
   constructor(path: string) {
-    super(`source file "${path}" no longer exists on disk`);
+    super(`source file "${path}" no longer exists on disk`, { statusCode: 409, code: 'source_file_missing' });
   }
 }
 

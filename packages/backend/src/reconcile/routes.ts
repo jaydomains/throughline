@@ -5,10 +5,6 @@ import {
   type ReconcileSource,
 } from '@throughline/shared';
 import {
-  CrossProjectMutationError,
-  ProjectNotFoundError,
-  ReconcileRunNotFoundError,
-  ReconcileRunStateError,
   type ReconcileService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -49,18 +45,13 @@ export function registerReconcileRoutes(
       if (!isReconcileSource(body.source)) {
         return reply.code(400).send({ error: 'invalid_source' });
       }
-      try {
-        const run = await service.propose({
-          project_id: req.params.id,
-          text: body.text,
-          source: body.source,
-          session_id: body.session_id ?? null,
-        });
-        return reply.code(201).send({ run });
-      } catch (err) {
-        if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'project_not_found' });
-        throw err;
-      }
+      const run = await service.propose({
+        project_id: req.params.id,
+        text: body.text,
+        source: body.source,
+        session_id: body.session_id ?? null,
+      });
+      return reply.code(201).send({ run });
     },
   );
 
@@ -95,26 +86,12 @@ export function registerReconcileRoutes(
       if (typeof body.diff !== 'object' || body.diff === null) {
         return reply.code(400).send({ error: 'diff_required' });
       }
-      try {
-        const result = service.apply({
-          run_id: body.run_id,
-          diff: body.diff as ReconcileApplyRequest['diff'],
-          ...(body.decisions ? { decisions: body.decisions } : {}),
-        });
-        return { result };
-      } catch (err) {
-        if (err instanceof ReconcileRunNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        if (err instanceof ReconcileRunStateError)
-          return reply.code(409).send({ error: 'run_not_pending', message: err.message });
-        if (err instanceof CrossProjectMutationError)
-          return reply.code(422).send({
-            error: 'cross_project_mutation',
-            message: err.message,
-            item_ids: err.itemIds,
-          });
-        if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'project_not_found' });
-        throw err;
-      }
+      const result = service.apply({
+        run_id: body.run_id,
+        diff: body.diff as ReconcileApplyRequest['diff'],
+        ...(body.decisions ? { decisions: body.decisions } : {}),
+      });
+      return { result };
     },
   );
 

@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyReply } from 'fastify';
+import type { FastifyInstance } from 'fastify';
 import type {
   ChatProposeRequest,
   ChatSendRequest,
@@ -6,51 +6,14 @@ import type {
   SessionRetroRequest,
 } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
-import { ProjectNotFoundError, type RagService } from './rag.js';
-import {
-  ProjectNotFoundError as RetroProjectNotFoundError,
-  SessionNotFoundError,
-  type RetroService,
-} from './retro.js';
-import {
-  ProjectNotFoundError as ReviewProjectNotFoundError,
-  type PeriodicReviewService,
-} from './periodic-review.js';
-import {
-  ProjectNotFoundError as SeqProjectNotFoundError,
-  type SequencingService,
-} from './sequencing.js';
-import {
-  ProjectNotFoundError as StakeProjectNotFoundError,
-  ItemNotFoundError,
-  type StakeholderService,
-} from './stakeholder.js';
-import {
-  ProjectNotFoundError as ChatProjectNotFoundError,
-  type ChatService,
-} from './chat.js';
+import type { RagService } from './rag.js';
+import type { RetroService } from './retro.js';
+import type { PeriodicReviewService } from './periodic-review.js';
+import type { SequencingService } from './sequencing.js';
+import type { StakeholderService } from './stakeholder.js';
+import type { ChatService } from './chat.js';
 
 // Phase 14 — intelligence surfaces (SPEC §7.18, §9; T-D22, T-D25, C-D2; CODE_SPEC §15).
-
-function mapError(reply: FastifyReply, err: unknown): unknown {
-  if (
-    err instanceof ProjectNotFoundError ||
-    err instanceof RetroProjectNotFoundError ||
-    err instanceof ReviewProjectNotFoundError ||
-    err instanceof SeqProjectNotFoundError ||
-    err instanceof StakeProjectNotFoundError ||
-    err instanceof ChatProjectNotFoundError
-  ) {
-    return reply.code(404).send({ error: 'not_found', message: (err as Error).message });
-  }
-  if (err instanceof SessionNotFoundError) {
-    return reply.code(404).send({ error: 'session_not_found', message: err.message });
-  }
-  if (err instanceof ItemNotFoundError) {
-    return reply.code(404).send({ error: 'item_not_found', message: err.message });
-  }
-  throw err;
-}
 
 interface IntelligenceServices {
   rag: RagService;
@@ -76,11 +39,7 @@ export function registerIntelligenceRoutes(
       if (typeof body.query !== 'string' || body.query.trim() === '') {
         return reply.code(400).send({ error: 'empty_query' });
       }
-      try {
-        return await svc.rag.query(req.params.id, body);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.rag.query(req.params.id, body);
     },
   );
 
@@ -90,11 +49,7 @@ export function registerIntelligenceRoutes(
       if (!projects.get(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        return await svc.rag.reindex(req.params.id);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.rag.reindex(req.params.id);
     },
   );
 
@@ -108,11 +63,7 @@ export function registerIntelligenceRoutes(
       if (!body || typeof body.session_id !== 'string' || body.session_id === '') {
         return reply.code(400).send({ error: 'session_required' });
       }
-      try {
-        return await svc.retro.generate(req.params.id, body);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.retro.generate(req.params.id, body);
     },
   );
 
@@ -122,11 +73,7 @@ export function registerIntelligenceRoutes(
       if (!projects.get(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        return svc.periodicReview.review(req.params.id);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return svc.periodicReview.review(req.params.id);
     },
   );
 
@@ -136,11 +83,7 @@ export function registerIntelligenceRoutes(
       if (!projects.get(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        return await svc.periodicReview.synthesize(req.params.id);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.periodicReview.synthesize(req.params.id);
     },
   );
 
@@ -150,11 +93,7 @@ export function registerIntelligenceRoutes(
       if (!projects.get(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        return svc.sequencing.doNext(req.params.id);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return svc.sequencing.doNext(req.params.id);
     },
   );
 
@@ -164,11 +103,7 @@ export function registerIntelligenceRoutes(
       if (!projects.get(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        return await svc.stakeholder.render(req.params.id, req.params.itemId);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.stakeholder.render(req.params.id, req.params.itemId);
     },
   );
 
@@ -184,11 +119,7 @@ export function registerIntelligenceRoutes(
     if (ct === '' || ci === '') {
       return reply.code(400).send({ error: 'context_required' });
     }
-    try {
-      return svc.chat.history(req.params.id, ct, ci);
-    } catch (err) {
-      return mapError(reply, err);
-    }
+    return svc.chat.history(req.params.id, ct, ci);
   });
 
   app.post<{ Params: { id: string }; Body: ChatSendRequest }>(
@@ -201,11 +132,7 @@ export function registerIntelligenceRoutes(
       if (!b || typeof b.message !== 'string' || b.message.trim() === '' || !b.context_id) {
         return reply.code(400).send({ error: 'message_and_context_required' });
       }
-      try {
-        return await svc.chat.send(req.params.id, b);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.chat.send(req.params.id, b);
     },
   );
 
@@ -224,11 +151,7 @@ export function registerIntelligenceRoutes(
       if (b.target !== 'session' && b.target !== 'library') {
         return reply.code(400).send({ error: 'invalid_target' });
       }
-      try {
-        return await svc.chat.propose(req.params.id, b);
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return await svc.chat.propose(req.params.id, b);
     },
   );
 }

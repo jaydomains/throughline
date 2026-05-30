@@ -2,6 +2,7 @@ import { nanoid } from 'nanoid';
 import { realpathSync } from 'node:fs';
 import { isAbsolute, normalize } from 'node:path';
 import type { CreateProjectInput, Project, UpdateProjectInput } from '@throughline/shared';
+import { DomainError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import { readProjectConfig } from '../init/config-reader.js';
@@ -10,21 +11,25 @@ import type { MethodologyRegistry } from '../methodology/loader.js';
 
 const DEFAULT_BUNDLE_ID = 'freeform'; // T-D47
 
-export class InvalidBundlePathError extends Error {
+export class InvalidBundlePathError extends DomainError {
   constructor(public bundlePath: string) {
-    super(`invalid bundle_path "${bundlePath}"`);
+    super(`invalid bundle_path "${bundlePath}"`, { statusCode: 400, code: 'invalid_bundle_path' });
   }
 }
 
-export class InvalidRepoPathError extends Error {
+export class InvalidRepoPathError extends DomainError {
   constructor(public repoPath: string) {
-    super(`invalid repo_path "${repoPath}"`);
+    super(`invalid repo_path "${repoPath}"`, { statusCode: 400, code: 'invalid_repo_path' });
   }
 }
 
-export class DuplicateRepoPathError extends Error {
+export class DuplicateRepoPathError extends DomainError {
   constructor(public repoPath: string, public existingProjectId: string) {
-    super(`repo_path "${repoPath}" is already bound to project "${existingProjectId}"`);
+    super(`repo_path "${repoPath}" is already bound to project "${existingProjectId}"`, {
+      statusCode: 409,
+      code: 'duplicate_repo_path',
+      details: { repo_path: repoPath, project_id: existingProjectId },
+    });
   }
 }
 
@@ -107,9 +112,13 @@ function rowToProject(row: ProjectRow): Project {
   };
 }
 
-export class BundleNotLoadedError extends Error {
+export class BundleNotLoadedError extends DomainError {
   constructor(public bundleId: string) {
-    super(`bundle "${bundleId}" is not loaded`);
+    super(`bundle "${bundleId}" is not loaded`, {
+      statusCode: 400,
+      code: 'bundle_not_loaded',
+      details: { bundle_id: bundleId },
+    });
   }
 }
 

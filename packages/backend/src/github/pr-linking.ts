@@ -7,6 +7,7 @@ import type {
   PrLinkCandidate,
   PrLinkDetectResult,
 } from '@throughline/shared';
+import { ItemNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -21,12 +22,6 @@ const exec = promisify(execFile);
 //
 // Branch read shells `git` via child_process (the hook-installer / local-git precedent),
 // not `simple-git` (C-D16).
-
-export class ItemNotFoundError extends Error {
-  constructor(id: string) {
-    super(`item ${id} not found`);
-  }
-}
 
 export interface PrLinkingService {
   detect(itemId: string): Promise<PrLinkDetectResult>;

@@ -1,9 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import {
-  BlockerCycleError,
-  ItemNotFoundError,
-  ItemPolicyError,
-  ProjectNotFoundError,
   type ItemsService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -78,32 +74,22 @@ export function registerItemRoutes(
     if (typeof body.title !== 'string' || body.title.length === 0) {
       return reply.code(400).send({ error: 'title_required' });
     }
-    try {
-      const input: Parameters<ItemsService['create']>[0] = {
-        project_id: req.params.id,
-        title: body.title,
-      };
-      if (body.type !== undefined) input.type = body.type;
-      if (body.status !== undefined) input.status = body.status;
-      if (body.description !== undefined) input.description = body.description;
-      if (body.blocker_text !== undefined && body.blocker_text !== null)
-        input.blocker_text = body.blocker_text;
-      if (body.parent_id !== undefined) input.parent_id = body.parent_id;
-      if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
-      if (body.tags !== undefined) input.tags = body.tags;
-      if (body.session_ids !== undefined) input.session_ids = body.session_ids;
-      if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
-      const item = items.create(input);
-      return reply.code(201).send({ item });
-    } catch (err) {
-      if (err instanceof ItemPolicyError) {
-        return reply.code(400).send({ error: 'policy_violation', field: err.field, message: err.message });
-      }
-      if (err instanceof ProjectNotFoundError || err instanceof ItemNotFoundError) {
-        return reply.code(400).send({ error: 'not_found', message: err.message });
-      }
-      throw err;
-    }
+    const input: Parameters<ItemsService['create']>[0] = {
+      project_id: req.params.id,
+      title: body.title,
+    };
+    if (body.type !== undefined) input.type = body.type;
+    if (body.status !== undefined) input.status = body.status;
+    if (body.description !== undefined) input.description = body.description;
+    if (body.blocker_text !== undefined && body.blocker_text !== null)
+      input.blocker_text = body.blocker_text;
+    if (body.parent_id !== undefined) input.parent_id = body.parent_id;
+    if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
+    if (body.tags !== undefined) input.tags = body.tags;
+    if (body.session_ids !== undefined) input.session_ids = body.session_ids;
+    if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
+    const item = items.create(input);
+    return reply.code(201).send({ item });
   });
 
   app.patch<{
@@ -122,27 +108,17 @@ export function registerItemRoutes(
     const existing = items.get(req.params.itemId);
     if (!existing || existing.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
     const body = req.body ?? {};
-    try {
-      const input: Parameters<ItemsService['update']>[1] = {};
-      if (body.title !== undefined) input.title = body.title;
-      if (body.type !== undefined) input.type = body.type;
-      if (body.status !== undefined) input.status = body.status;
-      if (body.description !== undefined) input.description = body.description;
-      if (body.blocker_text !== undefined) input.blocker_text = body.blocker_text;
-      if (body.parent_id !== undefined) input.parent_id = body.parent_id;
-      if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
-      if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
-      const item = items.update(req.params.itemId, input);
-      return { item };
-    } catch (err) {
-      if (err instanceof ItemPolicyError) {
-        return reply.code(400).send({ error: 'policy_violation', field: err.field, message: err.message });
-      }
-      if (err instanceof BlockerCycleError) {
-        return reply.code(400).send({ error: 'cycle' });
-      }
-      throw err;
-    }
+    const input: Parameters<ItemsService['update']>[1] = {};
+    if (body.title !== undefined) input.title = body.title;
+    if (body.type !== undefined) input.type = body.type;
+    if (body.status !== undefined) input.status = body.status;
+    if (body.description !== undefined) input.description = body.description;
+    if (body.blocker_text !== undefined) input.blocker_text = body.blocker_text;
+    if (body.parent_id !== undefined) input.parent_id = body.parent_id;
+    if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
+    if (body.methodology_context !== undefined) input.methodology_context = body.methodology_context;
+    const item = items.update(req.params.itemId, input);
+    return { item };
   });
 
   app.delete<{ Params: { id: string; itemId: string } }>(
@@ -190,14 +166,8 @@ export function registerItemRoutes(
     const blockedBy = req.body?.blocked_by_item_id;
     if (typeof blockedBy !== 'string' || blockedBy.length === 0)
       return reply.code(400).send({ error: 'blocked_by_item_id_required' });
-    try {
-      items.addBlocker(req.params.itemId, blockedBy);
-      return { item: items.get(req.params.itemId) };
-    } catch (err) {
-      if (err instanceof BlockerCycleError) return reply.code(400).send({ error: 'cycle' });
-      if (err instanceof ItemNotFoundError) return reply.code(400).send({ error: 'blocker_not_found' });
-      throw err;
-    }
+    items.addBlocker(req.params.itemId, blockedBy);
+    return { item: items.get(req.params.itemId) };
   });
 
   app.delete<{ Params: { id: string; itemId: string; blockedById: string } }>(
