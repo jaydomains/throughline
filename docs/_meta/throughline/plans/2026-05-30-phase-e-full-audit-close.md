@@ -2,7 +2,7 @@
 
 - **Date:** 2026-05-30
 - **Author session:** Phase E planning — independent track (branch `claude/hopeful-carson-aX0Uw`)
-- **Status:** draft — awaiting Session-2 audit. NOT planner-approved. The final-marker line is appended only when every review thread resolves.
+- **Status: final — approved by planner.** Session-2 adversarial review converged at round 2 (auditor final-marker `a4d05d7`); all 4 round-1 findings accepted-and-resolved in rev-2 (`223ff16`); no open threads; no new findings. Plan is coverage-complete, self-consistent, execution-ready. *Draft→ready conversion is the overseer session's gate, not flipped here.*
 - **Scope:** every still-open finding across committed audits 1–5 (`docs/_meta/throughline/audits/`).
 - **Chain shape:** one PR per slice — the canonical `AUTO_CONTINUE_WORKFLOW.md` rhythm (Premise "a slice = one PR"; the 9c sharpening absorbed in PR #82). Rationale specific to this chain: high rollback-value (a bad silent-failure fix is itself a silent regression, across diverse subsystems); cleaner discrete-audit-after-merge per finding; per-PR Gitar attention against a specific change.
 - **Source of truth:** the five committed audit reports + synthesis, **re-verified against current `main`** by this session (file:line evidence cited per slice). Verification diverged from the audit text in three load-bearing places — see *Verification divergences* below.
