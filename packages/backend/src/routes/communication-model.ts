@@ -23,7 +23,7 @@ import type {
   UpdateCommunicationProjectSettingsInput,
 } from '@throughline/shared';
 import type { ItemsService } from '../items/service.js';
-import type { MethodologyRegistry } from '../methodology/loader.js';
+import { resolveProjectBundle, type MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import {
   readCommunicationSettings,
@@ -46,7 +46,7 @@ export function registerCommunicationModelRoutes(app: FastifyInstance, deps: Dep
       const project = projects.get(req.params.id);
       if (!project) return reply.code(404).send({ error: 'project_not_found' });
 
-      const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      const loaded = resolveProjectBundle(registry, project);
       if (loaded.status !== 'loaded') {
         return reply.code(500).send({ error: 'bundle_not_loaded', bundle_id: project.bundle_id });
       }
@@ -97,7 +97,7 @@ export function registerCommunicationModelRoutes(app: FastifyInstance, deps: Dep
       const project = projects.get(req.params.id);
       if (!project) return reply.code(404).send({ error: 'project_not_found' });
 
-      const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      const loaded = resolveProjectBundle(registry, project);
       if (loaded.status !== 'loaded') {
         return reply.code(500).send({ error: 'bundle_not_loaded', bundle_id: project.bundle_id });
       }

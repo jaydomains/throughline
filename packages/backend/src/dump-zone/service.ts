@@ -15,7 +15,7 @@ import { usdEstimate } from '../ai/pricing.js';
 import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
 import type { LibraryService } from '../library/service.js';
-import type { MethodologyRegistry } from '../methodology/loader.js';
+import { resolveProjectBundle, type MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import { bundleItemPolicy } from '../items/policy.js';
 import { recordCost } from '../cost/telemetry.js';
@@ -127,7 +127,7 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
     async propose(input) {
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
-      const bundleResult = registry.resolveBundle(project.bundle_id, project.bundle_path);
+      const bundleResult = resolveProjectBundle(registry, project);
       if (bundleResult.status !== 'loaded') {
         throw new Error(`bundle "${project.bundle_id}" not loaded`);
       }
