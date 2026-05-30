@@ -129,7 +129,7 @@ Until Phase D lands, read a green gate as: "the code the gate sees is type-consi
 ## Cross-references
 
 - `SESSION_START.md` — discipline floor; this file's gates sit inside that floor.
-- `AUTO_CONTINUE_WORKFLOW.md` — the slice-chain rhythm that runs between the pre-work and post-work gates.
+- `AUTO_CONTINUE_WORKFLOW.md` — the slice-chain rhythm that runs between the pre-work and post-work gates; see its **Concurrent Doc-PR Collision** rule for why a rolling-shared-doc PR (PLATFORM_STATUS / AUTHORING_DISCIPLINE / SESSION_START) must land before a chain opens or pause the chain until it merges.
 - `PLATFORM_STATUS.md` — current taxonomy state per deliverable surfaces here; refreshed at every session sign-off.
 - `HANDOVER_TEMPLATE.md` — the handover format the post-work gate's first checkbox produces.
 - `DECISIONS.md` / `CODE_SPEC.md` / `ROADMAP.md` / `CHECKLIST.md` — the four files the pre-work gate scaffolds and the cohort hardener pass audits.
