@@ -5,6 +5,7 @@ import type {
   RagReindexResult,
   RagSubstrate,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -29,12 +30,6 @@ const AUDIT_MODEL = 'claude-sonnet-4-6';
 const TEXT_K = 6;
 const AUDIT_LIMIT = 20;
 const SYNTH_MAX_TOKENS = 700;
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 // Bare "where" is too greedy ("summarise where this stands" is a text query); require a
 // locus phrase. The rest are unambiguous code-locus terms (T-D25 example: "where is X").

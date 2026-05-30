@@ -1,6 +1,7 @@
 import { appendFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import type { SessionRetroRequest, SessionRetroResult } from '@throughline/shared';
+import { ProjectNotFoundError, SessionNotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -24,17 +25,6 @@ import type { SessionsService } from '../sessions/service.js';
 
 const RETRO_MODEL = 'claude-sonnet-4-6';
 const RETRO_MAX_TOKENS = 900;
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
-export class SessionNotFoundError extends Error {
-  constructor(id: string) {
-    super(`session ${id} not found in project`);
-  }
-}
 
 export interface RetroService {
   generate(projectId: string, req: SessionRetroRequest): Promise<SessionRetroResult>;

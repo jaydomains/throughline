@@ -8,6 +8,7 @@ import type {
   ReminderPayload,
   UpdateDirectiveInput,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
   advanceRecurrence,
   computeNextFireAt,
@@ -28,12 +29,6 @@ import type { ProjectsService } from '../projects/service.js';
 export class DirectiveNotFoundError extends Error {
   constructor(id: string) {
     super(`directive ${id} not found`);
-  }
-}
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
   }
 }
 

@@ -8,25 +8,26 @@
 
 ## Snapshot
 
-**As of 2026-05-29.** Audit-fix **Phase A** (foundation fixes) landed — first of four sequential audit-fix workstreams (A → B → C → D) derived from the 2026-05 five-audit cycle (build, bugs, functional, silent-failure, improvements). Single PR in the cohort-hardener shape (not a multi-slice chain). Five deliverables: **(1) F1** — `@throughline/shared` gains a dual-condition `exports` map (`types` / `development` → src, `default` → built `dist/`) so the build artifact is runnable under plain `node` while every dev/typecheck/test/bundle path stays on source; backend `dev` / `start` pass `--conditions=development` to keep tsx on source. Verified end-to-end: `node` → `dist` (17 exports), `tsx --conditions=development` → `src` with `dist` absent, plain `tsx` crashes without `dist` (proving the flag is load-bearing — tsx does not honour `development` by default). Convention recorded as **C-D22**; resolves the dead-weight-`dist` concern (it now has a real consumer). **(2) I1** — backend `test/**` brought into typecheck via new `packages/backend/tsconfig.test.json` (src + test, `noEmit`) wired into the backend `typecheck` script; the one pre-existing type error surfaced (`bootstrap-watcher.test.ts` — a `Partial<Project> & {repo_path: string | null}` intersection collapsed `repo_path` to non-nullable) fixed with `Omit`. Blast radius was 1 error, far under the 30-error halt threshold. Closes the green-gate's backend-test-typecheck blind spot and unblocks Phase D regression tests. **(3) W2** — `engines.node ">=22"` pinned, `.github/workflows/ci.yml` aligned to Node 22, `@types/node` bumped `^20`→`^22` (root + backend) to match the v22.22 dev runtime. **(4) W4** — React Router `v7_startTransition` + `v7_relativeSplatPath` future flags opted in across `main.tsx` and 27 test `MemoryRouter`s (the actual source of the warnings); frontend test stderr now warning-free. **(5)** AUTHORING_DISCIPLINE.md gains a "Green-Gate Coverage — Known Gaps (this cohort)" section honestly scoping what the four-command gate proves vs. doesn't — gap 1 (backend `test/**` excluded from typecheck) closed here; gap 2 (wire-contract response types frontend-local, `jsonFetch<T>(…) as T` unvalidated cast) to be closed by Phase D. Green gate verified: 3 typecheck scopes, 500 backend + 182 frontend tests, lint, build all green. C-D22 is the audit-fix cohort's first new anchor, so the Locked Decisions table rolls per the cycle-reset rule.
+**As of 2026-05-30.** Audit-fix **Phase B** opened — error-handling & bundle-resolution refactor, second of four sequential audit-fix workstreams (A → B → C → D). Phase A merged (PR #67). **Slice 1 (chain-open)** landed the shared domain-error hierarchy: a new `packages/shared/src/errors.ts` defines `DomainError` (carrying canonical `statusCode` + stable `code` + optional `details`) → `NotFoundError` (404) → `ProjectNotFoundError` / `ItemNotFoundError` / `SessionNotFoundError`. The 17 duplicate `ProjectNotFoundError` + 5 `ItemNotFoundError` + 2 `SessionNotFoundError` per-module class definitions are deleted and every import site repoints to `@throughline/shared`; the six-alias `instanceof` chain in `intelligence/routes.ts` collapses to a single check. **Mints T-D58** (status-on-the-class convention; slice 3 wires the central handler per C-D23). No HTTP behaviour change yet — routes still catch and map, and the three NotFound classes now carry canonical 404. Two cosmetic message variants (`… not found in project`) normalized to `… not found` (no test/contract asserted them). Green gate verified: typecheck (incl. backend `test/**`), 500 backend + 182 frontend tests, lint, build — net −135 lines across 36 files plus the new `errors.ts`. Slices 2–4 follow (migrate the remaining ~50 error classes → central handler / C-D23 → `resolveProjectBundle` / T-D51 amendment).
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase A** (foundation fixes) landed 2026-05-29 (single PR). Phases B / C / D queued (sequential; B/C/D scopes derive from the same 2026-05 audit cycle).
-**Status:** Phase A `feature-complete` — foundation fixes merged, green gate verified. Phases 19–22 build cohort remains `production-ready` end-to-end.
-**Next concrete action:** spec author opens audit-fix Phase B (next workstream). Branch-protection required-check setting for `.github/workflows/ci.yml` still pending (see Queued Work) — now more material, since Phase A widened CI's true typecheck coverage.
+**Phase:** Audit-fix **Phase B** (error-handling & bundle-resolution refactor) in flight — chain `audit-fix-phase-b-error-bundle`, tracking issue #68. Slice 1 (chain-open) complete; slices 2–4 pending.
+**Status:** Phase B slice 1 `feature-complete`. Phase A `feature-complete` (PR #67). Phases 19–22 build cohort `production-ready` end-to-end.
+**Next concrete action:** Phase B slice 2 — migrate the remaining ~50 backend domain-error classes onto the shared `DomainError` base with canonical codes (executes T-D58, no new anchor). Branch-protection required-check setting for `.github/workflows/ci.yml` still pending (see Queued Work).
 
 ---
 
 ## Locked Decisions This Cycle
 
-**C-D22** is the audit-fix cohort's first new anchor, minted by Phase A — per the Update Protocol cycle-reset rule it rolls off the just-promoted Phases 19–22 build cohort entries (T-D49…T-D57, C-D19…C-D21, all `production-ready` since 2026-05-28; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and in `git log`). The new audit-fix cycle starts minimal. One line each; full bodies in `CODE_SPEC.md`. This table rolls again when audit-fix Phase B (or later) mints its first new anchor.
+The audit-fix cohort (Phases A → D) accumulates its anchors here. C-D22 (Phase A) reset the cycle off the now-`production-ready` Phases 19–22 entries (T-D49…T-D57, C-D19…C-D21; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and `git log`); T-D58 (Phase B slice 1) is appended. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. The table rolls when the audit-fix cohort closes and a successor cohort mints its first anchor.
 
 | Anchor | Phase | One-line |
 |---|---|---|
 | C-D22 | Audit-fix A | Dual-condition `exports` for TS-source workspace packages: `types` / `development` → `src`, `default` → built `dist/`; backend tsx kept on source via `--conditions=development`. Makes `dist` node-runnable without forcing a build into the dev loop. |
+| T-D58 | Audit-fix B/S1 | Shared domain-error hierarchy in `@throughline/shared`: domain errors carry canonical HTTP `statusCode` + stable `code`; routes never re-decide status (central handler reads it — slice 3 / C-D23). Closes 17+5+2 duplicate NotFound defs and the SF6-09 status drift. |
 
 ---
 
@@ -54,13 +55,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Audit-fix Phase A — foundation fixes (F1 dist resolution, I1 backend test typecheck, W2 Node 22 pin, W4 RR v7 flags) | `handovers/2026-05-29-audit-fix-phase-a-foundation-fixes.md` |
+| _this PR_ | Phase B / Slice 1 — shared domain-error hierarchy + Project/Item/Session NotFound consolidation (chain open) | `handovers/2026-05-30-phase-b-slice-1-shared-error-hierarchy.md` |
+| #67 | Audit-fix Phase A — foundation fixes (F1 dist resolution, I1 backend test typecheck, W2 Node 22 pin, W4 RR v7 flags) | `handovers/2026-05-29-audit-fix-phase-a-foundation-fixes.md` |
 | #66 | Cohort-level heavy hardener — Phases 19–22 build outputs | `handovers/2026-05-28-cohort-hardener-phases-19-22-build.md` |
 | #65 | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
 | #64 | Phase 22 / Slice 1 — discipline-scan-state backend lifecycle (chain open) | `handovers/2026-05-28-phase-22-slice-1-discipline-scan-state-lifecycle.md` |
-| #62 | Phase 21 / Slice 4 — unified Bootstrap & clone-and-go SettingsView block (chain close) | `handovers/2026-05-28-phase-21-slice-4-unified-bootstrap-block.md` |
 
-(PR #61 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
+(PR #62 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
 
 ---
 

@@ -1,8 +1,8 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { ProjectsService } from '../../projects/service.js';
 import {
   ChecklistNotFoundError,
-  ProjectNotFoundError,
   RunCompletedError,
   RunNotFoundError,
   StepKindError,

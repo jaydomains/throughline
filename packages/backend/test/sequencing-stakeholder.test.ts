@@ -7,11 +7,9 @@ import type { GateRuntime } from '../src/methodology/gates/runtime.js';
 import type { GateFiringsResult } from '@throughline/shared';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
-import { createSequencingService, ProjectNotFoundError } from '../src/intelligence/sequencing.js';
-import {
-  createStakeholderService,
-  ItemNotFoundError,
-} from '../src/intelligence/stakeholder.js';
+import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
+import { createSequencingService } from '../src/intelligence/sequencing.js';
+import { createStakeholderService } from '../src/intelligence/stakeholder.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');

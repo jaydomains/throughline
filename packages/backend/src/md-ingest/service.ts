@@ -12,6 +12,7 @@ import type {
   MdScanCandidate,
   MdScanResult,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -52,12 +53,6 @@ const IGNORED_DIR_NAMES = new Set([
   '__pycache__',
   'target',
 ]);
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 export class FolderNotFoundError extends Error {
   constructor(id: string) {

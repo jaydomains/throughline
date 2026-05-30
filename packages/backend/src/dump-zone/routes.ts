@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ProposalSource, ProposalTarget } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
-  ProjectNotFoundError,
   ProposalNotFoundError,
   ProposalStateError,
   type DumpZoneService,

@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
-  ProjectNotFoundError,
   RepoPathMissingError,
   type CodeTodoService,
 } from './service.js';

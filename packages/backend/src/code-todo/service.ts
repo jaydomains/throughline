@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { CodeTodoScanResult } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { DumpZoneService } from '../dump-zone/service.js';
@@ -10,12 +11,6 @@ import { matchesToDumpZoneText, scanRepo, DEFAULT_PATTERNS } from './scanner.js'
 // invocation only in v1. Scan walks the project's repo_path, finds matches for the configured
 // patterns, packages them as a dump-zone proposal so the same review-modal apply path lands
 // the resulting items. Each run writes a row to code_todo_scans for audit.
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 export class RepoPathMissingError extends Error {
   constructor(path: string) {

@@ -11,7 +11,8 @@ import { createSessionsService } from '../src/sessions/service.js';
 import { createDriftService } from '../src/drift/service.js';
 import { createOrphanRulesService } from '../src/github/orphan-rules.js';
 import { createSettingsService } from '../src/settings/service.js';
-import { createRetroService, SessionNotFoundError } from '../src/intelligence/retro.js';
+import { SessionNotFoundError } from '@throughline/shared';
+import { createRetroService } from '../src/intelligence/retro.js';
 import { createPeriodicReviewService } from '../src/intelligence/periodic-review.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 

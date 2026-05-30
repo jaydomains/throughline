@@ -1,11 +1,11 @@
 import type { FastifyInstance } from 'fastify';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
   EntryNotFoundError,
   FolderMissingError,
   FolderNotFoundError,
   FolderOutsideRepoError,
   NotAnImportedDocError,
-  ProjectNotFoundError,
   SourceFileMissingError,
   type MdIngestService,
 } from './service.js';

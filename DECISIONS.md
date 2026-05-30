@@ -1280,6 +1280,33 @@ Bootstrap brings months — sometimes years — of project history into Throughl
 
 ---
 
+## T-D58 — Shared domain-error hierarchy: errors carry their canonical HTTP status; routes never decide it
+
+- **Date:** 2026-05-30
+- **Status:** active — audit-fix Phase B (slice 1 mints the hierarchy + consolidates the three NotFound families; slice 2 migrates the remaining backend error classes onto it; slice 3 wires the central handler per C-D23)
+- **Sections affected:** 3, 14
+
+### Decision
+Domain errors are defined once in `@throughline/shared` (`packages/shared/src/errors.ts`) under a common abstract base `DomainError` that carries the error's canonical HTTP `statusCode`, a stable string `code`, and optional structured `details`. A `NotFoundError` subclass fixes `statusCode: 404`; concrete errors (`ProjectNotFoundError`, `ItemNotFoundError`, `SessionNotFoundError`, and — across slice 2 — the rest of the backend's HTTP-mapped domain errors) extend the appropriate base and set their canonical `code`. The HTTP status for a domain error is a property of the error class, not a decision re-made in each route's catch block. A central Fastify error handler (C-D23) reads `statusCode`/`code`/`details` off any thrown `DomainError` and emits the canonical response; routes stop hand-rolling status mapping.
+
+### Context
+The backend had accreted 17 identical `ProjectNotFoundError` definitions, 5 `ItemNotFoundError`, and 2 `SessionNotFoundError` — one per module — plus ~50 other domain-error classes, none carrying a status code. Status was assigned ad hoc in 63 hand-rolled try/catch blocks across 20 route files. The same error mapped to different HTTP codes in different routes (`ItemNotFoundError` → 404 in most routes but 400 in `items/routes.ts`; audit SF6-09), and `intelligence/routes.ts` imported six *different* `ProjectNotFoundError` classes under aliases to `instanceof`-check them in a single handler. The duplication made one `instanceof` impossible and let status-code drift accrue silently.
+
+### Rationale
+- **Status on the class makes drift structurally impossible.** When the canonical code lives on the error, two routes throwing the same error cannot return different statuses — one source of truth. SF6-09 cannot recur.
+- **One definition, one identity.** A single shared class means `instanceof` works across every consumer; the six-alias chain in `intelligence/routes.ts` collapses to one check, and future call sites cannot accidentally reference a different module's copy.
+- **The central handler becomes trivial and uniform.** Reading `statusCode`/`code`/`details` off the error replaces 63 bespoke catch blocks with one handler and guarantees a single response shape (C-D23).
+- **Shared, not backend-local.** Housing the hierarchy in `@throughline/shared` lets the frontend reference the same `code` values and error-response type (the latter lands in slice 3 — partial progress on the wire-contract gap the green-gate reckoning names).
+
+### Implications
+- `packages/shared/src/errors.ts` is the single home for HTTP-mapped domain errors; new such errors are defined there (or extend the shared base) rather than redeclared per module.
+- The `code` string is a stable wire value (e.g. `project_not_found`); renaming one is a contract change.
+- Message text is normalized at consolidation: the former per-module copies were byte-identical except two cosmetic variants (`item … not found in project`, `session … not found in project`) that collapse to the canonical `… not found`. No test or contract asserted the variant text.
+- Errors that are not HTTP-mapped (internal/programmer errors) do not extend `DomainError`; the central handler rethrows them to Fastify's default 500 path.
+- Implemented across the Phase B chain: slice 1 (this) mints the hierarchy + the three NotFound families; slice 2 migrates the remaining ~50 backend error classes onto the base with canonical codes; slice 3 installs the central handler (C-D23) and deletes the hand-rolled blocks.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).

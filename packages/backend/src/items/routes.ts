@@ -1,9 +1,8 @@
 import type { FastifyInstance } from 'fastify';
+import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import {
   BlockerCycleError,
-  ItemNotFoundError,
   ItemPolicyError,
-  ProjectNotFoundError,
   type ItemsService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';

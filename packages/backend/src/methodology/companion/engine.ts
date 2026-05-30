@@ -9,6 +9,7 @@ import type {
   CompanionChecklistsResult,
   LoadedBundle,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../../audit/log.js';
 import { recordCost } from '../../cost/telemetry.js';
 import { promptFingerprint } from '../../ai/fingerprint.js';
@@ -36,11 +37,6 @@ import type { CompanionJudge } from './judgement.js';
 // run-summary library-note id are recovered from the run's audit trail, which is the
 // canonical companion-review record (T-D45 — queryable via the audit RAG substrate).
 
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 export class ChecklistNotFoundError extends Error {
   constructor(id: string) {
     super(`checklist ${id} not declared by the project's bundle`);

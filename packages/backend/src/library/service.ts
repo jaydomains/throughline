@@ -10,6 +10,7 @@ import type {
   PromptFillResult,
   UpdateLibraryEntryInput,
 } from '@throughline/shared';
+import { ProjectNotFoundError, ItemNotFoundError } from '@throughline/shared';
 import { LIBRARY_ENTRY_TYPES, isLibraryEntryType, renderPromptBody } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
@@ -56,12 +57,6 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
   };
 }
 
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
-
 export class LibraryEntryNotFoundError extends Error {
   constructor(id: string) {
     super(`library entry ${id} not found`);
@@ -89,12 +84,6 @@ export class CrossProjectAttachError extends Error {
 export class NotAPromptError extends Error {
   constructor(entryId: string, type: string) {
     super(`prompt-fill called on library entry ${entryId} of type "${type}"`);
-  }
-}
-
-export class ItemNotFoundError extends Error {
-  constructor(id: string) {
-    super(`item ${id} not found`);
   }
 }
 

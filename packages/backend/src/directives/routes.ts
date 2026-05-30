@@ -6,6 +6,7 @@ import {
   type DirectiveParentType,
   type DirectivePayload,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
   CrossProjectDirectiveError,
   DirectiveNotFoundError,
@@ -13,7 +14,6 @@ import {
   InvalidParentTypeError,
   InvalidPayloadError,
   ParentNotFoundError,
-  ProjectNotFoundError,
   type DirectivesService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';

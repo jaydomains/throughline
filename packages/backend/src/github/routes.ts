@@ -6,7 +6,7 @@ import type { GitHubApi } from './api.js';
 import type { GithubStateCache } from './state-cache.js';
 import type { GitHubPoller } from './poller.js';
 import type { PrLinkingService } from './pr-linking.js';
-import { ItemNotFoundError } from './pr-linking.js';
+import { ItemNotFoundError } from '@throughline/shared';
 import type { OrphanRulesService } from './orphan-rules.js';
 import { GithubNotConfiguredError, OrphanRuleNotFoundError } from './orphan-rules.js';
 import type { AutoReconcileService } from './auto-reconcile.js';
