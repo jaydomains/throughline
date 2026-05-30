@@ -51,6 +51,14 @@ Two-of-three is not enough. Green-then-red is not green. The gate evaluates stat
 
 ---
 
+## Canonical Chain Rhythm — one PR per slice
+
+The canonical chain rhythm is **one PR per slice**. A non-draft PR opens as soon as the slice's code is locally complete, so the three-layer gate (Gitar review + CI green + GitHub-mergeable) can run continuously as commits accumulate on that slice's branch. Each slice merges only when its gate is simultaneously green; the next slice's branch opens off the now-updated `main` and the cycle repeats.
+
+**The violation to prevent:** pushing multiple slices to a single branch without ever opening a PR per slice — bypassing the gate, the review, and spec-author visibility entirely. Phase C+D's recovered violation is the motivating example: slices 1 and 2 were committed to `claude/awesome-carson-j3wel` without per-slice PRs opening, bypassing the canonical rhythm; recovery required opening retroactive PRs to restore gate verification.
+
+---
+
 ## The Three Halt Classes
 
 These are the **only** legitimate reasons a chain stops. Anything else is a bug in the runner.
@@ -142,7 +150,13 @@ This is a **chain-runner halt condition**: at chain-open and at every slice boun
 
 ## Merge-on-Green Polling
 
-The poll loop (Slice Lifecycle B) runs at a **~60-second cadence with no ceiling**, and merges only when **all three gate layers are green at the same poll** — never on a two-of-three or a green-then-red reading. A reviewer or CI run taking long is normal flow, not a failure; the runner waits rather than forcing a merge. This reinforces, not replaces, the Three-Layer Green Gate above.
+The poll loop (Slice Lifecycle B) runs at a **~60-second cadence with no ceiling**, and merges only when **all three gate layers are green at the same poll** — never on a two-of-three or a green-then-red reading. A reviewer or CI run taking long is normal flow, not a failure; the runner waits rather than forcing a merge. This reinforces, not replaces, the Three-Layer Green Gate above. Subscriptions push failures and review comments; clean CI-green does not reliably generate a wake event. Merge-on-green is poll-driven, not subscription-driven.
+
+---
+
+## Pre-Flight State Verification
+
+Pre-flight and chain-open findings about canonical-file state — "X file is missing", "Y section is absent", "Z anchor is unminted" — must be verified against the **live repo tree** (and live `DECISIONS.md` / `CODE_SPEC.md`), never inherited from a prior session's compacted context summary. Compaction can carry a stale or wrong claim forward across sessions: the audit-fix Phase C+D arc inherited a wrong "`SESSION_START.md` is missing" claim through compacted context and propagated it into successive `PLATFORM_STATUS.md` rolls, even though the file was present at the repo root the whole time. Before acting on any "missing/absent" precondition — and before recording one in a rolling shared doc — `ls` / grep the live tree to confirm.
 
 ---
 
