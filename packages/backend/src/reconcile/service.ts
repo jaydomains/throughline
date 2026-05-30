@@ -9,6 +9,7 @@ import type {
   ReconcileSource,
 } from '@throughline/shared';
 import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -50,22 +51,23 @@ function rowToRun(row: ReconcileRunRow): ReconcileRun {
   };
 }
 
-export class ReconcileRunNotFoundError extends Error {
+export class ReconcileRunNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`reconcile run ${id} not found`);
+    super(`reconcile run ${id} not found`, 'reconcile_run_not_found');
   }
 }
 
-export class ReconcileRunStateError extends Error {
+export class ReconcileRunStateError extends DomainError {
   constructor(id: string, state: string) {
-    super(`reconcile run ${id} is ${state}, cannot apply`);
+    super(`reconcile run ${id} is ${state}, cannot apply`, { statusCode: 409, code: 'run_not_pending' });
   }
 }
 
-export class CrossProjectMutationError extends Error {
+export class CrossProjectMutationError extends DomainError {
   constructor(public itemIds: string[], public projectId: string) {
     super(
       `reconcile apply rejected: items ${itemIds.join(', ')} do not belong to project ${projectId}`,
+      { statusCode: 422, code: 'cross_project_mutation' },
     );
   }
 }

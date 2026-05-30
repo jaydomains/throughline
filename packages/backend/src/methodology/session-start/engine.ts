@@ -9,6 +9,7 @@ import type {
   SessionStartPromptResult,
 } from '@throughline/shared';
 import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../../audit/log.js';
 import { recordCost } from '../../cost/telemetry.js';
 import { promptFingerprint } from '../../ai/fingerprint.js';
@@ -37,14 +38,14 @@ import type { RelevanceClassifier } from './classifier.js';
 // (mode + open items + anchors + markers + cross-unit deps + include-prompt directives)
 // re-serves the cached prompt with no Haiku call; any change regenerates.
 
-export class BundleUnresolvedError extends Error {
+export class BundleUnresolvedError extends NotFoundError {
   constructor(id: string) {
-    super(`project ${id} bundle could not be resolved`);
+    super(`project ${id} bundle could not be resolved`, 'bundle_unresolved');
   }
 }
-export class InvalidModeError extends Error {
+export class InvalidModeError extends DomainError {
   constructor(mode: string) {
-    super(`companion mode "${mode}" is not declared by the project's bundle`);
+    super(`companion mode "${mode}" is not declared by the project's bundle`, { statusCode: 400, code: 'invalid_mode' });
   }
 }
 

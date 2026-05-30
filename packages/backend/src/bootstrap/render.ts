@@ -2,6 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Project } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 import { assertPathInsideThroughline } from './path-guard.js';
@@ -32,15 +33,15 @@ const GITIGNORE_PAYLOAD = [
   '',
 ].join('\n');
 
-export class BootstrapRenderProjectNotFoundError extends Error {
+export class BootstrapRenderProjectNotFoundError extends NotFoundError {
   constructor(public projectId: string) {
-    super(`project ${projectId} not found`);
+    super(`project ${projectId} not found`, 'project_not_found');
   }
 }
 
-export class BootstrapRenderNoBundleBoundError extends Error {
+export class BootstrapRenderNoBundleBoundError extends DomainError {
   constructor(public projectId: string) {
-    super(`project ${projectId} has no bundle bound or bound bundle failed to load`);
+    super(`project ${projectId} has no bundle bound or bound bundle failed to load`, { statusCode: 400, code: 'no_bundle_bound' });
   }
 }
 

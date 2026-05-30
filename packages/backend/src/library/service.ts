@@ -11,6 +11,7 @@ import type {
   UpdateLibraryEntryInput,
 } from '@throughline/shared';
 import { ProjectNotFoundError, ItemNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { LIBRARY_ENTRY_TYPES, isLibraryEntryType, renderPromptBody } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
@@ -57,33 +58,33 @@ function rowToEntry(row: LibraryRow): LibraryEntry {
   };
 }
 
-export class LibraryEntryNotFoundError extends Error {
+export class LibraryEntryNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`library entry ${id} not found`);
+    super(`library entry ${id} not found`, 'library_entry_not_found');
   }
 }
 
-export class LibraryEntryTypeError extends Error {
+export class LibraryEntryTypeError extends DomainError {
   constructor(type: string) {
-    super(`library entry type "${type}" not allowed`);
+    super(`library entry type "${type}" not allowed`, { statusCode: 400, code: 'invalid_type' });
   }
 }
 
-export class AttachNotANoteError extends Error {
+export class AttachNotANoteError extends DomainError {
   constructor(entryId: string, type: string) {
-    super(`library entry ${entryId} is type "${type}", only notes (T-D9) can attach to items`);
+    super(`library entry ${entryId} is type "${type}", only notes (T-D9) can attach to items`, { statusCode: 422, code: 'not_a_note' });
   }
 }
 
-export class CrossProjectAttachError extends Error {
+export class CrossProjectAttachError extends DomainError {
   constructor(entryProjectId: string, itemProjectId: string) {
-    super(`cross-project attach refused: entry project ${entryProjectId} ≠ item project ${itemProjectId}`);
+    super(`cross-project attach refused: entry project ${entryProjectId} ≠ item project ${itemProjectId}`, { statusCode: 422, code: 'cross_project_attach' });
   }
 }
 
-export class NotAPromptError extends Error {
+export class NotAPromptError extends DomainError {
   constructor(entryId: string, type: string) {
-    super(`prompt-fill called on library entry ${entryId} of type "${type}"`);
+    super(`prompt-fill called on library entry ${entryId} of type "${type}"`, { statusCode: 422, code: 'not_a_prompt' });
   }
 }
 

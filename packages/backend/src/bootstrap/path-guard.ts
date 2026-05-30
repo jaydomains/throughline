@@ -1,4 +1,5 @@
 import { isAbsolute, join, normalize, sep } from 'node:path';
+import { DomainError } from '@throughline/shared';
 
 // C-D21 — render endpoint and worker write into `<repo_path>/.throughline/`
 // only. The repo_path on a Project is already canonicalised by
@@ -7,10 +8,11 @@ import { isAbsolute, join, normalize, sep } from 'node:path';
 // future callers (workers spawned with a fresh repo_path, tests injecting a
 // crafted value) could otherwise escape via `..` segments.
 
-export class BootstrapPathEscapeError extends Error {
+export class BootstrapPathEscapeError extends DomainError {
   constructor(public repoPath: string, public candidatePath: string) {
     super(
       `path "${candidatePath}" is not inside "${repoPath}${sep}.throughline${sep}"`,
+      { statusCode: 400, code: 'path_escape' },
     );
   }
 }

@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix **Phase B** opened — error-handling & bundle-resolution refactor, second of four sequential audit-fix workstreams (A → B → C → D). Phase A merged (PR #67). **Slice 1 (chain-open)** landed the shared domain-error hierarchy: a new `packages/shared/src/errors.ts` defines `DomainError` (carrying canonical `statusCode` + stable `code` + optional `details`) → `NotFoundError` (404) → `ProjectNotFoundError` / `ItemNotFoundError` / `SessionNotFoundError`. The 17 duplicate `ProjectNotFoundError` + 5 `ItemNotFoundError` + 2 `SessionNotFoundError` per-module class definitions are deleted and every import site repoints to `@throughline/shared`; the six-alias `instanceof` chain in `intelligence/routes.ts` collapses to a single check. **Mints T-D58** (status-on-the-class convention; slice 3 wires the central handler per C-D23). No HTTP behaviour change yet — routes still catch and map, and the three NotFound classes now carry canonical 404. Two cosmetic message variants (`… not found in project`) normalized to `… not found` (no test/contract asserted them). Green gate verified: typecheck (incl. backend `test/**`), 500 backend + 182 frontend tests, lint, build — net −135 lines across 36 files plus the new `errors.ts`. Slices 2–4 follow (migrate the remaining ~50 error classes → central handler / C-D23 → `resolveProjectBundle` / T-D51 amendment).
+**As of 2026-05-30.** Audit-fix **Phase B** (error-handling & bundle-resolution refactor) in flight — chain `audit-fix-phase-b-error-bundle`, issue #68. **Slice 1** (PR #69, merged) minted T-D58 and the shared `DomainError` hierarchy, consolidating the three NotFound families. **Slice 2** (this) migrates the remaining **47** HTTP-mapped backend error classes across 16 service/engine files onto the shared base — 15 `NotFoundError` (404) + 32 `DomainError` (400/409/422) — each now carrying its canonical `statusCode` + `code`. Executes T-D58; no new anchor. **No HTTP behaviour change** — routes still catch and map, so the canonical values are inert until slice 3 installs the central handler (C-D23); the SF6-09 status/code normalizations (generic `not_found` → specific codes; `items/routes` `Item/ProjectNotFound` 400→404) are documented in the slice handover's normalization table and take effect in slice 3. Frontend is unaffected (`jsonFetch` never branches on the error code — verified). `UndoError` (overloaded 409/404) and the generic-catch routes (`settings`, `notifier`) excluded and flagged for slice 3. Green gate verified: typecheck (incl. backend `test/**`), 500 backend + 182 frontend tests, lint, build — all green. Slices 3–4 follow (central handler / C-D23 → `resolveProjectBundle` / T-D51 amendment).
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase B** (error-handling & bundle-resolution refactor) in flight — chain `audit-fix-phase-b-error-bundle`, tracking issue #68. Slice 1 (chain-open) complete; slices 2–4 pending.
-**Status:** Phase B slice 1 `feature-complete`. Phase A `feature-complete` (PR #67). Phases 19–22 build cohort `production-ready` end-to-end.
-**Next concrete action:** Phase B slice 2 — migrate the remaining ~50 backend domain-error classes onto the shared `DomainError` base with canonical codes (executes T-D58, no new anchor). Branch-protection required-check setting for `.github/workflows/ci.yml` still pending (see Queued Work).
+**Phase:** Audit-fix **Phase B** (error-handling & bundle-resolution refactor) in flight — chain `audit-fix-phase-b-error-bundle`, tracking issue #68. Slices 1 (PR #69, merged) + 2 complete; slices 3–4 pending.
+**Status:** Phase B slice 2 `feature-complete`. Phases A + B/S1 merged. Phases 19–22 build cohort `production-ready` end-to-end.
+**Next concrete action:** Phase B slice 3 (I5-02, mints C-D23) — install the central Fastify `setErrorHandler` + `mapDomainError`, delete the 63 hand-rolled try/catch blocks, make the SF6-09 normalizations live, define the `ErrorResponse` type in `@throughline/shared`, and resolve `UndoError` + the generic-catch routes. Branch-protection required-check setting still pending (see Queued Work).
 
 ---
 
@@ -55,13 +55,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase B / Slice 1 — shared domain-error hierarchy + Project/Item/Session NotFound consolidation (chain open) | `handovers/2026-05-30-phase-b-slice-1-shared-error-hierarchy.md` |
+| _this PR_ | Phase B / Slice 2 — migrate remaining 47 HTTP-mapped error classes onto the shared `DomainError` base | `handovers/2026-05-30-phase-b-slice-2-error-class-migration.md` |
+| #69 | Phase B / Slice 1 — shared domain-error hierarchy + Project/Item/Session NotFound consolidation (chain open) | `handovers/2026-05-30-phase-b-slice-1-shared-error-hierarchy.md` |
 | #67 | Audit-fix Phase A — foundation fixes (F1 dist resolution, I1 backend test typecheck, W2 Node 22 pin, W4 RR v7 flags) | `handovers/2026-05-29-audit-fix-phase-a-foundation-fixes.md` |
 | #66 | Cohort-level heavy hardener — Phases 19–22 build outputs | `handovers/2026-05-28-cohort-hardener-phases-19-22-build.md` |
 | #65 | Phase 22 / Slice 2 — SettingsView `DisciplineScanBlock` (chain close) | `handovers/2026-05-28-phase-22-slice-2-discipline-scan-block.md` |
-| #64 | Phase 22 / Slice 1 — discipline-scan-state backend lifecycle (chain open) | `handovers/2026-05-28-phase-22-slice-1-discipline-scan-state-lifecycle.md` |
 
-(PR #62 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
+(PR #64 rolls off — covered by its handover in `docs/_meta/throughline/handovers/`.)
 
 ---
 

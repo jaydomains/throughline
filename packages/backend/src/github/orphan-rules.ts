@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { OrphanCleanupDraftResult, OrphanedRule } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -12,15 +13,15 @@ import type { GitHubApi } from './api.js';
 // one-click action drafts the removal PR; dismiss-without-removal is also supported and
 // audit-logged.
 
-export class OrphanRuleNotFoundError extends Error {
+export class OrphanRuleNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`orphaned rule ${id} not found`);
+    super(`orphaned rule ${id} not found`, 'orphan_rule_not_found');
   }
 }
 
-export class GithubNotConfiguredError extends Error {
+export class GithubNotConfiguredError extends DomainError {
   constructor() {
-    super('project has no github_owner/github_repo configured');
+    super('project has no github_owner/github_repo configured', { statusCode: 409, code: 'github_not_configured' });
   }
 }
 
