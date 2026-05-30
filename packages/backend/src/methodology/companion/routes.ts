@@ -1,33 +1,12 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { ProjectNotFoundError } from '@throughline/shared';
 import type { ProjectsService } from '../../projects/service.js';
 import {
-  ChecklistNotFoundError,
-  RunCompletedError,
-  RunNotFoundError,
-  StepKindError,
-  StepNotFoundError,
   type CompanionEngine,
 } from './engine.js';
 
 // Phase 12 — companion review surfaces (SPEC §7.18, C-D8, T-D45). Bundle-declared review
 // checklists run as a structured workflow. Empty-but-present for freeform-bound projects
 // (no declared checklists) — the UI hides the surface, mirroring the gates view.
-
-function mapError(reply: FastifyReply, err: unknown): unknown {
-  if (
-    err instanceof ProjectNotFoundError ||
-    err instanceof RunNotFoundError ||
-    err instanceof StepNotFoundError ||
-    err instanceof ChecklistNotFoundError
-  ) {
-    return reply.code(404).send({ error: 'not_found', message: (err as Error).message });
-  }
-  if (err instanceof StepKindError || err instanceof RunCompletedError) {
-    return reply.code(400).send({ error: 'invalid_request', message: (err as Error).message });
-  }
-  throw err;
-}
 
 export function registerCompanionRoutes(
   app: FastifyInstance,
@@ -69,11 +48,7 @@ export function registerCompanionRoutes(
     if (typeof checklistId !== 'string' || checklistId.length === 0) {
       return reply.code(400).send({ error: 'checklist_id_required' });
     }
-    try {
-      return { run: engine.startRun(req.params.id, checklistId, req.body?.companion_mode ?? null) };
-    } catch (err) {
-      return mapError(reply, err);
-    }
+    return { run: engine.startRun(req.params.id, checklistId, req.body?.companion_mode ?? null) };
   });
 
   app.get<{ Params: { id: string; runId: string } }>(
@@ -91,11 +66,7 @@ export function registerCompanionRoutes(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/mechanical',
     async (req, reply) => {
       if (!ownsRun(reply, req.params.runId, req.params.id)) return;
-      try {
-        return { run: await engine.runMechanicalStep(req.params.runId, req.params.stepId) };
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return { run: await engine.runMechanicalStep(req.params.runId, req.params.stepId) };
     },
   );
 
@@ -103,11 +74,7 @@ export function registerCompanionRoutes(
     '/api/projects/:id/companion/runs/:runId/steps/:stepId/ai-judge',
     async (req, reply) => {
       if (!ownsRun(reply, req.params.runId, req.params.id)) return;
-      try {
-        return { run: await engine.aiJudgeStep(req.params.runId, req.params.stepId) };
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return { run: await engine.aiJudgeStep(req.params.runId, req.params.stepId) };
     },
   );
 
@@ -123,16 +90,12 @@ export function registerCompanionRoutes(
         return reply.code(400).send({ error: 'invalid_decision' });
       }
       const rationale = typeof req.body?.rationale === 'string' ? req.body.rationale : '';
-      try {
-        return {
-          run: engine.resolveJudgementStep(req.params.runId, req.params.stepId, {
-            decision,
-            rationale,
-          }),
-        };
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return {
+        run: engine.resolveJudgementStep(req.params.runId, req.params.stepId, {
+          decision,
+          rationale,
+        }),
+      };
     },
   );
 
@@ -147,13 +110,9 @@ export function registerCompanionRoutes(
       if (typeof reason !== 'string' || reason.trim().length === 0) {
         return reply.code(400).send({ error: 'reason_required' });
       }
-      try {
-        return {
-          run: engine.overrideStep(req.params.runId, req.params.stepId, reason.trim()),
-        };
-      } catch (err) {
-        return mapError(reply, err);
-      }
+      return {
+        run: engine.overrideStep(req.params.runId, req.params.stepId, reason.trim()),
+      };
     },
   );
 
@@ -162,14 +121,10 @@ export function registerCompanionRoutes(
     Body: { summary?: string; item_ids?: string[] };
   }>('/api/projects/:id/companion/runs/:runId/complete', async (req, reply) => {
     if (!ownsRun(reply, req.params.runId, req.params.id)) return;
-    try {
-      const completeInput: { summary?: string; itemIds?: string[] } = {
-        itemIds: Array.isArray(req.body?.item_ids) ? req.body!.item_ids : [],
-      };
-      if (typeof req.body?.summary === 'string') completeInput.summary = req.body.summary;
-      return { run: engine.completeRun(req.params.runId, completeInput) };
-    } catch (err) {
-      return mapError(reply, err);
-    }
+    const completeInput: { summary?: string; itemIds?: string[] } = {
+      itemIds: Array.isArray(req.body?.item_ids) ? req.body!.item_ids : [],
+    };
+    if (typeof req.body?.summary === 'string') completeInput.summary = req.body.summary;
+    return { run: engine.completeRun(req.params.runId, completeInput) };
   });
 }

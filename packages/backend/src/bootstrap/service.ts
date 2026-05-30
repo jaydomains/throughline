@@ -66,7 +66,11 @@ export interface BootstrapImportResult {
 
 export class BootstrapValidationFailedError extends DomainError {
   constructor(public errors: BootstrapValidationError[]) {
-    super(`bootstrap import file failed validation (${errors.length} error${errors.length === 1 ? '' : 's'})`, { statusCode: 400, code: 'validation_failed' });
+    super(`bootstrap import file failed validation (${errors.length} error${errors.length === 1 ? '' : 's'})`, {
+      statusCode: 400,
+      code: 'validation_failed',
+      details: { errors },
+    });
   }
 }
 

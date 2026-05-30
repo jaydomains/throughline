@@ -16,6 +16,18 @@ export interface DomainErrorOptions {
   details?: Record<string, unknown>;
 }
 
+/**
+ * Canonical error-response body shape emitted by the central handler (C-D23): a stable
+ * `error` code, an optional human `message`, and any structured `details` fields spread
+ * in. Shared so frontend and backend reference one contract (partial progress on the
+ * wire-contract gap the green-gate reckoning names; full closure is Phase D).
+ */
+export interface ErrorResponse {
+  error: string;
+  message?: string;
+  [key: string]: unknown;
+}
+
 /** Base for every error that maps to a deliberate HTTP response. Never thrown directly. */
 export abstract class DomainError extends Error {
   readonly statusCode: number;

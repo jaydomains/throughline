@@ -3,6 +3,7 @@ import { mkdirSync } from 'node:fs';
 import type { Config } from './config.js';
 import { openDb, type DB } from './db/index.js';
 import { runMigrations } from './db/migrate.js';
+import { registerErrorHandler } from './http/error-handler.js';
 import { createMethodologyRegistry, type MethodologyRegistry } from './methodology/loader.js';
 import { createGateRuntime } from './methodology/gates/runtime.js';
 import { createAnthropicJudgementGate } from './methodology/gates/judgement.js';
@@ -137,6 +138,9 @@ export async function startServer(
   runMigrations(db);
 
   const app = Fastify({ logger: true });
+  // C-D23 — central domain-error handler, registered before any route so every thrown
+  // DomainError (T-D58) maps to its canonical status/body uniformly.
+  registerErrorHandler(app);
   // Late-bound so the registry's reload hook can reach the discipline-drift engine, which
   // is constructed after the registry (C-D7). The registry's initial scan runs before any
   // project exists, so the optional-chained no-op is correct there.

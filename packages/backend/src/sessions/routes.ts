@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import type { SessionsService } from './service.js';
-import { ProjectNotFoundError } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
 
 export function registerSessionRoutes(
@@ -40,22 +39,15 @@ export function registerSessionRoutes(
     const body = req.body ?? {};
     if (typeof body.name !== 'string' || body.name.length === 0)
       return reply.code(400).send({ error: 'name_required' });
-    try {
-      const input: Parameters<SessionsService['create']>[0] = {
-        project_id: req.params.id,
-        name: body.name,
-      };
-      if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
-      if (body.context !== undefined) input.context = body.context;
-      if (body.settings !== undefined) input.settings = body.settings;
-      const session = sessions.create(input);
-      return reply.code(201).send({ session });
-    } catch (err) {
-      if (err instanceof ProjectNotFoundError) {
-        return reply.code(404).send({ error: 'project_not_found' });
-      }
-      throw err;
-    }
+    const input: Parameters<SessionsService['create']>[0] = {
+      project_id: req.params.id,
+      name: body.name,
+    };
+    if (body.branch_ref !== undefined) input.branch_ref = body.branch_ref;
+    if (body.context !== undefined) input.context = body.context;
+    if (body.settings !== undefined) input.settings = body.settings;
+    const session = sessions.create(input);
+    return reply.code(201).send({ session });
   });
 
   app.patch<{
