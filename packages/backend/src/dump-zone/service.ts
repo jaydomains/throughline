@@ -8,6 +8,7 @@ import type {
   ProposalTarget,
 } from '@throughline/shared';
 import { ProjectNotFoundError } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -57,15 +58,15 @@ function rowToProposal(row: ProposalRow): DumpZoneProposal {
   };
 }
 
-export class ProposalNotFoundError extends Error {
+export class ProposalNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`proposal ${id} not found`);
+    super(`proposal ${id} not found`, 'proposal_not_found');
   }
 }
 
-export class ProposalStateError extends Error {
+export class ProposalStateError extends DomainError {
   constructor(id: string, state: string) {
-    super(`proposal ${id} is ${state}, cannot apply`);
+    super(`proposal ${id} is ${state}, cannot apply`, { statusCode: 409, code: 'proposal_not_pending' });
   }
 }
 

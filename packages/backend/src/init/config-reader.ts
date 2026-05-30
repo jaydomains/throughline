@@ -11,6 +11,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { parseBundle } from '../methodology/bundle-parser/index.js';
+import { DomainError } from '@throughline/shared';
 
 export interface ProjectConfig {
   bundle_id: string;
@@ -20,16 +21,17 @@ export interface ProjectConfig {
   project_name: string | null;
 }
 
-export class InvalidProjectConfigError extends Error {
+export class InvalidProjectConfigError extends DomainError {
   constructor(message: string, public readonly path: string) {
-    super(`invalid .throughline/project.json at ${path}: ${message}`);
+    super(`invalid .throughline/project.json at ${path}: ${message}`, { statusCode: 400, code: 'invalid_project_config' });
   }
 }
 
-export class BundleIdMismatchError extends Error {
+export class BundleIdMismatchError extends DomainError {
   constructor(public readonly configBundleId: string, public readonly bundleFileName: string) {
     super(
       `bundle_id "${configBundleId}" in project.json does not match name "${bundleFileName}" declared in sibling .throughline/bundle.md §1 Identity`,
+      { statusCode: 400, code: 'bundle_id_mismatch' },
     );
   }
 }

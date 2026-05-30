@@ -4,6 +4,7 @@ import {
   type ItemPolicy,
   readDisciplineScan,
 } from '@throughline/shared';
+import { DomainError, NotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
@@ -63,21 +64,21 @@ export interface BootstrapImportResult {
   counts: { new: number; reimported: number; conflict: number; stale_flagged: number };
 }
 
-export class BootstrapValidationFailedError extends Error {
+export class BootstrapValidationFailedError extends DomainError {
   constructor(public errors: BootstrapValidationError[]) {
-    super(`bootstrap import file failed validation (${errors.length} error${errors.length === 1 ? '' : 's'})`);
+    super(`bootstrap import file failed validation (${errors.length} error${errors.length === 1 ? '' : 's'})`, { statusCode: 400, code: 'validation_failed' });
   }
 }
 
-export class BootstrapProjectNotFoundError extends Error {
+export class BootstrapProjectNotFoundError extends NotFoundError {
   constructor(public projectId: string) {
-    super(`project ${projectId} not found`);
+    super(`project ${projectId} not found`, 'project_not_found');
   }
 }
 
-export class BootstrapNoBundleBoundError extends Error {
+export class BootstrapNoBundleBoundError extends DomainError {
   constructor(public projectId: string) {
-    super(`project ${projectId} has no bundle bound; clone-and-go init (§7.26) is required before bootstrap`);
+    super(`project ${projectId} has no bundle bound; clone-and-go init (§7.26) is required before bootstrap`, { statusCode: 400, code: 'no_bundle_bound' });
   }
 }
 

@@ -1,4 +1,5 @@
 import type { DriftReverifyResult, DriftReverifyVerdict } from '@throughline/shared';
+import { NotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
@@ -37,9 +38,9 @@ export interface DriftReverifyService {
   reverify(projectId: string, signalId: string): Promise<DriftReverifyResult>;
 }
 
-export class SignalNotFoundError extends Error {
+export class SignalNotFoundError extends NotFoundError {
   constructor(id: string) {
-    super(`drift signal ${id} not found`);
+    super(`drift signal ${id} not found`, 'signal_not_found');
   }
 }
 

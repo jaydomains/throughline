@@ -11,6 +11,7 @@ import type {
   UpdateItemInput,
 } from '@throughline/shared';
 import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
+import { DomainError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import {
   codeDriftTierByItem,
@@ -39,15 +40,15 @@ interface ItemRow {
   updated_at: string;
 }
 
-export class ItemPolicyError extends Error {
+export class ItemPolicyError extends DomainError {
   constructor(message: string, public field: 'type' | 'status') {
-    super(message);
+    super(message, { statusCode: 400, code: 'policy_violation' });
   }
 }
 
-export class BlockerCycleError extends Error {
+export class BlockerCycleError extends DomainError {
   constructor() {
-    super('blocker would form a cycle');
+    super('blocker would form a cycle', { statusCode: 400, code: 'cycle' });
   }
 }
 
