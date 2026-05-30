@@ -5,14 +5,15 @@ import { useItemPolicy } from '../hooks/useItemPolicy.js';
 import { useItems } from '../hooks/useItems.js';
 import { useStaleThreshold, isStale } from '../hooks/useStaleThreshold.js';
 import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
+import { LoadError } from '../components/LoadError.js';
 
 type GroupBy = 'status' | 'tag' | 'parent';
 
 export function TreeView() {
   const { id } = useParams();
   const projectId = id ?? null;
-  const { policy } = useItemPolicy(projectId);
-  const { items, refresh } = useItems({ projectId });
+  const { policy, error: policyError } = useItemPolicy(projectId);
+  const { items, refresh, error: itemsError } = useItems({ projectId });
   const staleDays = useStaleThreshold();
   const [groupBy, setGroupBy] = useState<GroupBy>('status');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -35,6 +36,8 @@ export function TreeView() {
           </select>
         </label>
       </header>
+      <LoadError error={itemsError} what="items" />
+      <LoadError error={policyError} what="policy" />
       {groups.map(([group, members]) => (
         <details key={group} open>
           <summary>

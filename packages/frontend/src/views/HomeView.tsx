@@ -6,6 +6,7 @@ import { useItems } from '../hooks/useItems.js';
 import { useDriftInbox } from '../hooks/useDriftInbox.js';
 import { useDirectives } from '../hooks/useDirectives.js';
 import { useStaleThreshold, isStale } from '../hooks/useStaleThreshold.js';
+import { LoadError } from '../components/LoadError.js';
 
 // Promoted out of stubs.tsx (UI redesign Slice 3): the across-everything
 // daily landing. Driven entirely by existing hooks — no new state. Sections
@@ -26,9 +27,9 @@ function isInProgress(it: Item): boolean {
 
 export function HomeView() {
   const { id: projectId } = useParams();
-  const { items } = useItems({ projectId: projectId ?? null });
-  const { inbox } = useDriftInbox(projectId ?? null);
-  const { directives } = useDirectives(projectId ?? null);
+  const { items, error: itemsError } = useItems({ projectId: projectId ?? null });
+  const { inbox, error: inboxError } = useDriftInbox(projectId ?? null);
+  const { directives, error: directivesError } = useDirectives(projectId ?? null);
   const staleDays = useStaleThreshold();
 
   const [scanning, setScanning] = useState(false);
@@ -103,6 +104,9 @@ export function HomeView() {
         </div>
       </div>
 
+      <LoadError error={itemsError} what="items" />
+      <LoadError error={inboxError} what="drift inbox" />
+      <LoadError error={directivesError} what="directives" />
       {scanError && (
         <p className="form-error" role="alert">
           {scanError}

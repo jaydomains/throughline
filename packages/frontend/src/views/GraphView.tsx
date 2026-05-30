@@ -6,6 +6,7 @@ import { useItemPolicy } from '../hooks/useItemPolicy.js';
 import { useItems } from '../hooks/useItems.js';
 import { useStaleThreshold, isStale } from '../hooks/useStaleThreshold.js';
 import { ItemDetailPanel } from '../components/ItemDetailPanel.js';
+import { LoadError } from '../components/LoadError.js';
 import {
   analyseChains,
   buildGraph,
@@ -32,7 +33,7 @@ export function GraphView() {
   const { id } = useParams();
   const projectId = id ?? null;
   const { policy } = useItemPolicy(projectId);
-  const { items, refresh } = useItems({ projectId });
+  const { items, refresh, error: itemsError } = useItems({ projectId });
   const staleDays = useStaleThreshold();
 
   const [showChains, setShowChains] = useState(false);
@@ -119,6 +120,7 @@ export function GraphView() {
         <div className="gv-eyebrow">View · graph</div>
         <h1 className="gv-h1">Graph</h1>
       </div>
+      <LoadError error={itemsError} what="items" />
 
       <div className="gv-toolbar">
         <button

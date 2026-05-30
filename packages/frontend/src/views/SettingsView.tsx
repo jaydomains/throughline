@@ -131,7 +131,12 @@ export function SettingsView() {
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(() => {
-    void api.getSettings().then((r) => setSettings(r.settings));
+    // SF6 — getSettings previously had no catch: a failed settings load was an
+    // unhandled rejection and the form silently stayed on its defaults.
+    void api
+      .getSettings()
+      .then((r) => setSettings(r.settings))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
     void api.getSecrets().then(setSecrets).catch(() => {});
     void api.getBackupStatus().then(setBackup).catch(() => {});
     void api

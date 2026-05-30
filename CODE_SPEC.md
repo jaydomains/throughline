@@ -687,7 +687,7 @@ The `fetcher` is `(() => Promise<T>) | null`; callers build it with `useMemo` ke
 ### Implications
 - New data hooks wrap a memoised fetcher in `useResource` / `usePolledResource` rather than re-deriving the triple; consumers read `error` and render it.
 - An unmemoised fetcher re-fetches every render — the one footgun, documented at the call site.
-- Polled hooks that previously swallowed errors silently (`useCostMeter`, `useBackupStatus`, `useBackendHealth`) adopt `usePolledResource` in slice 2, gaining an `error` slot without changing their poll cadence.
+- Polled hooks that previously swallowed errors silently (`useCostMeter`, `useBackupStatus`) adopt `usePolledResource` in slice 2, gaining an `error` slot without changing their poll cadence. `useBackendHealth` is a deliberate exception: a failed `/health` request *is* its datum (it maps to `healthy: false`, the banner), not an error to surface, so it keeps its bespoke shape.
 
 ---
 

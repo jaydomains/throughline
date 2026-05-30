@@ -60,6 +60,9 @@ export function ItemDetailPanel({
   const [codeSelected, setCodeSelected] = useState<Set<number>>(new Set());
   const [codeMsg, setCodeMsg] = useState<string | null>(null);
   const [codeBusy, setCodeBusy] = useState(false);
+  // SF6 — surface failures from the inline mutation handlers (detach note, delete
+  // directive) that previously `await`ed with no catch, leaving the action silent.
+  const [mutationError, setMutationError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -335,6 +338,12 @@ export function ItemDetailPanel({
         </button>
       </header>
 
+      {mutationError && (
+        <p className="error" role="alert" data-testid="item-detail-mutation-error">
+          Action failed: {mutationError.message}
+        </p>
+      )}
+
       <section className="detail-section">
         <h3>Description</h3>
         <textarea
@@ -539,8 +548,13 @@ export function ItemDetailPanel({
                   type="button"
                   aria-label={`Detach note ${n.title}`}
                   onClick={async () => {
-                    await api.detachLibraryNote(projectId, n.id, itemId);
-                    await refresh();
+                    setMutationError(null);
+                    try {
+                      await api.detachLibraryNote(projectId, n.id, itemId);
+                      await refresh();
+                    } catch (e: unknown) {
+                      setMutationError(e instanceof Error ? e : new Error(String(e)));
+                    }
                   }}
                   data-testid={`detach-note-${n.id}`}
                 >
@@ -589,8 +603,13 @@ export function ItemDetailPanel({
                 <button
                   type="button"
                   onClick={async () => {
-                    await api.deleteDirective(projectId, d.id);
-                    await refresh();
+                    setMutationError(null);
+                    try {
+                      await api.deleteDirective(projectId, d.id);
+                      await refresh();
+                    } catch (e: unknown) {
+                      setMutationError(e instanceof Error ? e : new Error(String(e)));
+                    }
                   }}
                   data-testid={`detail-directive-delete-${d.id}`}
                 >

@@ -11,17 +11,18 @@ import { Board } from '../components/Board.js';
 import { DumpZone } from '../components/DumpZone.js';
 import { ReconcileComposer } from '../components/ReconcileComposer.js';
 import { PrBadges } from '../components/PrBadges.js';
+import { LoadError } from '../components/LoadError.js';
 
 export function SessionView() {
   const { id, sessionId } = useParams();
   const projectId = id ?? null;
-  const { sessions } = useSessions(projectId);
+  const { sessions, error: sessionsError } = useSessions(projectId);
   const session: Session | null = useMemo(
     () => sessions.find((s) => s.id === sessionId) ?? null,
     [sessions, sessionId],
   );
   const { policy } = useItemPolicy(projectId);
-  const { items, refresh } = useItems({
+  const { items, refresh, error: itemsError } = useItems({
     projectId,
     ...(sessionId ? { sessionId } : {}),
   });
@@ -49,6 +50,8 @@ export function SessionView() {
     <div className="session-view" data-testid="session-view">
       <h1>{session?.name ?? '…'}</h1>
       <PrBadges projectId={projectId} />
+      <LoadError error={sessionsError} what="sessions" />
+      <LoadError error={itemsError} what="items" />
       {policy && (
         <div className="boards">
           {policy.boards.map((board) => (
