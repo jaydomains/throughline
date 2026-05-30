@@ -2,7 +2,7 @@
 
 - **Date:** 2026-05-30
 - **Author session:** Phase E planning — independent track (branch `claude/hopeful-carson-aX0Uw`)
-- **Status: final — approved by planner.** Session-2 adversarial review converged at round 2 (auditor final-marker `a4d05d7`); all 4 round-1 findings accepted-and-resolved in rev-2 (`223ff16`); no open threads; no new findings. Plan is coverage-complete, self-consistent, execution-ready. *Draft→ready conversion is the overseer session's gate, not flipped here.*
+- **Status: revised (rev 3) per spec-author triage 2026-05-30 — prior markers VOIDED, awaiting Session-2 re-audit of changed regions.** The prior planner final-marker (`86415e7`) and the auditor's prior approval are superseded: the LBD-1..5 rulings, the halt-class 4–9 bless, the §7.10 clause, and the E17a split changed required plan content. All five LBDs now encoded as settled; audit-ID set-diff gate held (0 dropped). Fresh planner final-marker follows; Session 2 re-audits the changed regions before re-approving. *Draft→ready conversion remains the overseer session's gate.*
 - **Scope:** every still-open finding across committed audits 1–5 (`docs/_meta/throughline/audits/`).
 - **Chain shape:** one PR per slice — the canonical `AUTO_CONTINUE_WORKFLOW.md` rhythm (Premise "a slice = one PR"; the 9c sharpening absorbed in PR #82). Rationale specific to this chain: high rollback-value (a bad silent-failure fix is itself a silent regression, across diverse subsystems); cleaner discrete-audit-after-merge per finding; per-PR Gitar attention against a specific change.
 - **Source of truth:** the five committed audit reports + synthesis, **re-verified against current `main`** by this session (file:line evidence cited per slice). Verification diverged from the audit text in three load-bearing places — see *Verification divergences* below.
@@ -157,41 +157,40 @@ I1-seg1 (project-digest dedup), I5-04 (`recordAiCost`), I5-05 (AI/heuristic rout
 
 ---
 
-## Decisions for the spec author (surfaced — NOT decided here)
+## Decisions from the spec author (RESOLVED 2026-05-30 — settled, not open)
 
-These are load-bearing. Each blocks or shapes specific slices; the planner does not pick. Resolutions come back as **plan revisions**.
+These were load-bearing open questions; the spec author has now **ruled on all five** (relayed via Session 3 / direct engagement, 2026-05-30). They are encoded here as settled resolutions and threaded into the affected slices. *(Both the prior planner final-marker `86415e7` and the auditor's prior approval are **voided** by these rulings — they change required plan content; fresh markers follow this revision, and Session 2 re-audits the changed regions before re-approving.)*
 
-**LBD-1 — Refuse-rather-than-fallback: reach + wire-shape.**
-The SF3-01 posture is **given** (brief, spec-author-confirmed): split-by-cause — *failure* → refuse + surface; *capability-absent* → an honest, distinct response shape naming the degraded mode; *no-results* → honest empty (the only legitimate empty). Open questions:
-- **(a) Reach.** Which other findings adopt the same principle? Candidates: SF3-02, S4-03 (E1); SF3-03, SF2-04, SF4-02, SF4-03 (E2); SF4-01 (E3); SF5-03 (E4). The principle's blast radius determines whether T-D60 is minted once (E1) and *cited* downstream, or scoped narrowly to RAG.
-- **(b) Wire-shape.** Do capability/`embedder` fields go **on the shared wire-contract response types** (extending T-D59's "the contract expresses truth") or as side-channel metadata? T-D59's intent argues for on-contract; confirm.
-- **(c) Spec-drift surface — REQUIRES a ruling.** Audit-3 explicitly tagged the offline SHA1 embedding fallback as an **intentional evolution of C-D2**, "not a violation." Refusing-rather-than-falling-back **reframes C-D2**. This is functional drift: it must land as a **C-D2 amendment (or a T-D60 that supersedes that clause)**, not a silent code change. The planner flags it; the spec author rules on whether C-D2's offline-fallback sanction is narrowed to "capability-absent honest-distinct mode" or removed.
+**LBD-1 — Refuse-rather-than-fallback: reach + wire-shape — RESOLVED.**
+- **(a) Reach: BROAD.** T-D60 applies across the **entire dishonest-degradation pattern**, not just RAG. Minted **once** in E1 and **cited downstream** by E2/E3/E4 (and retro-anchors the Phase-D SF2-01 drift-side precedent). No narrow-to-RAG scoping.
+- **(b) Wire-shape: ON the shared wire-contract types**, extending T-D59. Capability/`embedder` fields are added to the `@throughline/shared` response types; **side-channel metadata is rejected** (it defeats T-D59's "the contract expresses truth" intent).
+- **(c) C-D2 reframe: T-D60 SUPERSEDES the offline-fallback sanction.** C-D2 is **narrowed to "capability-absent honest-distinct mode" only**; the offline *silent* fallback is **removed**. This is a real **C-D2 amendment** — landed cleanly in E1 with the spec-amendment markdown (amend the C-D2 body in `CODE_SPEC.md`; T-D60 in `DECISIONS.md`/`SPEC.md §14` records the superseding principle).
 
-→ Mints **T-D60** (proposed via working note) in **E1**, gated on (a)/(c).
+→ Mints **T-D60** in **E1** (accepted). Broad reach; on-contract wire-shape; C-D2 amended.
 
-**LBD-2 — System-state visibility surface.**
-SF1-01-residual, SF2-02/06, SF5-01/02/04 all need a *visible* health surface. Open: **(a)** one shared frontend component + a `ResourceState` tri-state (healthy / degraded / absent), rendered **per-subsystem in-context** (beside each feature) vs a **consolidated health panel**; **(b)** the tri-state vocabulary. → Mints **C-D25** (proposed) in the first visibility slice (**E6**), reused by E5/E7.
+**LBD-2 — System-state visibility surface — RESOLVED.**
+**One shared component**, rendered **per-subsystem in-context** (beside each feature it concerns — *not* a consolidated "system health" panel). Tri-state vocabulary: **healthy / degraded / absent**. → Mints **C-D25** in the first visibility slice (**E6**), reused by E5/E7.
 
-**LBD-3 — Background-job health: distinct anchor vs fold.**
-SF5-01/02/04 need a backend data model (`lastRunAt`/`lastError`/`healthy` per loop). Open: mint a **distinct C-D26** (backend model, separate evolution pressure from the C-D25 frontend convention) vs fold into C-D25. → Mints **C-D26** (proposed) in **E5** if "distinct".
+**LBD-3 — Background-job health: distinct anchor — RESOLVED.**
+**Distinct C-D26** (backend data model `lastRunAt`/`lastError`/`healthy` per loop) — kept separate from the C-D25 frontend convention; the two layers have independent evolution pressure. → Mints **C-D26** in **E5**.
 
-**LBD-4 — Audit-3 product-decision posture (the E17 batch).**
-For each feature-completeness finding (F5-01/02/03/04, F7-01/02/03/04/06/07, F1-02, F3-01, F4-01, F6-02, plus the minors and the audit-4 wrong-belief Lows): **build now / descope-as-spec-amendment / schedule to a later phase / accept-and-document.** E17 surfaces them as a decision table; the spec author rules; chosen builds become *new* slices appended to the chain (and would breach the 12–20 envelope — flagged).
+**LBD-4 — Audit-3 product-decision posture — RESOLVED: stays a mid-chain gate at E17.**
+The audit-3 build/descope/schedule batch is **not** ruled pre-seed; it remains an explicit **mid-chain decision gate at E17** where the spec author rules and any "build" rulings append new slices. (Confirms the Finding-3 precondition split: LBD-1/2/3/5 pre-seed; LBD-4 mid-chain.) This gate is **named in the halt-class bless (halt-9)** below, per the auditor flag.
 
-**LBD-5 — W1 fastify v5 major.**
-Accept the advisory (v5 migration = its own future phase) vs schedule it now. The in-range protobufjs/vite/esbuild bumps are a separable small remediation regardless. Surfaced in E17.
+**LBD-5 — W1 fastify v5 — RESOLVED: accept the advisory.**
+The fastify v5 advisory is **accepted**; the v5 migration is **its own future phase**, not a Phase E slice. The in-range **protobufjs / vite / esbuild bumps remain as a small remediation slice (E17a)** — see roster. Surfaced + recorded in E17's accepted-advisories register.
 
 ---
 
 ## Anchor-minting plan
 
-| Anchor | Slice | Topic | Gated on |
+| Anchor | Slice | Topic | Status |
 |---|---|---|---|
-| **T-D60** (proposed) | E1 | Refuse-rather-than-fallback principle (split-by-cause) | LBD-1 |
-| **C-D25** (proposed) | E6 | System-state visibility frontend pattern (component + `ResourceState` tri-state) | LBD-2 |
-| **C-D26** (proposed) | E5 | Background-job health-state backend model | LBD-2/LBD-3 |
+| **T-D60** | E1 | Refuse-rather-than-fallback principle (split-by-cause; **broad reach**; supersedes the C-D2 offline-fallback sanction) | **accepted** — mint in E1 |
+| **C-D25** | E6 | System-state visibility frontend pattern (one shared component, `ResourceState` tri-state healthy/degraded/absent, in-context) | **accepted** — mint in E6 |
+| **C-D26** | E5 | Background-job health-state backend model (`lastRunAt`/`lastError`/`healthy`) — distinct from C-D25 | **accepted** — mint in E5 |
 
-T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "59 entries"). T-D60 / C-D25 / C-D26 are free. **Per `SESSION_START.md` anchor convention, these are *proposed via working note*, not minted in this plan;** they are minted in their slices only after the spec author rules on the gating LBD. **Any anchor needed beyond these three trips halt-class 5 (unplanned anchor).**
+T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "59 entries"). T-D60 / C-D25 / C-D26 are free. **All three are spec-author-accepted (2026-05-30)** as working-note proposals and are minted in their gating slices (E1 / E6 / E5). E1 additionally lands the **C-D2 amendment** (narrowing it to capability-absent honest-distinct mode; the offline silent fallback removed — T-D60 supersedes). **Any anchor needed beyond these three trips halt-class 5 (unplanned anchor).**
 
 ---
 
@@ -199,21 +198,17 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 
 **Standard three** (codified in `AUTO_CONTINUE_WORKFLOW.md`): spec drift; circuit breaker (3 fix-rounds on one finding); explicit user pause (marker file / `/pause` comment).
 
-**Four extensions proposed for this chain** (4) **estimate breach** — a slice's actual diff exceeds its LOC band by >50% → halt, re-slice; (5) **unplanned anchor** — a slice needs a T-D/C-D beyond the three planned → halt, surface; (6) **test regression** — a slice reds a previously-green test it didn't intend to touch → halt; (7) **doc-PR collision** — `main` carries an open PR touching a rolling shared doc at a slice boundary → halt (the very condition this planning session hit against PR #84).
+**Six extensions — SPEC-AUTHOR-BLESSED (2026-05-30) as sanctioned operating practice for this chain:** (4) **estimate breach** — a slice's actual diff exceeds its LOC band by >50% → halt, re-slice; (5) **unplanned anchor** — a slice needs a T-D/C-D beyond the three planned → halt, surface; (6) **test regression** — a slice reds a previously-green test it didn't intend to touch → halt; (7) **doc-PR collision** — `main` carries an open PR touching a rolling shared doc at a slice boundary → halt (the very condition this planning session hit against PR #84); (8) **out-of-audit silent-failure** — a silent-failure pattern outside audits 1–5 surfaced mid-slice → flag it for the *next* audit cycle, do **not** expand the slice to absorb it; (9) **E17 product-decision gate** — the chain **halts at E17** for the spec author to rule the audit-3 build/descope/schedule batch (LBD-4); any "build" rulings append new slices. (9) is a *planned* decision-halt, named here per the auditor flag so it sits in the same blessed set rather than reading as an ad-hoc stop.
 
-> **Provenance — honest correction (Session-2 Finding 2).** The brief names these "four Phase C+D extensions," but **the repo does not substantiate that provenance**: `AUTO_CONTINUE_WORKFLOW.md` § The Three Halt Classes codifies *exactly three* and states "these are the **only** legitimate reasons a chain stops"; a grep of the handovers and process docs for "estimate breach / unplanned anchor / test regression" returns empty, and the PR #82 hardener records only the *spec-drift* class firing on the 9c rhythm. So 4–7 are **newly proposed by this planning track**, not inherited Phase C+D practice — held to the same evidence-over-instruction standard this plan applies to the audit text in *Verification divergences*. Because they are load-bearing *during* the chain (halt-5 guards anchor discipline; halt-4 is the cited per-slice release valve in E2/E15), running 18 slices under uncodified rules that contradict the canonical "only three" is itself latent spec-drift. **Recommendation (surfaced for the spec author):** bless 4–8 as sanctioned operating practice *before* chain-open — not defer codification to chain-close. (This is the one item where "evidence over instruction" overrides the brief's own framing; flagged, not silently absorbed.)
-
-**Phase E scope-bounded extension (new):** (8) a **silent-failure pattern outside audits 1–5** is surfaced mid-slice → flag it for the *next* audit cycle, do **not** expand the slice to absorb it.
-
-> **Drift flag (carried to the cohort hardener):** extensions 4–8 are **not** codified in `AUTO_CONTINUE_WORKFLOW.md` and **contradict its "only three" clause** until blessed. Preferred resolution per the provenance correction above: a **spec-author bless before chain-open**. Failing that, Phase E runs under them as documented operating practice (this section) and the **cohort hardener at chain close** absorbs 4–8 into the canonical doc — the same pattern by which Phases A–D's process findings landed in PR #82. Editing the workflow doc *while the chain runs against it* is the recursive doc-PR-collision problem, which is why mid-chain codification is avoided; a pre-open bless sidesteps both.
+> **Provenance + codification note.** Extensions 4–9 were *proposed by this planning track* (the repo's canonical doc codifies only three + an "only legitimate reasons" clause; a grep of handovers/process-docs for these classes returned empty; PR #82 records only the spec-drift class firing). The spec author has now **blessed 4–9 as sanctioned operating practice before chain-open** — so the chain no longer runs under uncodified rules that contradict the canonical doc; the bless *is* the authority. **`AUTO_CONTINUE_WORKFLOW.md` codification is deferred to the chain-close cohort hardener** (not now): editing the workflow doc *while the chain runs against it* is the recursive doc-PR-collision problem, so the hardener absorbs 4–9 into the canonical doc at close — the same pattern by which Phases A–D's process findings landed in PR #82. (This is the one place "evidence over instruction" corrected the brief's "Phase C+D extensions" framing; now resolved by an explicit bless rather than an inherited-practice claim.)
 
 ---
 
-## Slice roster (16 bug-fix + 1 decision + 1 closure = 18 slices)
+## Slice roster (16 bug-fix + 1 dep-remediation + 1 decision + 1 closure = 19 slices, floor)
 
 | # | Slice | Class | Findings closed/surfaced | Anchor | Est. LOC |
 |---|---|---|---|---|---|
-| E1 | RAG embedder & query honesty | bug | SF3-01, SF3-02, S4-03 | T-D60 | 130–180 |
+| E1 | RAG embedder & query honesty + C-D2 amendment | bug | SF3-01, SF3-02, S4-03 | T-D60 (+ C-D2 amend) | 140–200 |
 | E2 | AI/capability degradation honesty | bug | SF3-03, SF2-04, SF4-02, SF4-03 | (cites T-D60) | 160–230 |
 | E3 | Semble degradation honesty | bug | SF4-01 | (cites T-D60) | 70–110 |
 | E4 | Notifier capability honesty | bug | SF5-03 | (cites T-D60) | 100–150 |
@@ -229,10 +224,11 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 | E14 | Audit-trail wiring | bug | SF7-01, SF7-02, SF7-03, SF7-05 | — | 110–160 |
 | E15 | Frontend races & error surfacing | bug | S8-01, S8-02, S8-03, S8-04, SF6-09 | — | 170–240 |
 | E16 | Audit-3 spec-contradiction bugs | bug | F6-01, F1-03, F4-04, SF3-04 | — | 130–190 |
-| E17 | Product-decision triage (surface only) | product-decision | F-cluster + audit-4 wrong-belief Lows + W1 + minors | — | doc + targeted spec edits |
+| E17a | Dependency range-bump remediation | bug (dep) | W1 partial (protobufjs / vite / esbuild in-range bumps; **fastify v5 accepted, not here**) | — | 30–70 |
+| E17 | Product-decision triage (surface only; **blessed decision-gate**) | product-decision | F-cluster + audit-4 wrong-belief Lows + W1 fastify-accept note + minors | — | doc + targeted spec edits |
 | E18 | Closure-verification appendix | verify-already-closed | SF1-01 bulk, S6-02, F1-01/S5-02, SF6-01..12, Phase-D locks | — | doc + verify tests |
 
-**Chain total:** ~2,000–2,900 LOC across 16 code/test slices + 2 doc slices. **Calendar ~14–19 working days (~3–4 weeks).** **Sizing honesty (Session-2 Finding 3):** the brief's "12–20 envelope" budgets *slices*. **18 is a floor, not the committed total** — it is decision-pending on LBD-4. LBD-4 (the E17 product-decision batch) is *different in kind* from LBD-1/2/3/5: those *unblock planned slices*; LBD-4 *spawns new ones*. If LBD-4 yields any "build" rulings, each chosen build is appended as a new slice, so the committed roster is `18 + N(builds)` and may breach 20. That N is **knowable only after the E17 ruling**, which is itself a mid-chain human-decision gate (not auto-continue). The figure is therefore reported as a floor with an explicitly unbounded-until-ruled tail — not a firm bound. The calendar (~3–4 weeks) is already near the 4-week ceiling at the floor.
+**Chain total:** ~2,050–2,970 LOC across 17 code/test slices + 2 doc slices. **Calendar ~15–20 working days (~3–4 weeks).** **Sizing honesty (Session-2 Finding 3):** the brief's "12–20 envelope" budgets *slices*. **19 is a floor, not the committed total** — decision-pending on LBD-4 (resolved as a mid-chain gate). LBD-4 (the E17 product-decision batch) is *different in kind* from LBD-1/2/3/5: those *unblocked planned slices* (now ruled); LBD-4 *spawns new ones*. If LBD-4 yields any "build" rulings at E17, each chosen build is appended as a new slice, so the committed roster is `19 + N(builds)` and may breach 20. That N is **knowable only after the E17 ruling** — the blessed decision-gate (halt-class 9), not auto-continue. The figure is therefore reported as a floor with an explicitly unbounded-until-ruled tail. The calendar (~3–4 weeks) is already at the 4-week ceiling at the floor.
 
 ### Sequencing & dependency reality (data-shape / code-pattern — not commit-order)
 
@@ -250,10 +246,11 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 ### E1 — RAG embedder & query honesty
 - **Closes:** SF3-01 (Crit), SF3-02 (High), S4-03 (Med). **Class:** bug.
 - **Verified current:** `intelligence/embeddings.ts:101-112` bare `catch` pins SHA1 fallback (import-failure only; a *runtime* extractor throw at `:103` is unhandled → S4-03 crash); `shared/src/intelligence.ts` `RagQueryResult` (`:29-39`) has no `embedder` field; `text-index.ts:235` `if (!qv) return []`.
-- **Fix (LBD-1 split-by-cause):** capability-absent → surface a distinct degraded shape (`embedder:'fallback'`) on the **shared** `RagQueryResult` (LBD-1b); unexpected resolution/runtime failure → refuse + surface (catch the runtime extractor path too); query-embed failure → distinguish "embed failed" from honest empty.
-- **Files:** `intelligence/embeddings.ts`, `intelligence/text-index.ts`, `intelligence/rag.ts` (or the query assembler), `packages/shared/src/intelligence.ts`.
-- **Tests:** `test/intelligence/embeddings.test.ts` (fallback disclosed; runtime-throw refuses), `test/intelligence/rag.test.ts` (query result carries `embedder`; embed-fail ≠ empty).
-- **Anchor:** **T-D60** (proposed; minted here after LBD-1a/c). **Deps:** chain head. **Halt:** if LBD-1c (C-D2 reframe) is unresolved at slice-open → spec-drift halt.
+- **Fix (LBD-1 split-by-cause, RESOLVED):** capability-absent → surface a distinct degraded shape (`embedder:'fallback'`) **on the shared `RagQueryResult`** (LBD-1b ruled: on-contract, not side-channel); unexpected resolution/runtime failure → refuse + surface (catch the runtime extractor path too); query-embed failure → distinguish "embed failed" from honest empty. **The offline *silent* SHA1 fallback is removed** (LBD-1c: T-D60 supersedes the C-D2 offline-fallback sanction; the embedder may still operate as an *honestly-disclosed* capability-absent mode, never as an undisclosed substitute).
+- **C-D2 amendment (lands in this slice):** edit the C-D2 body in `CODE_SPEC.md` to narrow it to "capability-absent honest-distinct mode" only, with a `> Amendment (2026-05-30, Phase E / E1): superseded-in-part by T-D60` block; mint **T-D60** in `DECISIONS.md` + `SPEC.md §14` (refresh `CODE_SPEC.md:9` count 59→60). This is the clean spec-amendment, not a silent code change.
+- **Files:** `intelligence/embeddings.ts`, `intelligence/text-index.ts`, `intelligence/rag.ts` (or the query assembler), `packages/shared/src/intelligence.ts`, **`CODE_SPEC.md` (C-D2 amend), `DECISIONS.md` + `SPEC.md §14` (T-D60)**.
+- **Tests:** `test/intelligence/embeddings.test.ts` (fallback disclosed; runtime-throw refuses; no silent substitution), `test/intelligence/rag.test.ts` (query result carries `embedder`; embed-fail ≠ empty).
+- **Anchor:** **T-D60** (spec-author-accepted; minted here) + **C-D2 amendment**. **Deps:** chain head. **Halt:** LBD-1c is now *resolved* — no spec-drift halt; the C-D2 amendment is the sanctioned landing.
 
 ### E2 — AI/capability degradation honesty
 - **Closes:** SF3-03, SF2-04, SF4-02, SF4-03. **Class:** bug. **Concern:** *"Every AI/capability path reports honestly instead of masquerading as success/empty."*
@@ -297,7 +294,7 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 ### E10 — Background-loop correctness
 - **Closes:** S4-02 (poller ETag-before-snapshot → permanent stale), S5-05 (recurrence catch-up storm).
 - **Verified:** `github/poller.ts:147-223` (ETag persisted at `:156` before snapshot upserts at `:223`), `directives/service.ts:373-380` (advance one interval/fire).
-- **Fix:** persist the list ETag only after snapshots commit (or make the pair atomic) so a mid-loop throw self-heals; coalesce missed recurrence fires (advance past now, fire once). **Files:** `github/poller.ts`, `directives/service.ts`. **Tests:** mid-loop throw → ETag not advanced → next poll re-fetches; downtime → single catch-up fire. **Deps:** rebase w/ E5 (poller) and E4 (`directives/service.ts`). **Note:** S5-05's "missed-occurrence semantics" was flagged in audit-3 as a §7.10 *ambiguity*; if the spec author wants explicit coalesce semantics, that's a one-line §13 clause — surfaced, but the catch-up-storm *bug* is fixed regardless.
+- **Fix:** persist the list ETag only after snapshots commit (or make the pair atomic) so a mid-loop throw self-heals; coalesce missed recurrence fires (advance past now, fire once). **Files:** `github/poller.ts`, `directives/service.ts`. **Tests:** mid-loop throw → ETag not advanced → next poll re-fetches; downtime → single catch-up fire. **Deps:** rebase w/ E5 (poller) and E4 (`directives/service.ts`). **Note (RESOLVED):** S5-05's "missed-occurrence semantics" was flagged in audit-3 as a §7.10 *ambiguity*; the spec author has **ruled it in** — **add the one-line §7.10 missed-occurrence-coalesce clause** to `SPEC.md` in this slice (coalesce missed fires to a single catch-up fire), so the code and spec land together. **Files (incl. spec):** `github/poller.ts`, `directives/service.ts`, **`SPEC.md §7.10`**.
 
 ### E11 — Transaction atomicity
 - **Closes:** S5-04 (`items.update` non-transactional), S6-03 (md-ingest batch non-atomic), S6-04 (secrets RMW non-atomic).
@@ -336,8 +333,12 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 
 - **Files:** `github/tiers.ts` (F6-01, SF3-04), `projects/routes.ts` + `projects/service.ts` (F1-03, F4-04). **Tests:** done-item filter on tiers 1-3; create rejects mismatch; transition enforced at create/update; sub-fetch failure doesn't clear. **Deps:** rebase w/ E14 (`projects/service.ts`). **Note:** **F6-02 is explicitly NOT here** — SPEC/CODE_SPEC are silent (only a code comment documents path-stem intent), so it's a value judgment → E17.
 
-### E17 — Product-decision triage (surface only; no choice baked in)
-- **Class:** product-decision. **Deliverable:** a decision table the spec author rules on; chosen "build" items become *new appended slices*, "descope" items become targeted SPEC amendments, "schedule" items go to a Phase G register, "accept" items are documented. **This slice implements nothing functional until the spec author rules** (per `SESSION_START.md` spec-drift policy + the brief's "surface the decision; do not bake a choice").
+### E17a — Dependency range-bump remediation
+- **Closes:** **W1 partial** (LBD-5 RESOLVED). **Class:** bug (dependency hygiene).
+- **Scope:** bump the **in-range / range-closeable** advisories only — protobufjs (optional `@xenova` chain criticals), vite, esbuild. **fastify v5 is NOT here** — the v5 advisory is *accepted* and its major migration is a separate future phase (LBD-5). **Files:** `package.json` / `pnpm-lock.yaml`. **Tests:** the green gate is the test (`pnpm audit` delta + CI). **Deps:** none; independently mergeable. **Halt:** if a "range" bump turns out to require a major (estimate/scope breach) → halt, re-scope (don't silently pull in a major).
+
+### E17 — Product-decision triage (surface only; no choice baked in) — *blessed decision-gate (halt-9)*
+- **Class:** product-decision. **Deliverable:** a decision table the spec author rules on; chosen "build" items become *new appended slices*, "descope" items become targeted SPEC amendments, "schedule" items go to a Phase G register, "accept" items are documented. **This slice implements nothing functional until the spec author rules** (per `SESSION_START.md` spec-drift policy + the brief's "surface the decision; do not bake a choice"). The chain **halts here** for the ruling (halt-class 9, blessed). The fastify-accept note (LBD-5) is recorded in this slice's accepted-advisories register.
 - **Surfaces:**
   - **Feature-completeness (build / descope / schedule):** F5-01, F5-02, F5-03, F5-04, F7-01, F7-02, F7-03, F7-04, F7-06, F7-07, F4-01.
   - **Spec-silent / value-judgment:** F6-02 (path-stem vs message-substring), F1-02 (single `project_reinit` row vs per-field), F3-01 (§7.14-vs-T-D57 scan-gate-layer ambiguity).
@@ -390,11 +391,11 @@ Each class is handled differently and the boundary is the OQ5-style rule: *contr
 
 ## Chain-open readiness
 
-This plan is **ready to seed a chain** once (a) Session-2 audit converges, and (b) the spec author rules on the **pre-open** decisions — and (c) the three proposed anchors (T-D60, C-D25, C-D26) are accepted as working-note proposals. **Chain-open is NOT proposed by this session** — the deliverable is this committed plan. Session 3 executes from the merged artifact.
+This plan is **ready to seed a chain.** The pre-open preconditions are now **met**: (a) Session-2 round-1/2 audit converged (re-audit of these changed regions pending before the final re-approval); (b) the spec author has **ruled all five LBDs** (2026-05-30) — see *Decisions from the spec author (RESOLVED)*; (c) the three anchors (T-D60, C-D25, C-D26) are **accepted** as working-note proposals, minted in their gating slices; (d) halt-class extensions 4–9 are **blessed**. **Chain-open is NOT proposed by this session** — the deliverable is this committed plan. Session 3 executes from the merged artifact.
 
-**Precondition split (Session-2 Finding 3).** The LBDs are not uniform preconditions:
-- **Rule before seed (these unblock planned slices/anchors):** **LBD-1** (gates E1 + T-D60 + the C-D2 reframe), **LBD-2** (gates E5/E6/E7 + C-D25), **LBD-3** (gates C-D26 distinct-vs-fold), **LBD-5** posture (gates the E17 W1 note). The 18-slice floor cannot open cleanly until these are ruled.
-- **Mid-chain scope gate at E17 (this *spawns* slices, doesn't unblock them):** **LBD-4**. The chain does **not** auto-continue past E17 without a human ruling on the audit-3 build/descope/schedule batch; any "build" rulings append new slices. So E17 is an explicit halt-for-decision, and the roster total is a floor until it resolves (see the Sizing-honesty note above). Requiring LBD-4 "before seed" would overstate what must be ruled up front; treating it as fully deferred would hide a real mid-chain halt. It is neither — it is a priced-in decision gate.
+**Precondition split (Session-2 Finding 3) — now all resolved.** The LBDs were not uniform preconditions:
+- **Ruled before seed (these unblocked planned slices/anchors — DONE):** **LBD-1** (E1 + T-D60 + C-D2 amendment: broad/on-contract/supersede), **LBD-2** (E5/E6/E7 + C-D25: one component, in-context, healthy/degraded/absent), **LBD-3** (distinct C-D26), **LBD-5** (fastify accepted; E17a range-bumps). The **19-slice floor** can now open cleanly.
+- **Mid-chain scope gate at E17 (this *spawns* slices — RULED to remain a gate):** **LBD-4** stays a mid-chain decision gate (halt-class 9, blessed). The chain does **not** auto-continue past E17 without a human ruling on the audit-3 build/descope/schedule batch; any "build" rulings append new slices, so the roster total is a floor until E17 resolves (see Sizing-honesty). A priced-in decision gate, not an ad-hoc halt.
 
 ## Verification (Session 3, per slice)
 
