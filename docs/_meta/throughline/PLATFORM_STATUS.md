@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d` — frontend error-surfacing + green-gate hardening). Merged so far: **#76** chain-open workflow absorption; **#77** Slice C-1 (`useResource`/`usePolledResource` pair, mints **C-D24**). **Slice C-2** (this PR) completes the Phase C half — the C-D24 error slot now reaches the UI via a shared `<LoadError>` banner across TreeView/GraphView/SessionView/SessionsIndex/HomeView/DriftInbox/LibraryView, `useDirectives`/`useDriftInbox` gain an `error` slot, `useCostMeter`/`useBackupStatus` move onto `usePolledResource` (`useBackendHealth` a documented exception), and fire-and-forget mutation handlers (ItemDetailPanel detach/delete, DriftInbox `act`, SettingsView `getSettings`, LibraryView refresh) now catch. Clears SF6-01/02 Criticals + SF6-03..07 Highs + SF6-08/10/11/12 Mediums. New `test/hooks.test.tsx` locks SF6-01/02. Green gate: typecheck, **187** frontend tests (+5), lint, build all green. Phase A (#67) + Phase B (#68 chain) remain `feature-complete`. **Phase D** (Slice D-1: wire-contract types → `@throughline/shared`) is next.
+**As of 2026-05-30.** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: **#76** chain-open absorption; **#77** C-1 (`useResource`/`usePolledResource`, **C-D24**); **#78** C-2 (SF6 error-surfacing + regression test) — Phase C closed. **Slice D-1** (this PR) opens Phase D (green-gate hardening): wire-contract response envelopes move to `@throughline/shared` (`wire.ts` — `MethodologySummary` + `Methodologies`/`Items`/`Item`/`Policy`/`Sessions`/`Session` `Response`), backend handlers are annotated against them, `jsonFetch` targets them, and a new `packages/backend/test/wire-contract.test.ts` injects each core read endpoint to assert the runtime shape. Mints **T-D59** and **closes green-gate Gap 2** (Gap 1 closed in Phase A) — `AUTHORING_DISCIPLINE.md` Known-Gaps now both CLOSED. Green gate: typecheck, **507** backend tests (+6) + **187** frontend tests, lint, build all green. Phase A (#67) + Phase B (#68) remain `feature-complete`. **Slice D-2** (backend data-integrity regression locks) is next.
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: #76 (absorption), #77 (C-1). Slice **C-2** open (this PR) — closes the Phase C half. D-1 / D-2 / D-3 pending.
+**Phase:** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: #76 (absorption), #77 (C-1), #78 (C-2 — Phase C closed). Slice **D-1** open (this PR). D-2 / D-3 pending.
 **Status:** Phases A & B `feature-complete`. Phases 19–22 build cohort `production-ready`.
-**Next concrete action:** Slice **D-1** — move wire-contract response types from frontend-local to `@throughline/shared`, type-validate `jsonFetch` at the boundary, add a wire-contract test (mints **T-D59**), and flip AUTHORING_DISCIPLINE Gap 2 → Closed. Branch-protection `gate` check is live on `main`. A cohort-level hardener + `production-ready` promotion for the audit-fix cohort (A–D) follows once D lands.
+**Next concrete action:** Slice **D-2** — backend data-integrity regression locks + small paired fixes: S2-01 (ReDoS bypass), SF2-01 (scanner-throw clears signals), S5-01 (dump-zone non-atomic apply). Then D-3 (lifecycle locks: S4-01, S7-01, F1-01) closes the chain. A cohort-level hardener + `production-ready` promotion for the audit-fix cohort (A–D) follows once D-3 lands.
 
 ---
 
@@ -30,6 +30,7 @@ The audit-fix cohort (Phases A → D) accumulates its anchors here. C-D22 (Phase
 | T-D58 | Audit-fix B/S1 | Shared domain-error hierarchy in `@throughline/shared`: domain errors carry canonical HTTP `statusCode` + stable `code`; routes never re-decide status (central handler reads it — slice 3 / C-D23). Closes 17+5+2 duplicate NotFound defs and the SF6-09 status drift. |
 | C-D23 | Audit-fix B/S3 | Central Fastify `setErrorHandler` + `mapDomainError` reads `statusCode`/`code`/`details` off any thrown `DomainError` → canonical `ErrorResponse` body; ~50 hand-rolled try/catch blocks deleted. Spans slices 1+3. |
 | C-D24 | Audit-fix C/S1 | `useResource` / `usePolledResource` frontend hook pair: one `ResourceState<T>` (`{ data, loading, error, refresh }`) owns the loading/error triple + `alive` unmount guard + stable refresh; callers pass a memoised fetcher (or `null` to disable). The `error` slot is the SF6 surface, made uniform here. |
+| T-D59 | Audit-fix D/S1 | Wire-contract response types live in `@throughline/shared` (`wire.ts`): backend handlers annotate their payload against the shared envelope, `jsonFetch` targets it, and `wire-contract.test.ts` asserts the running backend emits the shape — contract verified (compile time + runtime), not cast with `as T`. Closes green-gate Gap 2. |
 
 ---
 
@@ -57,13 +58,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
+| _this PR_ | Phase D / Slice 1 — wire-contract types → `@throughline/shared` + contract test (mints T-D59, closes Gap 2) | `handovers/2026-05-30-phase-d-slice-1-wire-contract.md` |
+| #78 | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
 | #77 | Phase C / Slice 1 — `useResource` / `usePolledResource` hook pair + 3 proof adopters (mints C-D24) | `handovers/2026-05-30-phase-c-slice-1-useresource.md` |
 | #76 | Phase C+D chain-open — absorb doc-PR collision + merge-on-green polling rules into `AUTO_CONTINUE_WORKFLOW.md` | (workflow-doc PR; reconciliation handover `handovers/2026-05-30-doc-pr-chain-collision-reconciliation.md`) |
 | #74 | Phase B / Slice 4 — `resolveProjectBundle` + 4 call sites + T-D51 amendment (chain close) | `handovers/2026-05-30-phase-b-slice-4-resolve-project-bundle.md` |
-| #73 | Phase B / Slice 3 — central Fastify error handler + delete ~50 hand-rolled try/catch (mints C-D23) | `handovers/2026-05-30-phase-b-slice-3-central-error-handler.md` |
 
-(PRs #72/#69/#67/#66 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PRs #73/#72/#69/#67 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 
