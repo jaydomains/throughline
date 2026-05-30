@@ -7,6 +7,7 @@ import type {
   ChatSendResult,
   DumpZoneProposal,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -30,12 +31,6 @@ import type { ProjectsService } from '../projects/service.js';
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 800;
 const HISTORY_LIMIT = 40;
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 export interface ChatService {
   history(

@@ -7,6 +7,7 @@ import type {
   ProposalSource,
   ProposalTarget,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -54,12 +55,6 @@ function rowToProposal(row: ProposalRow): DumpZoneProposal {
     created_at: row.created_at,
     resolved_at: row.resolved_at,
   };
-}
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
 }
 
 export class ProposalNotFoundError extends Error {

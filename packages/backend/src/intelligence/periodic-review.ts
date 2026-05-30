@@ -5,6 +5,7 @@ import {
   readDisciplineScan,
   shouldSuppressDisciplineSignals,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { AnthropicClient } from '../ai/anthropic.js';
 import { promptFingerprint } from '../ai/fingerprint.js';
 import { usdEstimate } from '../ai/pricing.js';
@@ -32,12 +33,6 @@ const STALE_DECISION_DAYS = 60;
 const UNTOUCHED_SESSION_DAYS = 30;
 const REVIEW_MODEL = 'claude-sonnet-4-6';
 const REVIEW_MAX_TOKENS = 800;
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 function daysAgoIso(days: number): string {
   return new Date(Date.now() - days * 86_400_000).toISOString();

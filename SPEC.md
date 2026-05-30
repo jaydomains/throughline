@@ -692,6 +692,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D55 | Bootstrap prompt is a repo-owned generic template at `packages/backend/src/bootstrap/prompt-template.md`; bundle-aware via runtime bundle-read, not Throughline-side templating | 7.28 |
 | T-D56 | Claude Code invocation contract: user-driven invocation, Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning explicitly deferred | 7.28 |
 | T-D57 | Discipline-drift scanners do not auto-run on bind for projects imported via bootstrap; SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling is gated on the first user-invoked scan; non-bootstrapped projects keep current on-bind behaviour | 7.14 |
+| T-D58 | Shared domain-error hierarchy in `@throughline/shared`: domain errors carry their canonical HTTP `statusCode` + stable `code`; a central handler maps them and routes never re-decide status (closes the per-module duplication and the SF6-09 status drift) | 3 |
 
 ---
 

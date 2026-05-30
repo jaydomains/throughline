@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type { CreateSessionInput, Session, UpdateSessionInput } from '@throughline/shared';
+import { SessionNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -13,18 +14,6 @@ interface SessionRow {
   settings_json: string;
   created_at: string;
   updated_at: string;
-}
-
-export class SessionNotFoundError extends Error {
-  constructor(id: string) {
-    super(`session ${id} not found`);
-  }
-}
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
 }
 
 export interface SessionsService {

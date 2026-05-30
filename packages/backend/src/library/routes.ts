@@ -5,14 +5,13 @@ import {
   type LibrarySearchRequest,
   type PromptFillRequest,
 } from '@throughline/shared';
+import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import {
   AttachNotANoteError,
   CrossProjectAttachError,
-  ItemNotFoundError,
   LibraryEntryNotFoundError,
   LibraryEntryTypeError,
   NotAPromptError,
-  ProjectNotFoundError,
   type LibraryService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';

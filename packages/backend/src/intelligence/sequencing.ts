@@ -1,4 +1,5 @@
 import type { DoNextItem, DoNextResult } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { Item } from '@throughline/shared';
 import type { ItemsService } from '../items/service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -15,12 +16,6 @@ import type { GateRuntime } from '../methodology/gates/runtime.js';
 // item in that unit. A project-wide gate failure that names no in-unit item does not
 // blanket-deprioritise every item (that would be punitive and wrong). Surfaced in the
 // handover Open Questions, not silently resolved — no anchor minted.
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 
 export interface SequencingService {
   doNext(projectId: string): DoNextResult;

@@ -8,7 +8,8 @@ import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
 import { createLibraryService } from '../src/library/service.js';
 import { createTextEmbedder } from '../src/intelligence/embeddings.js';
-import { createRagService, routeQuery, ProjectNotFoundError } from '../src/intelligence/rag.js';
+import { ProjectNotFoundError } from '@throughline/shared';
+import { createRagService, routeQuery } from '../src/intelligence/rag.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');

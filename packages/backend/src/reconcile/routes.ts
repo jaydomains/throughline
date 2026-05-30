@@ -4,9 +4,9 @@ import {
   type ReconcileApplyRequest,
   type ReconcileSource,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import {
   CrossProjectMutationError,
-  ProjectNotFoundError,
   ReconcileRunNotFoundError,
   ReconcileRunStateError,
   type ReconcileService,

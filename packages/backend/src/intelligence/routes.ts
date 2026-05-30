@@ -6,42 +6,19 @@ import type {
   SessionRetroRequest,
 } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
-import { ProjectNotFoundError, type RagService } from './rag.js';
-import {
-  ProjectNotFoundError as RetroProjectNotFoundError,
-  SessionNotFoundError,
-  type RetroService,
-} from './retro.js';
-import {
-  ProjectNotFoundError as ReviewProjectNotFoundError,
-  type PeriodicReviewService,
-} from './periodic-review.js';
-import {
-  ProjectNotFoundError as SeqProjectNotFoundError,
-  type SequencingService,
-} from './sequencing.js';
-import {
-  ProjectNotFoundError as StakeProjectNotFoundError,
-  ItemNotFoundError,
-  type StakeholderService,
-} from './stakeholder.js';
-import {
-  ProjectNotFoundError as ChatProjectNotFoundError,
-  type ChatService,
-} from './chat.js';
+import { ItemNotFoundError, ProjectNotFoundError, SessionNotFoundError } from '@throughline/shared';
+import type { RagService } from './rag.js';
+import type { RetroService } from './retro.js';
+import type { PeriodicReviewService } from './periodic-review.js';
+import type { SequencingService } from './sequencing.js';
+import type { StakeholderService } from './stakeholder.js';
+import type { ChatService } from './chat.js';
 
 // Phase 14 — intelligence surfaces (SPEC §7.18, §9; T-D22, T-D25, C-D2; CODE_SPEC §15).
 
 function mapError(reply: FastifyReply, err: unknown): unknown {
-  if (
-    err instanceof ProjectNotFoundError ||
-    err instanceof RetroProjectNotFoundError ||
-    err instanceof ReviewProjectNotFoundError ||
-    err instanceof SeqProjectNotFoundError ||
-    err instanceof StakeProjectNotFoundError ||
-    err instanceof ChatProjectNotFoundError
-  ) {
-    return reply.code(404).send({ error: 'not_found', message: (err as Error).message });
+  if (err instanceof ProjectNotFoundError) {
+    return reply.code(404).send({ error: 'not_found', message: err.message });
   }
   if (err instanceof SessionNotFoundError) {
     return reply.code(404).send({ error: 'session_not_found', message: err.message });

@@ -10,6 +10,7 @@ import type {
   ModuleSummary,
   UpdateItemInput,
 } from '@throughline/shared';
+import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import {
   codeDriftTierByItem,
@@ -41,18 +42,6 @@ interface ItemRow {
 export class ItemPolicyError extends Error {
   constructor(message: string, public field: 'type' | 'status') {
     super(message);
-  }
-}
-
-export class ItemNotFoundError extends Error {
-  constructor(id: string) {
-    super(`item ${id} not found`);
-  }
-}
-
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
   }
 }
 

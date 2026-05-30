@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
-import { ProjectNotFoundError, type SessionsService } from './service.js';
+import type { SessionsService } from './service.js';
+import { ProjectNotFoundError } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
 
 export function registerSessionRoutes(

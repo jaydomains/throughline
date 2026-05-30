@@ -8,6 +8,7 @@ import type {
   SessionStartModesResult,
   SessionStartPromptResult,
 } from '@throughline/shared';
+import { ProjectNotFoundError } from '@throughline/shared';
 import { appendAudit } from '../../audit/log.js';
 import { recordCost } from '../../cost/telemetry.js';
 import { promptFingerprint } from '../../ai/fingerprint.js';
@@ -36,11 +37,6 @@ import type { RelevanceClassifier } from './classifier.js';
 // (mode + open items + anchors + markers + cross-unit deps + include-prompt directives)
 // re-serves the cached prompt with no Haiku call; any change regenerates.
 
-export class ProjectNotFoundError extends Error {
-  constructor(id: string) {
-    super(`project ${id} not found`);
-  }
-}
 export class BundleUnresolvedError extends Error {
   constructor(id: string) {
     super(`project ${id} bundle could not be resolved`);
