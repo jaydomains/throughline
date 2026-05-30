@@ -2,7 +2,7 @@
 
 - **Date:** 2026-05-30
 - **Author session:** Phase E planning — independent track (branch `claude/hopeful-carson-aX0Uw`)
-- **Status: final (rev 3) — approved by planner.** Encodes the spec-author triage of 2026-05-30 (all five LBDs settled; halt-class 4–9 blessed; §7.10 clause ruled in; E17a split). Supersedes the now-voided prior markers (`86415e7` + the auditor's prior approval). Audit-ID set-diff gate held across the revision (0 dropped, 126→126). Coverage-complete, self-consistent, execution-ready. **Session 2 re-audits the changed regions before its fresh re-approval; Session 3 self-polls for these markers.** *Draft→ready conversion remains the overseer session's gate, not flipped here.*
+- **Status: final (rev 3.1) — approved by planner.** Encodes the spec-author triage of 2026-05-30 (all five LBDs settled; halt-class 4–9 blessed; §7.10 clause ruled in; E17a split). **rev 3.1** closes Session-2 re-audit findings **RA-1** (class-split now names E17a and sums to 19, matching the roster header + Chain-total) and **RA-2** (stale "4–8"→"4–9" and "E1–E18"→explicit-roster references corrected in the tracking-issue body and chain-close section). Supersedes the voided prior markers (`86415e7` + the auditor's prior approval). Audit-ID set-diff gate held across both rev-3 and rev-3.1 (0 dropped / 0 added). Coverage-complete and self-consistent (every "19" / "4–9" reference now agrees). **Session 2 re-audits the RA fixes before its fresh approval.** *Draft→ready conversion remains the overseer session's gate, not flipped here.*
 - **Scope:** every still-open finding across committed audits 1–5 (`docs/_meta/throughline/audits/`).
 - **Chain shape:** one PR per slice — the canonical `AUTO_CONTINUE_WORKFLOW.md` rhythm (Premise "a slice = one PR"; the 9c sharpening absorbed in PR #82). Rationale specific to this chain: high rollback-value (a bad silent-failure fix is itself a silent regression, across diverse subsystems); cleaner discrete-audit-after-merge per finding; per-PR Gitar attention against a specific change.
 - **Source of truth:** the five committed audit reports + synthesis, **re-verified against current `main`** by this session (file:line evidence cited per slice). Verification diverged from the audit text in three load-bearing places — see *Verification divergences* below.
@@ -374,9 +374,12 @@ These are **named individually, not dropped** — that's what arms the next coho
 ## Bug / product-decision / already-closed split (explicit)
 
 - **Bug-fix (code + paired test):** E1–E16 = **16 slices.**
+- **Dependency-remediation (code; green-gate is the test):** E17a = **1 slice.**
 - **Product-decision (surface; spec author decides build/descope/schedule/accept):** E17 = **1 slice.** Chosen builds append as new slices.
 - **Already-closed (doc + verify test where a lock is missing):** E18 = **1 slice.**
 - **Deferred (register, not slices):** the tail above.
+
+Total = **19 slices** (floor), matching the roster header and Chain-total.
 
 Each class is handled differently and the boundary is the OQ5-style rule: *contradicts spec → bug; spec silent / value judgment → decision; already closed → verify.* The SF1-01 reclass and the S6-02 reclass (both *verify*, not *bug*) are the concrete payoffs of applying the rule against current code rather than the audit text.
 
@@ -385,7 +388,7 @@ Each class is handled differently and the boundary is the OQ5-style rule: *contr
 ## Tracking issue (ready — opened at chain-open by Session 3, not by this session)
 
 - **Title:** `Auto-continue: phase-e-full-audit-close`
-- **Body:** link to this plan; chain-state file `.claude-code/auto-continue-state.json`; roster E1–E18; kill-switch signals (marker file `.claude-code/auto-continue-pause`, `/pause` comment); per-merge progress log (slice ID · PR # · merge ts · fix-round count); halt-class set incl. extensions 4–8; the three gating LBDs that must be ruled before E1/E5/E6 open.
+- **Body:** link to this plan; chain-state file `.claude-code/auto-continue-state.json`; roster E1–E16 + E17a + E17 + E18 (19-slice floor); kill-switch signals (marker file `.claude-code/auto-continue-pause`, `/pause` comment); per-merge progress log (slice ID · PR # · merge ts · fix-round count); halt-class set incl. blessed extensions 4–9; the gating LBDs (1/2/3/5) ruled before chain-open and the LBD-4 E17 mid-chain gate.
 
 ---
 
@@ -399,4 +402,4 @@ This plan is **ready to seed a chain.** The pre-open preconditions are now **met
 
 ## Verification (Session 3, per slice)
 
-Three-layer gate (Gitar + CI `pnpm -r typecheck/test/lint/build` + GitHub-mergeable) → merge-commit → next slice off updated `main`. Discrete-audit-after-merge per finding. **Chain close:** every closed finding has a regression test; T-D60 in `SPEC.md §14`; C-D25 + C-D26 in `CODE_SPEC.md` (+ the `CODE_SPEC.md:9` count refreshed 59→60); any SPEC descope marks (E17 rulings) landed; `PLATFORM_STATUS.md` rolled; handover per PR; halt-class extensions 4–8 absorbed into `AUTO_CONTINUE_WORKFLOW.md` by the cohort hardener; Phase F / Phase G registers carried forward; tracking issue closed.
+Three-layer gate (Gitar + CI `pnpm -r typecheck/test/lint/build` + GitHub-mergeable) → merge-commit → next slice off updated `main`. Discrete-audit-after-merge per finding. **Chain close:** every closed finding has a regression test; T-D60 in `SPEC.md §14`; C-D25 + C-D26 in `CODE_SPEC.md` (+ the `CODE_SPEC.md:9` count refreshed 59→60); any SPEC descope marks (E17 rulings) landed; `PLATFORM_STATUS.md` rolled; handover per PR; halt-class extensions 4–9 absorbed into `AUTO_CONTINUE_WORKFLOW.md` by the cohort hardener; Phase F / Phase G registers carried forward; tracking issue closed.
