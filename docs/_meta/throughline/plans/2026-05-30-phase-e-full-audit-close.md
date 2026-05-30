@@ -85,6 +85,7 @@ Each row: audit ID · original severity · current behaviour (file:line) · open
 | SF7-05 | Low | session-path `settings_json` unaudited (completes the 3-of-3 `settings_json` discipline with SF7-02/03). | open | bug → **E14** |
 | SF7-04, SF7-06 | Low | chat-no-AI / verifier `last_status` unaudited — **audit-trail-only, no operational misbelief**. | open | deferred-tail |
 | SF1-02 | High | startup-scan/chokidar arm TOCTOU restart-data-loss (`bootstrap/watcher.ts`). | open | bug → **E7** |
+| SF1-03 | Low | `quarantineCount` under-reports on a quarantine **copy-failure** — the audit-4 Low that *is* the SF1-01 copy-failure residual (audit-2 twin: S1-03). Not a generic wrong-belief Low; it's the same residual E7 fixes. | open | bug → **E7** (closure → E18) |
 | SF2-07/08, SF3-04, SF4-05/06, SF6-13/14/15 | Low | wrong-belief-about-state lows (companion attach asserts success; refused regex silent skip; sub-fetch clears tier-1; cost under-count; frontend swallows). | open | **product-decision (pull-in?)** → **E17** decision item |
 
 ### Audit 2 — bugs (open subset; the 6 High and several Med were closed in Phases B/D)
@@ -94,6 +95,7 @@ Each row: audit ID · original severity · current behaviour (file:line) · open
 | S7-02 | High | `routes/events.ts:44-84` `reply.hijack()`; ping `setInterval` not `unref`'d; `app.close()` never ends hijacked sockets. | open | bug → **E8** |
 | S2-02 | Med | `methodology/gates/checks.ts:153-179` raw `new RegExp(bundle…format_regex)` + un-escaped vocab interpolation, no `safe-regex` guard (the unhardened twin of the now-fixed S2-01). | open | bug → **E13** |
 | S1-01 | Med | `bootstrap/worker.ts:69-70` 1-second-resolution timestamp → two ingests/second collide. | open | bug → **E7** |
+| S1-03 | Low | `quarantineCount` under-reports on copy-failure — the audit-2 twin of the SF1-01 residual (= audit-4 SF1-03). | open | bug → **E7** (closure → E18) |
 | S1-02 | Med | watcher TOCTOU (= SF1-02). | open | bug → **E7** |
 | S3-01 | Med | `methodology/loader.ts:293-335` no `notifyReloaded` on arm-1/arm-3 bundle deletion (arm-2 only). | open | bug → **E9** |
 | S3-03 | Low | loader `discoverBundleIds` `statSync` throws on dangling symlink → aborts startup hydration. | open | bug → **E9** |
@@ -197,11 +199,13 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 
 **Standard three** (codified in `AUTO_CONTINUE_WORKFLOW.md`): spec drift; circuit breaker (3 fix-rounds on one finding); explicit user pause (marker file / `/pause` comment).
 
-**Four Phase C+D extensions** (operating practice — see drift flag): (4) **estimate breach** — a slice's actual diff exceeds its LOC band by >50% → halt, re-slice; (5) **unplanned anchor** — a slice needs a T-D/C-D beyond the three planned → halt, surface; (6) **test regression** — a slice reds a previously-green test it didn't intend to touch → halt; (7) **doc-PR collision** — `main` carries an open PR touching a rolling shared doc at a slice boundary → halt (the very condition this planning session hit against PR #84).
+**Four extensions proposed for this chain** (4) **estimate breach** — a slice's actual diff exceeds its LOC band by >50% → halt, re-slice; (5) **unplanned anchor** — a slice needs a T-D/C-D beyond the three planned → halt, surface; (6) **test regression** — a slice reds a previously-green test it didn't intend to touch → halt; (7) **doc-PR collision** — `main` carries an open PR touching a rolling shared doc at a slice boundary → halt (the very condition this planning session hit against PR #84).
+
+> **Provenance — honest correction (Session-2 Finding 2).** The brief names these "four Phase C+D extensions," but **the repo does not substantiate that provenance**: `AUTO_CONTINUE_WORKFLOW.md` § The Three Halt Classes codifies *exactly three* and states "these are the **only** legitimate reasons a chain stops"; a grep of the handovers and process docs for "estimate breach / unplanned anchor / test regression" returns empty, and the PR #82 hardener records only the *spec-drift* class firing on the 9c rhythm. So 4–7 are **newly proposed by this planning track**, not inherited Phase C+D practice — held to the same evidence-over-instruction standard this plan applies to the audit text in *Verification divergences*. Because they are load-bearing *during* the chain (halt-5 guards anchor discipline; halt-4 is the cited per-slice release valve in E2/E15), running 18 slices under uncodified rules that contradict the canonical "only three" is itself latent spec-drift. **Recommendation (surfaced for the spec author):** bless 4–8 as sanctioned operating practice *before* chain-open — not defer codification to chain-close. (This is the one item where "evidence over instruction" overrides the brief's own framing; flagged, not silently absorbed.)
 
 **Phase E scope-bounded extension (new):** (8) a **silent-failure pattern outside audits 1–5** is surfaced mid-slice → flag it for the *next* audit cycle, do **not** expand the slice to absorb it.
 
-> **Drift flag (carried to the cohort hardener):** extensions 4–8 are **not** codified in `AUTO_CONTINUE_WORKFLOW.md`. Phase E runs under them as documented operating practice (this section). Editing the workflow doc *while the chain runs against it* is itself the recursive doc-PR-collision problem; the **Phase E cohort hardener at chain close** absorbs 4–8 into the canonical doc — the same pattern by which Phases A–D's process findings landed in PR #82.
+> **Drift flag (carried to the cohort hardener):** extensions 4–8 are **not** codified in `AUTO_CONTINUE_WORKFLOW.md` and **contradict its "only three" clause** until blessed. Preferred resolution per the provenance correction above: a **spec-author bless before chain-open**. Failing that, Phase E runs under them as documented operating practice (this section) and the **cohort hardener at chain close** absorbs 4–8 into the canonical doc — the same pattern by which Phases A–D's process findings landed in PR #82. Editing the workflow doc *while the chain runs against it* is the recursive doc-PR-collision problem, which is why mid-chain codification is avoided; a pre-open bless sidesteps both.
 
 ---
 
@@ -228,7 +232,7 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 | E17 | Product-decision triage (surface only) | product-decision | F-cluster + audit-4 wrong-belief Lows + W1 + minors | — | doc + targeted spec edits |
 | E18 | Closure-verification appendix | verify-already-closed | SF1-01 bulk, S6-02, F1-01/S5-02, SF6-01..12, Phase-D locks | — | doc + verify tests |
 
-**Chain total:** ~2,000–2,900 LOC across 16 code/test slices + 2 doc slices. **Calendar ~14–19 working days (~3–4 weeks).** Within the brief's 12–20 envelope. **Note:** if LBD-4 yields "build" decisions for any E17 feature-finding, each chosen build is appended as a *new* slice — which would push the roster past 20 and trips estimate-watch; that growth is a spec-author scope addition, surfaced not absorbed.
+**Chain total:** ~2,000–2,900 LOC across 16 code/test slices + 2 doc slices. **Calendar ~14–19 working days (~3–4 weeks).** **Sizing honesty (Session-2 Finding 3):** the brief's "12–20 envelope" budgets *slices*. **18 is a floor, not the committed total** — it is decision-pending on LBD-4. LBD-4 (the E17 product-decision batch) is *different in kind* from LBD-1/2/3/5: those *unblock planned slices*; LBD-4 *spawns new ones*. If LBD-4 yields any "build" rulings, each chosen build is appended as a new slice, so the committed roster is `18 + N(builds)` and may breach 20. That N is **knowable only after the E17 ruling**, which is itself a mid-chain human-decision gate (not auto-continue). The figure is therefore reported as a floor with an explicitly unbounded-until-ruled tail — not a firm bound. The calendar (~3–4 weeks) is already near the 4-week ceiling at the floor.
 
 ### Sequencing & dependency reality (data-shape / code-pattern — not commit-order)
 
@@ -276,7 +280,7 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 - **Fix:** surface bundle-health (bound-but-broken vs legit-freeform vs healthy) **beside the methodology surface** (LBD-2) via the C-D25 component; widen `/api/methodologies` to include external/per-repo bundle errors. **Anchor:** **C-D25** (proposed; minted here). **Files:** `methodology/gates/runtime.ts`, methodologies route, `SettingsView.tsx` (or methodology view), `packages/shared/src/` (`ResourceState`). **Tests:** broken-post-bind bundle → degraded (not freeform); external bundle error listed. **Deps:** LBD-2 ruling. (E7 imports C-D25 → E6 first.)
 
 ### E7 — Bootstrap worker/watcher robustness
-- **Closes:** SF1-01 **residual** (copy-failure-only `.error.json` uncounted), S1-01 (timestamp collision), S1-02/SF1-02 (watcher arm TOCTOU — **High** per audit-4 re-exam), SF5-05/06 (enqueue throw drops file).
+- **Closes:** SF1-01 **residual** = **SF1-03** = **S1-03** (all three IDs name the one behaviour: copy-failure-only `.error.json` uncounted → `quarantineCount` under-reports), S1-01 (timestamp collision), S1-02/SF1-02 (watcher arm TOCTOU — **High** per audit-4 re-exam), SF5-05/06 (enqueue throw drops file).
 - **Verified:** `worker.ts:107-124` (copy-failure leaves only `.error.json`), `worker.ts:294` (`countOutputs` excludes `.error.json`), `worker.ts:69-70` (1-s timestamp), `watcher.ts` arm/scan TOCTOU.
 - **Fix:** count `.error.json` markers (or leave a counted marker) so a copy-failure quarantine is **visible** via the C-D25 surface; sub-second/uniqueness-suffixed timestamp; close the scan-vs-arm TOCTOU; guard `enqueue` throws. **Files:** `bootstrap/worker.ts`, `bootstrap/watcher.ts`, `SettingsView.tsx` (quarantine surface). **Tests:** copy-failure → `quarantineCount > 0`; same-second ingests don't collide; TOCTOU write between scan/arm is caught. **Deps:** **E6 merged** (C-D25). **Note:** SF1-01 *bulk* closure is recorded in E18.
 
@@ -344,11 +348,11 @@ T-D59 / C-D24 are the live highest (verified `DECISIONS.md`, `CODE_SPEC.md:9` "5
 
 ### E18 — Closure-verification appendix + verification tests
 - **Class:** verify-already-closed. **Documents (with code evidence):**
-  - **SF1-01 bulk** — common quarantine path surfaced (`worker.ts:107/294`, `SettingsView` alert); only the copy-failure residual was open (fixed in E7).
+  - **SF1-01 bulk** — common quarantine path surfaced (`worker.ts:107/294`, `SettingsView` alert); only the copy-failure residual was open (fixed in E7). **Alias closure:** the residual is also tracked as **SF1-03** (audit-4 Low) and **S1-03** (audit-2 Low) — same behaviour, three IDs; all three close via E7.
   - **S6-02** — reconcile `ItemPolicyError` now mapped by the central handler (`http/error-handler.ts:14-31`); add a regression test asserting the 4xx.
   - **F1-01 / S5-02** — all four former `resolveBundle`-omission sites call `resolveProjectBundle` (T-D51 amendment); Phase-D arm-2 lock present.
   - **SF6-01..12** — Phase C closure (`useResource`/`<LoadError>`; `useDirectives.ts:38`, `useDriftInbox.ts:34`).
-  - **Phase-D locks** — S2-01, SF2-01, S5-01, S4-01, S7-01 (reference the existing regression tests; no new test unless a lock is missing).
+  - **Phase-D locks** — S2-01, SF2-01, S5-01 (**alias: SF4-04** — the audit-4 silent-dup-on-retry view of the same dump-zone non-atomic apply), S4-01, S7-01 (reference the existing regression tests; no new test unless a lock is missing).
 - **Deliverable:** appendix doc + a verification test **only where a lock is missing** (S6-02 is the likely one). **Files:** this plan / a closure note + `test/...` as needed. **Deps:** runs last (absorbs any incidental closure surfaced during E1–E16).
 
 ---
@@ -386,7 +390,11 @@ Each class is handled differently and the boundary is the OQ5-style rule: *contr
 
 ## Chain-open readiness
 
-This plan is **ready to seed a chain** once (a) Session-2 audit converges, (b) the spec author rules on LBD-1..5, and (c) the three proposed anchors (T-D60, C-D25, C-D26) are accepted as working-note proposals. **Chain-open is NOT proposed by this session** — the deliverable is this committed plan. Session 3 executes from the merged artifact.
+This plan is **ready to seed a chain** once (a) Session-2 audit converges, and (b) the spec author rules on the **pre-open** decisions — and (c) the three proposed anchors (T-D60, C-D25, C-D26) are accepted as working-note proposals. **Chain-open is NOT proposed by this session** — the deliverable is this committed plan. Session 3 executes from the merged artifact.
+
+**Precondition split (Session-2 Finding 3).** The LBDs are not uniform preconditions:
+- **Rule before seed (these unblock planned slices/anchors):** **LBD-1** (gates E1 + T-D60 + the C-D2 reframe), **LBD-2** (gates E5/E6/E7 + C-D25), **LBD-3** (gates C-D26 distinct-vs-fold), **LBD-5** posture (gates the E17 W1 note). The 18-slice floor cannot open cleanly until these are ruled.
+- **Mid-chain scope gate at E17 (this *spawns* slices, doesn't unblock them):** **LBD-4**. The chain does **not** auto-continue past E17 without a human ruling on the audit-3 build/descope/schedule batch; any "build" rulings append new slices. So E17 is an explicit halt-for-decision, and the roster total is a floor until it resolves (see the Sizing-honesty note above). Requiring LBD-4 "before seed" would overstate what must be ruled up front; treating it as fully deferred would hide a real mid-chain halt. It is neither — it is a priced-in decision gate.
 
 ## Verification (Session 3, per slice)
 
