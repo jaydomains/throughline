@@ -150,6 +150,104 @@ describe('Phase 10 — GitHub poller', () => {
     await s.backend.cleanup();
   });
 
+  it('drain() waits for an in-flight poll to finish before resolving (S7-01)', async () => {
+    const s = await setup();
+    const cache = createGithubStateCache(s.backend.db);
+    const tier4 = createTier4Service({
+      db: s.backend.db,
+      projects: s.projects,
+      registry: s.backend.registry,
+      drift: s.drift,
+    });
+    // Hold listPulls open so a poll stays in flight until we release it — modelling a
+    // slow API call mid-shutdown. The poll does DB writes after this resolves, so closing
+    // the DB before drain() returns would race a closed handle (the S7-01 defect).
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const base = fakeApi();
+    const api: GitHubApi = {
+      ...base,
+      listPulls: vi.fn(async () => {
+        await gate;
+        return { status: 'ok' as const, etag: 'e', data: [] };
+      }),
+    };
+    const poller = createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api,
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4,
+      watch: false,
+    });
+
+    let pollDone = false;
+    const pollP = poller.pollProject(s.project.id).then(() => {
+      pollDone = true;
+    });
+    await new Promise((r) => setTimeout(r, 5)); // let the poll enter the in-flight set
+
+    let drainResolved = false;
+    const drainP = poller.drain(2000).then(() => {
+      drainResolved = true;
+    });
+    await new Promise((r) => setTimeout(r, 60));
+    // The poll is still blocked on listPulls, so drain must not have resolved yet.
+    expect(pollDone).toBe(false);
+    expect(drainResolved).toBe(false);
+
+    release();
+    await pollP;
+    await drainP;
+    expect(pollDone).toBe(true);
+    expect(drainResolved).toBe(true);
+
+    await s.backend.cleanup();
+  });
+
+  it('drain() resolves immediately when no poll is in flight', async () => {
+    const s = await setup();
+    const cache = createGithubStateCache(s.backend.db);
+    const tier4 = createTier4Service({
+      db: s.backend.db,
+      projects: s.projects,
+      registry: s.backend.registry,
+      drift: s.drift,
+    });
+    const poller = createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api: fakeApi(),
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4,
+      watch: false,
+    });
+    const t0 = Date.now();
+    await poller.drain(2000);
+    expect(Date.now() - t0).toBeLessThan(500);
+    await s.backend.cleanup();
+  });
+
   it('caches PR snapshots and dispatches the pr-open gate for a newly observed open PR', async () => {
     const s = await setup();
     const cache = createGithubStateCache(s.backend.db);

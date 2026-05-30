@@ -706,14 +706,19 @@ export async function startServer(
     backupScheduler,
     url,
     close: async () => {
+      // S7-01 — shut down every DB writer and drain its in-flight work *before* closing
+      // the database, so nothing races a closed handle. Order: (1) stop all schedulers /
+      // pollers / watchers from issuing new work; (2) let `app.close()` drain in-flight
+      // HTTP requests; (3) await the async producers' in-flight work; (4) close the DB last.
       reminderScheduler.stop();
       backupScheduler.stop();
+      githubPoller.stop();
       await app.close();
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();
       await bootstrapWatcher!.stop();
       await disciplineDrift.stop();
-      githubPoller.stop();
+      await githubPoller.drain();
       await registry.stop();
       db.close();
     },
