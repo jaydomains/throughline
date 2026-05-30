@@ -38,6 +38,10 @@ function deriveState(pull: GhPull, reviews: { state: string }[]): PrState {
 export interface GitHubPoller {
   start(): void;
   stop(): void;
+  // Wait for any in-flight poll to finish so its DB writes complete before the caller
+  // closes the database (S7-01 shutdown ordering). Bounded so a wedged poll cannot hang
+  // shutdown. No-op when nothing is in flight.
+  drain(timeoutMs?: number): Promise<void>;
   // Poll one project now (used by the loop, manual refresh, and tests). Returns the PR
   // badges so the route can answer synchronously after an explicit refresh.
   pollProject(projectId: string): Promise<PrBadge[]>;
@@ -249,6 +253,16 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
       if (timer) {
         clearInterval(timer);
         timer = null;
+      }
+    },
+    async drain(timeoutMs = 5000) {
+      // `inFlight` holds the project ids whose poll is mid-flight. A poll is a chain of
+      // awaited API + DB writes (reconcile, gate runs, cache writes); closing the DB while
+      // one is running throws on a closed handle. Wait for the set to empty, bounded so a
+      // network-wedged poll can't block process exit.
+      const deadline = Date.now() + timeoutMs;
+      while (inFlight.size > 0 && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 25));
       }
     },
     pollProject,

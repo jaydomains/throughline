@@ -298,10 +298,18 @@ export function createDriftService(db: DB): DriftService {
         .prepare(`SELECT project_id, category FROM drift_signals WHERE id = ?`)
         .get(id) as { project_id: string; category: string } | undefined;
       if (!row) return;
-      db.prepare(
-        `UPDATE drift_signals SET dismissed_at = ?, dismiss_reason = ?
-          WHERE id = ? AND dismissed_at IS NULL`,
-      ).run(new Date().toISOString(), reason, id);
+      const res = db
+        .prepare(
+          `UPDATE drift_signals SET dismissed_at = ?, dismiss_reason = ?
+            WHERE id = ? AND dismissed_at IS NULL`,
+        )
+        .run(new Date().toISOString(), reason, id);
+      // S4-01 — idempotent dismissal. The `dismissed_at IS NULL` guard already keeps the
+      // first reason (a re-dismiss is a no-op on the row), but the audit entry used to be
+      // appended unconditionally — so an already-dismissed signal (verifier tier + manual
+      // dismiss racing, or a re-scan) logged a spurious second dismissal with a different
+      // reason. Audit only the dismissal that actually happened.
+      if (res.changes === 0) return;
       appendAudit(db, {
         projectId: row.project_id,
         entityType: 'project',
