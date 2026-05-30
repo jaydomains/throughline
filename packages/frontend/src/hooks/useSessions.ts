@@ -1,32 +1,16 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import type { Session } from '@throughline/shared';
 import { api } from '../api.js';
+import { useResource } from './useResource.js';
+
+const NO_SESSIONS: Session[] = [];
 
 export function useSessions(projectId: string | null) {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
+  const fetcher = useMemo<(() => Promise<Session[]>) | null>(
+    () => (projectId ? () => api.listSessions(projectId).then((r) => r.sessions) : null),
+    [projectId],
+  );
 
-  const refresh = useCallback(async (): Promise<void> => {
-    if (!projectId) {
-      setSessions([]);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    try {
-      const r = await api.listSessions(projectId);
-      setSessions(r.sessions);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e : new Error(String(e)));
-    } finally {
-      setLoading(false);
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    void refresh();
-  }, [refresh]);
-
-  return { sessions, loading, error, refresh };
+  const { data, loading, error, refresh } = useResource(fetcher, NO_SESSIONS);
+  return { sessions: data, loading, error, refresh };
 }
