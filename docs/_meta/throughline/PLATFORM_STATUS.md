@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix **Phase C+D** chain open (chain `audit-fix-phase-c-d` — frontend error-surfacing + green-gate hardening). Chain-open workflow absorption merged as **#76** (doc-PR collision + merge-on-green polling rules into `AUTO_CONTINUE_WORKFLOW.md`). **Slice C-1** (this PR) extracts the `useResource` / `usePolledResource` hook pair (one `ResourceState<T>` contract owning the loading/error/unmount-guard triple) and adopts it in `useItems` / `useSessions` / `useItemPolicy`; mints **C-D24**. No behaviour change yet — the error slot is made uniform; consumers render it in C-2. Green gate: typecheck, 182 frontend tests, lint, build all green. Phase A (#67) + Phase B (#68 chain) remain `feature-complete`; the audit-fix cohort's `production-ready` promotion still follows once C/D land. **Slice C-2** is next.
+**As of 2026-05-30.** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d` — frontend error-surfacing + green-gate hardening). Merged so far: **#76** chain-open workflow absorption; **#77** Slice C-1 (`useResource`/`usePolledResource` pair, mints **C-D24**). **Slice C-2** (this PR) completes the Phase C half — the C-D24 error slot now reaches the UI via a shared `<LoadError>` banner across TreeView/GraphView/SessionView/SessionsIndex/HomeView/DriftInbox/LibraryView, `useDirectives`/`useDriftInbox` gain an `error` slot, `useCostMeter`/`useBackupStatus` move onto `usePolledResource` (`useBackendHealth` a documented exception), and fire-and-forget mutation handlers (ItemDetailPanel detach/delete, DriftInbox `act`, SettingsView `getSettings`, LibraryView refresh) now catch. Clears SF6-01/02 Criticals + SF6-03..07 Highs + SF6-08/10/11/12 Mediums. New `test/hooks.test.tsx` locks SF6-01/02. Green gate: typecheck, **187** frontend tests (+5), lint, build all green. Phase A (#67) + Phase B (#68 chain) remain `feature-complete`. **Phase D** (Slice D-1: wire-contract types → `@throughline/shared`) is next.
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Chain-open absorption merged (#76); Slice **C-1** open (this PR). Phase A (#67) + Phase B (#68 chain) done; C-2 / D-1 / D-2 / D-3 pending.
+**Phase:** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: #76 (absorption), #77 (C-1). Slice **C-2** open (this PR) — closes the Phase C half. D-1 / D-2 / D-3 pending.
 **Status:** Phases A & B `feature-complete`. Phases 19–22 build cohort `production-ready`.
-**Next concrete action:** Slice **C-2** — surface the C-D24 error slot in consumer views + mutation catches + SF6-01/02 regression test. Branch-protection required-check is now **live** on `main` (the `gate` check gated #76). A cohort-level hardener + `production-ready` promotion for the audit-fix cohort (A–D) follows once C/D land.
+**Next concrete action:** Slice **D-1** — move wire-contract response types from frontend-local to `@throughline/shared`, type-validate `jsonFetch` at the boundary, add a wire-contract test (mints **T-D59**), and flip AUTHORING_DISCIPLINE Gap 2 → Closed. Branch-protection `gate` check is live on `main`. A cohort-level hardener + `production-ready` promotion for the audit-fix cohort (A–D) follows once D lands.
 
 ---
 
@@ -57,13 +57,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase C / Slice 1 — `useResource` / `usePolledResource` hook pair + 3 proof adopters (mints C-D24, chain-open) | `handovers/2026-05-30-phase-c-slice-1-useresource.md` |
+| _this PR_ | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
+| #77 | Phase C / Slice 1 — `useResource` / `usePolledResource` hook pair + 3 proof adopters (mints C-D24) | `handovers/2026-05-30-phase-c-slice-1-useresource.md` |
 | #76 | Phase C+D chain-open — absorb doc-PR collision + merge-on-green polling rules into `AUTO_CONTINUE_WORKFLOW.md` | (workflow-doc PR; reconciliation handover `handovers/2026-05-30-doc-pr-chain-collision-reconciliation.md`) |
 | #74 | Phase B / Slice 4 — `resolveProjectBundle` + 4 call sites + T-D51 amendment (chain close) | `handovers/2026-05-30-phase-b-slice-4-resolve-project-bundle.md` |
 | #73 | Phase B / Slice 3 — central Fastify error handler + delete ~50 hand-rolled try/catch (mints C-D23) | `handovers/2026-05-30-phase-b-slice-3-central-error-handler.md` |
-| #72 | Phase B / Slice 2 — migrate remaining 47 HTTP-mapped error classes onto the shared `DomainError` base | `handovers/2026-05-30-phase-b-slice-2-error-class-migration.md` |
 
-(PRs #69/#67/#66 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PRs #72/#69/#67/#66 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 
