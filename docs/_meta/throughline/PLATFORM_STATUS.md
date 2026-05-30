@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: **#76** absorption; **#77** C-1 (**C-D24**); **#78** C-2 (Phase C closed); **#79** D-1 (wire-contract → `@throughline/shared`, **T-D59**, green-gate Gap 2 closed). **Slice D-2** (this PR) lands three backend data-integrity regression locks with small paired fixes: **S2-01** (ReDoS bypass — `bodyIsAmbiguous` now flags nested alternations at any depth, refusing `((a\|a))+` which previously compiled and ran ~106s); **SF2-01** (`runDisciplineScan` returns a tagged result so a scanner *error* preserves a category's open drift signals instead of dismissing them as "no longer reproduces"); **S5-01** (dump-zone `apply` wrapped in `db.transaction` — a mid-apply failure rolls back all creates and leaves the proposal pending, no duplicate-on-retry). No anchor minted (bug fixes). Green gate: typecheck, **511** backend tests (+4) + **187** frontend tests, lint, build all green. **Slice D-3** (lifecycle locks: S4-01, S7-01, F1-01 — chain close) is next.
+**As of 2026-05-30.** Audit-fix **Phase C+D** chain **complete** (chain `audit-fix-phase-c-d`, 6 PRs #76–#80 + this chain-close slice). Phase C (frontend error-surfacing, **C-D24**) and Phase D (green-gate hardening, **T-D59**) both landed. **Slice D-3** (this PR, chain close) lands the backend lifecycle locks: **S4-01** (`dismissSignal` idempotent — audits only the dismissal that changed a row, so a re-dismiss can't append a spurious entry or overwrite the first reason); **S7-01** (poller gains a bounded `drain()`; `server.ts` `close()` stops producers, drains in-flight async work, then closes the DB **last** — no in-flight poll races a closed handle); **F1-01** lock verified (already closed by Phase B `resolveProjectBundle`). No anchor minted (bug fixes). Green gate: typecheck, **515** backend tests (+4) + **187** frontend tests, lint, build all green. **Audit-fix cohort (Phases A–D) is now `feature-complete` end-to-end** — both green-gate gaps closed, all targeted SF6 / S / SF / F findings resolved. **Next:** the cohort-level heavy hardener → `production-ready` promotion (separate pass; note `SESSION_START.md` is absent and should be created or formally accepted in that pass).
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase C+D** chain in flight (chain `audit-fix-phase-c-d`). Merged: #76, #77 (C-1), #78 (C-2 — Phase C closed), #79 (D-1). Slice **D-2** open (this PR). D-3 pending.
-**Status:** Phases A & B `feature-complete`. Phases 19–22 build cohort `production-ready`.
-**Next concrete action:** Slice **D-3** (chain close) — backend lifecycle locks: S4-01 (drift dismissal idempotency), S7-01 (shutdown DB-close ordering), F1-01 (loader wrong-bundle regression lock). A cohort-level hardener + `production-ready` promotion for the audit-fix cohort (A–D) follows once D-3 lands.
+**Phase:** Audit-fix **Phase C+D** chain **complete** (chain `audit-fix-phase-c-d`, closed across #76/#77/#78/#79/#80 + D-3 this PR). Phases A–D all done.
+**Status:** Audit-fix cohort (A–D) `feature-complete` end-to-end. Phases 19–22 build cohort `production-ready`.
+**Next concrete action:** Cohort-level heavy hardener for the audit-fix cohort (A–D) → `production-ready` promotion (stale anchor counts, ROADMAP backfill, vocabulary audit, SESSION_START gap — the file is currently absent — SPEC §14 audit, build-prerequisite stress test). Separate pass per `AUTHORING_DISCIPLINE.md`; no chain in flight.
 
 ---
 
@@ -58,13 +58,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase D / Slice 2 — backend data-integrity locks: S2-01 ReDoS bypass, SF2-01 scanner-throw, S5-01 dump-zone atomicity | `handovers/2026-05-30-phase-d-slice-2-data-integrity-locks.md` |
+| _this PR_ | Phase D / Slice 3 — backend lifecycle locks: S4-01 dismissal idempotency, S7-01 shutdown ordering, F1-01 lock (chain close) | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
+| #80 | Phase D / Slice 2 — backend data-integrity locks: S2-01 ReDoS bypass, SF2-01 scanner-throw, S5-01 dump-zone atomicity | `handovers/2026-05-30-phase-d-slice-2-data-integrity-locks.md` |
 | #79 | Phase D / Slice 1 — wire-contract types → `@throughline/shared` + contract test (mints T-D59, closes Gap 2) | `handovers/2026-05-30-phase-d-slice-1-wire-contract.md` |
 | #78 | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
 | #77 | Phase C / Slice 1 — `useResource` / `usePolledResource` hook pair + 3 proof adopters (mints C-D24) | `handovers/2026-05-30-phase-c-slice-1-useresource.md` |
-| #76 | Phase C+D chain-open — absorb doc-PR collision + merge-on-green polling rules into `AUTO_CONTINUE_WORKFLOW.md` | (workflow-doc PR; reconciliation handover `handovers/2026-05-30-doc-pr-chain-collision-reconciliation.md`) |
 
-(PRs #74/#73/#72/#69 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PRs #76/#74/#73/#72 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 
