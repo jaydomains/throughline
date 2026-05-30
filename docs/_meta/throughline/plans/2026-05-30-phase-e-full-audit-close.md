@@ -2,7 +2,7 @@
 
 - **Date:** 2026-05-30
 - **Author session:** Phase E planning (session 1 of 3-session pipeline)
-- **Status:** proposed — Session-2 audit (rev 2) + spec-author triage (rev 3) incorporated; pending one focused re-audit of the changed regions
+- **Status:** final, approved by planner, ready for auditor sign-off and merge — Session-2 audit converged at round 4 (rev 3.1, `c114dd6`): coverage-complete, self-consistent, execution-ready; no further revisions pending
 - **Scope:** every still-open finding across committed audits 1–5
 - **Chain shape:** one PR per slice (canonical `AUTO_CONTINUE_WORKFLOW.md` rhythm; per PR #82 9c absorption)
 - **Source of truth:** `docs/_meta/throughline/audits/` (audit-1..5 + synthesis), verified against current `main`
