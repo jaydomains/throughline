@@ -58,7 +58,7 @@ PR opened at phase close (not before); PR description references the phase, the 
 
 ## Auto-continue discipline
 
-Build work runs as slice chains — each slice a PR, each chain advanced automatically slice-to-slice once the user approves the chain shape at plan-mode. A slice merges only when the three-layer green gate (Gitar review + CI + GitHub mergeable) is simultaneously green. The chain halts only on three named conditions: spec drift, circuit breaker (three fix-rounds on the same finding), or explicit user pause via the `throughline:pause` kill switch. See `docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` for the full ruleset.
+Build work runs as slice chains — each slice a PR, each chain advanced automatically slice-to-slice once the user approves the chain shape at plan-mode. A slice merges only when the three-layer green gate (Gitar review + CI + GitHub mergeable) is simultaneously green. The chain halts only on three named conditions: spec drift, circuit breaker (three fix-rounds on the same finding), or explicit user pause via the kill switch (canonical signals: a marker file at `.claude-code/auto-continue-pause`, or a `/pause` PR/issue comment; the `throughline:pause` label is an optional/future third signal). See `docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` for the full ruleset.
 
 ---
 

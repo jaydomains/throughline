@@ -6,7 +6,7 @@ If a SPEC.md statement turns out to be too vague to derive implementation from, 
 
 ## Anchor convention
 
-Implementation-level decisions in this file use `C-D{n}` anchors (Code Decision). They are distinct from `T-D{n}` anchors in SPEC.md §14 (currently 57 entries; see `SPEC.md §14` for the canonical live index). C-D anchors are referenceable from code comments, PR descriptions, and other docs.
+Implementation-level decisions in this file use `C-D{n}` anchors (Code Decision). They are distinct from `T-D{n}` anchors in SPEC.md §14 (currently 59 entries; see `SPEC.md §14` for the canonical live index). C-D anchors are referenceable from code comments, PR descriptions, and other docs.
 
 Any C-D may be promoted to a T-D later if it crosses the line into a functional decision; that promotion requires a SPEC.md §14 update.
 
