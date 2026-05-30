@@ -1082,6 +1082,8 @@ A repo-local convention with a fixed directory name lets a freshly-cloned repo c
 ### Implications
 A repo with `.throughline/bundle.md` and `bundle_path` set sees `bundle_path` win — explicit configuration overrides the carve-out, by design. A repo carrying `.throughline/bundle.md` whose bound `bundle_id` does not match the in-repo bundle's declared id is a project-create / project-update validation error (`bundle_id_mismatch`) so silent divergence cannot accrue. Implementation shape lives in C-D19.
 
+**Amendment (2026-05-30, audit-fix Phase B slice 4).** The canonical way to resolve a project's bundle is `resolveProjectBundle(registry, project)` (`packages/backend/src/methodology/loader.ts`), which threads the project's `repo_path` into the resolver. This exists because four call sites (`reconcile/service.ts`, `routes/communication-model.ts` ×2, `dump-zone/service.ts`) had been calling `registry.resolveBundle(project.bundle_id, project.bundle_path)` **by hand and omitting `repo_path`** — which silently skipped arm 2 and fell through to the install-shipped default, resolving the wrong bundle for clone-and-go repos (audit findings F1-01 / S5-02). Because the helper takes the project rather than loose fields, `repo_path` is **structurally non-omittable**: no call site can skip arm 2 without bypassing the helper entirely. New project→bundle resolution goes through `resolveProjectBundle`; calling `registry.resolveBundle(...)` directly with a project's fields is the anti-pattern this amendment closes. (Regression: `test/loader.test.ts` "resolveProjectBundle threads project.repo_path …".)
+
 ---
 
 ## T-D52 — `throughline init` requires the running backend; CLI does not write the datastore directly

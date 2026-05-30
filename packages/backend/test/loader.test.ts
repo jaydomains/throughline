@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import chokidar from 'chokidar';
 import { setTimeout as wait } from 'node:timers/promises';
-import { createMethodologyRegistry } from '../src/methodology/loader.js';
+import { createMethodologyRegistry, resolveProjectBundle } from '../src/methodology/loader.js';
 import { createProjectsService } from '../src/projects/service.js';
 import { openDb } from '../src/db/index.js';
 import { runMigrations } from '../src/db/migrate.js';
@@ -117,6 +117,53 @@ describe('methodology loader', () => {
           if (result.status === 'loaded') {
             expect(result.bundle.identity.version).toBe('9.9.9');
           }
+          await registry.stop();
+          db.close();
+        } finally {
+          rmSync(repoDir, { recursive: true, force: true });
+        }
+      } finally {
+        cfg.cleanup();
+      }
+    });
+
+    it('resolveProjectBundle threads project.repo_path so arm 2 is never skipped (F1-01/S5-02 regression)', async () => {
+      // Slice 4: the four call sites that resolved a project's bundle by hand
+      // (`registry.resolveBundle(project.bundle_id, project.bundle_path)`) silently omitted
+      // repo_path, skipping arm 2. resolveProjectBundle takes the project so repo_path is
+      // always threaded — this guards that the helper cannot regress to the omission.
+      const cfg = makeTmpConfig();
+      try {
+        plantFreeformBundle(cfg.methodologiesDir);
+        const repoDir = mkdtempSync(join(tmpdir(), 'throughline-repo-'));
+        try {
+          mkdirSync(join(repoDir, '.throughline'), { recursive: true });
+          const md = readFileSync(FREEFORM_BUNDLE_PATH, 'utf8').replace('version: 1.0.0', 'version: 9.9.9');
+          writeFileSync(join(repoDir, '.throughline', 'bundle.md'), md);
+          const db = openDb(cfg.dbPath);
+          runMigrations(db);
+          const registry = createMethodologyRegistry({
+            db,
+            methodologiesDir: cfg.methodologiesDir,
+            watch: false,
+          });
+          const project = { bundle_id: 'freeform', bundle_path: null, repo_path: repoDir };
+
+          // Via the helper: arm 2 (the repo-local 9.9.9 bundle) wins.
+          const viaHelper = resolveProjectBundle(registry, project);
+          expect(viaHelper.status).toBe('loaded');
+          if (viaHelper.status === 'loaded') {
+            expect(viaHelper.bundle.identity.version).toBe('9.9.9');
+          }
+
+          // The former defect — omitting repo_path — falls through to arm 3 (install 1.0.0).
+          // Kept as the contrast that makes the helper's value explicit.
+          const omitting = registry.resolveBundle(project.bundle_id, project.bundle_path);
+          expect(omitting.status).toBe('loaded');
+          if (omitting.status === 'loaded') {
+            expect(omitting.bundle.identity.version).toBe('1.0.0');
+          }
+
           await registry.stop();
           db.close();
         } finally {
