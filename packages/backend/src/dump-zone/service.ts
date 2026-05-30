@@ -252,53 +252,64 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
       const project = projects.get(row.project_id);
       if (!project) throw new ProjectNotFoundError(row.project_id);
       const decisions = req.decisions ?? {};
-      const applied_item_ids: string[] = [];
-      const applied_library_entry_ids: string[] = [];
 
-      // Re-validate every proposed item against the bundle's policy at apply time. The user
-      // might have edited type/status fields in the modal; the policy is the contract.
-      for (const proposed of req.payload.items) {
-        if (decisions[proposed.proposal_item_id] === 'discard') continue;
-        const item = items.create({
-          project_id: row.project_id,
-          type: proposed.type,
-          status: proposed.status,
-          title: proposed.title,
-          description: proposed.description,
-          tags: proposed.tags,
-          session_ids: proposed.target_session_id ? [proposed.target_session_id] : [],
+      // S5-01: apply the whole proposal atomically. The creates, the status flip to
+      // 'applied', and the audit row all run inside one transaction, so a failure partway
+      // through (e.g. a policy-invalid item or a library insert error) rolls back every
+      // insert and leaves the proposal 'pending'. Without this, partial creates persisted
+      // while the status stayed 'pending', and a retry duplicated the already-created
+      // rows. items.create / library.create open their own transactions; better-sqlite3
+      // nests those as savepoints within this outer one.
+      const applyTxn = db.transaction(() => {
+        const applied_item_ids: string[] = [];
+        const applied_library_entry_ids: string[] = [];
+
+        // Re-validate every proposed item against the bundle's policy at apply time. The
+        // user might have edited type/status fields in the modal; the policy is the contract.
+        for (const proposed of req.payload.items) {
+          if (decisions[proposed.proposal_item_id] === 'discard') continue;
+          const item = items.create({
+            project_id: row.project_id,
+            type: proposed.type,
+            status: proposed.status,
+            title: proposed.title,
+            description: proposed.description,
+            tags: proposed.tags,
+            session_ids: proposed.target_session_id ? [proposed.target_session_id] : [],
+          });
+          applied_item_ids.push(item.id);
+        }
+        for (const entry of req.payload.library) {
+          if (decisions[entry.proposal_item_id] === 'discard') continue;
+          const created = library.create({
+            project_id: row.project_id,
+            type: entry.type,
+            title: entry.title,
+            body: entry.body,
+            tags: entry.tags,
+          });
+          applied_library_entry_ids.push(created.id);
+        }
+        const now = new Date().toISOString();
+        db.prepare(
+          `UPDATE proposed_extractions SET status = 'applied', resolved_at = ?, payload_json = ? WHERE id = ?`,
+        ).run(now, JSON.stringify(req.payload), row.id);
+        appendAudit(db, {
+          projectId: row.project_id,
+          entityType: 'project',
+          entityId: row.project_id,
+          actor: 'user',
+          field: 'dump_zone_apply',
+          oldValue: row.id,
+          newValue: JSON.stringify({
+            items: applied_item_ids,
+            library: applied_library_entry_ids,
+          }),
+          triggerContext: { proposal_id: row.id, target: row.target, source: row.source },
         });
-        applied_item_ids.push(item.id);
-      }
-      for (const entry of req.payload.library) {
-        if (decisions[entry.proposal_item_id] === 'discard') continue;
-        const created = library.create({
-          project_id: row.project_id,
-          type: entry.type,
-          title: entry.title,
-          body: entry.body,
-          tags: entry.tags,
-        });
-        applied_library_entry_ids.push(created.id);
-      }
-      const now = new Date().toISOString();
-      db.prepare(
-        `UPDATE proposed_extractions SET status = 'applied', resolved_at = ?, payload_json = ? WHERE id = ?`,
-      ).run(now, JSON.stringify(req.payload), row.id);
-      appendAudit(db, {
-        projectId: row.project_id,
-        entityType: 'project',
-        entityId: row.project_id,
-        actor: 'user',
-        field: 'dump_zone_apply',
-        oldValue: row.id,
-        newValue: JSON.stringify({
-          items: applied_item_ids,
-          library: applied_library_entry_ids,
-        }),
-        triggerContext: { proposal_id: row.id, target: row.target, source: row.source },
+        return { applied_item_ids, applied_library_entry_ids };
       });
-      return { applied_item_ids, applied_library_entry_ids };
+      return applyTxn();
     },
 
     discard(id) {

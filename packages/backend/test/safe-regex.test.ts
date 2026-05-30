@@ -19,6 +19,21 @@ describe('Phase 9 — bundle-regex safety guard (PR #16 review)', () => {
     }
   });
 
+  it('refuses nested-alternation backtracking hidden by an extra group (S2-01 regression)', () => {
+    // `((a|a))+` wraps the overlapping alternation in an extra group so the dangerous
+    // `|` is not top-level. An earlier detector only flagged top-level alternations and
+    // let this through — it compiled and ran exponentially (a confirmed ~106s ReDoS:
+    // ~16ms at 16 chars, ~9.7s at 28). It must be refused before it can ever compile.
+    for (const evil of ['((a|a))+$', '((a|ab))+$', '(((a|a)))*x', '((a|a)|b)+$']) {
+      expect(safeCompile(evil)).toBeNull();
+    }
+    // A genuinely benign quantified group with a nested alternation is allowed to be
+    // refused too (over-refusal is the safe failure mode), but plain quantified groups
+    // without alternation or inner quantifiers must still compile.
+    expect(safeCompile('(abc)+')).not.toBeNull();
+    expect(safeCompile('(a)+')).not.toBeNull();
+  });
+
   it('refuses over-long patterns', () => {
     expect(safeCompile('a'.repeat(1001))).toBeNull();
   });
