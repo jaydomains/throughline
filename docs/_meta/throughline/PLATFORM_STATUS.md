@@ -8,21 +8,21 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix **Phase C+D** chain **complete** (chain `audit-fix-phase-c-d`, 6 PRs #76–#80 + this chain-close slice). Phase C (frontend error-surfacing, **C-D24**) and Phase D (green-gate hardening, **T-D59**) both landed. **Slice D-3** (this PR, chain close) lands the backend lifecycle locks: **S4-01** (`dismissSignal` idempotent — audits only the dismissal that changed a row, so a re-dismiss can't append a spurious entry or overwrite the first reason); **S7-01** (poller gains a bounded `drain()`; `server.ts` `close()` stops producers, drains in-flight async work, then closes the DB **last** — no in-flight poll races a closed handle); **F1-01** lock verified (already closed by Phase B `resolveProjectBundle`). No anchor minted (bug fixes). Green gate: typecheck, **515** backend tests (+4) + **187** frontend tests, lint, build all green. **Audit-fix cohort (Phases A–D) is now `feature-complete` end-to-end** — both green-gate gaps closed, all targeted SF6 / S / SF / F findings resolved. **Next:** the cohort-level heavy hardener → `production-ready` promotion (separate pass; note `SESSION_START.md` is absent and should be created or formally accepted in that pass).
+**As of 2026-05-30.** Audit-fix cohort (**Phases A–D**) **`production-ready`** — promoted by this cohort-level heavy hardener pass (the second under codified discipline; the first was PR #43). All four phases landed and verified: Phase A (dual-condition workspace `exports`, **C-D22**); Phase B (shared `DomainError` hierarchy + central Fastify handler + `resolveProjectBundle`, **T-D58** / **C-D23**); Phase C (`useResource` / `usePolledResource` error-surfacing hooks, **C-D24**); Phase D (wire-contract types in `@throughline/shared` + backend lifecycle locks, **T-D59**). This pass swept cross-doc drift: stale T-D index count (57→59 in `CODE_SPEC.md §1`), kill-switch wording in `SESSION_START.md`, the ROADMAP-backfill checklist example, and **corrected a compaction-inherited false claim that `SESSION_START.md` was absent** — the file is present at the repo root and authoritative (root cause now codified in `AUTO_CONTINUE_WORKFLOW.md` § Pre-Flight State Verification). `AUTO_CONTINUE_WORKFLOW.md` absorbed the arc's process findings (doc-PR collision and merge-on-green polling landed earlier via PR #76; this pass added pre-flight state verification, the poll-driven-not-subscription-driven directive, and the explicit one-PR-per-slice canonical rhythm). PR #76's missing handover was backfilled. **Next:** no chain in flight; the next phase/cohort opens a fresh cycle and rolls the Locked Decisions table on its first anchor.
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix **Phase C+D** chain **complete** (chain `audit-fix-phase-c-d`, closed across #76/#77/#78/#79/#80 + D-3 this PR). Phases A–D all done.
-**Status:** Audit-fix cohort (A–D) `feature-complete` end-to-end. Phases 19–22 build cohort `production-ready`.
-**Next concrete action:** Cohort-level heavy hardener for the audit-fix cohort (A–D) → `production-ready` promotion (stale anchor counts, ROADMAP backfill, vocabulary audit, SESSION_START gap — the file is currently absent — SPEC §14 audit, build-prerequisite stress test). Separate pass per `AUTHORING_DISCIPLINE.md`; no chain in flight.
+**Phase:** Audit-fix cohort (A–D) **complete and `production-ready`** — heavy hardener pass (this PR). Phases 19–22 build cohort remains `production-ready`.
+**Status:** All audit-fix phases done and promoted. No chain in flight.
+**Next concrete action:** Spec author opens the next phase/cohort. The Locked Decisions This Cycle table holds the audit-fix anchors until that cohort mints its first T-D / C-D anchor, then rolls per the Update Protocol.
 
 ---
 
 ## Locked Decisions This Cycle
 
-The audit-fix cohort (Phases A → D) accumulates its anchors here. C-D22 (Phase A) reset the cycle off the now-`production-ready` Phases 19–22 entries (T-D49…T-D57, C-D19…C-D21; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and `git log`); T-D58 (Phase B slice 1) is appended. One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. The table rolls when the audit-fix cohort closes and a successor cohort mints its first anchor.
+The audit-fix cohort (Phases A → D), now **`production-ready`**, holds its anchors here. C-D22 (Phase A) reset the cycle off the now-`production-ready` Phases 19–22 entries (T-D49…T-D57, C-D19…C-D21; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and `git log`). One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. Per the Update Protocol "Cycle reset" rule the table does **not** roll in the hardener pass; it rolls only when a successor cohort mints its first T-D / C-D anchor.
 
 | Anchor | Phase | One-line |
 |---|---|---|
@@ -37,7 +37,7 @@ The audit-fix cohort (Phases A → D) accumulates its anchors here. C-D22 (Phase
 ## Queued Work
 
 - **Branch-protection required-check — DONE.** The `gate` workflow (`.github/workflows/ci.yml`) is now a required status check on `main`; it gated PR #76 (`mergeable_state: blocked` until `gate` + Gitar passed, then `clean`). The local `pnpm -r typecheck && pnpm -r test && pnpm -r lint && pnpm -r build` pass remains the chain runner's pre-PR check, but CI is now the enforcing gate at merge.
-- **`throughline:pause` label — formally accepted-and-stop-surfacing** (this hardener pass). The slot was open for five consecutive PLATFORM_STATUS rolls. Across Phases 19/20/21/22 the cohort ran end-to-end clean on the two canonical fallback signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments). Per the PR #43 Session-1-handover-gap adjudication precedent, this hardener pass demoted `throughline:pause` in `AUTO_CONTINUE_WORKFLOW.md` to optional/future rather than carrying the gap forward to a sixth pass. The label remains a valid third signal if the spec author later creates it; no further Queued Work entry until then. Recorded for posterity, not as work to do.
+- **`throughline:pause` label — formally accepted-and-stop-surfacing** (settled in the 2026-05-28 Phases 19–22 hardener; see `AUTO_CONTINUE_WORKFLOW.md` § Kill Switch). Across Phases 19/20/21/22 the cohort ran end-to-end clean on the two canonical fallback signals (marker file at `.claude-code/auto-continue-pause`, `/pause` PR/issue comments). Per the PR #43 Session-1-handover-gap adjudication precedent, that pass demoted `throughline:pause` to optional/future. The label remains a valid third signal if the spec author later creates it; no further Queued Work entry until then. Recorded for posterity, not as work to do.
 
 ---
 
@@ -58,13 +58,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase D / Slice 3 — backend lifecycle locks: S4-01 dismissal idempotency, S7-01 shutdown ordering, F1-01 lock (chain close) | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
+| _this PR_ | Cohort-level heavy hardener — audit-fix A–D → `production-ready` (cross-doc drift sweep, workflow-finding absorption, PR #76 handover backfill) | `handovers/2026-05-30-cohort-hardener-audit-fix-a-d.md` |
+| #81 | Phase D / Slice 3 — backend lifecycle locks: S4-01 dismissal idempotency, S7-01 shutdown ordering, F1-01 lock (chain close) | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
 | #80 | Phase D / Slice 2 — backend data-integrity locks: S2-01 ReDoS bypass, SF2-01 scanner-throw, S5-01 dump-zone atomicity | `handovers/2026-05-30-phase-d-slice-2-data-integrity-locks.md` |
 | #79 | Phase D / Slice 1 — wire-contract types → `@throughline/shared` + contract test (mints T-D59, closes Gap 2) | `handovers/2026-05-30-phase-d-slice-1-wire-contract.md` |
 | #78 | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
-| #77 | Phase C / Slice 1 — `useResource` / `usePolledResource` hook pair + 3 proof adopters (mints C-D24) | `handovers/2026-05-30-phase-c-slice-1-useresource.md` |
 
-(PRs #76/#74/#73/#72 roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PR #77 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
 
 ---
 

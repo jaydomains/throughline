@@ -87,7 +87,7 @@ Runs in every slice's post-work close. Output is `feature-complete` status for t
 Runs after a coherent cohort closes (phase complete, multi-session stream complete, multi-slice workstream complete). Output is `production-ready` status for everything in the cohort. Scope: cross-slice, cross-cohort, cross-doc drift.
 
 - [ ] Stale anchor counts in narrative prose refreshed (`CODE_SPEC.md §1` "canonical at N" — verify against live `DECISIONS.md` total)
-- [ ] `ROADMAP.md` phase backfill — every phase complete on disk and in `CHECKLIST.md` has a corresponding ROADMAP prose section (Phases 17 and 18 are the current outstanding examples)
+- [ ] `ROADMAP.md` phase backfill — every phase complete on disk and in `CHECKLIST.md` has a corresponding ROADMAP prose section (Phases 17 and 18, formerly the outstanding examples, now both carry sections; cross-cutting workstreams that are not ROADMAP phases — e.g. the audit-fix cohort — are tracked in `PLATFORM_STATUS.md`, not backfilled into ROADMAP)
 - [ ] Vocabulary drift audit across the cohort's docs — terms introduced mid-cohort applied consistently; terms quietly dropped removed; aliases collapsed
 - [ ] Forward-pointer resolution audit — every `WN-*` working note's trailing sentence either resolves to a real anchor or is explicitly carried forward as a known unresolved question
 - [ ] Handover-chain completeness — every merged PR in the cohort has a handover, or the absence is explicitly explained (Session 1 / PR #32 is the current known absence to either backfill or accept)
