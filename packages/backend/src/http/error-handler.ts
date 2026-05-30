@@ -19,9 +19,12 @@ export function registerErrorHandler(app: FastifyInstance): void {
     }
     const statusCode = typeof err.statusCode === 'number' ? err.statusCode : 500;
     if (statusCode >= 500) req.log.error(err);
+    // Never leak a raw 5xx message to the client — generic Errors can carry internal
+    // detail (DB schema, file paths, upstream API bodies). The full error is logged
+    // server-side above. 4xx messages are user-actionable and authored, so kept.
     const body: ErrorResponse = {
       error: statusCode >= 500 ? 'internal_error' : 'bad_request',
-      message: err.message,
+      message: statusCode >= 500 ? 'An internal error occurred' : err.message,
     };
     return reply.code(statusCode).send(body);
   });
