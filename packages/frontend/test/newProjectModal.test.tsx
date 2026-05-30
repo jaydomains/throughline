@@ -44,7 +44,7 @@ function renderModal(props: {
   const onCreated = props.onCreated ?? vi.fn();
   const bundles = props.bundles ?? [freeform, rich];
   const utils = render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ModalStackProvider>
         <NewProjectModal
           open={props.open}

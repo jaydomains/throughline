@@ -23,7 +23,7 @@ const rich: MethodologySummary = {
 describe('View stubs', () => {
   it('ModulesView redirects when the bundle declares no primary unit', () => {
     render(
-      <MemoryRouter initialEntries={['/projects/p1/modules']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/modules']}>
         <Routes>
           <Route
             path="/projects/:id/modules"
@@ -38,7 +38,7 @@ describe('View stubs', () => {
 
   it('ModulesView renders when the bundle declares a primary unit', () => {
     render(
-      <MemoryRouter initialEntries={['/projects/p1/modules']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/modules']}>
         <Routes>
           <Route
             path="/projects/:id/modules"

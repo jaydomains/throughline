@@ -12,7 +12,7 @@ import { mockApi, resetMockApi } from './fixtures/mockApi.js';
 
 function renderView() {
   return render(
-    <MemoryRouter initialEntries={['/projects/p1/intelligence']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/intelligence']}>
       <Routes>
         <Route path="/projects/:id/intelligence" element={<IntelligenceView />} />
       </Routes>

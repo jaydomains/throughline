@@ -27,7 +27,7 @@ function loadedBundle(opts: { has_primary_unit: boolean; has_gates: boolean }): 
 
 function renderSidebar(bundle: MethodologySummary | undefined) {
   return render(
-    <MemoryRouter initialEntries={['/projects/p1']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1']}>
       <Sidebar activeProjectId="p1" bundle={bundle} />
     </MemoryRouter>,
   );
@@ -63,7 +63,7 @@ describe('Sidebar visibility', () => {
 
   it('renders only the settings link when no project is active', () => {
     render(
-      <MemoryRouter initialEntries={['/projects']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects']}>
         <Sidebar activeProjectId={null} bundle={undefined} />
       </MemoryRouter>,
     );

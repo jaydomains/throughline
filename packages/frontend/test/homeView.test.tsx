@@ -15,7 +15,7 @@ beforeEach(() => resetMockApi());
 
 function renderHome() {
   return render(
-    <MemoryRouter initialEntries={['/projects/p1']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1']}>
       <Routes>
         <Route path="/projects/:id" element={<HomeView />} />
       </Routes>
