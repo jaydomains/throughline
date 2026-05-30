@@ -11,6 +11,7 @@ export interface DirectivesData {
   directives: Directive[];
   byParent: Map<string, Directive[]>;
   countByKind: Record<DirectiveKind, number>;
+  error: Error | null;
   refresh: () => Promise<void>;
 }
 
@@ -20,17 +21,22 @@ function parentKey(parentType: DirectiveParentType, parentId: string): string {
 
 export function useDirectives(projectId: string | null): DirectivesData {
   const [directives, setDirectives] = useState<Directive[]>([]);
+  const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     if (!projectId) {
       setDirectives([]);
+      setError(null);
       return;
     }
     try {
       const r = await api.listDirectives(projectId);
       setDirectives(r.directives);
-    } catch {
-      setDirectives([]);
+      setError(null);
+    } catch (e: unknown) {
+      // Keep the last-known directives rather than blanking the sidebar; surface the
+      // error so a consumer can show it (SF6 — was a silent catch that reset to []).
+      setError(e instanceof Error ? e : new Error(String(e)));
     }
   }, [projectId]);
 
@@ -59,7 +65,7 @@ export function useDirectives(projectId: string | null): DirectivesData {
     return out;
   }, [directives]);
 
-  return { directives, byParent, countByKind, refresh };
+  return { directives, byParent, countByKind, error, refresh };
 }
 
 export function directivesFor(

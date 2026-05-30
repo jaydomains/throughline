@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import { useSessions } from '../hooks/useSessions.js';
+import { LoadError } from '../components/LoadError.js';
 
 export function SessionsIndex() {
   const { id } = useParams();
   const projectId = id ?? null;
   const navigate = useNavigate();
-  const { sessions, refresh } = useSessions(projectId);
+  const { sessions, refresh, error: loadError } = useSessions(projectId);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +53,11 @@ export function SessionsIndex() {
         </button>
       </form>
       {error && <p className="error">{error}</p>}
+      <LoadError error={loadError} what="sessions" />
       <ul className="session-list">
-        {sessions.length === 0 && <li className="empty">No sessions yet. Create one above.</li>}
+        {sessions.length === 0 && !loadError && (
+          <li className="empty">No sessions yet. Create one above.</li>
+        )}
         {sessions.map((s) => (
           <li key={s.id}>
             <Link to={`/projects/${projectId}/sessions/${s.id}`}>{s.name}</Link>

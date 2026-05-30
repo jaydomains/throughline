@@ -19,6 +19,7 @@ import { AttachItemModal } from '../components/AttachItemModal.js';
 import { DirectiveModal } from '../components/DirectiveModal.js';
 import { DirectiveBadge } from '../components/DirectiveBadge.js';
 import { MdFolderManager } from '../components/MdFolderManager.js';
+import { LoadError } from '../components/LoadError.js';
 
 const TYPE_LABEL: Record<LibraryEntryType, string> = {
   note: 'Notes',
@@ -41,6 +42,7 @@ export function LibraryView() {
   const { sessions } = useSessions(projectId ?? null);
 
   const [entries, setEntries] = useState<LibraryEntry[]>([]);
+  const [loadError, setLoadError] = useState<Error | null>(null);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
   const [scope, setScope] = useState<'project' | 'global'>('project');
   const [searchQuery, setSearchQuery] = useState('');
@@ -65,8 +67,15 @@ export function LibraryView() {
     if (!projectId) return;
     const opts: { type?: LibraryEntryType; scope?: 'project' | 'global' } = { scope };
     if (typeFilter !== 'all') opts.type = typeFilter;
-    const r = await api.listLibrary(projectId, opts);
-    setEntries(r.entries);
+    // SF6 — was a bare `await` whose rejection escaped to the error boundary, blanking
+    // the whole Library view instead of showing an inline error.
+    try {
+      const r = await api.listLibrary(projectId, opts);
+      setEntries(r.entries);
+      setLoadError(null);
+    } catch (e: unknown) {
+      setLoadError(e instanceof Error ? e : new Error(String(e)));
+    }
   }, [projectId, typeFilter, scope]);
 
   useEffect(() => {
@@ -196,6 +205,7 @@ export function LibraryView() {
           </span>
         )}
       </header>
+      <LoadError error={loadError} what="library" />
       <DumpZone
         projectId={projectId}
         target="library"

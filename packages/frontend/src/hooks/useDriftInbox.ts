@@ -15,19 +15,25 @@ const EMPTY: DriftInboxResult = {
 
 export function useDriftInbox(projectId: string | null): {
   inbox: DriftInboxResult;
+  error: Error | null;
   refresh: () => Promise<void>;
 } {
   const [inbox, setInbox] = useState<DriftInboxResult>(EMPTY);
+  const [error, setError] = useState<Error | null>(null);
 
   const refresh = useCallback(async () => {
     if (!projectId) {
       setInbox(EMPTY);
+      setError(null);
       return;
     }
     try {
       setInbox(await api.getDriftInbox(projectId));
-    } catch {
-      setInbox(EMPTY);
+      setError(null);
+    } catch (e: unknown) {
+      // Surface the error instead of silently collapsing the inbox counter to zero
+      // (SF6 — a failed fetch previously read as "inbox empty").
+      setError(e instanceof Error ? e : new Error(String(e)));
     }
   }, [projectId]);
 
@@ -35,5 +41,5 @@ export function useDriftInbox(projectId: string | null): {
     void refresh();
   }, [refresh]);
 
-  return { inbox, refresh };
+  return { inbox, error, refresh };
 }
