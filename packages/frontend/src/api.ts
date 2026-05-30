@@ -2,6 +2,13 @@ import type {
   ApplyRequest,
   ApplyResult,
   BackupStatus,
+  MethodologySummary,
+  MethodologiesResponse,
+  ItemsResponse,
+  ItemResponse,
+  PolicyResponse,
+  SessionsResponse,
+  SessionResponse,
   CostSummary,
   SecretsPresenceResult,
   SecretsWriteInput,
@@ -36,8 +43,6 @@ import type {
   SessionStartPromptResult,
   InboxQueueEntry,
   InboxStatusSummary,
-  Item,
-  ItemPolicy,
   ModulesResult,
   LibraryEntry,
   LibraryEntryType,
@@ -89,16 +94,10 @@ import type {
   BootstrapState,
 } from '@throughline/shared';
 
-export interface MethodologySummary {
-  status: 'loaded' | 'error';
-  bundle_id: string;
-  identity?: { name: string; version: string; authority_precedence: string[] };
-  errors?: Array<{ bundle_id: string; section?: string; message: string }>;
-  // Phase 2 needs to know whether the bundle declares a primary unit (modules view) and
-  // whether it declares any gates (methodology-gates view) so the toggle can hide them.
-  has_primary_unit?: boolean;
-  has_gates?: boolean;
-}
+// MethodologySummary moved to @throughline/shared (T-D59 — wire-contract types live in
+// shared). Re-exported here so existing `import { MethodologySummary } from '../api.js'`
+// consumers keep working.
+export type { MethodologySummary };
 
 async function jsonFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -129,8 +128,7 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(input),
     }),
-  listMethodologies: () =>
-    jsonFetch<{ methodologies: MethodologySummary[] }>('/api/methodologies'),
+  listMethodologies: () => jsonFetch<MethodologiesResponse>('/api/methodologies'),
   switchProject: (id: string) =>
     jsonFetch<{ ok: true }>(`/api/projects/${pid(id)}/switch`, { method: 'POST' }),
   updateProject: (id: string, input: UpdateProjectInput) =>
@@ -196,15 +194,15 @@ export const api = {
   },
 
   getPolicy: (projectId: string) =>
-    jsonFetch<{ policy: ItemPolicy }>(`/api/projects/${pid(projectId)}/policy`),
+    jsonFetch<PolicyResponse>(`/api/projects/${pid(projectId)}/policy`),
 
   getModules: (projectId: string) =>
     jsonFetch<ModulesResult>(`/api/projects/${pid(projectId)}/modules`),
 
   listSessions: (projectId: string) =>
-    jsonFetch<{ sessions: Session[] }>(`/api/projects/${pid(projectId)}/sessions`),
+    jsonFetch<SessionsResponse>(`/api/projects/${pid(projectId)}/sessions`),
   createSession: (projectId: string, input: Omit<CreateSessionInput, 'project_id'>) =>
-    jsonFetch<{ session: Session }>(`/api/projects/${pid(projectId)}/sessions`, {
+    jsonFetch<SessionResponse>(`/api/projects/${pid(projectId)}/sessions`, {
       method: 'POST',
       body: JSON.stringify(input),
     }),
@@ -229,12 +227,12 @@ export const api = {
     if (opts?.parent_id === null) params.set('parent_id', 'null');
     else if (opts?.parent_id) params.set('parent_id', opts.parent_id);
     const qs = params.toString();
-    return jsonFetch<{ items: Item[] }>(
+    return jsonFetch<ItemsResponse>(
       `/api/projects/${pid(projectId)}/items${qs ? `?${qs}` : ''}`,
     );
   },
   getItem: (projectId: string, itemId: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}`,
     ),
   getItemLinks: (projectId: string, itemId: string) =>
@@ -242,12 +240,12 @@ export const api = {
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/links`,
     ),
   createItem: (projectId: string, input: Omit<CreateItemInput, 'project_id'>) =>
-    jsonFetch<{ item: Item }>(`/api/projects/${pid(projectId)}/items`, {
+    jsonFetch<ItemResponse>(`/api/projects/${pid(projectId)}/items`, {
       method: 'POST',
       body: JSON.stringify(input),
     }),
   updateItem: (projectId: string, itemId: string, input: UpdateItemInput) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}`,
       { method: 'PATCH', body: JSON.stringify(input) },
     ),
@@ -258,32 +256,32 @@ export const api = {
       if (!r.ok) throw new Error(`DELETE item failed: ${r.status}`);
     }),
   addItemTag: (projectId: string, itemId: string, tag: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/tags`,
       { method: 'POST', body: JSON.stringify({ tag }) },
     ),
   removeItemTag: (projectId: string, itemId: string, tag: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/tags/${encodeURIComponent(tag)}`,
       { method: 'DELETE' },
     ),
   addItemBlocker: (projectId: string, itemId: string, blockedById: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/blockers`,
       { method: 'POST', body: JSON.stringify({ blocked_by_item_id: blockedById }) },
     ),
   removeItemBlocker: (projectId: string, itemId: string, blockedById: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/blockers/${encodeURIComponent(blockedById)}`,
       { method: 'DELETE' },
     ),
   addItemSessionMembership: (projectId: string, itemId: string, sessionId: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/sessions/${encodeURIComponent(sessionId)}`,
       { method: 'POST' },
     ),
   removeItemSessionMembership: (projectId: string, itemId: string, sessionId: string) =>
-    jsonFetch<{ item: Item }>(
+    jsonFetch<ItemResponse>(
       `/api/projects/${pid(projectId)}/items/${encodeURIComponent(itemId)}/sessions/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
     ),

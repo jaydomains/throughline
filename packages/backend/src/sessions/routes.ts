@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import type { SessionsResponse, SessionResponse } from '@throughline/shared';
 import type { SessionsService } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
 
@@ -13,7 +14,8 @@ export function registerSessionRoutes(
 
   app.get<{ Params: { id: string } }>('/api/projects/:id/sessions', async (req, reply) => {
     if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-    return { sessions: sessions.list(req.params.id) };
+    const body: SessionsResponse = { sessions: sessions.list(req.params.id) };
+    return body;
   });
 
   app.get<{ Params: { id: string; sessionId: string } }>(
@@ -22,7 +24,8 @@ export function registerSessionRoutes(
       const session = sessions.get(req.params.sessionId);
       if (!session || session.project_id !== req.params.id)
         return reply.code(404).send({ error: 'not_found' });
-      return { session };
+      const body: SessionResponse = { session };
+      return body;
     },
   );
 
@@ -47,7 +50,8 @@ export function registerSessionRoutes(
     if (body.context !== undefined) input.context = body.context;
     if (body.settings !== undefined) input.settings = body.settings;
     const session = sessions.create(input);
-    return reply.code(201).send({ session });
+    const out: SessionResponse = { session };
+    return reply.code(201).send(out);
   });
 
   app.patch<{
@@ -63,7 +67,8 @@ export function registerSessionRoutes(
     if (!existing || existing.project_id !== req.params.id)
       return reply.code(404).send({ error: 'not_found' });
     const session = sessions.update(req.params.sessionId, req.body ?? {});
-    return { session };
+    const body: SessionResponse = { session };
+    return body;
   });
 
   app.delete<{ Params: { id: string; sessionId: string } }>(

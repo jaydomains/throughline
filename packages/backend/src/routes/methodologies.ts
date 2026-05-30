@@ -1,8 +1,9 @@
 import type { FastifyInstance } from 'fastify';
+import type { MethodologiesResponse } from '@throughline/shared';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 
 export function registerMethodologyRoutes(app: FastifyInstance, registry: MethodologyRegistry): void {
-  app.get('/api/methodologies', async () => {
+  app.get('/api/methodologies', async (): Promise<MethodologiesResponse> => {
     return {
       methodologies: registry.list().map((result) => {
         if (result.status === 'loaded') {

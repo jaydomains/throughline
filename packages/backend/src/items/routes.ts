@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import type { ItemsResponse, ItemResponse, PolicyResponse } from '@throughline/shared';
 import {
   type ItemsService,
 } from './service.js';
@@ -22,12 +23,14 @@ export function registerItemRoutes(
     const filter: Parameters<ItemsService['list']>[0] = { project_id: req.params.id };
     if (session_id !== undefined) filter.session_id = session_id;
     if (parent_id !== undefined) filter.parent_id = parent_id === 'null' ? null : parent_id;
-    return { items: items.list(filter) };
+    const body: ItemsResponse = { items: items.list(filter) };
+    return body;
   });
 
   app.get<{ Params: { id: string } }>('/api/projects/:id/policy', async (req, reply) => {
     if (!requireProject(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-    return { policy: items.policy(req.params.id) };
+    const body: PolicyResponse = { policy: items.policy(req.params.id) };
+    return body;
   });
 
   app.get<{ Params: { id: string } }>('/api/projects/:id/modules', async (req, reply) => {
@@ -40,7 +43,8 @@ export function registerItemRoutes(
     async (req, reply) => {
       const item = items.get(req.params.itemId);
       if (!item || item.project_id !== req.params.id) return reply.code(404).send({ error: 'not_found' });
-      return { item };
+      const body: ItemResponse = { item };
+      return body;
     },
   );
 

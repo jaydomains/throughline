@@ -22,3 +22,4 @@ export * from './intelligence.js';
 export * from './backup.js';
 export * from './cost.js';
 export * from './secrets.js';
+export * from './wire.js';
