@@ -693,6 +693,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D56 | Claude Code invocation contract: user-driven invocation, Throughline watches `.throughline/bootstrap-output.json` via chokidar; subprocess-spawning explicitly deferred | 7.28 |
 | T-D57 | Discipline-drift scanners do not auto-run on bind for projects imported via bootstrap; SettingsView gains a "Run discipline scan" trigger; periodic-review scheduling is gated on the first user-invoked scan; non-bootstrapped projects keep current on-bind behaviour | 7.14 |
 | T-D58 | Shared domain-error hierarchy in `@throughline/shared`: domain errors carry their canonical HTTP `statusCode` + stable `code`; a central handler maps them and routes never re-decide status (closes the per-module duplication and the SF6-09 status drift) | 3 |
+| T-D59 | Wire-contract response types live in `@throughline/shared` (`wire.ts`): backend handlers annotate their payload against the shared envelope, the frontend `jsonFetch` targets it, and a wire-contract test asserts the running backend emits the shape — the client/server contract is verified (compile time + runtime), not cast with `as T` (closes green-gate Gap 2) | 3 |
 
 ---
 

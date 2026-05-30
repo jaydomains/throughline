@@ -1309,6 +1309,31 @@ The backend had accreted 17 identical `ProjectNotFoundError` definitions, 5 `Ite
 
 ---
 
+## T-D59 — Wire-contract response types live in `@throughline/shared`; the client/server contract is verified, not cast
+
+- **Date:** 2026-05-30
+- **Status:** active — audit-fix Phase D (slice D-1 mints this and closes the green-gate Gap 2)
+- **Sections affected:** 3, 14
+
+### Decision
+HTTP response shapes are declared once in `@throughline/shared` (`packages/shared/src/wire.ts`) as named envelope types — `MethodologiesResponse`, `ItemsResponse`, `ItemResponse`, `PolicyResponse`, `SessionsResponse`, `SessionResponse`, … — rather than re-declared frontend-local or written inline at each `jsonFetch` call site. The backend route handlers annotate their success payload against the shared type (so `tsc` fails if a handler stops producing the declared shape), the frontend `jsonFetch<T>` targets the same shared type, and a wire-contract test (`packages/backend/test/wire-contract.test.ts`) injects each endpoint and asserts the running backend emits the declared shape. The contract is thus verified at compile time on both sides and at runtime by the test — not trusted via an unvalidated `as T` cast at the fetch boundary.
+
+### Context
+Audit-1 finding I1 (the green-gate reckoning, `AUTHORING_DISCIPLINE.md`) named two gaps between what the gate runs and what it verifies. Gap 1 (backend `test/**` excluded from typecheck) closed in Phase A. Gap 2: response shapes were partly frontend-local (the `MethodologySummary` interface lived in `packages/frontend/src/api.ts`) and `jsonFetch<T>(…) as T` cast the payload unchecked — `typecheck` proved the frontend was self-consistent with its *assumptions* about the wire, not that those assumptions matched what the backend sent. Phase B slice 3 moved the error-response type (`ErrorResponse`) to shared as partial progress; this anchor completes the success path.
+
+### Rationale
+- **One definition per endpoint.** Both sides import the same type, so a backend shape change is a compile error on the backend and a type mismatch on the frontend — not a silent runtime surprise.
+- **The test closes the runtime half.** Compile-time agreement only proves the two sides agree with *each other's types*; the wire-contract test proves the backend's actual JSON matches, which is what the `as T` cast had been assuming for free.
+- **Bounded surface, extensible pattern.** D-1 moves the one frontend-local named type (`MethodologySummary`) and the core entity-read envelopes (the endpoints the Phase C data hooks consume); new endpoints follow the same shared-envelope + annotated-handler + contract-test pattern.
+
+### Implications
+- New response shapes are named types in `packages/shared/src/wire.ts`; backend handlers annotate their success payload against them (via a typed local `const` where the handler also returns a `reply.code(...).send(...)` error branch), and the frontend `jsonFetch` targets them.
+- `jsonFetch<T>` still performs a structural cast, but `T` is now a shared, test-verified contract — the cast is checked by the wire-contract test rather than taken on faith.
+- The wire-contract test is extended whenever a new endpoint's envelope is added to `wire.ts`; a backend shape drift fails the test instead of reaching the client.
+- Closes `AUTHORING_DISCIPLINE.md` green-gate **Gap 2**; with Gap 1 (Phase A) already closed, the gate's coverage now matches what its four-command shape implies (at compile time + via the contract test, not runtime omniscience over every payload).
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).
