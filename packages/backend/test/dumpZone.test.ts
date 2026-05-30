@@ -111,6 +111,51 @@ describe('dump zone service', () => {
     }
   });
 
+  it('apply is atomic — a mid-apply failure rolls back partial creates and leaves the proposal pending (S5-01)', async () => {
+    const { backend, dumpZone, items, project, session } = await setup();
+    try {
+      const proposal = await dumpZone.propose({
+        project_id: project.id,
+        text: 'first valid\n\nsecond bad',
+        target: 'session',
+        source: 'paste',
+        session_id: session.id,
+      });
+      expect(proposal.payload.items).toHaveLength(2);
+
+      // Corrupt the SECOND item's type so items.create rejects it (the bundle policy is
+      // the contract) — but only after the first, valid item has already been created
+      // inside the apply loop. Pre-fix, that first item persisted while the proposal
+      // stayed 'pending', so a retry duplicated it.
+      const broken = {
+        ...proposal.payload,
+        items: proposal.payload.items.map((i, idx) => ({
+          ...i,
+          target_session_id: session.id,
+          ...(idx === 1 ? { type: 'not-a-real-type' } : {}),
+        })),
+      };
+      expect(() => dumpZone.apply({ proposal_id: proposal.id, payload: broken })).toThrow();
+
+      // The whole apply rolled back: no orphan item, and the proposal is still pending
+      // (retryable, not stuck half-applied).
+      expect(items.list({ project_id: project.id })).toHaveLength(0);
+      expect(dumpZone.get(proposal.id)?.status).toBe('pending');
+
+      // Retrying with a valid payload creates exactly the two items — no duplicate from
+      // the rolled-back first attempt.
+      const fixed = {
+        ...proposal.payload,
+        items: proposal.payload.items.map((i) => ({ ...i, target_session_id: session.id })),
+      };
+      const result = dumpZone.apply({ proposal_id: proposal.id, payload: fixed });
+      expect(result.applied_item_ids).toHaveLength(2);
+      expect(items.list({ project_id: project.id })).toHaveLength(2);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('apply with discard decisions skips those rows', async () => {
     const { backend, dumpZone, project } = await setup();
     try {

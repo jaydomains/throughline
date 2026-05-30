@@ -175,29 +175,39 @@ function regexScan(
   return out;
 }
 
+// A scan either succeeds (with a possibly-empty finding set) or errors. The distinction
+// is load-bearing (SF2-01): an empty success means "the repo reproduces no findings for
+// this category" and the engine reconciles open signals away, whereas an error means
+// "we could not determine the current state" and the engine must NOT dismiss anything —
+// a transient read error otherwise reads as a clean repo and wipes real open signals.
+export type DisciplineScanResult =
+  | { ok: true; findings: ScanFinding[] }
+  | { ok: false; error: Error };
+
 export function runDisciplineScan(
   db: DB,
   projectId: string,
   repoPath: string,
   bundle: LoadedBundle,
   category: DisciplineDriftCategory,
-): ScanFinding[] {
+): DisciplineScanResult {
   try {
     switch (category.check_kind) {
       case 'banned_string':
-        return bannedStringScan(repoPath, bundle);
+        return { ok: true, findings: bannedStringScan(repoPath, bundle) };
       case 'structural':
-        return structuralScan(repoPath, bundle);
+        return { ok: true, findings: structuralScan(repoPath, bundle) };
       case 'cross_reference':
-        return crossReferenceScan(db, projectId, repoPath, bundle);
+        return { ok: true, findings: crossReferenceScan(db, projectId, repoPath, bundle) };
       case 'regex':
-        return regexScan(repoPath, bundle, category);
+        return { ok: true, findings: regexScan(repoPath, bundle, category) };
       default:
-        return [];
+        return { ok: true, findings: [] };
     }
-  } catch {
-    // A scanner error is never a repo block (T-D44 spirit) — treat as "no findings"
-    // for this pass; the next file change / re-scan retries.
-    return [];
+  } catch (err) {
+    // A scanner error is never a repo block (T-D44 spirit) — but it is also NOT "no
+    // findings". Surface it as an error so the engine preserves existing signals for this
+    // category instead of dismissing them; the next file change / re-scan retries.
+    return { ok: false, error: err instanceof Error ? err : new Error(String(err)) };
   }
 }

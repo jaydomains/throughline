@@ -15,12 +15,19 @@ export function escapeRegExp(s: string): string {
 }
 
 // True when a sub-expression inside a quantified group is itself unbounded/ambiguous
-// (the core of exponential backtracking): an inner `*`/`+`/`{…}` quantifier or a
-// top-level `|` alternation. Respects `\` escapes and `[...]` character classes so
-// literals don't trip it.
+// (the core of exponential backtracking): an inner `*`/`+`/`{…}` quantifier or a `|`
+// alternation at any nesting depth. Respects `\` escapes and `[...]` character classes
+// so literals don't trip it.
+//
+// The alternation check is depth-agnostic on purpose (S2-01 regression). A previous
+// version only flagged a *top-level* `|`, so wrapping the overlapping alternation in an
+// extra group hid it — `((a|a))+` slipped through and ran exponentially (a confirmed
+// ~106s ReDoS), because the outer `+` repeats while the nested `(a|a)` supplies the
+// ambiguity. A `|` anywhere inside a quantified body is treated as ambiguous; that is
+// consistent with the detector already refusing every top-level alternation (e.g.
+// `(a|aa)+`), and over-refusal is the safe failure mode (the caller skips the pattern).
 function bodyIsAmbiguous(body: string): boolean {
   let inClass = false;
-  let groupDepth = 0;
   for (let i = 0; i < body.length; i++) {
     const ch = body[i];
     if (ch === '\\') {
@@ -35,15 +42,7 @@ function bodyIsAmbiguous(body: string): boolean {
       inClass = true;
       continue;
     }
-    if (ch === '(') {
-      groupDepth++;
-      continue;
-    }
-    if (ch === ')') {
-      if (groupDepth > 0) groupDepth--;
-      continue;
-    }
-    if (ch === '|' && groupDepth === 0) return true;
+    if (ch === '|') return true;
     if (ch === '*' || ch === '+' || ch === '{') return true;
   }
   return false;
