@@ -20,6 +20,27 @@
 > **Rev 2 (post Session-2 audit):** seven findings + a severity note incorporated (SF6-09→E14;
 > audit-4 Lows named; audit-3 code-fix split out; E7/E9 pre-split; E15 re-scoped; provenance fixed;
 > independence softened). See git history for detail.
+>
+> **Rev 3.1 (coverage-gate fix):** restored **F7-04** (dropped again in the rev-3 E16→E20 rework —
+> its *third* drop across the run: dropped rev-2, restored `eb60198`, dropped rev-3) and **F7-05**
+> (first dropped in rev-3). **Meta-finding (durable):** three F7-04 drops across two revisions is a
+> *mechanical pattern, not isolated mistakes* — "remember to preserve coverage" loses to "reshuffle
+> for clarity" under revision pressure. **Process control adopted (see Revision Discipline below):**
+> every revision now runs an audit-ID set-diff gate before commit. Running it on rev-2→rev-3
+> confirmed F7-04/F7-05 as the only true drops (the SF6-10/11/12, I2–I9, I4-B0x, I6-0x set-diff hits
+> are notation-compression false positives — still covered by range notation).
+
+## Revision discipline — audit-ID set-diff gate (mandatory before every commit)
+
+Coverage drops under revision are this artifact's demonstrated failure mode (F7-04 dropped three
+times). Before committing any revision N, run a mechanical set-diff against revision N-1:
+
+1. Extract all `F#-##`, `S#-##`, `SF#-##`, `W#`, `I#`/`I#-##` IDs from both revisions (de-duplicated).
+2. Set-diff N-1 vs N. For every dropped ID, classify: **intentional** (record the rationale and where
+   it moved) or **accidental** (re-add with the minimal pattern, as for F7-04/F7-05 here).
+3. Account for false positives from range/compression notation (e.g. `SF6-08/10/11/12`, `I2–I9`)
+   before declaring a true drop.
+4. Only commit once every dropped ID is explained. The gate is cheap; the silent coverage hole is not.
 
 ## Context — why this chain exists
 
@@ -277,8 +298,8 @@ Flagged for transparency; the spec author owns the envelope.
   - **F7-06** §7.24 full command-palette surface → mark the unbuilt targets/actions descoped (keep the shipped subset).
   - **F7-07** §7.24 list keyboard nav → mark descoped.
 - **Schedules — Phase G (or later) register (OQ6):** F5-01 (tree grouping: remaining 3 of 5 dimensions), F5-03 (item-detail verifier-rules + git-context sections), F7-02 (§7.21 mermaid generation).
-- **Decisions surfaced (spec silent / value judgment):** **F6-02** (tier-1 match: ratify path-stem-as-spec vs accept message-substring), **F1-02** (re-init audit: single `project_reinit` row vs per-field — needs a spec call on the intended semantic).
-- **Residual audit-3 minors, tagged (non-blocking micro-triage):** F1-04 (`/health` vs `/api/health` — spec-staleness doc-fix), F1-05/F1-06 (`InitConfigError` union / `cli/init` structure — minor), F2-01 (validator silently ignores excluded fields — validation-semantic decision), F2-02 (`merge_fields` — already v1-carved-out), F3-01 (scan-on-demand gate layer — spec-delta decision), F3-02 (no on-bind scan trigger — missing-feature decision), F4-02 (gate concurrency/ordering unimpl — decision), F4-03 (C-D4 illustrative stubs — decision), F5-05 (undeclared "Intelligence" 10th view — accept-or-document).
+- **Decisions surfaced (spec silent / value judgment):** **F6-02** (tier-1 match: ratify path-stem-as-spec vs accept message-substring), **F1-02** (re-init audit: single `project_reinit` row vs per-field — needs a spec call on the intended semantic), **F7-04** (§7.22 audit log declared "searchable by time range, actor, or trigger type"; `/api/audit` accepts only `entity_type`/`entity_id`/`project_id`/`limit` — build the three filters vs descope the §7.22 claim).
+- **Residual audit-3 minors, tagged (non-blocking micro-triage):** F1-04 (`/health` vs `/api/health` — spec-staleness doc-fix), F1-05/F1-06 (`InitConfigError` union / `cli/init` structure — minor), F2-01 (validator silently ignores excluded fields — validation-semantic decision), F2-02 (`merge_fields` — already v1-carved-out), F3-01 (scan-on-demand gate layer — spec-delta decision), F3-02 (no on-bind scan trigger — missing-feature decision), F4-02 (gate concurrency/ordering unimpl — decision), F4-03 (C-D4 illustrative stubs — decision), F5-05 (undeclared "Intelligence" 10th view — accept-or-document), F7-05 (voice capture is click-toggle not hold-to-talk; no overlay destination toggle — incomplete-feature decision).
 - **Accepted-advisories note:** fastify advisory accepted (OQ6); fastify v5 migration is a future phase. **W3** (CI required status check) is **owner-handled directly**, out of plan scope (noted for the record).
 - **Files:** `SPEC.md` (descope marks), this plan's registers / handover. **Tests:** none.
 
