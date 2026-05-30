@@ -555,9 +555,11 @@ their consumers.
 - **Genuine product decisions surfaced (NOT decided):** F5-01 (tree grouping 2 of 5 dimensions),
   F5-02 (tree drag-drop-retag absent), F5-03 (item-detail verifier-rules + git-context placeholder),
   F7-01\* (§7.20 multi-list + AI consolidation export unbuilt), F7-02\* (§7.21 mermaid unbuilt),
-  F7-03 (semantic-search permanent stub), F7-06\* (§7.24 command palette fraction), F7-07 (list
-  keyboard nav unbound), F4-01 (session-start omits 2 of 7 inputs), F5-04 (dump-zone no primary-unit
-  re-route).
+  F7-03 (semantic-search permanent stub), F7-04 (audit log missing the §7.22 time-range / actor /
+  trigger-type filters; `/api/audit` accepts only `entity_type`/`entity_id`/`project_id`/`limit` —
+  build the three filters vs descope the §7.22 claim), F7-06\* (§7.24 command palette fraction),
+  F7-07 (list keyboard nav unbound), F4-01 (session-start omits 2 of 7 inputs), F5-04 (dump-zone no
+  primary-unit re-route).
 - **Residual decisions routed in (rev 2):** **fastify v4→v5 migration** (W1 residual from E15 —
   accept-advisory vs fund-migration), **W3** (make CI a required status check — a GitHub
   branch-protection change, not code).
