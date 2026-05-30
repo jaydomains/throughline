@@ -47,7 +47,9 @@ function stubProjectsList(projects: Project[]): ProjectsService {
   } as unknown as ProjectsService;
 }
 
-function makeProject(overrides: Partial<Project> & { id: string; repo_path: string | null }): Project {
+function makeProject(
+  overrides: Omit<Partial<Project>, 'repo_path'> & { id: string; repo_path: string | null },
+): Project {
   return {
     id: overrides.id,
     name: overrides.name ?? `project-${overrides.id}`,

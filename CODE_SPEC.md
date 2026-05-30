@@ -602,6 +602,43 @@ Six surfaces is the minimum that delivers a bootstrap-producer cycle end-to-end 
 
 ---
 
+## C-D22 — Source-vs-built export resolution for TS-source workspace packages
+
+- **Status:** active (implementation-only)
+- **Cites:** — (monorepo build hygiene; no governing T-D)
+
+### Decision
+Workspace packages that ship TypeScript source (`@throughline/shared`) declare a dual-condition `exports` map so the built `dist/` is runnable under plain `node`, while every development / typecheck / test / bundle path continues to resolve source directly with no build prerequisite for the dev loop:
+
+```jsonc
+// packages/shared/package.json
+"main": "./dist/index.js",
+"types": "./dist/index.d.ts",
+"exports": {
+  ".": {
+    "types": "./src/index.ts",
+    "development": "./src/index.ts",
+    "default": "./dist/index.js"
+  }
+}
+```
+
+Resolution outcomes:
+- `tsc` (NodeNext and Bundler) picks `types` → source; typecheck needs no prior build.
+- Vite (serve) and Vitest set the `development` condition → source.
+- Vite production build and plain `node dist/index.js` fall through to `default` → built `dist/`.
+- `tsx` (backend `dev` / `start`) shares Node's `node` / `import` / `default` conditions, so it would otherwise resolve `default` → `dist`; the backend `dev` / `start` scripts pass `--conditions=development` to keep tsx on source. If a future tsx release stops honouring `--conditions`, the fallback is to build shared in a `predev` step.
+
+### Rationale
+Before this, `main` / `types` / `exports` all pointed at `./src/index.ts`. Every run path used `tsx`, so the breakage was latent — but `tsc` emitted a `dist/` nothing consumed, and `node dist/index.js` could not import the package (the `.js`→`.ts` mapping fails under plain Node). The dual-condition map fixes the misleading artifact and gives `dist/` a real consumer (the node runtime path) without forcing a build into the zero-build dev loop. Keying the split on the standard `development` condition (honoured by Vite/Vitest out of the box) rather than a bespoke condition keeps it composing with the existing toolchain.
+
+### Implications
+- Any future workspace package that ships TS source and is expected to be node-runnable from its build output adopts this same three-key (`types` / `development` / `default`) shape.
+- Consumers that bypass `exports` (legacy tooling reading `main` / `types`) resolve `dist`, which exists after the package's `tsc` build — the base tsconfig sets `declaration: true`, emitting `dist/index.d.ts`.
+- The root `build` script already builds `@throughline/shared` before the frontend/backend builds, so the `default`→`dist` path is satisfied by build ordering; no new build step is introduced.
+
+---
+
 ## 1. Process model
 
 ```

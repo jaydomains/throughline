@@ -22,7 +22,7 @@ import type { Item } from '@throughline/shared';
 function renderGraph() {
   return render(
     <ModalStackProvider>
-      <MemoryRouter initialEntries={['/projects/p1/graph']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/graph']}>
         <Routes>
           <Route path="/projects/:id/graph" element={<GraphView />} />
         </Routes>

@@ -34,7 +34,7 @@ describe('CommandPalette', () => {
   it('renders project entries and fuzzy-filters by query', async () => {
     const user = userEvent.setup();
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ModalStackProvider>
           <CommandPalette
             open
@@ -57,7 +57,7 @@ describe('CommandPalette', () => {
 
   it('lists active project view modes filtered by bundle visibility', () => {
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ModalStackProvider>
           <CommandPalette
             open
@@ -80,7 +80,7 @@ describe('CommandPalette', () => {
   it('closes via onClose when backdrop is clicked', () => {
     const onClose = vi.fn();
     render(
-      <MemoryRouter>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <ModalStackProvider>
           <CommandPalette
             open

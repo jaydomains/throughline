@@ -103,7 +103,7 @@ describe('Phase 10 — drift inbox (T-D21)', () => {
       discipline_count: 1,
     });
     render(
-      <MemoryRouter initialEntries={['/projects/p1/drift-inbox']}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/drift-inbox']}>
         <Routes>
           <Route path="/projects/:id/drift-inbox" element={<DriftInbox />} />
         </Routes>

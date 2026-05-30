@@ -12,7 +12,7 @@ import { mockApi, resetMockApi } from './fixtures/mockApi.js';
 
 function renderView() {
   return render(
-    <MemoryRouter initialEntries={['/settings']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/settings']}>
       <Routes>
         <Route path="/settings" element={<SettingsView />} />
       </Routes>

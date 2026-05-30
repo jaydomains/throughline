@@ -13,7 +13,7 @@ import { mockApi, resetMockApi } from './fixtures/mockApi.js';
 
 function mount(onChanged = vi.fn()) {
   return render(
-    <MemoryRouter>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <ModalStackProvider>
         <ProjectsView bundles={[]} onCreated={() => {}} onChanged={onChanged} />
       </ModalStackProvider>

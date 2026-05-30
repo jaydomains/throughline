@@ -25,7 +25,7 @@ beforeEach(() => {
 function renderLibrary(projectId = 'p1') {
   return render(
     <ModalStackProvider>
-      <MemoryRouter initialEntries={[`/projects/${projectId}/library`]}>
+      <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={[`/projects/${projectId}/library`]}>
         <Routes>
           <Route path="/projects/:id/library" element={<LibraryView />} />
         </Routes>

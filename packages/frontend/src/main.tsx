@@ -13,7 +13,7 @@ if (!rootEl) throw new Error('no #root element');
 function mount() {
   createRoot(rootEl as HTMLElement).render(
     <React.StrictMode>
-      <BrowserRouter>
+      <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <App />
       </BrowserRouter>
     </React.StrictMode>,

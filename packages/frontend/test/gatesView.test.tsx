@@ -29,7 +29,7 @@ const freeform: MethodologySummary = {
 
 function renderAt(bundle: MethodologySummary, bundleId: string) {
   return render(
-    <MemoryRouter initialEntries={['/projects/p1/methodology-gates']}>
+    <MemoryRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }} initialEntries={['/projects/p1/methodology-gates']}>
       <Routes>
         <Route
           path="/projects/:id/methodology-gates"
