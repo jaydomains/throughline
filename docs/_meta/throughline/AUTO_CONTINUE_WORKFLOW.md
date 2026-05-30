@@ -128,6 +128,24 @@ The chain rhythm assumes well-sized slices. Mis-sized slices trip the circuit br
 
 ---
 
+## Concurrent Doc-PR Collision
+
+Auto-continue chains rewrite **rolling shared docs** every slice — chiefly `PLATFORM_STATUS.md` (Snapshot / Current Phase / Recent Slice History / Locked Decisions), and `AUTHORING_DISCIPLINE.md` / `SESSION_START.md` when a slice touches them. A doc-only PR left open against one of those files while a chain runs collides: the chain's per-slice rewrites either make the doc-PR redundant or force it base-stale into regressive territory (observed live in the Phase B overnight run — PR #71's PLATFORM_STATUS reconciliation was made fully redundant by four successive per-slice rewrites and closed without merge; the README PR #70, an own-file change no slice touched, merged cleanly).
+
+**The file-class distinction:** own-file PRs (a PR that is the sole writer of its file, e.g. `README.md`) only go base-stale and a merge fixes them — they do not collide. Rolling-shared-doc PRs collide.
+
+**Mitigation (either is sufficient):**
+1. **Land first.** Merge any rolling-shared-doc PR *before* spawning the chain.
+2. **Pause for it.** If such a PR is open when the chain would start or advance, hold the chain (pause marker / `/pause` comment) until it merges.
+
+This is a **chain-runner halt condition**: at chain-open and at every slice boundary, if `main` carries an open PR touching a rolling shared doc, the runner halts and surfaces rather than racing it.
+
+## Merge-on-Green Polling
+
+The poll loop (Slice Lifecycle B) runs at a **~60-second cadence with no ceiling**, and merges only when **all three gate layers are green at the same poll** — never on a two-of-three or a green-then-red reading. A reviewer or CI run taking long is normal flow, not a failure; the runner waits rather than forcing a merge. This reinforces, not replaces, the Three-Layer Green Gate above.
+
+---
+
 ## Cross-references
 
 - `SESSION_START.md` — reading order, discipline floor, spec-drift policy.
