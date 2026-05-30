@@ -25,7 +25,11 @@ export class InvalidRepoPathError extends DomainError {
 
 export class DuplicateRepoPathError extends DomainError {
   constructor(public repoPath: string, public existingProjectId: string) {
-    super(`repo_path "${repoPath}" is already bound to project "${existingProjectId}"`, { statusCode: 409, code: 'duplicate_repo_path' });
+    super(`repo_path "${repoPath}" is already bound to project "${existingProjectId}"`, {
+      statusCode: 409,
+      code: 'duplicate_repo_path',
+      details: { repo_path: repoPath, project_id: existingProjectId },
+    });
   }
 }
 
@@ -110,7 +114,11 @@ function rowToProject(row: ProjectRow): Project {
 
 export class BundleNotLoadedError extends DomainError {
   constructor(public bundleId: string) {
-    super(`bundle "${bundleId}" is not loaded`, { statusCode: 400, code: 'bundle_not_loaded' });
+    super(`bundle "${bundleId}" is not loaded`, {
+      statusCode: 400,
+      code: 'bundle_not_loaded',
+      details: { bundle_id: bundleId },
+    });
   }
 }
 

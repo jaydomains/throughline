@@ -1,12 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { ProjectNotFoundError } from '@throughline/shared';
 import {
-  EntryNotFoundError,
-  FolderMissingError,
-  FolderNotFoundError,
-  FolderOutsideRepoError,
-  NotAnImportedDocError,
-  SourceFileMissingError,
   type MdIngestService,
 } from './service.js';
 import type { MdIngestWatcher } from './watcher.js';
@@ -59,22 +52,9 @@ export function registerMdIngestRoutes(
       if (typeof path !== 'string' || path.trim().length === 0) {
         return reply.code(400).send({ error: 'path_required' });
       }
-      try {
-        const folder = service.addFolder(req.params.id, path);
-        watcher.refresh();
-        return { folder };
-      } catch (err) {
-        if (err instanceof FolderOutsideRepoError) {
-          return reply.code(400).send({ error: 'folder_outside_repo' });
-        }
-        if (err instanceof FolderMissingError) {
-          return reply.code(400).send({ error: 'folder_missing' });
-        }
-        if (err instanceof ProjectNotFoundError) {
-          return reply.code(404).send({ error: 'project_not_found' });
-        }
-        throw err;
-      }
+      const folder = service.addFolder(req.params.id, path);
+      watcher.refresh();
+      return { folder };
     },
   );
 
@@ -84,16 +64,9 @@ export function registerMdIngestRoutes(
       if (!requireProject(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        service.removeFolder(req.params.id, req.params.folderId);
-        watcher.refresh();
-        return { ok: true as const };
-      } catch (err) {
-        if (err instanceof FolderNotFoundError) {
-          return reply.code(404).send({ error: 'folder_not_found' });
-        }
-        throw err;
-      }
+      service.removeFolder(req.params.id, req.params.folderId);
+      watcher.refresh();
+      return { ok: true as const };
     },
   );
 
@@ -107,20 +80,7 @@ export function registerMdIngestRoutes(
       if (typeof folderId !== 'string' || folderId.length === 0) {
         return reply.code(400).send({ error: 'folder_id_required' });
       }
-      try {
-        return { result: service.scan(req.params.id, folderId) };
-      } catch (err) {
-        if (err instanceof FolderNotFoundError) {
-          return reply.code(404).send({ error: 'folder_not_found' });
-        }
-        if (err instanceof FolderMissingError) {
-          return reply.code(400).send({ error: 'folder_missing' });
-        }
-        if (err instanceof FolderOutsideRepoError) {
-          return reply.code(400).send({ error: 'folder_outside_repo' });
-        }
-        throw err;
-      }
+      return { result: service.scan(req.params.id, folderId) };
     },
   );
 
@@ -138,18 +98,11 @@ export function registerMdIngestRoutes(
       if (!Array.isArray(paths)) {
         return reply.code(400).send({ error: 'paths_required' });
       }
-      try {
-        const result = await service.ingest(req.params.id, {
-          folder_id: folderId,
-          paths: paths.filter((p): p is string => typeof p === 'string'),
-        });
-        return { result };
-      } catch (err) {
-        if (err instanceof FolderNotFoundError) {
-          return reply.code(404).send({ error: 'folder_not_found' });
-        }
-        throw err;
-      }
+      const result = await service.ingest(req.params.id, {
+        folder_id: folderId,
+        paths: paths.filter((p): p is string => typeof p === 'string'),
+      });
+      return { result };
     },
   );
 
@@ -162,19 +115,9 @@ export function registerMdIngestRoutes(
       if (typeof req.body?.tracked !== 'boolean') {
         return reply.code(400).send({ error: 'tracked_required' });
       }
-      try {
-        return {
-          entry: service.setTracked(req.params.id, req.params.entryId, req.body.tracked),
-        };
-      } catch (err) {
-        if (err instanceof EntryNotFoundError) {
-          return reply.code(404).send({ error: 'entry_not_found' });
-        }
-        if (err instanceof NotAnImportedDocError) {
-          return reply.code(400).send({ error: 'not_an_imported_doc' });
-        }
-        throw err;
-      }
+      return {
+        entry: service.setTracked(req.params.id, req.params.entryId, req.body.tracked),
+      };
     },
   );
 
@@ -184,25 +127,12 @@ export function registerMdIngestRoutes(
       if (!requireProject(req.params.id)) {
         return reply.code(404).send({ error: 'project_not_found' });
       }
-      try {
-        const { entry, changed } = await service.reingestEntry(
-          req.params.id,
-          req.params.entryId,
-          'user',
-        );
-        return { entry, changed };
-      } catch (err) {
-        if (err instanceof EntryNotFoundError) {
-          return reply.code(404).send({ error: 'entry_not_found' });
-        }
-        if (err instanceof NotAnImportedDocError) {
-          return reply.code(400).send({ error: 'not_an_imported_doc' });
-        }
-        if (err instanceof SourceFileMissingError) {
-          return reply.code(409).send({ error: 'source_file_missing' });
-        }
-        throw err;
-      }
+      const { entry, changed } = await service.reingestEntry(
+        req.params.id,
+        req.params.entryId,
+        'user',
+      );
+      return { entry, changed };
     },
   );
 }

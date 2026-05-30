@@ -42,7 +42,7 @@ interface ItemRow {
 
 export class ItemPolicyError extends DomainError {
   constructor(message: string, public field: 'type' | 'status') {
-    super(message, { statusCode: 400, code: 'policy_violation' });
+    super(message, { statusCode: 400, code: 'policy_violation', details: { field } });
   }
 }
 

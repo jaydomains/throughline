@@ -5,13 +5,7 @@ import {
   type LibrarySearchRequest,
   type PromptFillRequest,
 } from '@throughline/shared';
-import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import {
-  AttachNotANoteError,
-  CrossProjectAttachError,
-  LibraryEntryNotFoundError,
-  LibraryEntryTypeError,
-  NotAPromptError,
   type LibraryService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -90,23 +84,15 @@ export function registerLibraryRoutes(
         return reply.code(400).send({ error: 'title_required' });
       }
       if (!body.type) return reply.code(400).send({ error: 'type_required' });
-      try {
-        const entry = service.create({
-          project_id: req.params.id,
-          type: body.type,
-          title: body.title,
-          ...(body.body !== undefined ? { body: body.body } : {}),
-          ...(body.tags !== undefined ? { tags: body.tags } : {}),
-          ...(body.summary !== undefined ? { summary: body.summary } : {}),
-        });
-        return reply.code(201).send({ entry });
-      } catch (err) {
-        if (err instanceof LibraryEntryTypeError)
-          return reply.code(400).send({ error: 'invalid_type' });
-        if (err instanceof ProjectNotFoundError)
-          return reply.code(404).send({ error: 'project_not_found' });
-        throw err;
-      }
+      const entry = service.create({
+        project_id: req.params.id,
+        type: body.type,
+        title: body.title,
+        ...(body.body !== undefined ? { body: body.body } : {}),
+        ...(body.tags !== undefined ? { tags: body.tags } : {}),
+        ...(body.summary !== undefined ? { summary: body.summary } : {}),
+      });
+      return reply.code(201).send({ entry });
     },
   );
 
@@ -117,14 +103,8 @@ export function registerLibraryRoutes(
       if (!existing || existing.project_id !== req.params.id)
         return reply.code(404).send({ error: 'not_found' });
       const body = req.body ?? {};
-      try {
-        const entry = service.update(req.params.entryId, body);
-        return { entry };
-      } catch (err) {
-        if (err instanceof LibraryEntryNotFoundError)
-          return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      const entry = service.update(req.params.entryId, body);
+      return { entry };
     },
   );
 
@@ -145,18 +125,8 @@ export function registerLibraryRoutes(
       const entry = service.get(req.params.entryId);
       if (!entry || entry.project_id !== req.params.id)
         return reply.code(404).send({ error: 'not_found' });
-      try {
-        service.attach(req.params.entryId, req.params.itemId);
-        return reply.code(204).send();
-      } catch (err) {
-        if (err instanceof AttachNotANoteError)
-          return reply.code(422).send({ error: 'not_a_note' });
-        if (err instanceof CrossProjectAttachError)
-          return reply.code(422).send({ error: 'cross_project_attach' });
-        if (err instanceof ItemNotFoundError)
-          return reply.code(404).send({ error: 'item_not_found' });
-        throw err;
-      }
+      service.attach(req.params.entryId, req.params.itemId);
+      return reply.code(204).send();
     },
   );
 
@@ -198,16 +168,10 @@ export function registerLibraryRoutes(
       if (!entry || entry.project_id !== req.params.id)
         return reply.code(404).send({ error: 'not_found' });
       const values = (req.body ?? {}).values ?? {};
-      try {
-        const result = service.fillPrompt(req.params.entryId, {
-          values: values as PromptFillRequest['values'],
-        });
-        return { result };
-      } catch (err) {
-        if (err instanceof NotAPromptError)
-          return reply.code(422).send({ error: 'not_a_prompt' });
-        throw err;
-      }
+      const result = service.fillPrompt(req.params.entryId, {
+        values: values as PromptFillRequest['values'],
+      });
+      return { result };
     },
   );
 

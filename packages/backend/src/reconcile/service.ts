@@ -67,7 +67,7 @@ export class CrossProjectMutationError extends DomainError {
   constructor(public itemIds: string[], public projectId: string) {
     super(
       `reconcile apply rejected: items ${itemIds.join(', ')} do not belong to project ${projectId}`,
-      { statusCode: 422, code: 'cross_project_mutation' },
+      { statusCode: 422, code: 'cross_project_mutation', details: { item_ids: itemIds } },
     );
   }
 }

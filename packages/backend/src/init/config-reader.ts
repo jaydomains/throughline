@@ -23,7 +23,11 @@ export interface ProjectConfig {
 
 export class InvalidProjectConfigError extends DomainError {
   constructor(message: string, public readonly path: string) {
-    super(`invalid .throughline/project.json at ${path}: ${message}`, { statusCode: 400, code: 'invalid_project_config' });
+    super(`invalid .throughline/project.json at ${path}: ${message}`, {
+      statusCode: 400,
+      code: 'invalid_project_config',
+      details: { path },
+    });
   }
 }
 
@@ -31,7 +35,7 @@ export class BundleIdMismatchError extends DomainError {
   constructor(public readonly configBundleId: string, public readonly bundleFileName: string) {
     super(
       `bundle_id "${configBundleId}" in project.json does not match name "${bundleFileName}" declared in sibling .throughline/bundle.md §1 Identity`,
-      { statusCode: 400, code: 'bundle_id_mismatch' },
+      { statusCode: 400, code: 'bundle_id_mismatch', details: { config_bundle_id: configBundleId, bundle_file_name: bundleFileName } },
     );
   }
 }

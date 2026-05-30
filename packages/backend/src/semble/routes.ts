@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify';
 import type { ConfirmCodeRefsRequest } from '@throughline/shared';
-import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
 import {
   type SembleService,
@@ -41,12 +40,7 @@ export function registerSembleRoutes(
     '/api/projects/:id/items/:itemId/code-search',
     async (req, reply) => {
       if (!projects.get(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        return { result: await service.searchForItem(req.params.itemId) };
-      } catch (err) {
-        if (err instanceof ItemNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      return { result: await service.searchForItem(req.params.itemId) };
     },
   );
 
@@ -64,13 +58,8 @@ export function registerSembleRoutes(
       if (!projects.get(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
       const parsed = validRefs(req.body);
       if (!parsed) return reply.code(400).send({ error: 'refs_required' });
-      try {
-        const refs = service.confirmRefs(req.params.itemId, parsed);
-        return reply.code(201).send({ refs });
-      } catch (err) {
-        if (err instanceof ItemNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      const refs = service.confirmRefs(req.params.itemId, parsed);
+      return reply.code(201).send({ refs });
     },
   );
 
@@ -78,13 +67,8 @@ export function registerSembleRoutes(
     '/api/projects/:id/items/:itemId/code-refs/:refId',
     async (req, reply) => {
       if (!projects.get(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
-      try {
-        service.removeRef(req.params.itemId, req.params.refId);
-        return reply.code(204).send();
-      } catch (err) {
-        if (err instanceof ItemNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      service.removeRef(req.params.itemId, req.params.refId);
+      return reply.code(204).send();
     },
   );
 
@@ -96,12 +80,7 @@ export function registerSembleRoutes(
       if (typeof question !== 'string' || question.trim().length === 0) {
         return reply.code(400).send({ error: 'question_required' });
       }
-      try {
-        return { result: await service.codeQa(req.params.id, question) };
-      } catch (err) {
-        if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        throw err;
-      }
+      return { result: await service.codeQa(req.params.id, question) };
     },
   );
 }

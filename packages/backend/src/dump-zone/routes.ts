@@ -1,9 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import type { ProposalSource, ProposalTarget } from '@throughline/shared';
-import { ProjectNotFoundError } from '@throughline/shared';
 import {
-  ProposalNotFoundError,
-  ProposalStateError,
   type DumpZoneService,
 } from './service.js';
 import type { ProjectsService } from '../projects/service.js';
@@ -47,19 +44,14 @@ export function registerDumpZoneRoutes(
       if (!ALLOWED_SOURCES.includes(source)) {
         return reply.code(400).send({ error: 'invalid_source' });
       }
-      try {
-        const proposal = await service.propose({
-          project_id: req.params.id,
-          text: body.text,
-          target: body.target,
-          source,
-          session_id: body.session_id ?? null,
-        });
-        return reply.code(201).send({ proposal });
-      } catch (err) {
-        if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'project_not_found' });
-        throw err;
-      }
+      const proposal = await service.propose({
+        project_id: req.params.id,
+        text: body.text,
+        target: body.target,
+        source,
+        session_id: body.session_id ?? null,
+      });
+      return reply.code(201).send({ proposal });
     },
   );
 
@@ -94,20 +86,12 @@ export function registerDumpZoneRoutes(
       if (typeof body.payload !== 'object' || body.payload === null) {
         return reply.code(400).send({ error: 'payload_required' });
       }
-      try {
-        const result = service.apply({
-          proposal_id: body.proposal_id,
-          payload: body.payload as Parameters<DumpZoneService['apply']>[0]['payload'],
-          ...(body.decisions ? { decisions: body.decisions } : {}),
-        });
-        return { result };
-      } catch (err) {
-        if (err instanceof ProposalNotFoundError) return reply.code(404).send({ error: 'not_found' });
-        if (err instanceof ProposalStateError)
-          return reply.code(409).send({ error: 'proposal_not_pending', message: err.message });
-        if (err instanceof ProjectNotFoundError) return reply.code(404).send({ error: 'project_not_found' });
-        throw err;
-      }
+      const result = service.apply({
+        proposal_id: body.proposal_id,
+        payload: body.payload as Parameters<DumpZoneService['apply']>[0]['payload'],
+        ...(body.decisions ? { decisions: body.decisions } : {}),
+      });
+      return { result };
     },
   );
 
