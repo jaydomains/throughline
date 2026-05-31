@@ -86,10 +86,8 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
           if (result.outcome === 'delivered') {
             opts.service.markFired(d.id, clock());
           } else {
-            log?.warn(
-              `reminder ${d.id} not delivered (${result.outcome}` +
-                `${result.error ? `: ${result.error}` : ''}); left armed for retry`,
-            );
+            const detail = result.error ? `${result.outcome}: ${result.error}` : result.outcome;
+            log?.warn(`reminder ${d.id} not delivered (${detail}); left armed for retry`);
           }
         } catch (err) {
           log?.error(
