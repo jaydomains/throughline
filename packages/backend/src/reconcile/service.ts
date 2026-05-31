@@ -63,6 +63,15 @@ export class ReconcileRunStateError extends DomainError {
   }
 }
 
+// S6-01: a client-supplied apply payload whose `diff.rows` is not an array would TypeError
+// in the apply loops below and surface as a 500. Reject it as a 400 the central handler
+// serialises, instead of a stack trace.
+export class ReconcileDiffShapeError extends DomainError {
+  constructor() {
+    super('reconcile apply: diff.rows must be an array', { statusCode: 400, code: 'invalid_diff' });
+  }
+}
+
 export class CrossProjectMutationError extends DomainError {
   constructor(public itemIds: string[], public projectId: string) {
     super(
@@ -227,6 +236,9 @@ export function createReconcileService(opts: CreateOptions): ReconcileService {
       if (row.status !== 'pending') throw new ReconcileRunStateError(row.id, row.status);
       const project = projects.get(row.project_id);
       if (!project) throw new ProjectNotFoundError(row.project_id);
+      // S6-01: the diff is round-tripped through the client; guard its shape before the
+      // apply loops iterate `req.diff.rows`, so a malformed payload is a 400, not a 500.
+      if (!Array.isArray(req.diff?.rows)) throw new ReconcileDiffShapeError();
 
       // Validate-then-transact (Phase 5 convention). Apply-style endpoints that operate on a
       // list of entity IDs supplied by the client must validate ownership-against-the-route-

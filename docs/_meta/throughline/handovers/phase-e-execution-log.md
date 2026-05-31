@@ -161,14 +161,29 @@
 
 ### E11 — Transaction atomicity
 - **Branch:** `claude/phase-e-e11-transaction-atomicity`
-- **PR:** #98 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #98 (squash-merged)
+- **Merge SHA:** `9482629`
 - **Closed:** S5-04 (`items.update` wrote the scalar UPDATE + methodology-context + mentions + audit rows **unwrapped**, unlike `create` — a throw partway left a half-written item), S6-03 (md-ingest batch loop: a file's library entry + audit + cost were separate writes), S6-04 (`writeSecrets` did a read-modify-`writeFileSync` — a crash mid-write could truncate/corrupt the secrets file and lose both keys).
 - **Fix (no anchor):** wrap `items.update`'s write block in a `db.transaction` (mirrors `create`; the status hook + final read stay outside); commit each md-ingest file's entry + audit + cost in a **per-file** `db.transaction` (the AI `summarise` is awaited *before* the txn — whole-batch atomicity is infeasible/undesirable across N per-file AI calls and a sqlite txn can't span an `await`); write secrets atomically via write-temp + `renameSync` (atomic within a filesystem), with temp cleanup on failure.
 - **Anchor:** none. **Deps:** rebase-coupled with E12 on `items/service.ts` (E12 not yet landed — E11 lands first). **Files:** `items/service.ts`, `md-ingest/service.ts`, `secrets/store.ts`.
 - **Verification:** `items.update` write block unwrapped (vs `create`'s `db.transaction`); md-ingest per-file `library.create/update` + `appendAudit` + `recordCost` separate; `writeSecrets` RMW + bare `writeFileSync` — all matched current `main`.
 - **LOC:** diff stat ~218/136 across 5 files, **but inflated by re-indentation** — wrapping a block in `db.transaction(() => {…})` re-indents every line. Net new logic is small (the two txn wrappers + the atomic-write); test code ~48. One coherent unit; the overage is re-indent, not scope — non-halting.
 - **Tests:** `items.test.ts` — **S5-04 deterministic rollback lock** (fault-inject a throw on the in-transaction audit insert → the scalar UPDATE rolls back, item unchanged). `backup.test.ts` — **S6-04** (atomic write leaves no stray `.tmp`, preserves the untouched key, JSON stays well-formed). **S6-03** (md-ingest per-file txn) is inspection-verified — rollback-on-crash isn't deterministically unit-testable without the same fault-injection seam, and the existing md-ingest tests (10/10) confirm the per-file commit behaviour is preserved.
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar approved first pass; both gate runs green first try).
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.
+
+### E12 — Error→HTTP-status mapping
+- **Branch:** `claude/phase-e-e12-error-status-mapping`
+- **PR:** #99 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** S5-03 (a stale `session_id` in `items.create`'s `session_ids` loop / `addSessionMembership` hit an `INSERT OR IGNORE` that does **not** suppress FK violations → raw `SQLITE_CONSTRAINT_FOREIGNKEY` surfaced as a 500), S6-01 (`reconcile.apply` iterated `req.diff.rows` — a client-round-tripped payload — with no shape guard → `TypeError` → 500). **Records S6-02 closed** (the reconcile route no longer hand-maps; `ItemPolicyError` etc. propagate to the Phase-B central handler) → its regression test is E18's.
+- **Fix (no anchor):** an `insertSessionMembership` helper in the items service catches `SQLITE_CONSTRAINT_FOREIGNKEY` and rethrows `SessionNotFoundError` (used at both insert sites; the central handler serialises it); a `ReconcileDiffShapeError` (400, code `invalid_diff`) guards `apply` when `req.diff?.rows` is not an array.
+- **S5-03 status judgment (flagged):** the plan framed the fix as "→ 400 not 500". I mapped the stale session reference to **`SessionNotFoundError` (404)** — the codebase's consistent classification for a missing referenced entity (`ProjectNotFoundError`/`ItemNotFoundError`/`SessionNotFoundError` all 404), and it's a `DomainError` the central handler serialises. The substantive requirement (a proper 4xx, not a 500) is met; 404 is the more honest status than a generic 400 here. Judgment call, not a halt. (S6-01 is a genuine bad-payload → 400.)
+- **Anchor:** none (reused the shared `SessionNotFoundError`; minted no T-D/C-D — a new `DomainError` *subclass*, `ReconcileDiffShapeError`, is not an anchor). **Deps:** Phase-B `mapDomainError` (on `main`); rebase-coupled with E11 on `items/service.ts` (E11 merged).
+- **Verification:** `items/service.ts` `INSERT OR IGNORE` into `item_session_memberships` at the create loop + `addSessionMembership`; `reconcile/service.ts` `apply` iterates `req.diff.rows` unguarded; FK enforcement is on (`db.pragma('foreign_keys = ON')`) so the violation genuinely throws — all matched current `main`.
+- **LOC:** ~86 insertions across 4 files; production-side ~42 — within the 70–110 band.
+- **Tests:** `items.test.ts` — **S5-03** (create with a stale session_id throws `SessionNotFoundError` and the item is rolled back; `addSessionMembership` likewise). `reconcile.test.ts` — **S6-01** (apply with a non-array `diff.rows` throws `ReconcileDiffShapeError`, not a TypeError).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** the S5-03 404-vs-400 status choice above (recorded, not a halt).

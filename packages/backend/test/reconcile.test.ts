@@ -16,7 +16,7 @@ import {
   createHeuristicReconcileEngine,
   createRoutingReconcileEngine,
 } from '../src/reconcile/engine.js';
-import { createReconcileService } from '../src/reconcile/service.js';
+import { createReconcileService, ReconcileDiffShapeError } from '../src/reconcile/service.js';
 import type { AnthropicClient } from '../src/ai/anthropic.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
@@ -179,6 +179,26 @@ describe('reconcile engine — heuristic', () => {
 });
 
 describe('reconcile service — apply', () => {
+  it('S6-01: apply with a non-array diff.rows is a 400 ReconcileDiffShapeError, not a TypeError/500', async () => {
+    const { backend, reconcile, project, session } = await setup();
+    try {
+      const run = await reconcile.propose({
+        project_id: project.id,
+        text: 'anything to reconcile',
+        source: 'manual',
+        session_id: session.id,
+      });
+      // A malformed diff round-tripped from a buggy/hostile client: rows is not an array.
+      // Pre-fix the apply loop's `for (const r of req.diff.rows)` threw a TypeError → 500.
+      const malformed = { ...run.diff, rows: 'not-an-array' } as unknown as typeof run.diff;
+      expect(() => reconcile.apply({ run_id: run.id, diff: malformed })).toThrow(
+        ReconcileDiffShapeError,
+      );
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('applies completed rows by updating item status and audit-logging', async () => {
     const { backend, items, reconcile, project, session } = await setup();
     try {
