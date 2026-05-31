@@ -64,6 +64,7 @@ import type {
   ItemCodeRef,
   ConfirmCodeRefsRequest,
   CodeQaResult,
+  NotificationTestResult,
   RagQueryRequest,
   RagQueryResult,
   RagReindexResult,
@@ -164,7 +165,7 @@ export const api = {
     }),
 
   testNotification: () =>
-    jsonFetch<{ ok: true }>('/api/notifications/test', { method: 'POST' }),
+    jsonFetch<NotificationTestResult>('/api/notifications/test', { method: 'POST' }),
 
   // Phase 15 — backup (T-D28) + cost meter (T-D29).
   getBackupStatus: () => jsonFetch<BackupStatus>('/api/backup/status'),

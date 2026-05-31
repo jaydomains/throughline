@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **This slice — E3** — Semble degradation honesty (SF4-01): tri-state `SembleStatus` (`available`/`unavailable`/`degraded`) disclosed on the shared wire contract so a crashed/timed-out Semble no longer reads as "no code matches". Cites T-D60; no new anchor. **Prior cohort:** audit-fix A–D remains `production-ready`; Phases 19–22 remain `production-ready`. **Next:** continue the chain — E4 (notifier capability honesty) branches off updated `main` after E3 merges.
+**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **E3** (#90, merge `3ba20f3`) — Semble degradation honesty (SF4-01): tri-state `SembleStatus` disclosed on the shared wire contract so a crashed/timed-out Semble no longer reads as "no code matches". **This slice — E4** — notifier capability honesty (SF5-03): `notify()` returns a disclosed `NotifyResult`; the no-op fallback is split into a delivering test recorder and an honest `createUnavailableNotifier`, so a missing OS backend no longer reports delivered, the test button no longer claims success, and the reminder scheduler `markFired`s only on real delivery. Both cite T-D60; no new anchor. **Prior cohort:** audit-fix A–D remains `production-ready`; Phases 19–22 remain `production-ready`. **Next:** continue the chain — E5 (background-job health model, mints C-D26) branches off updated `main` after E4 merges.
 
 ---
 
 ## Current Phase
 
 **Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (22-slice floor). Audit-fix A–D and Phases 19–22 remain `production-ready`.
-**Status:** E1 (#88) + E2 (#89) merged (prior run); E3 (Semble degradation honesty) is the current slice. Anchors so far: **T-D60** (E1). C-D25 (E6) and C-D26 (E5) still to mint; a T-D10 amendment is planned in E20 (augmentation). Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5.
-**Next concrete action:** Merge E3 on green gate; branch E4 (notifier capability honesty) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
+**Status:** E1 (#88) + E2 (#89) merged (prior run); E3 (#90) merged; E4 (notifier capability honesty) is the current slice. Anchors so far: **T-D60** (E1). C-D25 (E6) and C-D26 (E5) still to mint; a T-D10 amendment is planned in E20 (augmentation). Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5.
+**Next concrete action:** Merge E4 on green gate; branch E5 (background-job health model, mints C-D26) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
 
 ---
 
@@ -56,11 +56,11 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase E / E3 — Semble degradation honesty (SF4-01): tri-state `SembleStatus` on the wire (cites T-D60) | `handovers/phase-e-execution-log.md` (§E3) |
+| _this PR_ | Phase E / E4 — Notifier capability honesty (SF5-03): disclosed `NotifyResult` + honest unavailable fallback (cites T-D60) | `handovers/phase-e-execution-log.md` (§E4) |
+| #90 | Phase E / E3 — Semble degradation honesty (SF4-01): tri-state `SembleStatus` on the wire (cites T-D60) | `handovers/phase-e-execution-log.md` (§E3) |
 | #89 | Phase E / E2 — AI/capability degradation honesty (SF3-03, SF2-04, SF4-02, SF4-03) | `handovers/phase-e-execution-log.md` (§E2, backfilled) |
 | #88 | Phase E / E1 — RAG embedder & query honesty + T-D60 mint (C-D2 narrowing) | `handovers/phase-e-execution-log.md` (§E1, backfilled) |
 | _hardener_ | Cohort-level heavy hardener — audit-fix A–D → `production-ready` | `handovers/2026-05-30-cohort-hardener-audit-fix-a-d.md` |
-| #81 | Phase D / Slice 3 — backend lifecycle locks: S4-01, S7-01, F1-01 lock | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
 
 (PR #80 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. The Phase E chain uses a single append-only execution log rather than per-slice handover files; see its header for rationale.)
 

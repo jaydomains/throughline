@@ -16,6 +16,7 @@ export * from './drift.js';
 export * from './discipline-scan.js';
 export * from './github.js';
 export * from './semble.js';
+export * from './notifier.js';
 export * from './companion.js';
 export * from './session-start.js';
 export * from './intelligence.js';

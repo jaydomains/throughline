@@ -37,8 +37,8 @@
 
 ### E3 — Semble degradation honesty
 - **Branch:** `claude/phase-e-e3-semble-honesty`
-- **PR:** #90 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #90 (squash-merged)
+- **Merge SHA:** `3ba20f3`
 - **Closed:** SF4-01 (High) — a present-but-broken Semble binary reported `available:true` and `search()` swallowed the crash to `[]`, surfacing to the user as "no code matches found" (a crash masquerading as healthy-empty).
 - **Fix:** introduced a tri-state `SembleStatus` (`available` / `unavailable` / `degraded`) disclosed **on the shared wire contract** (T-D60, on-contract per LBD-1b — no new anchor). `client.available()` → `probe()` returning the tri-state; `client.search()` → a discriminated `SembleSearchOutcome` (`{status:'ok',hits}` vs `{status:'degraded'}`); threaded through `searchForItem` / `codeQa` onto `CodeSearchResponse.status` / `CodeQaResult.status`; both frontend surfaces (ItemDetailPanel code-search, LibraryView code-Q&A) render the degraded state distinctly from absence.
 - **Anchor:** none (cites T-D60, minted in E1).
@@ -47,3 +47,18 @@
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none. (Noted for the audit, not a halt: the prior run left `PLATFORM_STATUS.md` un-rolled to Phase E and wrote no E1/E2 handovers; this slice rolls `PLATFORM_STATUS.md` and establishes this execution log as the durable record.)
+- **Fix-rounds:** 0 (Gitar approved first pass, no findings; CI green first run).
+
+### E4 — Notifier capability honesty
+- **Branch:** `claude/phase-e-e4-notifier-honesty`
+- **PR:** #91 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** SF5-03 (Crit) — when `node-notifier` was absent, `createOsNotifier` fell back to a no-op whose `notify()` resolved as if delivered; the test endpoint returned `{ok:true}` + flipped `os_notifications_enabled=true`, and the reminder scheduler called `markFired` regardless. A non-delivery masqueraded as a delivery (the reminder was silently consumed and never surfaced).
+- **Fix (T-D60, on-contract; no new anchor):** `notify()` now returns a disclosed `NotifyResult` (`outcome: 'delivered' | 'unavailable' | 'failed'`) and `Notifier` carries a `kind` (`'os' | 'unavailable'`). The old `createNoopNotifier` is split into `createRecordingNotifier` (test double that delivers) and `createUnavailableNotifier` (the honest capability-absent production fallback `createOsNotifier` now returns). The test endpoint returns a shared `NotificationTestResult` and sets the setting **only** on `delivered`; the scheduler calls `markFired` **only** on `delivered`, leaving the directive armed otherwise; the settings panel renders an honest "no backend" warning on `unavailable`.
+- **Anchor:** none (cites T-D60).
+- **Verification:** cited claims matched `main` — `notifier/index.ts` no-op resolves; `routes.ts` `{ok:true}` + setting flip; `scheduler.ts:83` unconditional `markFired`.
+- **LOC:** ~287 insertions / 55 deletions across 11 files; production-side delta ~120–140 net (E4 band 100–150), remainder test code. One coherent unit ("notifier capability honesty") — non-halting per the E1/E3 estimate-breach precedent.
+- **Tests:** notifier unit (recording delivers / unavailable never delivers / OS degrades to unavailable / OS failure disclosed-not-thrown) + route-honesty (delivered enables setting; unavailable & failed do not) + scheduler (unavailable notifier leaves the reminder armed, not fired — the SF5-03 lock) + frontend (unavailable surfaces the warning).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
