@@ -191,6 +191,11 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
     cache.set(bundleId, result);
     writeLoadAudit(bundleId, boundProjects, result, previousVersion(prev));
     logger?.info(`bundle "${bundleId}" loaded (version ${result.bundle.identity.version}).`);
+    // SF2-03: a loaded-but-warned bundle is visible — a malformed line that was coerced to
+    // a default (e.g. an unrecognised drift-category check kind) is logged, not silent.
+    for (const w of result.bundle.warnings ?? []) {
+      logger?.warn(`bundle "${bundleId}" parse warning${w.section ? ` [${w.section}]` : ''}: ${w.message}`);
+    }
     notifyReloaded(bundleId, boundProjects);
     return result;
   }

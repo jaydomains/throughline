@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (E19/E20/E21 + the E1 anchor-amendment mechanism). **Durable per-slice record (PR #, merge SHA, fix-rounds, halt/flake flags): `handovers/phase-e-execution-log.md` — read it for slice detail.** **Merged: E1–E11** (#88–#98). All three planned Phase E anchors are minted: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6); E10 added the spec-author-ruled §7.10 clause (no anchor). **This slice — E12** — error→HTTP-status mapping: a stale `session_id` FK violation now maps to `SessionNotFoundError` (4xx, not a 500) at the items insert sites (S5-03), and a malformed `reconcile.apply` `diff.rows` is rejected as a 400 `ReconcileDiffShapeError` instead of a TypeError/500 (S6-01); both ride the Phase-B central handler. Records S6-02 closed (→ E18 verify test). No new anchor. **Pre-existing test flakes flagged for Phase-F** (out-of-scope, halt-8; pass on retry/isolation, not chain regressions): `rag.test.ts` (real embedder under parallel load) + `directives.test.tsx` (frontend). **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E13 (methodology-parsing robustness — S2-02, S3-02, SF2-03) off updated `main` after E12 merges.
+**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (E19/E20/E21 + the E1 anchor-amendment mechanism). **Durable per-slice record (PR #, merge SHA, fix-rounds, halt/flake flags): `handovers/phase-e-execution-log.md` — read it for slice detail.** **Merged: E1–E12** (#88–#99). All three planned Phase E anchors are minted: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6); E10 added the spec-author-ruled §7.10 clause (no anchor). **This slice — E13** — methodology-parsing robustness: applies the Phase-D `safe-regex` guard on the gate side (S2-02), guards the EOF `indexOf` in the item-type parse (S3-02), and surfaces a malformed drift-category `trigger:`/`check:` as a visible parse warning (`LoadedBundle.warnings`, logged at load) instead of a silent retype to the wrong scanner (SF2-03). No new anchor. **Pre-existing test flakes flagged for Phase-F** (out-of-scope, halt-8; pass on retry/isolation, not chain regressions): `rag.test.ts` (real embedder under parallel load) + `directives.test.tsx` (frontend). **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E14 (audit-trail wiring — SF7-01, SF7-02, SF7-03, SF7-05) off updated `main` after E13 merges.
 
 ---
 
 ## Current Phase
 
 **Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (22-slice floor). Audit-fix A–D and Phases 19–22 remain `production-ready`.
-**Status:** E1–E11 merged (#88–#98); E12 (error→HTTP-status mapping) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6) — all three planned Phase E anchors minted. A T-D10 amendment is planned in E20 (augmentation); any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E12–E16 + E17a mint no anchors.
-**Next concrete action:** Merge E12 on green gate; branch E13 (methodology-parsing robustness) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
+**Status:** E1–E12 merged (#88–#99); E13 (methodology-parsing robustness) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6) — all three planned Phase E anchors minted. A T-D10 amendment is planned in E20 (augmentation); any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E13–E16 + E17a mint no anchors.
+**Next concrete action:** Merge E13 on green gate; branch E14 (audit-trail wiring) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
 
 ---
 
@@ -56,11 +56,11 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase E / E12 — Error→HTTP-status mapping (S5-03, S6-01): stale-session FK → `SessionNotFoundError`, malformed `diff.rows` → 400 | `handovers/phase-e-execution-log.md` (§E12) |
+| _this PR_ | Phase E / E13 — Methodology-parsing robustness (S2-02, S3-02, SF2-03): safe-regex on the gate side, EOF-guarded item-type parse, drift-category parse warnings | `handovers/phase-e-execution-log.md` (§E13) |
+| #99 | Phase E / E12 — Error→HTTP-status mapping (S5-03, S6-01): stale-session FK → `SessionNotFoundError`, malformed `diff.rows` → 400 | `handovers/phase-e-execution-log.md` (§E12) |
 | #98 | Phase E / E11 — Transaction atomicity (S5-04, S6-03, S6-04): `items.update` txn, md-ingest per-file txn, atomic secrets write | `handovers/phase-e-execution-log.md` (§E11) |
 | #97 | Phase E / E10 — Background-loop correctness (S4-02, S5-05): ETag-after-snapshots, recurrence coalesce + §7.10 SPEC clause | `handovers/phase-e-execution-log.md` (§E10) |
 | #96 | Phase E / E9 — Loader robustness (S3-01/SF2-05, S3-03, SF5-08): unlink notifies all arms, dangling-symlink-safe hydration, guarded watch handler | `handovers/phase-e-execution-log.md` (§E9) |
-| #95 | Phase E / E8 — Shutdown lifecycle completion (S7-02, SF5-11, S7-03): SSE `closeAll` + `unref` + guarded writes, global handlers, scheduler `drain()` | `handovers/phase-e-execution-log.md` (§E8) |
 
 (PR #80 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. The Phase E chain uses a single append-only execution log rather than per-slice handover files; see its header for rationale.)
 

@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { isAbsolute, join, relative as relPath, resolve as resolvePath, sep } from 'node:path';
 import type { GateFindings, GateFiringStatus, LoadedBundle } from '@throughline/shared';
+import { escapeRegExp, safeCompile, safeTest } from '../drift/discipline/safe-regex.js';
 
 // C-D15 — built-in generic mechanical-check catalogue. The bundle grammar carries no
 // field binding a mechanical GateSpec to a concrete check, so the runtime ships a fixed
@@ -150,8 +151,12 @@ function anchorResolutionCheck(ctx: CheckContext): CheckResult {
       findings: findings('anchor-resolution', 'repo path unreadable; resolution skipped'),
     };
   }
+  // S2-02: format_regex is bundle-authored (untrusted) — compile it through the safe-regex
+  // guard (the hardened twin of the now-fixed S2-01 drift-side path) so a
+  // catastrophic-backtracking pattern is refused (→ null = no format check) rather than
+  // raw-`new RegExp`'d and run against every cited anchor.
   const formatRe = bundle.anchor_system.format_regex
-    ? new RegExp(bundle.anchor_system.format_regex)
+    ? safeCompile(bundle.anchor_system.format_regex)
     : null;
   // status_vocabulary convention: first term is "live", remaining terms are non-live
   // (e.g. test-bundle: active, superseded). A cited anchor resolving to a non-live
@@ -161,7 +166,7 @@ function anchorResolutionCheck(ctx: CheckContext): CheckResult {
   const corpus = files.map((f) => readFileSync(f, 'utf8')).join('\n');
   const unresolved: GateFindings['items'] = [];
   for (const anchor of citedAnchors) {
-    if (formatRe && !formatRe.test(anchor)) {
+    if (formatRe && !safeTest(formatRe, anchor)) {
       unresolved.push({ message: `"${anchor}" does not match anchor format`, ref: anchor });
       continue;
     }
@@ -176,7 +181,9 @@ function anchorResolutionCheck(ctx: CheckContext): CheckResult {
       const block = corpus.slice(headingIdx, headingIdx + 600).toLowerCase();
       const nonLive = vocab
         .slice(1)
-        .find((s) => new RegExp(`status[:\\s]+${s.toLowerCase()}`).test(block));
+        // S2-02: escape the interpolated vocabulary term — it is bundle-authored, so an
+        // un-escaped value was both a regex-injection and a ReDoS vector.
+        .find((s) => new RegExp(`status[:\\s]+${escapeRegExp(s.toLowerCase())}`).test(block));
       if (nonLive) {
         unresolved.push({ message: `"${anchor}" resolves but is ${nonLive}`, ref: anchor });
       }

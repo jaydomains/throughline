@@ -34,7 +34,11 @@ function extractItemTypes(body: string): ItemTypeSpec[] {
     const start = headings[i]!.index;
     const end = headings[i + 1]?.index ?? body.length;
     const slice = body.slice(start, end);
-    const kv = parseKeyValueLines(slice.slice(slice.indexOf('\n') + 1));
+    // S3-02: a heading at EOF (or with no body) has no newline — `indexOf('\n')` returns
+    // -1, and `slice(-1 + 1)` = `slice(0)` would feed the heading line itself back into
+    // parseKeyValueLines as a bogus key/value. Treat "no newline" as an empty body.
+    const bodyStart = slice.indexOf('\n');
+    const kv = parseKeyValueLines(bodyStart === -1 ? '' : slice.slice(bodyStart + 1));
     out.push({
       id: headings[i]!.id,
       board_label: kv['board']?.trim() || headings[i]!.id,

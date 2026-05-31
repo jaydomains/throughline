@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseBundle } from '../src/methodology/bundle-parser/index.js';
+import { parseValidationRules } from '../src/methodology/bundle-parser/validation-rules.js';
+import { parseStateMachine } from '../src/methodology/bundle-parser/state-machine.js';
 
 const FREEFORM_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
 
@@ -86,5 +88,46 @@ source_ranking: spec
 `;
     const result = parseBundle('reordered', md);
     expect(result.status).toBe('error');
+  });
+
+  it('SF2-03: an unrecognised drift-category check kind is surfaced as a warning, not silently retyped', () => {
+    const body = [
+      '### Drift category: Stale TODOs',
+      'trigger: file-change',
+      'check: bogus-kind', // not one of the allowed kinds — pre-fix silently became banned_string
+      'details: TODO without an owner',
+    ].join('\n');
+    const result = parseValidationRules('test', body);
+    const cats = result.value?.discipline_drift_categories ?? [];
+    expect(cats).toHaveLength(1);
+    // The default still applies (so the bundle loads) — but it is now VISIBLE as a warning,
+    // naming that the category will run the wrong scanner until fixed.
+    expect(cats[0]!.check_kind).toBe('banned_string');
+    expect(result.warnings.some((w) => /unrecognised check kind/i.test(w.message))).toBe(true);
+  });
+
+  it('SF2-03: a well-formed drift category produces no warnings and keeps its declared kinds', () => {
+    const body = [
+      '### Drift category: X',
+      'trigger: file-change',
+      'check: regex',
+      'details: y',
+    ].join('\n');
+    const result = parseValidationRules('test', body);
+    expect(result.warnings).toEqual([]);
+    expect(result.value!.discipline_drift_categories[0]!.check_kind).toBe('regex');
+    expect(result.value!.discipline_drift_categories[0]!.trigger).toBe('file-change');
+  });
+
+  it('S3-02: an item-type heading at EOF (no body) parses to sensible defaults, not a mis-parsed heading', () => {
+    // The last heading has no trailing body — exercises the EOF `indexOf('\n')` path.
+    const body = '### Item type: task\nboard: Tasks\nstatuses: open, done\n\n### Item type: note';
+    const result = parseStateMachine('test', body);
+    const types = result.value?.item_types ?? [];
+    expect(types.map((t) => t.id)).toEqual(['task', 'note']);
+    // The body-less 'note' heading yields defaults — not key/value scraped from the heading.
+    const note = types.find((t) => t.id === 'note')!;
+    expect(note.board_label).toBe('note');
+    expect(note.statuses).toEqual([]);
   });
 });
