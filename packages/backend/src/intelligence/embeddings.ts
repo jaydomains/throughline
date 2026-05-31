@@ -15,9 +15,11 @@ import { createHash } from 'node:crypto';
 // ('transformers' | 'fallback') so callers disclose it on the wire (RagQueryResult.embedder)
 // rather than passing keyword-class hits off as authoritative model retrieval. The import
 // failure is the only thing that pins the fallback (capability genuinely absent); a runtime
-// extractor throw after the real backend resolved is NOT swallowed into the fallback here —
-// it propagates so the search boundary can surface it as a refused retrieval ('unavailable'),
-// not a silent SHA1 substitution. See DECISIONS.md T-D60 / SPEC.md §14.
+// extractor throw after the real backend resolved is *not caught here* — it has always
+// propagated (that uncaught propagation was the S4-03 crash). The behavioural fix lives at
+// the search boundary (text-index), which now classifies it as an EmbedError and surfaces a
+// refused retrieval ('unavailable') instead of a silent SHA1 substitution. See DECISIONS.md
+// T-D60 / SPEC.md §14.
 
 export interface TextEmbedder {
   readonly kind: 'transformers' | 'fallback';
