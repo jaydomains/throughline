@@ -246,7 +246,7 @@ Default re-ingest behaviour is snapshot at import time. Per-entry "track source"
 Items and library entries can carry directives. Three types in v1:
 
 - **Pin** — sticky in its parent view.
-- **Reminder** — relative ("in 3 days") or absolute ("Friday 14:00"); supports recurrence rules. Fires via OS notification when due, regardless of whether the browser tab is open.
+- **Reminder** — relative ("in 3 days") or absolute ("Friday 14:00"); supports recurrence rules. Fires via OS notification when due, regardless of whether the browser tab is open. **Missed occurrences coalesce:** if the backend was down across one or more scheduled firings of a recurring reminder, it fires **once** on return and the cadence re-anchors to the next future occurrence — it does not replay every missed firing in a catch-up burst.
 - **Include in session-start prompt** — Throughline maintains a generated session-start prompt that auto-prepends every flagged item. One-click copy when starting a Claude Code session.
 
 Items with active directives display a badge icon. A dedicated **Directives view mode** lists every active directive across the app, grouped by type:

@@ -305,6 +305,34 @@ describe('directives service (Phase 6b — T-D12)', () => {
     }
   });
 
+  it('S5-05: markFired coalesces missed occurrences after downtime — one catch-up fire, re-anchored to the future', async () => {
+    const { backend, directives, project, item } = await setup();
+    try {
+      // A daily reminder whose first fire was 12 days before `now` (FIXED_NOW = 05-13T12:00):
+      // the backend was effectively "down" across ~12 daily occurrences.
+      const d = directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: {
+          mode: 'absolute',
+          fire_at: '2026-05-01T09:00:00.000Z',
+          recurrence: { every: 1, unit: 'day' },
+        },
+      });
+      const fired = directives.markFired(d.id, FIXED_NOW);
+      // Pre-S5-05 this advanced a single interval to 2026-05-02T09:00 — still 11 days in
+      // the past, so the scheduler would refire every tick to catch up. Now it coalesces:
+      // a single fire, with next_fire_at the first occurrence strictly after `now`.
+      expect(fired.next_fire_at).toBe('2026-05-14T09:00:00.000Z');
+      expect(new Date(fired.next_fire_at!).getTime()).toBeGreaterThan(FIXED_NOW.getTime());
+      expect(fired.last_fired_at).toBe(FIXED_NOW.toISOString());
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('countByKind buckets directives per kind for header hint', async () => {
     const { backend, directives, project, item, note } = await setup();
     try {

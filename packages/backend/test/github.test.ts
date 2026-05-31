@@ -206,6 +206,52 @@ describe('Phase 10 — GitHub poller', () => {
     await s.backend.cleanup();
   });
 
+  it('S4-02: a mid-loop throw does NOT advance the list ETag (next poll re-fetches, no permanent stale)', async () => {
+    const s = await setup();
+    const realCache = createGithubStateCache(s.backend.db);
+    // Wrap the cache so the snapshot upsert throws mid-loop — modelling an upsert / tier
+    // failure that lands after the ETag would (pre-fix) already have been advanced.
+    const cache = {
+      ...realCache,
+      upsertSnapshot: () => {
+        throw new Error('mid-loop boom');
+      },
+    };
+    const repo = 'o/r';
+    cache.setListEtag(repo, 'old-etag');
+    const tier4 = createTier4Service({
+      db: s.backend.db,
+      projects: s.projects,
+      registry: s.backend.registry,
+      drift: s.drift,
+    });
+    const poller = createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api: fakeApi({ pulls: [pull()] }),
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4,
+      watch: false,
+    });
+
+    await expect(poller.pollProject(s.project.id)).rejects.toThrow('mid-loop boom');
+    // Pre-S4-02 the ETag was set before the snapshot loop, so a mid-loop throw left it
+    // advanced → every later poll 304s and reuses stale snapshots. It must stay 'old-etag'
+    // so the next poll re-fetches and self-heals.
+    expect(cache.getListEtag(repo)).toBe('old-etag');
+
+    await s.backend.cleanup();
+  });
+
   it('drain() waits for an in-flight poll to finish before resolving (S7-01)', async () => {
     const s = await setup();
     const cache = createGithubStateCache(s.backend.db);
