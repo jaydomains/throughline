@@ -190,8 +190,8 @@
 
 ### E13 — Methodology-parsing robustness
 - **Branch:** `claude/phase-e-e13-methodology-parsing`
-- **PR:** #100 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #100 (squash-merged)
+- **Merge SHA:** `4f16792`
 - **Closed:** S2-02 (the gate-side `anchor-resolution` check raw-`new RegExp`'d the bundle-authored `format_regex` and interpolated un-escaped vocabulary — the unhardened twin of the now-fixed drift-side S2-01), S3-02 (`state-machine.ts` item-type parse used `slice.slice(slice.indexOf('\n') + 1)` — at EOF `indexOf` is -1, so `slice(0)` fed the heading back in), SF2-03 (a drift category's malformed `trigger:`/`check:` line was silently coerced to the default — for `check` that means the category runs the **wrong scanner** — and the bundle loaded green).
 - **Fix (no anchor):**
   - **S2-02:** reuse the Phase-D `safe-regex` guard — `safeCompile(format_regex)` (refuses catastrophic patterns → null = no format check), `safeTest` for the match, and `escapeRegExp` on the interpolated vocab term. Mirrors `scanners.ts` (the tested S2-01 fix) exactly.
@@ -204,6 +204,21 @@
 - **Note:** **SF2-08** (refused-regex silent skip — the *visibility sibling*) is **NOT** pulled into E13; it stays an E17 wrong-belief-Low decision item per the base plan (only pulled in if the spec author rules the wrong-belief Lows ride the chain).
 - **LOC:** ~107 insertions across 7 files; production-side ~57 — *under* the 130–190 band (surgical: S2-02 reused the tested guard, S3-02 was a one-line defensive guard). Under-estimate is not a halt; all three findings closed.
 - **Tests:** `bundle-parser.test.ts` — **SF2-03** (unrecognised `check` kind → warning + default; well-formed → no warning, declared kinds kept) and **S3-02** (EOF item-type heading → sensible defaults, not a mis-parsed heading). S2-02 inspection-verified (above).
+- **Fix-rounds:** 0 (Gitar approved first pass; both gate runs green first try).
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
+
+### E14 — Audit-trail wiring
+- **Branch:** `claude/phase-e-e14-audit-trail-wiring`
+- **PR:** #101 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** SF7-01 (credential set/clear/rotate via `PUT /api/secrets` left **no** audit row), SF7-02 (`projects.update({ settings })` — the path the communication-model route uses — wrote `settings_json` but the field-loop omitted it), SF7-03 (`projects.updateSettings` generic writer unaudited), SF7-05 (session `update` wrote `settings_json` unaudited). Completes the 3-of-3 `settings_json` audit discipline.
+- **Fix (no anchor):** secrets routes take `db` and emit an **event-only** audit row per touched key (`field: credential:<key>`, `new_value: set|cleared`, **never the value** — T-D24 / T-D4); `settings_json` added to the projects `update` field-loop and the session `update` field-loop; `updateSettings` audits the change when it actually changes.
+- **Anchor:** none. **Deps:** rebase-coupled with E16 on `projects/service.ts` (E16 not yet landed — E14 first). **Files:** `secrets/routes.ts` (+ `server.ts` call site passes `db`), `projects/service.ts`, `sessions/service.ts`.
+- **Verification:** `secrets/routes.ts` PUT had no audit (and no `db`); `projects/service.ts` field-loop omitted `settings_json`; `updateSettings` wrote silently; session `update` field-loop omitted `settings_json` — all matched current `main`. `AuditEntityType` already includes `'settings'` (used for the secrets row).
+- **Note:** **SF7-04** (chat-no-AI unaudited) and **SF7-06** (verifier `last_status` unaudited) are **NOT** here — audit-trail-only with no operational misbelief → deferred-tail register (per the base plan).
+- **LOC:** ~123 insertions across 7 files; production-side ~48 — within the 110–160 band.
+- **Tests:** `backup.test.ts` — **SF7-01** (set then clear → two event-only rows `credential:anthropic_api_key=set|cleared`; the secret value appears **nowhere** in the audit trail). `projects.test.ts` — **SF7-02/03** (`update({settings})` and `updateSettings` each add one `settings_json` row; a no-op `updateSettings` adds none). `sessions.test.ts` — **SF7-05** (session settings change → one row).
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.

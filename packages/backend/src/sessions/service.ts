@@ -105,6 +105,10 @@ export function createSessionsService(db: DB, projects: ProjectsService): Sessio
         ['name', before.name, next.name],
         ['branch_ref', before.branch_ref ?? '', next.branch_ref ?? ''],
         ['context', before.context ?? '', next.context ?? ''],
+        // SF7-05: session settings_json was written but not audited — completes the
+        // 3-of-3 settings_json audit discipline (with project update + updateSettings).
+        // Both sides are already JSON strings on the row.
+        ['settings_json', before.settings_json, next.settings_json],
       ] as const) {
         if (oldV !== newV) {
           appendAudit(db, {

@@ -318,6 +318,11 @@ export function createProjectsService(
         ['github_owner', before.github_owner ?? '', next.github_owner ?? ''],
         ['github_repo', before.github_repo ?? '', next.github_repo ?? ''],
         ['state', before.state, next.state],
+        // SF7-02: settings_json changes via update() (e.g. the communication-model route,
+        // which calls update({ settings })) were silently unaudited — the field-loop
+        // omitted it. Audit it like every other field (project config, not credentials —
+        // recording the value is fine; secrets live in a separate file, T-D4).
+        ['settings_json', JSON.stringify(before.settings_json), JSON.stringify(next.settings_json)],
       ] as const) {
         if (oldV !== newV) {
           appendAudit(db, {
@@ -340,9 +345,25 @@ export function createProjectsService(
       if (!before) throw new Error(`project ${id} not found`);
       const merged = { ...before.settings_json, ...partial };
       const now = new Date().toISOString();
+      const beforeJson = JSON.stringify(before.settings_json);
+      const mergedJson = JSON.stringify(merged);
       db.prepare(
         'UPDATE projects SET settings_json = ?, updated_at = ? WHERE id = ?',
-      ).run(JSON.stringify(merged), now, id);
+      ).run(mergedJson, now, id);
+      // SF7-03: the generic settings writer was unaudited. Record the change (when it
+      // actually changes) — completing the 3-of-3 settings_json audit discipline with
+      // update() (SF7-02) and the session path (SF7-05).
+      if (beforeJson !== mergedJson) {
+        appendAudit(db, {
+          projectId: id,
+          entityType: 'project',
+          entityId: id,
+          actor: 'user',
+          field: 'settings_json',
+          oldValue: beforeJson,
+          newValue: mergedJson,
+        });
+      }
       return this.get(id)!;
     },
 
