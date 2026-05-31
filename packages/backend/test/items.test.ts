@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createItemsService, ItemPolicyError, BlockerCycleError } from '../src/items/service.js';
+import { SessionNotFoundError } from '@throughline/shared';
 import { createProjectsService } from '../src/projects/service.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
@@ -47,6 +48,33 @@ describe('items service', () => {
       // The scalar UPDATE shared the transaction with the audit insert that threw, so it
       // rolled back: the item is unchanged.
       expect(items.get(item.id)!.title).toBe('original');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('S5-03: creating an item with a stale session_id maps to SessionNotFoundError (4xx), not a 500', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      // `INSERT OR IGNORE` does not suppress an FK violation; pre-fix the stale session_id
+      // surfaced as a raw SQLite error → 500. It must now be a domain error the central
+      // handler serialises, and the item must not be half-created (rolled back in the txn).
+      expect(() =>
+        items.create({ project_id: project.id, title: 'x', session_ids: ['ghost-session'] }),
+      ).toThrow(SessionNotFoundError);
+      expect(items.list({ project_id: project.id })).toHaveLength(0);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('S5-03: addSessionMembership with a stale session_id maps to SessionNotFoundError', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      const item = items.create({ project_id: project.id, title: 'x' });
+      expect(() => items.addSessionMembership(item.id, 'ghost-session')).toThrow(
+        SessionNotFoundError,
+      );
     } finally {
       await backend.cleanup();
     }

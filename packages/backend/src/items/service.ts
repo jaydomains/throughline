@@ -10,7 +10,7 @@ import type {
   ModuleSummary,
   UpdateItemInput,
 } from '@throughline/shared';
-import { ItemNotFoundError, ProjectNotFoundError } from '@throughline/shared';
+import { ItemNotFoundError, ProjectNotFoundError, SessionNotFoundError } from '@throughline/shared';
 import { DomainError } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import {
@@ -285,6 +285,28 @@ export function createItemsService(
     return row ?? null;
   }
 
+  // S5-03: insert an item↔session membership, mapping a stale session_id to a domain
+  // error the central handler serialises (a "session not found", like every other missing
+  // reference in the codebase) instead of letting the raw SQLite FK violation surface as a
+  // 500. `INSERT OR IGNORE` suppresses UNIQUE conflicts but NOT foreign-key violations, so
+  // a non-existent session_id throws SQLITE_CONSTRAINT_FOREIGNKEY here.
+  function insertSessionMembership(itemId: string, sessionId: string): { changes: number } {
+    try {
+      return db
+        .prepare('INSERT OR IGNORE INTO item_session_memberships (item_id, session_id) VALUES (?, ?)')
+        .run(itemId, sessionId);
+    } catch (err) {
+      if (
+        err !== null &&
+        typeof err === 'object' &&
+        (err as { code?: unknown }).code === 'SQLITE_CONSTRAINT_FOREIGNKEY'
+      ) {
+        throw new SessionNotFoundError(sessionId);
+      }
+      throw err;
+    }
+  }
+
   // Methodology-context join tables (C-D12). Each provided field fully replaces that
   // dimension's rows; an undefined field is left untouched (PATCH semantics).
   function writeContext(
@@ -540,7 +562,7 @@ export function createItemsService(
           db.prepare('INSERT OR IGNORE INTO item_tags (item_id, tag) VALUES (?, ?)').run(id, tag);
         }
         for (const sid of input.session_ids ?? []) {
-          db.prepare('INSERT OR IGNORE INTO item_session_memberships (item_id, session_id) VALUES (?, ?)').run(id, sid);
+          insertSessionMembership(id, sid);
         }
         writeContext(id, input.methodology_context);
         syncMentions(id, project.id, input.description ?? '');
@@ -808,9 +830,7 @@ export function createItemsService(
     addSessionMembership(id, sessionId) {
       const before = getRow(id);
       if (!before) throw new ItemNotFoundError(id);
-      const r = db
-        .prepare('INSERT OR IGNORE INTO item_session_memberships (item_id, session_id) VALUES (?, ?)')
-        .run(id, sessionId);
+      const r = insertSessionMembership(id, sessionId);
       if (r.changes > 0) {
         appendAudit(db, {
           projectId: before.project_id,
