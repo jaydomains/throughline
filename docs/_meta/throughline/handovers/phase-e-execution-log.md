@@ -51,7 +51,7 @@
 
 ### E4 — Notifier capability honesty
 - **Branch:** `claude/phase-e-e4-notifier-honesty`
-- **PR:** _pending (this slice)_
+- **PR:** #91 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** SF5-03 (Crit) — when `node-notifier` was absent, `createOsNotifier` fell back to a no-op whose `notify()` resolved as if delivered; the test endpoint returned `{ok:true}` + flipped `os_notifications_enabled=true`, and the reminder scheduler called `markFired` regardless. A non-delivery masqueraded as a delivery (the reminder was silently consumed and never surfaced).
 - **Fix (T-D60, on-contract; no new anchor):** `notify()` now returns a disclosed `NotifyResult` (`outcome: 'delivered' | 'unavailable' | 'failed'`) and `Notifier` carries a `kind` (`'os' | 'unavailable'`). The old `createNoopNotifier` is split into `createRecordingNotifier` (test double that delivers) and `createUnavailableNotifier` (the honest capability-absent production fallback `createOsNotifier` now returns). The test endpoint returns a shared `NotificationTestResult` and sets the setting **only** on `delivered`; the scheduler calls `markFired` **only** on `delivered`, leaving the directive armed otherwise; the settings panel renders an honest "no backend" warning on `unavailable`.
