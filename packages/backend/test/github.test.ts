@@ -9,6 +9,7 @@ import { createGateRuntime } from '../src/methodology/gates/runtime.js';
 import { createAnthropicJudgementGate } from '../src/methodology/gates/judgement.js';
 import { createGithubStateCache } from '../src/github/state-cache.js';
 import { createGitHubPoller } from '../src/github/poller.js';
+import { createJobHealth } from '../src/health/job-health.js';
 import { createPrLinkingService } from '../src/github/pr-linking.js';
 import { createOrphanRulesService } from '../src/github/orphan-rules.js';
 import { createAutoReconcileService } from '../src/github/auto-reconcile.js';
@@ -147,6 +148,61 @@ describe('Phase 10 — GitHub poller', () => {
       watch: false,
     });
     expect(await poller.pollProject(s.project.id)).toEqual([]);
+    await s.backend.cleanup();
+  });
+
+  it('records loop health: a failed poll flips healthy:false + surfaces last_error (E5/C-D26)', async () => {
+    const s = await setup();
+    const cache = createGithubStateCache(s.backend.db);
+    const tier4 = createTier4Service({
+      db: s.backend.db,
+      projects: s.projects,
+      registry: s.backend.registry,
+      drift: s.drift,
+    });
+    const health = createJobHealth('github-poller');
+    const base = fakeApi();
+    const api: GitHubApi = {
+      ...base,
+      listPulls: vi.fn(async () => {
+        throw new Error('github 500');
+      }),
+    };
+    const poller = createGitHubPoller({
+      db: s.backend.db,
+      projects: s.projects,
+      api,
+      localGit: localGitUnavailable,
+      cache,
+      drift: s.drift,
+      gateRuntime: s.gateRuntime,
+      autoReconcile: createAutoReconcileService({
+        db: s.backend.db,
+        projects: s.projects,
+        items: s.items,
+        reconcile: {} as ReconcileService,
+      }),
+      tier4,
+      watch: false,
+      health,
+    });
+
+    // Pre-E5 a failing poll was a silent warn-log with no observable state.
+    expect(health.snapshot().healthy).toBe(true);
+    await expect(poller.pollProject(s.project.id)).rejects.toThrow('github 500');
+    expect(health.snapshot().healthy).toBe(false);
+    expect(health.snapshot().last_error).toContain('github 500');
+
+    // A subsequent clean poll recovers the health.
+    (api.listPulls as ReturnType<typeof vi.fn>).mockImplementation(async () => ({
+      status: 'ok' as const,
+      etag: 'e',
+      data: [],
+    }));
+    await poller.pollProject(s.project.id);
+    expect(health.snapshot().healthy).toBe(true);
+    expect(health.snapshot().last_error).toBeNull();
+
     await s.backend.cleanup();
   });
 

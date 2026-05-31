@@ -43,6 +43,8 @@ import { registerAuditRoutes } from './audit/routes.js';
 import { registerMethodologyRoutes } from './routes/methodologies.js';
 import { registerCommunicationModelRoutes } from './routes/communication-model.js';
 import { registerHealthRoute } from './routes/health.js';
+import { createJobHealthRegistry } from './health/job-health.js';
+import { registerJobHealthRoutes } from './health/routes.js';
 import { registerEventsRoute, createSSEHub } from './routes/events.js';
 import { registerWebRoutes } from './routes/web.js';
 import { createAnthropicClient } from './ai/anthropic.js';
@@ -199,9 +201,13 @@ export async function startServer(
     settings,
     archiveDir: config.archiveDir,
   });
+  // C-D26 — per-loop background-job health (E5). One registry collects the three loops'
+  // trackers; the health route reads it. Distinct from the C-D25 frontend layer (LBD-3).
+  const jobHealth = createJobHealthRegistry();
   const backupScheduler = createBackupScheduler({
     service: backup,
     settings,
+    health: jobHealth.track('backup'),
     logger: {
       info: (m) => app.log.info(m),
       warn: (m) => app.log.warn(m),
@@ -417,6 +423,7 @@ export async function startServer(
     autoReconcile,
     tier4,
     watch: watchInbox,
+    health: jobHealth.track('github-poller'),
     logger: {
       info: (m) => app.log.info(m),
       warn: (m) => app.log.warn(m),
@@ -539,6 +546,7 @@ export async function startServer(
     notifier,
     items,
     library,
+    health: jobHealth.track('reminders'),
     logger: {
       info: (m) => app.log.info(m),
       warn: (m) => app.log.warn(m),
@@ -547,6 +555,7 @@ export async function startServer(
   });
 
   registerHealthRoute(app);
+  registerJobHealthRoutes(app, jobHealth);
   registerEventsRoute(app, sseHub);
   registerMethodologyRoutes(app, registry);
   registerGateRoutes(app, {

@@ -3,6 +3,7 @@ import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
 import type { LibraryService } from '../library/service.js';
 import type { Notifier } from '../notifier/index.js';
+import type { JobHealth } from '../health/job-health.js';
 import type { DirectivesService } from './service.js';
 
 // Phase 6b — reminder scheduler. Polls the directives table on a configurable tick
@@ -23,6 +24,10 @@ export interface ReminderSchedulerOptions {
   intervalMs?: number;
   now?: () => Date;
   logger?: { info: (m: string) => void; warn: (m: string) => void; error: (m: string) => void };
+  // Optional per-loop health tracker (C-D26). A reminder that fails to *fire* (the
+  // notifier throws) degrades the loop; a graceful non-delivery ('unavailable'/'failed'
+  // outcome) does not — that is the notifier's capability state (E4), not a loop fault.
+  health?: JobHealth;
 }
 
 export interface ReminderScheduler {
@@ -71,6 +76,7 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
   async function tick(): Promise<void> {
     if (running) return;
     running = true;
+    let tickError: unknown = null;
     try {
       const due = opts.service.listDueReminders(clock());
       for (const d of due) {
@@ -90,14 +96,21 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
             log?.warn(`reminder ${d.id} not delivered (${detail}); left armed for retry`);
           }
         } catch (err) {
+          tickError = err;
           log?.error(
             `reminder ${d.id} fire failed: ${err instanceof Error ? err.message : String(err)}`,
           );
         }
       }
+    } catch (err) {
+      // listDueReminders / resolve threw — degrade the loop rather than letting it vanish.
+      tickError = err;
+      log?.error(`reminder scheduler tick failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       running = false;
     }
+    if (tickError) opts.health?.recordFailure(clock(), tickError);
+    else opts.health?.recordSuccess(clock());
   }
 
   return {

@@ -1,4 +1,5 @@
 import type { SettingsService } from '../settings/service.js';
+import type { JobHealth } from '../health/job-health.js';
 import type { BackupService } from './service.js';
 import { KEY_BACKUP_NUDGE_INTERVAL_DAYS } from './service.js';
 
@@ -13,6 +14,9 @@ export interface BackupSchedulerOptions {
   intervalMs?: number;
   now?: () => Date;
   logger?: { info: (m: string) => void; warn: (m: string) => void; error: (m: string) => void };
+  // Optional per-loop health tracker (C-D26). When present, a clean tick records success
+  // and a tick that threw records the failure, making the loop's state observable.
+  health?: JobHealth;
 }
 
 export interface BackupScheduler {
@@ -37,6 +41,9 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
   async function tick(): Promise<void> {
     if (running) return;
     running = true;
+    // Capture the first sub-op failure so the loop's health reflects a degraded tick
+    // (C-D26) — the sub-catches keep logging, but the failure is no longer invisible.
+    let tickError: unknown = null;
     try {
       const status = opts.service.status();
       const intervalDays = toPositiveInt(
@@ -52,6 +59,7 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
             await opts.service.autoCopy();
             log?.info('backup: auto-copy completed');
           } catch (err) {
+            tickError ??= err;
             log?.error(
               `backup: auto-copy failed: ${err instanceof Error ? err.message : String(err)}`,
             );
@@ -62,13 +70,21 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
         const removed = opts.service.pruneArchive();
         if (removed > 0) log?.info(`backup: pruned ${removed} expired archive day(s)`);
       } catch (err) {
+        tickError ??= err;
         log?.warn(
           `backup: archive prune failed: ${err instanceof Error ? err.message : String(err)}`,
         );
       }
+    } catch (err) {
+      // status() / settings read threw — previously this propagated unhandled out of the
+      // void tick(); now it degrades the loop's health rather than vanishing.
+      tickError ??= err;
+      log?.error(`backup: tick failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       running = false;
     }
+    if (tickError) opts.health?.recordFailure(clock(), tickError);
+    else opts.health?.recordSuccess(clock());
   }
 
   return {

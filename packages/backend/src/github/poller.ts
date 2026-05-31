@@ -4,6 +4,7 @@ import type { PrBadge, PrSnapshot, PrState } from '@throughline/shared';
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { DriftService } from '../drift/service.js';
+import type { JobHealth } from '../health/job-health.js';
 import type { GateRuntime } from '../methodology/gates/runtime.js';
 import type { ProjectsService } from '../projects/service.js';
 import type { GhPull, GitHubApi } from './api.js';
@@ -60,6 +61,9 @@ export interface CreateGitHubPollerOptions {
   watch?: boolean;
   now?: () => number;
   logger?: { info: (m: string) => void; warn: (m: string) => void; error: (m: string) => void };
+  // Optional per-loop health tracker (C-D26): each poll records success/failure so a
+  // poller that starts failing every tick is observable, not a silent warn-log.
+  health?: JobHealth;
 }
 
 export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPoller {
@@ -129,7 +133,14 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
     if (inFlight.has(projectId)) return cache.listSnapshots(repo).map(toBadge);
     inFlight.add(projectId);
     try {
-      return await doPollProject(projectId, project, owner, repoName, repo);
+      const badges = await doPollProject(projectId, project, owner, repoName, repo);
+      // C-D26: a completed poll records loop health; a throw records the failure and
+      // rethrows so callers (the tick loop, the manual-refresh route) behave as before.
+      opts.health?.recordSuccess(new Date(now()));
+      return badges;
+    } catch (err) {
+      opts.health?.recordFailure(new Date(now()), err);
+      throw err;
     } finally {
       inFlight.delete(projectId);
     }
@@ -236,6 +247,8 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
       const cadence = isActive(project.id) ? ACTIVE_CADENCE_MS : IDLE_CADENCE_MS;
       const last = lastPolledAt.get(project.id) ?? 0;
       if (t - last < cadence) continue;
+      // pollProject records loop health (C-D26) for the attempt; the tick only needs to
+      // keep the loop alive past a rejected poll.
       void pollProject(project.id).catch((e) =>
         logger?.warn(`poll failed for ${project.id}: ${e instanceof Error ? e.message : e}`),
       );

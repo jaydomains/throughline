@@ -693,6 +693,29 @@ The `fetcher` is `(() => Promise<T>) | null`; callers build it with `useMemo` ke
 
 ---
 
+## C-D26 — Background-job health model (`lastRunAt` / `lastError` / `healthy` per loop)
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D60 (refuse-rather-than-fallback kinship); SF5-01/02/04 (the silent-failure findings it closes)
+- **Spans:** Phase E slice E5.
+
+### Decision
+Each long-running background loop (the backup scheduler, the reminder scheduler, the GitHub poller) owns a `JobHealth` tracker (`packages/backend/src/health/job-health.ts`) holding `{ last_run_at, last_error, healthy }`. The loop calls `recordSuccess(now)` after a clean tick and `recordFailure(now, err)` after a tick that threw; a `JobHealthRegistry` collects every tracker and `GET /api/background-jobs/health` returns the snapshot as the shared `BackgroundJobsHealthResponse` (`packages/shared/src/health.ts`).
+
+The granularity is **one health record per loop** (not per project / per reminder). The reminder loop's health reflects only a *thrown* tick failure — a graceful non-delivery (the notifier reporting `unavailable` / `failed`, T-D60 / E4) is the notifier's capability state, not a scheduler fault, and does not flip `healthy`.
+
+### Rationale
+- **The silent failure SF5-01/02/04 was the absence of state.** All three loops caught-and-logged: a loop that started failing every tick was indistinguishable from a healthy idle loop, because no field anywhere recorded the failure. C-D26 makes the failure a typed, queryable fact — the backend half of the refuse-rather-than-fallback principle (T-D60) for background work.
+- **Backend data layer, distinct from the C-D25 frontend convention (LBD-3).** The model (`last_run_at` / `last_error` / `healthy`) and the visibility component (C-D25, the in-context tri-state renderer minted in E6) have independent evolution pressure, so they are separate anchors. E5 lands the model + route; E6's C-D25 renders it (and bundle-health) in-context.
+- **Optimistic initial state.** A tracker starts `healthy: true` with `last_run_at: null` — "no failure observed, not yet run" — rather than asserting a health it cannot yet know.
+
+### Implications
+- New background loops take an optional `health?: JobHealth` and record success/failure per tick; the registry and route pick them up with no route change.
+- `GET /api/background-jobs/health` is the single read surface; the E6 C-D25 component consumes it to render per-loop health beside the features each loop drives.
+- Health is most-recent-tick semantics: the poller (per-project, concurrent) reflects the latest poll's outcome, surfacing the most recent `last_error`.
+
+---
+
 ## 1. Process model
 
 ```
