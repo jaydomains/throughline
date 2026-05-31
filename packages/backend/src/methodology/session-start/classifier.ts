@@ -17,11 +17,12 @@ export interface RelevanceCandidate {
 
 export interface RelevanceResult {
   tiers: Record<string, RelevanceTier>;
-  // True only when the AI actually produced a usable classification (a parsed response).
-  // The no-key, failed-call, and unparseable-response paths all degrade to the all-medium
-  // default and report false — so "all-medium fallback" is never reported as AI-classified
-  // (T-D60, SF2-04). Distinct from telemetry.model (which records that a call was *made*,
-  // for cost/audit) — an unparseable response still bills a call but did not classify.
+  // True only when the AI assigned a valid tier to at least one candidate. The no-key,
+  // failed-call, unparseable-response, AND valid-but-empty/all-mismatched paths all degrade
+  // to the all-medium default and report false — so an all-medium result is never reported
+  // as AI-classified (T-D60, SF2-04). Distinct from telemetry.model (which records that a
+  // call was *made*, for cost/audit): a parsed-but-empty response still bills a call but did
+  // not classify.
   classified_by_ai: boolean;
   telemetry: {
     model: string | null;
@@ -82,19 +83,25 @@ export function createAnthropicRelevanceClassifier({
           max_tokens: 800,
         });
         const tiers = allMedium(candidates);
-        let classified = false;
+        let applied = 0;
         try {
           const parsed = JSON.parse(res.text) as Record<string, unknown>;
           for (const c of candidates) {
             const v = parsed[c.ref];
-            if (v === 'high' || v === 'medium' || v === 'low') tiers[c.ref] = v;
+            if (v === 'high' || v === 'medium' || v === 'low') {
+              tiers[c.ref] = v;
+              applied += 1;
+            }
           }
-          classified = true;
         } catch {
-          /* unparseable ⇒ keep the safe all-medium default; the prompt still renders, but
-             the result must report classified_by_ai:false — the AI did not classify (SF2-04).
-             telemetry.model stays set so the (billed) call is still costed + audited. */
+          /* unparseable ⇒ keep the safe all-medium default; classified_by_ai stays false. */
         }
+        // classified_by_ai is true only when the AI assigned a valid tier to at least one
+        // candidate. Parse-success alone is not enough: a valid-but-empty / all-mismatched
+        // response applies nothing and yields the same all-medium result as the fallback —
+        // reporting that as AI-classified is the SF2-04 dishonesty one step removed (T-D60).
+        // telemetry.model stays set regardless so the (billed) call is still costed/audited.
+        const classified = applied > 0;
         return {
           tiers,
           classified_by_ai: classified,

@@ -309,6 +309,18 @@ describe('Phase 13 — session-start scaffolding (C-D9, T-D12)', () => {
     const good = await createAnthropicRelevanceClassifier({ client: okClient }).classify('slice', candidates);
     expect(good.classified_by_ai).toBe(true);
     expect(good.tiers.d1).toBe('high');
+
+    // Valid JSON that applies no tier (empty / all-mismatched keys) yields the same
+    // all-medium result as the fallback — it must report classified_by_ai:false, not true on
+    // parse-success alone (reviewer round-1 finding 1; T-D60 / SF2-04 boundary).
+    const emptyJsonClient: AnthropicClient = {
+      available: () => true,
+      call: async () => ({ text: '{"unrelated":"high"}', input_tokens: 30, output_tokens: 4, stop_reason: 'end_turn' }),
+    };
+    const empty = await createAnthropicRelevanceClassifier({ client: emptyJsonClient }).classify('slice', candidates);
+    expect(empty.classified_by_ai).toBe(false);
+    expect(empty.telemetry.model).not.toBeNull(); // a call was made (billed) — decoupled
+    expect(empty.tiers.d1).toBe('medium'); // all-medium default, indistinguishable from fallback
   });
 
   it('re-render-without-AI: unchanged context serves the cached prompt; a change regenerates', async () => {
