@@ -59,7 +59,7 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
             await opts.service.autoCopy();
             log?.info('backup: auto-copy completed');
           } catch (err) {
-            tickError = err;
+            tickError ??= err;
             log?.error(
               `backup: auto-copy failed: ${err instanceof Error ? err.message : String(err)}`,
             );
@@ -70,7 +70,7 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
         const removed = opts.service.pruneArchive();
         if (removed > 0) log?.info(`backup: pruned ${removed} expired archive day(s)`);
       } catch (err) {
-        tickError = err;
+        tickError ??= err;
         log?.warn(
           `backup: archive prune failed: ${err instanceof Error ? err.message : String(err)}`,
         );
@@ -78,7 +78,7 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
     } catch (err) {
       // status() / settings read threw — previously this propagated unhandled out of the
       // void tick(); now it degrades the loop's health rather than vanishing.
-      tickError = err;
+      tickError ??= err;
       log?.error(`backup: tick failed: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       running = false;
