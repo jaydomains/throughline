@@ -3,6 +3,15 @@
 // between the backend Semble client/service and the frontend code-link, code-Q&A, and
 // dump-zone-enrichment surfaces.
 
+// Capability state of the Semble code-intelligence backend, disclosed on the wire per
+// T-D60 (refuse-rather-than-fallback). The distinction the bare booleans could not express:
+//   'available'   — the binary resolves and runs; results are authoritative.
+//   'unavailable' — not configured (the command does not resolve); the surface is inert.
+//   'degraded'    — installed but not responding (crash, timeout, abnormal exit during
+//                   the probe or the search itself). A degraded search is NEVER rendered
+//                   as a healthy 'available' search that happened to find nothing.
+export type SembleStatus = 'available' | 'unavailable' | 'degraded';
+
 // One hit returned by a Semble code search. line_start/line_end bound the matched chunk;
 // score is Semble's own relevance number when it emits one (null tolerated).
 export interface SembleHit {
@@ -33,8 +42,11 @@ export interface ItemCodeRef {
 }
 
 export interface CodeSearchResponse {
-  // null when Semble is not configured/available (graceful degradation, SPEC §15).
   candidates: CodeSearchCandidate[];
+  // The disclosed capability state (T-D60). `available` is retained as the
+  // healthy-only convenience flag and is true iff `status === 'available'`; clients
+  // distinguish a 'degraded' crash from an 'unavailable' absence via `status`.
+  status: SembleStatus;
   available: boolean;
 }
 
@@ -58,7 +70,10 @@ export interface CodeQaResult {
   // Plain-English answer. null when no Anthropic key (hits still returned as sources).
   answer: string | null;
   sources: CodeQaSource[];
-  // false ⇒ Semble not configured; the surface shows the disabled state (SPEC §15).
+  // The disclosed Semble capability state (T-D60). `semble_available` is the
+  // healthy-only convenience flag (true iff `status === 'available'`); a 'degraded'
+  // crash is distinguished from an 'unavailable' absence via `status`.
+  status: SembleStatus;
   semble_available: boolean;
   // false ⇒ no Anthropic key; sources returned without a synthesised answer.
   summarised: boolean;

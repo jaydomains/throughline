@@ -420,10 +420,15 @@ function CodeQaPanel({ projectId }: { projectId: string }) {
         </button>
       </div>
       {error && <p className="muted">{error}</p>}
-      {result && !result.semble_available && (
+      {result && result.status === 'unavailable' && (
         <p className="muted">Semble is not configured — code Q&amp;A is unavailable.</p>
       )}
-      {result && result.semble_available && result.sources.length === 0 && (
+      {result && result.status === 'degraded' && (
+        <p className="muted">
+          Semble is installed but not responding — code Q&amp;A is unavailable right now.
+        </p>
+      )}
+      {result && result.status === 'available' && result.sources.length === 0 && (
         <p className="muted">No relevant code found.</p>
       )}
       {result && result.answer && (
@@ -431,7 +436,7 @@ function CodeQaPanel({ projectId }: { projectId: string }) {
           {result.answer}
         </p>
       )}
-      {result && result.semble_available && !result.summarised && result.sources.length > 0 && (
+      {result && result.status === 'available' && !result.summarised && result.sources.length > 0 && (
         <p className="muted">
           Anthropic key not configured — showing located sources without a summary.
         </p>
