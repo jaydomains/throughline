@@ -112,7 +112,7 @@
 
 ### E8 — Shutdown lifecycle completion
 - **Branch:** `claude/phase-e-e8-shutdown-lifecycle`
-- **PR:** _pending (this slice)_
+- **PR:** #95 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S7-02 (High — SSE `reply.hijack()` sockets + un-`unref`'d ping; `app.close()` never ended them), SF5-11 (unguarded SSE ping write + no global `unhandledRejection`/`uncaughtException` handler), S7-03 residual (`backup`/`directives` scheduler `stop()` cleared the timer without awaiting an in-flight tick). Poller was already drained — not re-touched.
 - **Fix (no anchor):**
