@@ -161,7 +161,7 @@
 
 ### E11 — Transaction atomicity
 - **Branch:** `claude/phase-e-e11-transaction-atomicity`
-- **PR:** _pending (this slice)_
+- **PR:** #98 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S5-04 (`items.update` wrote the scalar UPDATE + methodology-context + mentions + audit rows **unwrapped**, unlike `create` — a throw partway left a half-written item), S6-03 (md-ingest batch loop: a file's library entry + audit + cost were separate writes), S6-04 (`writeSecrets` did a read-modify-`writeFileSync` — a crash mid-write could truncate/corrupt the secrets file and lose both keys).
 - **Fix (no anchor):** wrap `items.update`'s write block in a `db.transaction` (mirrors `create`; the status hook + final read stay outside); commit each md-ingest file's entry + audit + cost in a **per-file** `db.transaction` (the AI `summarise` is awaited *before* the txn — whole-batch atomicity is infeasible/undesirable across N per-file AI calls and a sqlite txn can't span an `await`); write secrets atomically via write-temp + `renameSync` (atomic within a filesystem), with temp cleanup on failure.
