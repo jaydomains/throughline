@@ -6,7 +6,7 @@ import { createItemsService } from '../src/items/service.js';
 import { createLibraryService } from '../src/library/service.js';
 import { createDirectivesService } from '../src/directives/service.js';
 import { createReminderScheduler } from '../src/directives/scheduler.js';
-import { createNoopNotifier } from '../src/notifier/index.js';
+import { createRecordingNotifier, createUnavailableNotifier } from '../src/notifier/index.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -27,7 +27,7 @@ async function setup(now: () => Date = () => FIXED_NOW) {
   const items = createItemsService(backend.db, projects, backend.registry);
   const library = createLibraryService(backend.db, projects);
   const directives = createDirectivesService(backend.db, projects, items, library, { now });
-  const notifier = createNoopNotifier();
+  const notifier = createRecordingNotifier();
   const scheduler = createReminderScheduler({
     db: backend.db,
     service: directives,
@@ -126,6 +126,7 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       const item = items.create({ project_id: project.id, title: 'Track item' });
       let attempts = 0;
       const flaky = {
+        kind: 'os' as const,
         async notify() {
           attempts += 1;
           throw new Error('daemon_offline');
@@ -156,6 +157,48 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       await scheduler.tick();
       expect(attempts).toBe(2);
       expect(errors.length).toBeGreaterThan(0);
+      const refreshed = directives.get(d.id);
+      expect(refreshed?.last_fired_at).toBeNull();
+      expect(refreshed?.next_fire_at).toBe('2026-05-13T11:00:00.000Z');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('an unavailable notifier does NOT consume the reminder — left armed, not marked fired (SF5-03)', async () => {
+    // The capability-absent path: no OS backend. Pre-E4 the no-op fallback resolved as if
+    // delivered, so markFired ran and the reminder was silently lost. It must now stay armed.
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const directives = createDirectivesService(backend.db, projects, items, library, {
+        now: () => FIXED_NOW,
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+      const item = items.create({ project_id: project.id, title: 'Track item' });
+      const warnings: string[] = [];
+      const scheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: createUnavailableNotifier(),
+        items,
+        library,
+        now: () => FIXED_NOW,
+        logger: { info: () => {}, warn: (m) => warnings.push(m), error: () => {} },
+      });
+      const d = directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
+      });
+      await scheduler.tick();
+      expect(warnings.some((m) => m.includes('unavailable'))).toBe(true);
       const refreshed = directives.get(d.id);
       expect(refreshed?.last_fired_at).toBeNull();
       expect(refreshed?.next_fire_at).toBe('2026-05-13T11:00:00.000Z');

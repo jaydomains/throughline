@@ -145,6 +145,16 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     await waitFor(() => expect(mockApi.testNotification).toHaveBeenCalled());
   });
 
+  it('E4/SF5-03: an unavailable notifier surfaces an honest warning, not silent success', async () => {
+    mockApi.testNotification.mockResolvedValueOnce({
+      outcome: 'unavailable',
+      message: 'no backend',
+    });
+    renderView();
+    fireEvent.click(await screen.findByTestId('grant-notifications'));
+    expect(await screen.findByTestId('notifications-unavailable')).toBeTruthy();
+  });
+
   it('Phase 18 Slice 2: communication-model section shows the "none" hint for freeform-shaped views', async () => {
     // The default mock returns status: 'none' → the section shows the "nothing to
     // configure" hint instead of any input rows.

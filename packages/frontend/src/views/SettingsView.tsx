@@ -5,6 +5,7 @@ import type {
   CommunicationModelView,
   CostSummary,
   DisciplineScanState,
+  NotifyOutcome,
   OrphanedRule,
   Project,
   SecretsPresenceResult,
@@ -457,10 +458,19 @@ function NotificationsSection({
   onChanged: () => void;
 }) {
   const [busy, setBusy] = useState(false);
+  // Last test outcome (T-D60 honesty): 'unavailable' must read distinctly from a healthy
+  // grant — the user is never told notifications work when this system has no backend.
+  const [outcome, setOutcome] = useState<NotifyOutcome | null>(null);
   const grant = async () => {
     setBusy(true);
     try {
-      await api.testNotification();
+      const result = await api.testNotification();
+      setOutcome(result.outcome);
+      if (result.outcome === 'failed') {
+        onError(result.message ?? 'Notification delivery failed.');
+      }
+      // Refresh settings so `enabled` reflects the backend (it flips on only for a real
+      // 'delivered'); 'unavailable'/'failed' leave it off.
       onChanged();
     } catch (e) {
       onError(e instanceof Error ? e.message : String(e));
@@ -475,6 +485,12 @@ function NotificationsSection({
           ? 'OS notifications enabled. Click again to re-test delivery.'
           : 'Grant permission by firing a test notification — your OS will prompt the first time.'}
       </p>
+      {outcome === 'unavailable' && (
+        <p className="settings-warning" role="alert" data-testid="notifications-unavailable">
+          This system has no OS notification backend, so reminders cannot be delivered and
+          will stay pending. Install <code>node-notifier</code> to enable native delivery.
+        </p>
+      )}
       <button type="button" onClick={grant} disabled={busy} data-testid="grant-notifications">
         {enabled ? 'Send test notification' : 'Grant / test OS notifications'}
       </button>

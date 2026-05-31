@@ -28,6 +28,7 @@ import type {
   LibrarySearchRequest,
   MdIngestFolder,
   MdScanResult,
+  NotificationTestResult,
   PromptFillRequest,
   Project,
   ProposeRequest,
@@ -294,7 +295,7 @@ export const mockApi = {
   }),
   getSecrets: vi.fn(async () => ({ anthropic_api_key: false, github_pat: false })),
   updateSecrets: vi.fn(async () => ({ anthropic_api_key: true, github_pat: false })),
-  testNotification: vi.fn(async () => ({ ok: true as const })),
+  testNotification: vi.fn(async (): Promise<NotificationTestResult> => ({ outcome: 'delivered' })),
   getBackupStatus: vi.fn(async () => ({
     last_backup_at: null,
     threshold_days: 7,

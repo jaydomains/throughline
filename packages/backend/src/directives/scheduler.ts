@@ -75,12 +75,22 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
       const due = opts.service.listDueReminders(clock());
       for (const d of due) {
         try {
-          await opts.notifier.notify({
+          const result = await opts.notifier.notify({
             title: resolveTitle(d),
             body: resolveBody(d),
             url: resolveUrl(d),
           });
-          opts.service.markFired(d.id, clock());
+          // E4 / T-D60: only a real delivery consumes the reminder. An 'unavailable'
+          // (no OS backend) or 'failed' fire leaves the directive armed for the next
+          // tick — a non-delivery is never marked as delivered (SF5-03).
+          if (result.outcome === 'delivered') {
+            opts.service.markFired(d.id, clock());
+          } else {
+            log?.warn(
+              `reminder ${d.id} not delivered (${result.outcome}` +
+                `${result.error ? `: ${result.error}` : ''}); left armed for retry`,
+            );
+          }
         } catch (err) {
           log?.error(
             `reminder ${d.id} fire failed: ${err instanceof Error ? err.message : String(err)}`,
