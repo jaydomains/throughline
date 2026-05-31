@@ -14,7 +14,18 @@ import type {
   RelevanceClassifier,
   RelevanceCandidate,
 } from '../src/methodology/session-start/classifier.js';
+import { createAnthropicRelevanceClassifier } from '../src/methodology/session-start/classifier.js';
+import type { AnthropicClient } from '../src/ai/anthropic.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
+
+// A client that "succeeds" (a billed call) but returns text the classifier can't parse —
+// the SF2-04 case: an unparseable AI response that used to be reported as AI-classified.
+function nonJsonClient(): AnthropicClient {
+  return {
+    available: () => true,
+    call: async () => ({ text: 'sorry, I cannot help with that', input_tokens: 50, output_tokens: 8, stop_reason: 'end_turn' }),
+  };
+}
 
 const TEST_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'test-bundle', 'bundle.md');
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -48,6 +59,7 @@ function stubClassifier(
       for (const c of candidates) tiers[c.ref] = tierFor(c);
       return {
         tiers,
+        classified_by_ai: available,
         telemetry: available
           ? { model: 'claude-haiku-4-5', input_tokens: 90, output_tokens: 20, prompt: _slice }
           : { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
@@ -255,6 +267,48 @@ describe('Phase 13 — session-start scaffolding (C-D9, T-D12)', () => {
     } finally {
       await s.cleanup();
     }
+  });
+
+  it('unparseable AI ⇒ classifier_used_ai false, all-medium, but the call is still costed (SF2-04)', async () => {
+    // The real classifier with a client that returns non-JSON: the call is made (and billed),
+    // but it did not classify — so the result must report classifier_used_ai:false (not true)
+    // while cost is still recorded (the decoupling: classified_by_ai vs a billed call).
+    const s = await setup('test-bundle', createAnthropicRelevanceClassifier({ client: nonJsonClient() }));
+    try {
+      s.items.create({
+        project_id: s.project.id,
+        type: 'note',
+        title: 'a decision',
+        description: 'body',
+        status: 'draft',
+      });
+      const r = await s.engine.generate(s.project.id, null);
+      expect(r.classifier_used_ai).toBe(false); // SF2-04: was true before the fix
+      // Degraded to the safe all-medium default ⇒ citation line, not full body.
+      expect(r.prompt).toContain('- a decision (');
+      expect(r.prompt).not.toContain('### a decision');
+      // The billed call is still costed + audited — cost reflects the call, not the parse.
+      expect(costRows(s.backend.db, s.project.id)).toBe(1);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('classifier reports classified_by_ai honestly: false on unparseable, true on parsed', async () => {
+    const candidates: RelevanceCandidate[] = [{ ref: 'd1', text: 'a decision' }];
+    const unparseable = createAnthropicRelevanceClassifier({ client: nonJsonClient() });
+    const bad = await unparseable.classify('slice', candidates);
+    expect(bad.classified_by_ai).toBe(false);
+    expect(bad.telemetry.model).not.toBeNull(); // a call was made (billed) — decoupled
+    expect(bad.tiers.d1).toBe('medium'); // safe all-medium default
+
+    const okClient: AnthropicClient = {
+      available: () => true,
+      call: async () => ({ text: '{"d1":"high"}', input_tokens: 40, output_tokens: 5, stop_reason: 'end_turn' }),
+    };
+    const good = await createAnthropicRelevanceClassifier({ client: okClient }).classify('slice', candidates);
+    expect(good.classified_by_ai).toBe(true);
+    expect(good.tiers.d1).toBe('high');
   });
 
   it('re-render-without-AI: unchanged context serves the cached prompt; a change regenerates', async () => {

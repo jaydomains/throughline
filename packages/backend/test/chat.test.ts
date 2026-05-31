@@ -28,6 +28,10 @@ function stubAnthropic(answer: string): AnthropicClient {
 function offAnthropic(): AnthropicClient {
   return { available: () => false, call: async () => { throw new Error('off'); } };
 }
+// A configured key whose call fails — the SF3-03 case that used to masquerade as "no key".
+function failingAnthropic(): AnthropicClient {
+  return { available: () => true, call: async () => { throw new Error('502 upstream'); } };
+}
 function costRows(db: DB, feature: string): number {
   return (db.prepare(`SELECT COUNT(*) n FROM cost_telemetry WHERE feature = ?`).get(feature) as { n: number }).n;
 }
@@ -139,6 +143,53 @@ describe('Phase 14 — chat (SPEC §7.19, T-D23)', () => {
       ).rejects.toBeInstanceOf(ProjectNotFoundError);
     } finally {
       await s.cleanup();
+    }
+  });
+
+  it('a failed AI call reports ai_status "failed", not "no key configured" (T-D60, SF3-03)', async () => {
+    const s = await setup(failingAnthropic());
+    try {
+      const r = await s.chat.send(s.project.id, {
+        context_type: 'session',
+        context_id: 's1',
+        message: 'hello',
+      });
+      expect(r.used_ai).toBe(false);
+      expect(r.ai_status).toBe('failed');
+      // The honesty fix: a failed call must NOT read as "AI is not configured".
+      expect(r.assistant_message.content).not.toContain('not configured');
+      expect(r.assistant_message.content).toContain('AI call failed');
+      expect(costRows(s.backend.db, 'chat')).toBe(0);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('no key reports ai_status "unavailable"; a usable reply reports "ok"', async () => {
+    const off = await setup(offAnthropic());
+    try {
+      const r = await off.chat.send(off.project.id, {
+        context_type: 'session',
+        context_id: 's1',
+        message: 'hi',
+      });
+      expect(r.used_ai).toBe(false);
+      expect(r.ai_status).toBe('unavailable');
+      expect(r.assistant_message.content).toContain('not configured');
+    } finally {
+      await off.cleanup();
+    }
+    const on = await setup(stubAnthropic('here is a reply'));
+    try {
+      const r = await on.chat.send(on.project.id, {
+        context_type: 'session',
+        context_id: 's1',
+        message: 'hi',
+      });
+      expect(r.used_ai).toBe(true);
+      expect(r.ai_status).toBe('ok');
+    } finally {
+      await on.cleanup();
     }
   });
 });

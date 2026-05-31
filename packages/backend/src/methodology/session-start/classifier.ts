@@ -17,6 +17,12 @@ export interface RelevanceCandidate {
 
 export interface RelevanceResult {
   tiers: Record<string, RelevanceTier>;
+  // True only when the AI actually produced a usable classification (a parsed response).
+  // The no-key, failed-call, and unparseable-response paths all degrade to the all-medium
+  // default and report false — so "all-medium fallback" is never reported as AI-classified
+  // (T-D60, SF2-04). Distinct from telemetry.model (which records that a call was *made*,
+  // for cost/audit) — an unparseable response still bills a call but did not classify.
+  classified_by_ai: boolean;
   telemetry: {
     model: string | null;
     input_tokens: number;
@@ -60,6 +66,7 @@ export function createAnthropicRelevanceClassifier({
       if (candidates.length === 0 || !client.available()) {
         return {
           tiers: allMedium(candidates),
+          classified_by_ai: false,
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
@@ -75,17 +82,22 @@ export function createAnthropicRelevanceClassifier({
           max_tokens: 800,
         });
         const tiers = allMedium(candidates);
+        let classified = false;
         try {
           const parsed = JSON.parse(res.text) as Record<string, unknown>;
           for (const c of candidates) {
             const v = parsed[c.ref];
             if (v === 'high' || v === 'medium' || v === 'low') tiers[c.ref] = v;
           }
+          classified = true;
         } catch {
-          /* unparseable ⇒ keep the safe all-medium default; the prompt still renders */
+          /* unparseable ⇒ keep the safe all-medium default; the prompt still renders, but
+             the result must report classified_by_ai:false — the AI did not classify (SF2-04).
+             telemetry.model stays set so the (billed) call is still costed + audited. */
         }
         return {
           tiers,
+          classified_by_ai: classified,
           telemetry: {
             model,
             input_tokens: res.input_tokens,
@@ -97,6 +109,7 @@ export function createAnthropicRelevanceClassifier({
         // A failed call must not fail prompt assembly — degrade, no cost.
         return {
           tiers: allMedium(candidates),
+          classified_by_ai: false,
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }

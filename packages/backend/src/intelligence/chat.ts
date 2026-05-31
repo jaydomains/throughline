@@ -1,5 +1,6 @@
 import { nanoid } from 'nanoid';
 import type {
+  AiCallStatus,
   ChatHistoryResult,
   ChatMessage,
   ChatProposeRequest,
@@ -31,6 +32,11 @@ import type { ProjectsService } from '../projects/service.js';
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 800;
 const HISTORY_LIMIT = 40;
+
+const NO_KEY_REPLY =
+  'AI is not configured — your message is saved. Set an Anthropic API key in settings.json to get a reply.';
+const FAILED_REPLY =
+  'The AI call failed — your message is saved. Try again; if it persists, check the backend logs or your Anthropic key.';
 
 export interface ChatService {
   history(
@@ -143,10 +149,15 @@ export function createChatService(opts: CreateOptions): ChatService {
       const prior = rows(projectId, ct, ci).slice(-HISTORY_LIMIT);
       const userMsg = persist(projectId, ct, ci, 'user', req.message);
 
-      let reply =
-        'AI is not configured — your message is saved. Set an Anthropic API key to get a reply.';
+      // Default to the honest no-key state; a configured key downgrades to 'failed' (and
+      // the failed-call reply) until a usable reply upgrades it to 'ok'. This is what keeps
+      // a failed call from masquerading as "no key configured" (T-D60, SF3-03).
+      let reply = NO_KEY_REPLY;
       let usedAi = false;
+      let aiStatus: AiCallStatus = 'unavailable';
       if (anthropic.available()) {
+        aiStatus = 'failed';
+        reply = FAILED_REPLY;
         const model = resolveModel ? resolveModel() : MODEL;
         const system =
           ct === 'session'
@@ -170,7 +181,11 @@ export function createChatService(opts: CreateOptions): ChatService {
           if (res.text.trim() !== '') {
             reply = res.text;
             usedAi = true;
+            aiStatus = 'ok';
           }
+          // An empty reply leaves aiStatus 'failed' + the failed-call reply: the call was
+          // made (cost/audit below still fire) but produced nothing usable — honestly
+          // distinct from the no-key stub.
           if (res.input_tokens > 0 || res.output_tokens > 0) {
             recordCost(db, {
               projectId,
@@ -196,12 +211,17 @@ export function createChatService(opts: CreateOptions): ChatService {
             },
           });
         } catch {
-          /* AI failure ⇒ keep the stub reply, used_ai false */
+          /* AI failure ⇒ keep the failed-call reply, used_ai false, ai_status 'failed' */
         }
       }
 
       const assistantMsg = persist(projectId, ct, ci, 'assistant', reply);
-      return { user_message: userMsg, assistant_message: assistantMsg, used_ai: usedAi };
+      return {
+        user_message: userMsg,
+        assistant_message: assistantMsg,
+        used_ai: usedAi,
+        ai_status: aiStatus,
+      };
     },
 
     async propose(projectId, req) {

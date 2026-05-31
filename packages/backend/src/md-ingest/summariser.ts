@@ -25,7 +25,20 @@ export interface SummariseTelemetry {
 export interface SummariseResult {
   summary: string;
   tags: string[];
+  // Which path produced the summary, and a disclosure note when it degraded to the
+  // heuristic — mirrors the dump-zone / reconcile extractor_note twins so an AI
+  // summary-failure is surfaced, not silently presented as a healthy summary (T-D60,
+  // SF4-02). null note ⇒ the AI summary was used.
+  extractor: 'anthropic' | 'heuristic';
+  extractor_note: string | null;
   telemetry: SummariseTelemetry;
+}
+
+export const HEURISTIC_SUMMARY_NOTE =
+  'Heuristic summariser used — configure an Anthropic API key in settings.json to enable AI summaries.';
+
+function withHeuristicNote(extraNote?: string): string {
+  return extraNote ? `${extraNote} ${HEURISTIC_SUMMARY_NOTE}` : HEURISTIC_SUMMARY_NOTE;
 }
 
 export interface MdSummariser {
@@ -108,6 +121,8 @@ export function createHeuristicSummariser(): MdSummariser {
       return {
         summary,
         tags,
+        extractor: 'heuristic',
+        extractor_note: HEURISTIC_SUMMARY_NOTE,
         telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
       };
     },
@@ -173,9 +188,15 @@ export function createAnthropicSummariser({
         });
         const parsed = parseAiResponse(result.text);
         if (parsed === null) {
+          // Call succeeded (billed) but returned non-JSON — degrade to heuristic and
+          // disclose it; telemetry.model stays set so the call is still costed/audited.
           const fallback = heuristicSummary(input);
           return {
             ...fallback,
+            extractor: 'heuristic',
+            extractor_note: withHeuristicNote(
+              'Anthropic returned non-JSON output; falling back to heuristic summary.',
+            ),
             telemetry: {
               model,
               input_tokens: result.input_tokens,
@@ -196,6 +217,8 @@ export function createAnthropicSummariser({
         return {
           summary,
           tags,
+          extractor: 'anthropic',
+          extractor_note: null,
           telemetry: {
             model,
             input_tokens: result.input_tokens,
@@ -203,11 +226,16 @@ export function createAnthropicSummariser({
             prompt: system + '\n\n' + userPrompt,
           },
         };
-      } catch {
-        // Network / API failure: degrade to heuristic, no telemetry (no call billed).
+      } catch (err) {
+        // Network / API failure: degrade to heuristic, no telemetry (no call billed) —
+        // disclosed distinctly from the no-key path (T-D60, SF4-02).
         const fallback = heuristicSummary(input);
         return {
           ...fallback,
+          extractor: 'heuristic',
+          extractor_note: withHeuristicNote(
+            `Anthropic call failed (${err instanceof Error ? err.message : 'unknown error'}); using heuristic summary.`,
+          ),
           telemetry: { model: null, input_tokens: 0, output_tokens: 0, prompt: null },
         };
       }
