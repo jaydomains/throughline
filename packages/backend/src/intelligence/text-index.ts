@@ -3,6 +3,7 @@ import type { DB } from '../db/index.js';
 import type { ItemsService } from '../items/service.js';
 import type { LibraryService } from '../library/service.js';
 import type { ProjectsService } from '../projects/service.js';
+import type { TextEmbedderState } from '@throughline/shared';
 import { cosine, type TextEmbedder } from './embeddings.js';
 
 // C-D2 text substrate index. Indexed entities: item title+description and library entries
@@ -32,6 +33,15 @@ export interface TextHit {
   score: number;
 }
 
+// A search resolves to its hits plus the embedder state that produced them (T-D60). The
+// state is what lets a caller tell a genuine empty (working embedder, no matches) from a
+// refused retrieval ('unavailable' — the embedder threw or returned no query vector), so
+// embed-failure is never silently rendered as "nothing matched".
+export interface TextSearchResult {
+  hits: TextHit[];
+  embedder: TextEmbedderState;
+}
+
 export interface TextIndex {
   ensureFresh(
     projectId: string | null,
@@ -41,7 +51,7 @@ export interface TextIndex {
     projectId: string | null,
     query: string,
     k: number,
-  ): Promise<TextHit[]>;
+  ): Promise<TextSearchResult>;
 }
 
 interface CreateOptions {
@@ -205,8 +215,16 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
   return {
     ensureFresh,
 
-    async search(projectId, query, k) {
-      await ensureFresh(projectId);
+    async search(projectId, query, k): Promise<TextSearchResult> {
+      // A runtime embedder failure during the freshness sweep (re-embedding stale
+      // entities) must surface as a refused retrieval, not crash the query (S4-03,
+      // T-D60). The fallback only ever covered the *import* failure; a post-resolution
+      // extractor throw propagated and took down the whole RAG call until now.
+      try {
+        await ensureFresh(projectId);
+      } catch {
+        return { hits: [], embedder: 'unavailable' };
+      }
       const rows = (
         projectId === null
           ? (db
@@ -231,9 +249,20 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
               chunk_text: string | null;
             }>)
       );
-      if (rows.length === 0) return [];
-      const [qv] = await embedder.embed([query]);
-      if (!qv) return [];
+      // A genuinely empty index is an honest empty served by a working embedder — distinct
+      // from the 'unavailable' refusal below. embedder.kind reports 'transformers' once the
+      // backend has resolved, 'fallback' otherwise.
+      if (rows.length === 0) return { hits: [], embedder: embedder.kind };
+      let qv: number[] | undefined;
+      try {
+        [qv] = await embedder.embed([query]);
+      } catch {
+        // Query-embed threw at runtime — refuse and surface, never silent empty (SF3-02).
+        return { hits: [], embedder: 'unavailable' };
+      }
+      // No query vector ⇒ the embed failed; report it as such, not as "no matches" (SF3-02).
+      if (!qv) return { hits: [], embedder: 'unavailable' };
+      const embedderState: TextEmbedderState = embedder.kind;
       const scored = rows.map((r) => ({
         entity_type: r.entity_type,
         entity_id: r.entity_id,
@@ -251,7 +280,7 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
           s.label = library.get(s.entity_id)?.title ?? s.entity_id;
         }
       }
-      return top;
+      return { hits: top, embedder: embedderState };
     },
   };
 }

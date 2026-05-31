@@ -1334,6 +1334,31 @@ Audit-1 finding I1 (the green-gate reckoning, `AUTHORING_DISCIPLINE.md`) named t
 
 ---
 
+## T-D60 — Refuse-rather-than-fallback: a degraded or failed capability is disclosed, never silently substituted
+
+- **Date:** 2026-05-31
+- **Status:** active — audit-fix Phase E (slice E1 mints this; closes SF3-01, SF3-02, S4-03 and retro-anchors the Phase-D SF2-01 drift-side precedent)
+- **Sections affected:** 7.18, 8, 14
+- **Reach:** broad — the entire dishonest-degradation pattern, not RAG alone. Minted once here and cited downstream by the capability-honesty slices (E2 AI/chat, E3 Semble, E4 notifier).
+
+### Decision
+When a capability is absent, degraded, or fails, Throughline **discloses that state** rather than passing a substitute result off as authoritative or rendering a failure as a healthy-empty result. Disclosure rides the **shared wire contract** (extending T-D59), not a side channel: the response type carries the capability state so the client cannot mistake degraded output for the real thing. Concretely for the text RAG substrate (C-D2): the local embedder reports its `kind` and `RagQueryResult.embedder` surfaces `'transformers'` (authoritative), `'fallback'` (capability-absent honest-distinct mode), `'unavailable'` (refused — embedder threw or produced no vector), or `null` (substrate does not embed). An embed-failure is therefore never indistinguishable from "nothing matched".
+
+### Context
+Audit-4 SF3-01 (Crit): `intelligence/embeddings.ts` pinned a SHA1 lexical fallback on import failure and `RagQueryResult` had no field disclosing it, so keyword-class citations were indistinguishable from real model retrieval. SF3-02 (High): `text-index.ts`'s `if (!qv) return []` collapsed an embed-failure into an honest-empty. S4-03 (Med): a runtime extractor throw after the backend resolved was unhandled and crashed the RAG call (the fallback only ever covered the *import* failure). The common thread is a trust violation the product implicitly forbids — a failure masquerading as a healthy or empty state.
+
+### Rationale
+- **The contract expresses truth (T-D59 kinship).** Putting the capability state on the shared response type means a backend that starts degrading is a typed, test-observable contract fact, not a silent runtime surprise — and the frontend can render the degraded state honestly.
+- **Capability-gating stays; silent substitution goes.** Throughline already degrades gracefully when a dependency is absent (no key, no Semble, no model). T-D60 keeps that — but the degraded mode must announce itself. The line is *disclosed-degraded* (allowed) vs *undisclosed-substitute* (forbidden).
+- **Refuse over fake.** An unexpected runtime failure is refused and surfaced, not papered over with a substitute, because a substitute the user cannot distinguish from the real answer is worse than an honest refusal.
+
+### Implications
+- **Supersedes audit-3's blessing of the silent C-D2 fallback.** T-D60 supersedes the Segment-7 "intentional-but-silent" sanction recorded in `audits/2026-05-28-audit-3-functional-correctness.md:81` ("C-D2 offline deterministic embedding fallback when `@xenova/transformers` absent") — a silent capability substitution is exactly the dishonest-degradation pattern T-D60 forbids.
+- **Narrows C-D2.** C-D2's operative scope is narrowed to **capability-absent honest-distinct mode** only: the local-embedding substrate may operate as an *honestly-disclosed* capability-absent mode, never as an undisclosed SHA1 substitute. The offline *silent* fallback is removed. The narrowing is recorded here (T-D60 is its canonical home, per the SESSION_START anchor convention that supersession is recorded at the superseding anchor); C-D2's body is left intact as the superseded baseline with a one-line non-normative status pointer to this anchor.
+- **Downstream slices cite this anchor.** E2 (AI/chat capability honesty), E3 (Semble degradation), and E4 (notifier capability) apply the same principle without re-minting.
+
+---
+
 ## Working notes (proposals — not yet minted anchors)
 
 Per `SESSION_START.md` (Anchor conventions): new anchors are not invented mid-session; candidate decisions are recorded here as working notes for the spec author to ratify, revise, or reject. These are surfaced, not silently resolved (spec-drift policy).

@@ -9,6 +9,21 @@
 
 export type RagSubstrate = 'text' | 'code' | 'audit';
 
+// The embedding backend that served a text-substrate query, surfaced on the wire so a
+// degraded or failed retrieval is never mistaken for an authoritative result (T-D60,
+// refuse-rather-than-fallback). Disclosure lives on the contract, not a side channel:
+//   - 'transformers' : the real local model ran — authoritative retrieval.
+//   - 'fallback'     : capability-absent honest-distinct mode — the deterministic
+//                      lexical-overlap embedder ran because `@xenova/transformers` is
+//                      unavailable; matches are keyword-class and disclosed as such
+//                      (C-D2, narrowed by T-D60: the substrate may operate this way only
+//                      when disclosed, never as an undisclosed substitute).
+//   - 'unavailable'  : the embedder failed at query time (a runtime throw, or a query that
+//                      produced no vector) — retrieval was refused, NOT silently empty;
+//                      the caller must not read empty citations as "nothing matched".
+//   - null           : the substrate does not use text embeddings (code / audit).
+export type TextEmbedderState = 'transformers' | 'fallback' | 'unavailable';
+
 export interface RagQueryRequest {
   query: string;
   // Explicit substrate override. Omitted/null ⇒ the keyword-heuristic router picks.
@@ -36,6 +51,10 @@ export interface RagQueryResult {
   citations: RagCitation[];
   used_ai: boolean;
   cross_project: boolean;
+  // Text-substrate embedder honesty (T-D60). null for the code/audit substrates, which
+  // do not embed. For text queries this distinguishes a working empty ('transformers' /
+  // 'fallback' with no citations) from a refused/failed retrieval ('unavailable').
+  embedder: TextEmbedderState | null;
 }
 
 export interface RagReindexResult {

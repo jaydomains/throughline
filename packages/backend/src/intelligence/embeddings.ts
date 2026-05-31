@@ -8,7 +8,16 @@ import { createHash } from 'node:crypto';
 // discipline (Semble absent, Anthropic key absent) and keeps the substrate fully offline
 // and the build/tests green without a network round-trip. The fallback is a hashed
 // token-gram vector — lexical-overlap cosine, good enough for keyword-class retrieval
-// until the model is cached. Implementation-shape choice; recorded in the handover.
+// until the model is cached.
+//
+// T-D60 narrows C-D2 (refuse-rather-than-fallback): this fallback is a *capability-absent
+// honest-distinct mode*, never an undisclosed substitute. The embedder reports its `kind`
+// ('transformers' | 'fallback') so callers disclose it on the wire (RagQueryResult.embedder)
+// rather than passing keyword-class hits off as authoritative model retrieval. The import
+// failure is the only thing that pins the fallback (capability genuinely absent); a runtime
+// extractor throw after the real backend resolved is NOT swallowed into the fallback here —
+// it propagates so the search boundary can surface it as a refused retrieval ('unavailable'),
+// not a silent SHA1 substitution. See DECISIONS.md T-D60 / SPEC.md §14.
 
 export interface TextEmbedder {
   readonly kind: 'transformers' | 'fallback';
@@ -66,9 +75,12 @@ const fallbackEmbedder: TextEmbedder = {
   embed: async (texts) => fallbackEmbed(texts),
 };
 
-// Resolved lazily and memoised: the first embed() attempt tries Transformers.js; on any
-// failure (package not installed, model download blocked) it pins the fallback so a
-// subsequent call doesn't re-pay the failed import.
+// Resolved lazily and memoised: the first embed() attempt tries Transformers.js; on an
+// *import/resolution* failure (package not installed, model download blocked) it pins the
+// fallback so a subsequent call doesn't re-pay the failed import — the disclosed
+// capability-absent mode (T-D60). A *runtime* throw from the resolved extractor is not
+// caught here (it is not the absence of a capability); it propagates to the search
+// boundary, which surfaces it as a refused retrieval rather than a silent substitution.
 export function createTextEmbedder(): TextEmbedder {
   let resolved: TextEmbedder | null = null;
   let pending: Promise<TextEmbedder> | null = null;
