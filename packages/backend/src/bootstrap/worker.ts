@@ -8,6 +8,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { dirname, join } from 'node:path';
+import { nanoid } from 'nanoid';
 import {
   BootstrapNoBundleBoundError,
   BootstrapProjectNotFoundError,
@@ -61,13 +62,19 @@ interface QueueItem {
 const BOOTSTRAP_OUTPUT_FILENAME = 'bootstrap-output.json';
 const ARCHIVE_SUBDIR = 'bootstrap-archive';
 const QUARANTINE_SUBDIR = 'bootstrap-quarantine';
+// Suffix of the .error.json marker written on EVERY quarantine (before the payload copy
+// that may fail). Counting these markers — not the payload copies — is what makes a
+// copy-failure quarantine visible (SF1-03 / SF1-01 residual).
+const QUARANTINE_ERROR_SUFFIX = '-bootstrap-output.error.json';
 
-// ISO timestamp safe for filesystem (no colons — Windows-hostile). Matches
-// the dated-subdir intent of inbox.worker.ts:57–63 while keeping the
-// bootstrap-archive convention (single dir, ISO-prefix per file per the
-// transient-files schema in docs/.throughline-schema.md).
+// Filesystem-safe, collision-free filename prefix (S1-01). The ISO timestamp keeps the
+// dated-subdir intent (sortable, no colons — Windows-hostile), but second/millisecond
+// resolution alone collided: two ingests within the same tick produced the same prefix,
+// so the second archive/quarantine write clobbered the first. A nanoid suffix guarantees
+// uniqueness regardless of clock resolution or two writes landing in the same millisecond.
 function timestampPrefix(): string {
-  return new Date().toISOString().replace(/:/g, '-').replace(/\..+$/, 'Z');
+  const iso = new Date().toISOString().replace(/:/g, '-').replace(/\./g, '-');
+  return `${iso}-${nanoid(6)}`;
 }
 
 export function createBootstrapWorker(opts: BootstrapWorkerOptions): BootstrapWorkerWithState {
@@ -105,7 +112,7 @@ export function createBootstrapWorker(opts: BootstrapWorkerOptions): BootstrapWo
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     const stamp = timestampPrefix();
     const jsonPath = join(dir, `${stamp}-${BOOTSTRAP_OUTPUT_FILENAME}`);
-    const errorPath = join(dir, `${stamp}-bootstrap-output.error.json`);
+    const errorPath = join(dir, `${stamp}${QUARANTINE_ERROR_SUFFIX}`);
     // Always emit the .error.json so the user can see what the worker
     // observed even if the payload move fails (permissions on the
     // quarantine dir, disk full, etc.).
@@ -287,12 +294,10 @@ export function readBootstrapState(
   const archiveDir = join(throughlineDir, ARCHIVE_SUBDIR);
   const quarantineDir = join(throughlineDir, QUARANTINE_SUBDIR);
 
-  function countOutputs(dir: string): number {
+  function countBySuffix(dir: string, suffix: string): number {
     if (!existsSync(dir)) return 0;
     try {
-      return readdirSync(dir).filter(
-        (name) => name.endsWith(`-${BOOTSTRAP_OUTPUT_FILENAME}`),
-      ).length;
+      return readdirSync(dir).filter((name) => name.endsWith(suffix)).length;
     } catch {
       return 0;
     }
@@ -303,8 +308,11 @@ export function readBootstrapState(
     promptRendered: existsSync(promptPath),
     pendingOutput: existsSync(outputPath),
     lastIngest,
-    archiveCount: countOutputs(archiveDir),
-    quarantineCount: countOutputs(quarantineDir),
+    archiveCount: countBySuffix(archiveDir, `-${BOOTSTRAP_OUTPUT_FILENAME}`),
+    // Count the .error.json marker (1 per quarantine, written before the copy that may
+    // fail) so a copy-failure — which leaves only the marker — is no longer invisible
+    // (SF1-03 / SF1-01 residual / S1-03).
+    quarantineCount: countBySuffix(quarantineDir, QUARANTINE_ERROR_SUFFIX),
     promptPath: existsSync(promptPath) ? promptPath : null,
     outputPath,
   };

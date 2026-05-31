@@ -126,7 +126,17 @@ export function createBootstrapWatcherRegistry(
       // worker writes (slice 3) go into sibling subdirectories so they're
       // out of scope here anyway.
       if (basename(filePath) !== BOOTSTRAP_OUTPUT_FILENAME) return;
-      worker.enqueue(projectId, filePath);
+      // Guard the enqueue: a throw here runs inside chokidar's event emit, which swallows
+      // it — the detected write would be silently dropped (SF5-05/06). Log and move on so
+      // the watcher stays alive; a genuine output is re-detected on the next change event.
+      try {
+        worker.enqueue(projectId, filePath);
+      } catch (err) {
+        logger?.warn(
+          `bootstrap watch enqueue failed for ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
       void scheduleDrain();
     };
     fsWatcher.on('add', onWrite);
@@ -142,10 +152,16 @@ export function createBootstrapWatcherRegistry(
       // chokidar instance would keep running un-closed.
       if (stopping) return;
       if (entries.has(projectId)) return; // idempotent — accept the leak
-      enqueueIfPresent(projectId, repoPath);
-      void scheduleDrain();
+      // Arm the watcher BEFORE the startup scan (S1-02/SF1-02 TOCTOU). The previous order
+      // (scan → arm) had a window: an output written after the scan read the directory but
+      // before chokidar started listening was lost, because ignoreInitial:true means a
+      // file already present at arm time never emits. Arming first, then scanning, closes
+      // it — a write during/after arm is caught by chokidar; a file present before arm is
+      // caught by the post-arm scan. enqueue is idempotent, so the overlap is safe.
       const fsWatcher = attachWatcher(projectId, repoPath);
       entries.set(projectId, { watcher: fsWatcher, repoPath });
+      enqueueIfPresent(projectId, repoPath);
+      void scheduleDrain();
     },
 
     async unregister(projectId) {

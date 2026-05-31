@@ -79,8 +79,8 @@
 
 ### E6 — Bundle-health visibility (mints C-D25; also renders E5 job-health)
 - **Branch:** `claude/phase-e-e6-bundle-health-visibility`
-- **PR:** #93 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #93 (squash-merged)
+- **Merge SHA:** `5beadc4`
 - **Closed:** SF2-02 (High), SF2-06 (Med) — `runGates` emitted no firings when `loaded.status !== 'loaded'`, so a bound-but-broken bundle was indistinguishable from a legitimate freeform project; and `GET /api/methodologies` listed only the install cache, so external/per-repo bundle errors were invisible.
 - **Fix (mints C-D25):** `GET /api/projects/:id/methodology-health` resolves the project's **actual** bundle through the C-D14/C-D19 precedence (external → per-repo → install) → tri-state `MethodologyHealthResult` (`degraded` for a bound-but-broken bundle + errors, `absent` for freeform, `healthy` for a methodology bundle). Because it resolves the project's real bundle, an external/per-repo bundle error is surfaced here per-project (closing SF2-06 — see interpretation note). The shared **`HealthStatus`** component (C-D25, tri-state healthy/degraded/absent, rendered **in-context** per LBD-2) renders bundle-health beside the project binding **and** the E5 background-job health (the E5-deferred visibility) in a "Background jobs" section.
 - **Anchor:** **C-D25** minted in `CODE_SPEC.md` (frontend visibility component; distinct from C-D26 backend model per LBD-3). Inserted before C-D26 for numeric order. No T-D count change.
@@ -88,6 +88,24 @@
 - **Verification:** `runtime.ts:166` (`if (loaded.status !== 'loaded') return []`) and the install-cache-only `registry.list()` (`loader.ts:436`) matched current `main`. Discovered during impl: `resolveBundle` *throws* `BundleNotLoadedError` for a never-existed bundle (create-time validation blocks binding to one) and returns `{status:'error'}` only for a bundle that exists but fails to parse — so the degraded test breaks a *bound* bundle via `reload`, the real SF2-02 scenario.
 - **LOC:** ~352 insertions across 11 files; production-side ~207 (E6 band 150–210, at the ceiling — including the E5 job-health rendering did not breach), remainder test code + the C-D25 anchor body. One coherent unit ("system-state visibility").
 - **Tests:** `methodology-health.test.ts` (healthy / absent / degraded-via-reload / 404) + frontend (`HealthStatus` renders a degraded job distinctly via `data-state`, healthy job too).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar approved first pass, no findings; CI green first run).
 - **Halt-class fires:** none (C-D25 is the planned E6 anchor).
 - **Surfaces to spec author:** the SF2-06 interpretation above (recorded, not a halt).
+
+### E7 — Bootstrap worker/watcher robustness (imports C-D25)
+- **Branch:** `claude/phase-e-e7-bootstrap-robustness`
+- **PR:** #94 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** SF1-01 residual = SF1-03 = S1-03 (copy-failure quarantine uncounted), S1-01 (1-second timestamp collision), S1-02/SF1-02 (watcher scan-vs-arm TOCTOU), SF5-05/06 (watcher enqueue throw drops the file).
+- **Fix (cites/uses C-D25; no new anchor):**
+  - **SF1-03:** `countOutputs`→`countBySuffix`; quarantine now counts the **`.error.json` marker** (written on *every* quarantine, before the payload copy that may fail) instead of the payload copy — so a copy-failure (only the marker on disk) is counted, not invisible. The SettingsView quarantine surface now renders via the shared **`HealthStatus`** component (C-D25, `degraded`), preserving the existing testid/text.
+  - **S1-01:** `timestampPrefix` keeps ISO + appends a `nanoid(6)` suffix → two ingests in the same tick get distinct archive/quarantine filenames (no clobber).
+  - **S1-02/SF1-02:** `register` arms the chokidar watcher **before** the startup scan (was scan→arm) — a write landing between scan and arm is now caught by chokidar (`ignoreInitial:true` means a pre-arm file never emits, so the post-arm scan catches it; `enqueue` is idempotent, so the overlap is safe).
+  - **SF5-05/06:** the chokidar `onWrite` handler guards `worker.enqueue` in try/catch + log, so a throw inside chokidar's emit no longer silently drops the detected write.
+- **Anchor:** none. Imports C-D25 (the first slice to consume the E6 component). **Deps:** E6 merged (C-D25). **Note:** SF1-01 *bulk* closure recorded in E18.
+- **Verification:** all cited file:line sites matched current `main` (`worker.ts` `timestampPrefix` strips to ~1s; `quarantine()` copy-failure leaves only `.error.json`; `countOutputs` `endsWith('-bootstrap-output.json')`; `watcher.ts` scan-then-arm). Verified no code parses the filename timestamp format (only `endsWith` for counts), so changing it is safe.
+- **LOC:** ~120 insertions across 5 files; production-side ~74 (surgical — *under* the 130–190 band; under-estimate is not a halt, all 5 findings closed coherently), remainder test code.
+- **Tests:** worker (copy-failure `.error.json` counted; S1-01 distinct filenames same clock tick via fake timers) + watcher (throwing `enqueue` doesn't crash `register`; existing present-file-enqueue test confirms the arm-before-scan reorder preserves the scan) + frontend (existing quarantine-alert tests pass against the `HealthStatus` rendering).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.

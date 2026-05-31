@@ -886,15 +886,19 @@ export function BootstrapBlock({ project }: { project: Project }) {
         </p>
       )}
 
-      {/* Quarantine alert — files in bootstrap-quarantine/ that failed
-          ingest. User clears them manually after inspecting the sibling
-          .error.json. */}
+      {/* Quarantine health — files in bootstrap-quarantine/ that failed ingest. Rendered
+          via the shared HealthStatus component (C-D25): quarantined files are a 'degraded'
+          state needing manual clearance. The count now includes copy-failure quarantines
+          (E7 / SF1-03 — the .error.json marker is counted), which were previously invisible. */}
       {bootstrapState && bootstrapState.quarantineCount > 0 && (
-        <p className="error" data-testid="bootstrap-quarantine-alert" style={{ marginBottom: 4 }}>
-          <strong>Quarantine:</strong> {bootstrapState.quarantineCount} failed-ingest file
-          {bootstrapState.quarantineCount === 1 ? '' : 's'} awaiting manual clearance in{' '}
-          <code>.throughline/bootstrap-quarantine/</code>.
-        </p>
+        <HealthStatus
+          label="Bootstrap quarantine"
+          state="degraded"
+          detail={`${bootstrapState.quarantineCount} failed-ingest file${
+            bootstrapState.quarantineCount === 1 ? '' : 's'
+          } awaiting manual clearance in .throughline/bootstrap-quarantine/`}
+          testid="bootstrap-quarantine-alert"
+        />
       )}
 
       {/* Stale-row review — carried forward from the previous
