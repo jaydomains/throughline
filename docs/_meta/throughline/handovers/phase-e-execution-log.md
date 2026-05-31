@@ -190,7 +190,7 @@
 
 ### E13 — Methodology-parsing robustness
 - **Branch:** `claude/phase-e-e13-methodology-parsing`
-- **PR:** _pending (this slice)_
+- **PR:** #100 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S2-02 (the gate-side `anchor-resolution` check raw-`new RegExp`'d the bundle-authored `format_regex` and interpolated un-escaped vocabulary — the unhardened twin of the now-fixed drift-side S2-01), S3-02 (`state-machine.ts` item-type parse used `slice.slice(slice.indexOf('\n') + 1)` — at EOF `indexOf` is -1, so `slice(0)` fed the heading back in), SF2-03 (a drift category's malformed `trigger:`/`check:` line was silently coerced to the default — for `check` that means the category runs the **wrong scanner** — and the bundle loaded green).
 - **Fix (no anchor):**
