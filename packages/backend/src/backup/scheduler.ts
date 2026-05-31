@@ -96,6 +96,10 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
     start() {
       if (timer) return;
       timer = setInterval(() => {
+        // Skip if a tick is still in flight — otherwise a fast cycle would overwrite
+        // `inFlight` with a re-entrant no-op tick (tick()'s own guard returns immediately),
+        // and drain() would then await the wrong (already-resolved) promise.
+        if (running) return;
         inFlight = tick().finally(() => {
           inFlight = null;
         });

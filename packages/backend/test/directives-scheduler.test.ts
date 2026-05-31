@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createProjectsService } from '../src/projects/service.js';
@@ -267,10 +267,12 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
   });
 
   it('drain() awaits an in-flight tick before resolving (S7-03)', async () => {
+    // Real timers only (no vi.useFakeTimers — see the backup drain test: faking setImmediate
+    // leaks into better-sqlite3's db.backup under the full suite). A real short interval +
+    // an explicit "entered" signal drives the in-flight tick deterministically.
     const cfg = makeTmpConfig();
     plantFreeform(cfg.methodologiesDir);
     const backend = await makeBackend(cfg);
-    vi.useFakeTimers();
     try {
       const projects = createProjectsService(backend.db, backend.registry);
       const items = createItemsService(backend.db, projects, backend.registry);
@@ -287,7 +289,11 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
         kind: 'reminder',
         payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
       });
-      // A notifier whose fire blocks on a gate we control, so a tick stays mid-flight.
+      // A notifier whose fire signals entry then blocks, so a tick stays mid-flight.
+      let enter!: () => void;
+      const entered = new Promise<void>((r) => {
+        enter = r;
+      });
       let release!: () => void;
       const gate = new Promise<void>((r) => {
         release = r;
@@ -295,6 +301,7 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       const gatedNotifier = {
         kind: 'os' as const,
         notify: async () => {
+          enter();
           await gate;
           return { outcome: 'delivered' as const };
         },
@@ -306,11 +313,11 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
         items,
         library,
         now: () => FIXED_NOW,
-        intervalMs: 1000,
+        intervalMs: 5,
         logger: { info: () => {}, warn: () => {}, error: () => {} },
       });
       scheduler.start();
-      await vi.advanceTimersByTimeAsync(1000); // fire interval → inFlight tick blocks on gate
+      await entered; // a tick has fired and is blocked inside notify → inFlight engaged
 
       let drained = false;
       const drainP = scheduler.drain().then(() => {
@@ -324,7 +331,6 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       expect(drained).toBe(true);
       scheduler.stop();
     } finally {
-      vi.useRealTimers();
       await backend.cleanup();
     }
   });
