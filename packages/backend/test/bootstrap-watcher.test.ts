@@ -132,6 +132,24 @@ describe('bootstrap watcher registry — lifecycle without chokidar', () => {
     expect(worker.enqueued).toEqual([{ projectId: 'proj-3', filePath: outputPath }]);
   });
 
+  it('SF5-05/06: a throwing worker.enqueue does not crash register (the detection is contained, not propagated)', () => {
+    // A worker whose enqueue throws (e.g. queue corruption) must not take down the
+    // watcher registry — the detected output would otherwise be silently lost and the
+    // watcher left in an undefined state. Both enqueue sites (the startup scan here, and
+    // the chokidar onWrite handler) guard the throw and log it.
+    const throwing = {
+      enqueue() {
+        throw new Error('enqueue boom');
+      },
+      async drain() {},
+    } satisfies BootstrapWorker;
+    const reg = track(createBootstrapWatcherRegistry({ worker: throwing, watch: false }));
+    const { repoPath, outputPath } = makeRepo('thrower');
+    writeFileSync(outputPath, '{"version":1}', 'utf8');
+
+    expect(() => reg.register('proj-throw', repoPath)).not.toThrow();
+  });
+
   it('unregister for an unknown project is a no-op (no throw)', async () => {
     const worker = createStubWorker();
     const reg = track(createBootstrapWatcherRegistry({ worker, watch: false }));

@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createBootstrapWorker,
   readBootstrapState,
@@ -114,7 +114,8 @@ describe('bootstrap worker — archive on success', () => {
     expect(existsSync(archiveDir)).toBe(true);
     const entries = readdirSync(archiveDir);
     expect(entries).toHaveLength(1);
-    expect(entries[0]).toMatch(/^[0-9TZ-]+-bootstrap-output\.json$/);
+    // ISO timestamp prefix + a uniqueness suffix (nanoid, S1-01), then the filename.
+    expect(entries[0]).toMatch(/^[\w-]+-bootstrap-output\.json$/);
     // Importer was called with the parsed JSON.
     expect(importer.calls).toEqual([{ projectId: 'proj-a', input: { version: 1 } }]);
     // last-ingest cache populated.
@@ -279,6 +280,32 @@ describe('bootstrap worker — edge cases', () => {
     expect(importer.calls).toHaveLength(1);
   });
 
+  it('S1-01: two quarantines within the same clock tick get distinct filenames (no collision)', async () => {
+    const importer = stubImportService();
+    const worker = createBootstrapWorker({ importService: importer.service, logger: silentLogger() });
+    const { outputPath, quarantineDir } = makeRepo('collide', '{not valid json');
+
+    // Freeze the clock so both quarantines share the same ISO timestamp. Pre-S1-01 the
+    // filename was timestamp-only, so the second quarantine clobbered the first; the
+    // nanoid suffix now keeps them distinct.
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-05-31T12:00:00.000Z'));
+    try {
+      worker.enqueue('proj-collide', outputPath);
+      await worker.drain();
+      writeFileSync(outputPath, '{also not valid', 'utf8');
+      worker.enqueue('proj-collide', outputPath);
+      await worker.drain();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    const markers = readdirSync(quarantineDir).filter((f) =>
+      f.endsWith('-bootstrap-output.error.json'),
+    );
+    expect(markers).toHaveLength(2);
+  });
+
   it('drains multiple distinct projects sequentially in enqueue order', async () => {
     const importer = stubImportService();
     const order: string[] = [];
@@ -336,18 +363,34 @@ describe('readBootstrapState', () => {
     expect(state.pendingOutput).toBe(true);
   });
 
-  it('counts archive/quarantine files by the -bootstrap-output.json suffix only (skips .error.json siblings)', () => {
+  it('counts archive by the .json payload and quarantine by the .error.json marker — so a copy-failure quarantine is counted (SF1-03)', () => {
     const { repoPath, archiveDir, quarantineDir } = makeRepo('counts');
     mkdirSync(archiveDir, { recursive: true });
     mkdirSync(quarantineDir, { recursive: true });
-    writeFileSync(join(archiveDir, '2026-05-28T10-00-00Z-bootstrap-output.json'), '{}');
-    writeFileSync(join(archiveDir, '2026-05-28T10-05-00Z-bootstrap-output.json'), '{}');
-    writeFileSync(join(quarantineDir, '2026-05-28T10-10-00Z-bootstrap-output.json'), '{}');
-    writeFileSync(join(quarantineDir, '2026-05-28T10-10-00Z-bootstrap-output.error.json'), '{}');
+    // Archive: two successful archives (payload only, no .error.json).
+    writeFileSync(join(archiveDir, '2026-05-28T10-00-00Z-a1-bootstrap-output.json'), '{}');
+    writeFileSync(join(archiveDir, '2026-05-28T10-05-00Z-a2-bootstrap-output.json'), '{}');
+    // Quarantine #1 — copy succeeded: both the payload copy and the .error.json marker.
+    writeFileSync(join(quarantineDir, '2026-05-28T10-10-00Z-q1-bootstrap-output.json'), '{}');
+    writeFileSync(join(quarantineDir, '2026-05-28T10-10-00Z-q1-bootstrap-output.error.json'), '{}');
+    // Quarantine #2 — copy FAILED: only the .error.json marker (the SF1-03 case). Pre-E7,
+    // counting the .json payload missed this entirely and quarantineCount under-reported.
+    writeFileSync(join(quarantineDir, '2026-05-28T10-20-00Z-q2-bootstrap-output.error.json'), '{}');
 
     const state = readBootstrapState(repoPath, null);
     expect(state.archiveCount).toBe(2);
-    expect(state.quarantineCount).toBe(1); // .error.json sibling excluded
+    // Two quarantines (one copy-ok, one copy-failed) — both counted via their .error.json
+    // marker. The copy-ok payload .json is not double-counted.
+    expect(state.quarantineCount).toBe(2);
+  });
+
+  it('quarantine copy-failure leaves only the .error.json yet is still counted (SF1-03 / SF1-01 residual)', () => {
+    const { repoPath, quarantineDir } = makeRepo('copyfail');
+    mkdirSync(quarantineDir, { recursive: true });
+    // Exactly the copy-failure on-disk state: an .error.json marker, no payload copy.
+    writeFileSync(join(quarantineDir, '2026-05-28T11-00-00Z-z9-bootstrap-output.error.json'), '{}');
+    const state = readBootstrapState(repoPath, null);
+    expect(state.quarantineCount).toBe(1);
   });
 
   it('passes through the supplied lastIngest', () => {
