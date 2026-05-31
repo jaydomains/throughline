@@ -132,7 +132,7 @@
 
 ### E9 — Loader robustness
 - **Branch:** `claude/phase-e-e9-loader-robustness`
-- **PR:** _pending (this slice)_
+- **PR:** #96 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S3-01/SF2-05 (the methodology watcher's install-unlink and external-unlink branches deleted the cache entry but did **not** `notifyReloaded`, so projects bound to a deleted install/external bundle were never told to reload — only the per-repo arm-2 branch notified), S3-03 (`discoverBundleIds` `statSync` threw on a dangling symlink and aborted the whole startup hydration), SF5-08 (the `watcher.on('all')` handler was the one unguarded watch site — a throw inside chokidar's emit silently dropped the event).
 - **Fix (no anchor):** add `notifyReloaded` to the install-unlink (`projectsBoundToBundle`) and external-unlink (`projectsBoundToPath(dirname)`) branches; guard `discoverBundleIds`'s per-entry `statSync` in try/catch (skip a dangling entry, don't abort the scan); wrap the whole `on('all')` handler body in try/catch + `logger.error`.
