@@ -8,12 +8,37 @@ import { createHash } from 'node:crypto';
 // discipline (Semble absent, Anthropic key absent) and keeps the substrate fully offline
 // and the build/tests green without a network round-trip. The fallback is a hashed
 // token-gram vector — lexical-overlap cosine, good enough for keyword-class retrieval
-// until the model is cached. Implementation-shape choice; recorded in the handover.
+// until the model is cached.
+//
+// T-D60 narrows C-D2 (refuse-rather-than-fallback): this fallback is a *capability-absent
+// honest-distinct mode*, never an undisclosed substitute. The embedder reports its `kind`
+// ('transformers' | 'fallback') so callers disclose it on the wire (RagQueryResult.embedder)
+// rather than passing keyword-class hits off as authoritative model retrieval. The import
+// failure is the only thing that pins the fallback (capability genuinely absent); a runtime
+// extractor throw after the real backend resolved is *not caught here* — it has always
+// propagated (that uncaught propagation was the S4-03 crash). The behavioural fix lives at
+// the search boundary (text-index), which now classifies it as an EmbedError and surfaces a
+// refused retrieval ('unavailable') instead of a silent SHA1 substitution. See DECISIONS.md
+// T-D60 / SPEC.md §14.
 
 export interface TextEmbedder {
   readonly kind: 'transformers' | 'fallback';
   readonly dim: number;
   embed(texts: string[]): Promise<number[][]>;
+}
+
+// A failure that originated in the embedding step — a runtime extractor throw, a model
+// backend that broke after resolving, etc. — as opposed to an infrastructure/DB failure.
+// text-index wraps every embedder.embed() call in this type so the search boundary can
+// classify an embed-failure as a refused retrieval (embedder:'unavailable', T-D60) while
+// letting infra throws propagate as real errors (e.g. a T-D58 DomainError → its canonical
+// status). It is deliberately NOT a DomainError: it is caught and converted inside the
+// text index and never reaches a route handler.
+export class EmbedError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'EmbedError';
+  }
 }
 
 const FALLBACK_DIM = 256;
@@ -66,9 +91,12 @@ const fallbackEmbedder: TextEmbedder = {
   embed: async (texts) => fallbackEmbed(texts),
 };
 
-// Resolved lazily and memoised: the first embed() attempt tries Transformers.js; on any
-// failure (package not installed, model download blocked) it pins the fallback so a
-// subsequent call doesn't re-pay the failed import.
+// Resolved lazily and memoised: the first embed() attempt tries Transformers.js; on an
+// *import/resolution* failure (package not installed, model download blocked) it pins the
+// fallback so a subsequent call doesn't re-pay the failed import — the disclosed
+// capability-absent mode (T-D60). A *runtime* throw from the resolved extractor is not
+// caught here (it is not the absence of a capability); it propagates to the search
+// boundary, which surfaces it as a refused retrieval rather than a silent substitution.
 export function createTextEmbedder(): TextEmbedder {
   let resolved: TextEmbedder | null = null;
   let pending: Promise<TextEmbedder> | null = null;

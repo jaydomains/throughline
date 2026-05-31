@@ -129,14 +129,17 @@ export function createRagService(opts: CreateOptions): RagService {
     cross: boolean,
   ): Promise<Omit<RagQueryResult, 'substrate' | 'routed_by' | 'cross_project'>> {
     const scope = cross ? null : projectId;
-    const hits = await textIndex.search(scope, req.query, TEXT_K);
+    const { hits, embedder } = await textIndex.search(scope, req.query, TEXT_K);
     const citations: RagCitation[] = hits.map((h) => ({
       substrate: 'text',
       ref: `${h.entity_type}:${h.entity_id}`,
       label: h.label,
       snippet: h.snippet,
     }));
-    if (hits.length === 0) return { answer: null, citations, used_ai: false };
+    // No hits covers both a genuine empty (embedder 'transformers'/'fallback') and a
+    // refused retrieval (embedder 'unavailable'); the embedder field carries the truth so
+    // an embed-failure is never indistinguishable from "nothing matched" (T-D60, SF3-02).
+    if (hits.length === 0) return { answer: null, citations, used_ai: false, embedder };
     const context = hits
       .map((h, i) => `[${i + 1}] ${h.label}\n${h.snippet}`)
       .join('\n\n');
@@ -147,7 +150,7 @@ export function createRagService(opts: CreateOptions): RagService {
       req.query,
       context,
     );
-    return { answer: s.answer, citations, used_ai: s.used_ai };
+    return { answer: s.answer, citations, used_ai: s.used_ai, embedder };
   }
 
   async function codeQuery(
@@ -163,7 +166,8 @@ export function createRagService(opts: CreateOptions): RagService {
       label: `${s.path}:${s.line_start}-${s.line_end}`,
       snippet: s.snippet,
     }));
-    return { answer: r.answer, citations, used_ai: r.summarised };
+    // Code substrate is served by Semble, not the text embedder — embedder is N/A here.
+    return { answer: r.answer, citations, used_ai: r.summarised, embedder: null };
   }
 
   async function auditQuery(
@@ -213,7 +217,8 @@ export function createRagService(opts: CreateOptions): RagService {
           ? `${r.old_value ?? '∅'} → ${r.new_value ?? '∅'}`
           : '(no value delta)',
     }));
-    if (rows.length === 0) return { answer: null, citations, used_ai: false };
+    // Audit substrate is a structured query, not an embedding search — embedder is N/A.
+    if (rows.length === 0) return { answer: null, citations, used_ai: false, embedder: null };
     const context = citations
       .map((c, i) => `[${i + 1}] ${c.label}\n${c.snippet}`)
       .join('\n\n');
@@ -224,7 +229,7 @@ export function createRagService(opts: CreateOptions): RagService {
       req.query,
       context,
     );
-    return { answer: s.answer, citations, used_ai: s.used_ai };
+    return { answer: s.answer, citations, used_ai: s.used_ai, embedder: null };
   }
 
   return {

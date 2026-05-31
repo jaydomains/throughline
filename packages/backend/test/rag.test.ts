@@ -7,7 +7,7 @@ import type { SembleService } from '../src/semble/service.js';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
 import { createLibraryService } from '../src/library/service.js';
-import { createTextEmbedder } from '../src/intelligence/embeddings.js';
+import { createTextEmbedder, type TextEmbedder } from '../src/intelligence/embeddings.js';
 import { ProjectNotFoundError } from '@throughline/shared';
 import { createRagService, routeQuery } from '../src/intelligence/rag.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
@@ -35,7 +35,43 @@ function stubSemble(result: Awaited<ReturnType<SembleService['codeQa']>>): Sembl
   return { codeQa: async () => result } as unknown as SembleService;
 }
 
-async function setup(anthropic: AnthropicClient = offAnthropic(), semble?: SembleService) {
+// A text embedder whose embed() throws at runtime — stands in for the resolved-but-broken
+// real extractor (S4-03). It reports kind 'transformers' so the test proves a *runtime*
+// failure of a present capability is refused (surfaced 'unavailable'), not silently
+// swapped for the SHA1 fallback (T-D60).
+function throwingEmbedder(): TextEmbedder {
+  return {
+    kind: 'transformers',
+    dim: 384,
+    embed: async () => {
+      throw new Error('runtime extractor failure');
+    },
+  };
+}
+
+// Succeeds on the freshness-sweep embed (call 1) but fails only on the query embed (call 2)
+// — pins the SF3-02 *query-embed* branch, which the freshness-throw test (throwingEmbedder)
+// never reaches because its throw is caught at the ensureFresh boundary. `mode` selects how
+// the query embed fails: a runtime throw (catch branch) or an empty result (the !qv branch).
+function queryFailingEmbedder(mode: 'throw' | 'novector'): TextEmbedder {
+  let calls = 0;
+  return {
+    kind: 'fallback',
+    dim: 4,
+    embed: async (texts) => {
+      calls += 1;
+      if (calls === 1) return texts.map(() => [1, 0, 0, 0]); // freshness sweep succeeds
+      if (mode === 'throw') throw new Error('query embed failed');
+      return []; // produced no query vector
+    },
+  };
+}
+
+async function setup(
+  anthropic: AnthropicClient = offAnthropic(),
+  semble?: SembleService,
+  embedder?: TextEmbedder,
+) {
   const cfg = makeTmpConfig();
   plantFreeform(cfg.methodologiesDir);
   const backend = await makeBackend(cfg);
@@ -49,7 +85,7 @@ async function setup(anthropic: AnthropicClient = offAnthropic(), semble?: Sembl
     library,
     semble: semble ?? stubSemble({ answer: null, sources: [], semble_available: false, summarised: false }),
     anthropic,
-    embedder: createTextEmbedder(),
+    embedder: embedder ?? createTextEmbedder(),
   });
   const project = projects.create({ name: 'p1', repo_path: '/tmp/p1' });
   return { backend, projects, items, library, rag, project, cleanup: () => backend.cleanup() };
@@ -207,6 +243,127 @@ describe('Phase 14 — audit & code substrates (T-D25)', () => {
         ref: 'src/server.ts:10-20',
       });
       expect(r.used_ai).toBe(true);
+    } finally {
+      await s.cleanup();
+    }
+  });
+});
+
+describe('E1 — embedder honesty on the wire (T-D60: SF3-01, SF3-02, S4-03)', () => {
+  it('discloses the embedder backend on a text result (SF3-01: not indistinguishable from real)', async () => {
+    const s = await setup();
+    try {
+      s.items.create({
+        project_id: s.project.id,
+        title: 'wire the widget pipeline',
+        description: 'connect the widget ingest to the renderer',
+        status: 'open',
+      });
+      const r = await s.rag.query(s.project.id, { query: 'widget pipeline', substrate: 'text' });
+      expect(r.citations.length).toBeGreaterThan(0);
+      // The result carries the embedder used, so keyword-class fallback hits are never
+      // passed off as authoritative model retrieval. It is a disclosed working backend,
+      // never 'unavailable' on a successful retrieval.
+      expect(['transformers', 'fallback']).toContain(r.embedder);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a genuine empty discloses a working embedder, distinct from a refusal (SF3-02)', async () => {
+    // No indexed content: an honest empty served by a working embedder — NOT 'unavailable'.
+    const s = await setup();
+    try {
+      const r = await s.rag.query(s.project.id, { query: 'nothing indexed yet', substrate: 'text' });
+      expect(r.citations.length).toBe(0);
+      expect(r.answer).toBeNull();
+      expect(['transformers', 'fallback']).toContain(r.embedder);
+      expect(r.embedder).not.toBe('unavailable');
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('an embed-failure in the freshness sweep surfaces as unavailable, never a crash (S4-03)', async () => {
+    // A resolved-but-broken extractor: the freshness sweep embeds the stale item and throws.
+    // The query must not crash (S4-03) and must not read as "nothing matched" (SF3-02).
+    const s = await setup(offAnthropic(), undefined, throwingEmbedder());
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const r = await s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' });
+      expect(r.embedder).toBe('unavailable');
+      expect(r.citations.length).toBe(0);
+      expect(r.answer).toBeNull();
+      expect(r.used_ai).toBe(false);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a query-embed throw (sweep ok) surfaces as unavailable (SF3-02 query-embed branch)', async () => {
+    // The freshness sweep succeeds; only the query embed throws — exercises the query-embed
+    // catch, which the sweep-throw test above never reaches.
+    const s = await setup(offAnthropic(), undefined, queryFailingEmbedder('throw'));
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const r = await s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' });
+      expect(r.embedder).toBe('unavailable');
+      expect(r.citations.length).toBe(0);
+      expect(r.answer).toBeNull();
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a query embed that yields no vector surfaces as unavailable (SF3-02 !qv branch)', async () => {
+    const s = await setup(offAnthropic(), undefined, queryFailingEmbedder('novector'));
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const r = await s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' });
+      expect(r.embedder).toBe('unavailable');
+      expect(r.citations.length).toBe(0);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('an infra/DB failure in the sweep propagates, not masked as unavailable (T-D60/T-D58)', async () => {
+    // A non-embedder throw inside the freshness sweep (here a service/DB read) must NOT be
+    // swallowed into embedder:'unavailable' — that would mask a real error (and a T-D58
+    // DomainError's canonical status) behind a healthy-looking degraded state.
+    const s = await setup();
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const boom = new Error('db unavailable');
+      (s.items as unknown as { list: () => never }).list = () => {
+        throw boom;
+      };
+      await expect(
+        s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' }),
+      ).rejects.toThrow('db unavailable');
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('code and audit substrates report embedder null (no text embedding)', async () => {
+    const s = await setup(
+      offAnthropic(),
+      stubSemble({
+        answer: 'It lives in server.ts [1].',
+        sources: [{ path: 'src/server.ts', line_start: 1, line_end: 2, snippet: 'x' }],
+        semble_available: true,
+        summarised: true,
+      }),
+    );
+    try {
+      s.items.create({ project_id: s.project.id, title: 'tracked', description: '', status: 'open' });
+      const code = await s.rag.query(s.project.id, { query: 'where is the server started' });
+      expect(code.substrate).toBe('code');
+      expect(code.embedder).toBeNull();
+      const audit = await s.rag.query(s.project.id, { query: 'when was tracked created', substrate: 'audit' });
+      expect(audit.substrate).toBe('audit');
+      expect(audit.embedder).toBeNull();
     } finally {
       await s.cleanup();
     }

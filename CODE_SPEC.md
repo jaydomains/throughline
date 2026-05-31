@@ -6,7 +6,7 @@ If a SPEC.md statement turns out to be too vague to derive implementation from, 
 
 ## Anchor convention
 
-Implementation-level decisions in this file use `C-D{n}` anchors (Code Decision). They are distinct from `T-D{n}` anchors in SPEC.md §14 (currently 59 entries; see `SPEC.md §14` for the canonical live index). C-D anchors are referenceable from code comments, PR descriptions, and other docs.
+Implementation-level decisions in this file use `C-D{n}` anchors (Code Decision). They are distinct from `T-D{n}` anchors in SPEC.md §14 (currently 60 entries; see `SPEC.md §14` for the canonical live index). C-D anchors are referenceable from code comments, PR descriptions, and other docs.
 
 Any C-D may be promoted to a T-D later if it crosses the line into a functional decision; that promotion requires a SPEC.md §14 update.
 
@@ -44,6 +44,8 @@ Python was considered for the AI ecosystem but rejected because:
 
 - **Status:** active (implementation-only)
 - **Cites:** T-D25, T-D31
+
+> Narrowed-in-part by T-D60 (2026-05-31): capability-absent honest-distinct mode only; the silent SHA1 fallback is removed (the degraded embedder is now disclosed on `RagQueryResult.embedder`, never an undisclosed substitute). The narrowing's substance lives in T-D60 — see `DECISIONS.md` / `SPEC.md §14`; the C-D2 body below is the superseded baseline.
 
 ### Decision
 The text RAG substrate (T-D25) uses local embeddings generated in-process by `@xenova/transformers` (Transformers.js) running a small sentence-embedding model (e.g., `all-MiniLM-L6-v2` ONNX). Embeddings stored in SQLite in a `text_embeddings` table; cosine similarity computed in-memory or via `sqlite-vss` if performance demands it.
