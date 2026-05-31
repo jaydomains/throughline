@@ -182,6 +182,11 @@ export interface LoadedBundle {
   templates: Templates;
   validation_rules: ValidationRules;
   authority_hierarchy: AuthorityHierarchy;
+  // Non-fatal parse warnings (SF2-03): the bundle loaded, but a line was malformed and
+  // silently coerced to a default (e.g. an unrecognised drift-category trigger/check kind).
+  // Surfaced at load time (logged) so a typo that would otherwise run the wrong scanner is
+  // visible, instead of a silent drop/retype. Absent when there are none.
+  warnings?: BundleStructuralError[];
 }
 
 export interface BundleStructuralError {

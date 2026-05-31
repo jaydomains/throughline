@@ -63,6 +63,11 @@ export function parseBundle(bundleId: string, markdown: string): BundleLoadResul
     return { status: 'error', bundle_id: bundleId, errors };
   }
 
+  // SF2-03: non-fatal parse warnings (malformed-but-coerced lines) ride the loaded bundle
+  // so the registry can surface them at load time. Aggregated like errors, but they do not
+  // fail the load.
+  const warnings: BundleStructuralError[] = [...validation_rules.warnings];
+
   const bundle: LoadedBundle = {
     bundle_id: bundleId,
     identity: identity.value,
@@ -76,6 +81,7 @@ export function parseBundle(bundleId: string, markdown: string): BundleLoadResul
     templates: templates.value,
     validation_rules: validation_rules.value,
     authority_hierarchy: authority_hierarchy.value,
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
   return { status: 'loaded', bundle };
 }

@@ -175,8 +175,8 @@
 
 ### E12 — Error→HTTP-status mapping
 - **Branch:** `claude/phase-e-e12-error-status-mapping`
-- **PR:** #99 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #99 (squash-merged)
+- **Merge SHA:** `0303c39`
 - **Closed:** S5-03 (a stale `session_id` in `items.create`'s `session_ids` loop / `addSessionMembership` hit an `INSERT OR IGNORE` that does **not** suppress FK violations → raw `SQLITE_CONSTRAINT_FOREIGNKEY` surfaced as a 500), S6-01 (`reconcile.apply` iterated `req.diff.rows` — a client-round-tripped payload — with no shape guard → `TypeError` → 500). **Records S6-02 closed** (the reconcile route no longer hand-maps; `ItemPolicyError` etc. propagate to the Phase-B central handler) → its regression test is E18's.
 - **Fix (no anchor):** an `insertSessionMembership` helper in the items service catches `SQLITE_CONSTRAINT_FOREIGNKEY` and rethrows `SessionNotFoundError` (used at both insert sites; the central handler serialises it); a `ReconcileDiffShapeError` (400, code `invalid_diff`) guards `apply` when `req.diff?.rows` is not an array.
 - **S5-03 status judgment (flagged):** the plan framed the fix as "→ 400 not 500". I mapped the stale session reference to **`SessionNotFoundError` (404)** — the codebase's consistent classification for a missing referenced entity (`ProjectNotFoundError`/`ItemNotFoundError`/`SessionNotFoundError` all 404), and it's a `DomainError` the central handler serialises. The substantive requirement (a proper 4xx, not a 500) is met; 404 is the more honest status than a generic 400 here. Judgment call, not a halt. (S6-01 is a genuine bad-payload → 400.)
@@ -184,6 +184,26 @@
 - **Verification:** `items/service.ts` `INSERT OR IGNORE` into `item_session_memberships` at the create loop + `addSessionMembership`; `reconcile/service.ts` `apply` iterates `req.diff.rows` unguarded; FK enforcement is on (`db.pragma('foreign_keys = ON')`) so the violation genuinely throws — all matched current `main`.
 - **LOC:** ~86 insertions across 4 files; production-side ~42 — within the 70–110 band.
 - **Tests:** `items.test.ts` — **S5-03** (create with a stale session_id throws `SessionNotFoundError` and the item is rolled back; `addSessionMembership` likewise). `reconcile.test.ts` — **S6-01** (apply with a non-array `diff.rows` throws `ReconcileDiffShapeError`, not a TypeError).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar approved first pass; both gate runs green first try).
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** the S5-03 404-vs-400 status choice above (recorded, not a halt).
+
+### E13 — Methodology-parsing robustness
+- **Branch:** `claude/phase-e-e13-methodology-parsing`
+- **PR:** #100 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** S2-02 (the gate-side `anchor-resolution` check raw-`new RegExp`'d the bundle-authored `format_regex` and interpolated un-escaped vocabulary — the unhardened twin of the now-fixed drift-side S2-01), S3-02 (`state-machine.ts` item-type parse used `slice.slice(slice.indexOf('\n') + 1)` — at EOF `indexOf` is -1, so `slice(0)` fed the heading back in), SF2-03 (a drift category's malformed `trigger:`/`check:` line was silently coerced to the default — for `check` that means the category runs the **wrong scanner** — and the bundle loaded green).
+- **Fix (no anchor):**
+  - **S2-02:** reuse the Phase-D `safe-regex` guard — `safeCompile(format_regex)` (refuses catastrophic patterns → null = no format check), `safeTest` for the match, and `escapeRegExp` on the interpolated vocab term. Mirrors `scanners.ts` (the tested S2-01 fix) exactly.
+  - **S3-02:** guard the EOF case (`indexOf('\n') === -1` → empty body).
+  - **SF2-03:** a non-fatal **warnings channel** — `parseDriftCategories` flags a `trigger:`/`check:` line that is *present but unrecognised*; `parseValidationRules` returns warnings; `parseBundle` attaches them to `LoadedBundle.warnings` (new optional shared field); the registry `logger.warn`s them at load. The bundle still loads (default applies) but the typo is **visible**.
+- **Anchor:** none (added `LoadedBundle.warnings?` — a field, not an anchor). **Deps:** Phase-D `safe-regex` (on `main`).
+- **Verification:** `checks.ts:154/179` raw `new RegExp` + un-escaped vocab; `state-machine.ts:37` EOF `indexOf`; `validation-rules.ts` `parseDriftCategories` silent default — all matched current `main`.
+- **Verification finding (recorded):** **S3-02 was a *masked* off-by-one** — `parseKeyValueLines` skips `#`-prefixed lines, so the EOF `slice(0)` (which includes the `### Item type:` heading) produced no wrong output today. The fix is a **defensive correctness** improvement (correct independent of the downstream `#`-skip); behaviourally indistinguishable, so its test locks the EOF-heading *behaviour* (sensible defaults) rather than a pre/post diff.
+- **Test scope:** S2-02 is **inspection-verified** — its guard (`safeCompile`/`safeTest`/`escapeRegExp`) is already tested in `safe-regex.test.ts` (8 tests, refuses catastrophic patterns) and the gate-side application is the identical pattern to the tested S2-01 drift-side fix; a gate-runtime ReDoS-timing test would be heavy/flaky and redundant.
+- **Note:** **SF2-08** (refused-regex silent skip — the *visibility sibling*) is **NOT** pulled into E13; it stays an E17 wrong-belief-Low decision item per the base plan (only pulled in if the spec author rules the wrong-belief Lows ride the chain).
+- **LOC:** ~107 insertions across 7 files; production-side ~57 — *under* the 130–190 band (surgical: S2-02 reused the tested guard, S3-02 was a one-line defensive guard). Under-estimate is not a halt; all three findings closed.
+- **Tests:** `bundle-parser.test.ts` — **SF2-03** (unrecognised `check` kind → warning + default; well-formed → no warning, declared kinds kept) and **S3-02** (EOF item-type heading → sensible defaults, not a mis-parsed heading). S2-02 inspection-verified (above).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
