@@ -175,7 +175,7 @@
 
 ### E12 — Error→HTTP-status mapping
 - **Branch:** `claude/phase-e-e12-error-status-mapping`
-- **PR:** _pending (this slice)_
+- **PR:** #99 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S5-03 (a stale `session_id` in `items.create`'s `session_ids` loop / `addSessionMembership` hit an `INSERT OR IGNORE` that does **not** suppress FK violations → raw `SQLITE_CONSTRAINT_FOREIGNKEY` surfaced as a 500), S6-01 (`reconcile.apply` iterated `req.diff.rows` — a client-round-tripped payload — with no shape guard → `TypeError` → 500). **Records S6-02 closed** (the reconcile route no longer hand-maps; `ItemPolicyError` etc. propagate to the Phase-B central handler) → its regression test is E18's.
 - **Fix (no anchor):** an `insertSessionMembership` helper in the items service catches `SQLITE_CONSTRAINT_FOREIGNKEY` and rethrows `SessionNotFoundError` (used at both insert sites; the central handler serialises it); a `ReconcileDiffShapeError` (400, code `invalid_diff`) guards `apply` when `req.diff?.rows` is not an array.
