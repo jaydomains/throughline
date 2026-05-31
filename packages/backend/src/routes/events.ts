@@ -107,6 +107,11 @@ export function registerEventsRoute(app: FastifyInstance, hub: SSEHub): void {
     };
 
     send('welcome', { at: new Date().toISOString() });
+    // If the very first write failed (socket broke between hijack and welcome), `send`'s
+    // catch already ran cleanup — don't register an already-dead connection in the hub, or
+    // it would linger in the client set until closeAll (its guarded `send` never throws, so
+    // neither the broadcast catch nor cleanup would ever remove it). [Gitar review.]
+    if (cleaned) return;
     // Register with the teardown so shutdown (hub.closeAll) can end this hijacked socket.
     unregister = hub._add(send, cleanup);
 
