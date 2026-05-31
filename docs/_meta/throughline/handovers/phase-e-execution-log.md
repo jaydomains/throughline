@@ -64,7 +64,7 @@
 
 ### E5 — Background-job health model
 - **Branch:** `claude/phase-e-e5-background-job-health`
-- **PR:** _pending (this slice)_
+- **PR:** #92 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** SF5-01, SF5-02, SF5-04 (High) — the backup scheduler, reminder scheduler, and GitHub poller each caught-and-logged with **no health/state field**, so a loop failing every tick was indistinguishable from a healthy idle loop.
 - **Fix (mints C-D26):** a per-loop `JobHealth` tracker (`{ last_run_at, last_error, healthy }`) + a `JobHealthRegistry`; each loop records success/failure per tick; `GET /api/background-jobs/health` exposes the snapshot as the shared `BackgroundJobsHealthResponse`. The reminder loop's health reflects only a *thrown* tick failure — a graceful non-delivery (notifier `unavailable`/`failed`, E4) is the notifier's capability state, not a loop fault. The poller records in `pollProject` (the public poll op, so manual refreshes + the loop both update health, and it is directly testable).
