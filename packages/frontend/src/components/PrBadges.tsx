@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { PrBadge } from '@throughline/shared';
 import { api } from '../api.js';
 
@@ -26,15 +26,24 @@ export function PrBadges({ projectId }: { projectId: string }) {
   const [pollHealthy, setPollHealthy] = useState(true);
   const [pollError, setPollError] = useState<string | null>(null);
 
+  // Same stale-request guard as S8-01/S8-02: if projectId changes (or a manual refresh is
+  // superseded) while a request is in flight, drop the late response so it can't paint the
+  // previous project's PRs over the current one.
+  const prsSeq = useRef(0);
   const load = (refresh: boolean) => {
+    const seq = ++prsSeq.current;
     const p = refresh ? api.refreshProjectPrs(projectId) : api.getProjectPrs(projectId);
     p.then((r) => {
+      if (prsSeq.current !== seq) return;
       setConfigured(r.configured);
       setPrs(r.prs);
       setPollHealthy(r.poll_healthy);
       setPollError(r.poll_error);
       setFetchError(false);
-    }).catch(() => setFetchError(true));
+    }).catch(() => {
+      if (prsSeq.current !== seq) return;
+      setFetchError(true);
+    });
   };
 
   useEffect(() => {

@@ -44,6 +44,15 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
 
   // SF6-09 — read the github-poller's health (C-D26) for the PR-list response. When the
   // project is unconfigured there is nothing to poll, so health is reported as healthy/null.
+  //
+  // The signal is deliberately per-*loop*, not per-project: C-D26 models one `JobHealth`
+  // per background loop, and there is a single `github-poller` tick that polls every
+  // configured project sequentially (poller.ts — `for (const project of projects.list())`,
+  // each `pollProject` recording success/failure on this one tracker). So a failing poll
+  // flips the shared signal for all configured projects — which is the honest fact: a broken
+  // loop leaves *every* project's cached PR data stale, and the last error is representative
+  // of the loop's state. Per-project health would misreport a healthy project whose data is
+  // equally stale because the shared loop is down.
   function pollHealthFields(isConfigured: boolean): { poll_healthy: boolean; poll_error: string | null } {
     if (!isConfigured) return { poll_healthy: true, poll_error: null };
     const h = pollerHealth.snapshot();
