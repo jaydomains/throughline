@@ -94,7 +94,7 @@
 
 ### E7 — Bootstrap worker/watcher robustness (imports C-D25)
 - **Branch:** `claude/phase-e-e7-bootstrap-robustness`
-- **PR:** _pending (this slice)_
+- **PR:** #94 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** SF1-01 residual = SF1-03 = S1-03 (copy-failure quarantine uncounted), S1-01 (1-second timestamp collision), S1-02/SF1-02 (watcher scan-vs-arm TOCTOU), SF5-05/06 (watcher enqueue throw drops the file).
 - **Fix (cites/uses C-D25; no new anchor):**
