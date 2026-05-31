@@ -693,6 +693,27 @@ The `fetcher` is `(() => Promise<T>) | null`; callers build it with `useMemo` ke
 
 ---
 
+## C-D25 — System-state visibility component (`HealthStatus`, tri-state healthy/degraded/absent, rendered in-context)
+
+- **Status:** active (implementation-only)
+- **Cites:** T-D60 (refuse-rather-than-fallback kinship); LBD-2 (the spec-author ruling this encodes); SF2-02 / SF2-06 (the silent failures it surfaces)
+- **Spans:** Phase E slice E6.
+
+### Decision
+A single shared presentational component, `packages/frontend/src/components/HealthStatus.tsx`, renders a capability's tri-state health — `healthy` / `degraded` / `absent` (`HealthState` in `packages/shared/src/health.ts`) — **in-context, beside the feature it concerns**, deliberately **not** as a consolidated "system health" panel (LBD-2). The caller fetches the state (via `useResource` / a polled hook, C-D24) and passes the resolved `state` plus a `label` and optional `detail` (the honest "why" — a parse error, a job's `last_error`). The three states are distinct on purpose: `degraded` (bound-but-broken) must read differently from `absent` (legitimately not in use) — the distinction the silent failures erased.
+
+### Rationale
+- **One component, many surfaces.** E6 renders it for per-project methodology bundle health (SF2-02/SF2-06 — `degraded` for a bound-but-broken bundle vs `absent` for a freeform project) and for background-job loop health (the C-D26 data, E5); E7 reuses it for the bootstrap quarantine surface. A single component keeps the tri-state vocabulary and styling uniform rather than each surface inventing its own.
+- **In-context, not consolidated (LBD-2).** Health renders beside the feature it concerns so the user sees it where they act, not in a separate dashboard they must think to visit.
+- **Presentational / fetch-agnostic.** The component owns no fetching; it takes a resolved `state`, so it composes with the C-D24 hooks and any future health source without coupling.
+
+### Implications
+- New capability-health surfaces render `<HealthStatus state=… label=… detail=… />` rather than a bespoke badge; the backend supplies a `HealthState` (or a shape that maps to one).
+- The frontend visibility layer (C-D25) and the backend data model (C-D26) are **separate anchors** (LBD-3): the component evolves with UI concerns, the model with backend concerns.
+- `degraded` carries `role="alert"` so a bound-but-broken capability is announced, not merely styled.
+
+---
+
 ## C-D26 — Background-job health model (`lastRunAt` / `lastError` / `healthy` per loop)
 
 - **Status:** active (implementation-only)

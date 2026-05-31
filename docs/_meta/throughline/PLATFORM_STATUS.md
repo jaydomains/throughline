@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **E3** (#90) — Semble degradation honesty (SF4-01). **E4** (#91, merge `b61e0e8`) — notifier capability honesty (SF5-03): disclosed `NotifyResult` + honest `createUnavailableNotifier`, so a missing OS backend no longer reports delivered and reminders aren't silently consumed. **This slice — E5** — background-job health model (SF5-01/02/04): mints **C-D26** — a per-loop `JobHealth` (`last_run_at`/`last_error`/`healthy`) on the backup scheduler, reminder scheduler, and GitHub poller, exposed at `GET /api/background-jobs/health`, so a failing loop is observable rather than a silent catch-and-log. (Sequencing note: E5 lands the backend model + route; the in-context rendering folds into E6, which mints the C-D25 visibility component — see execution-log §E5.) **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E6 (bundle-health visibility, mints C-D25; also renders E5's job-health) off updated `main` after E5 merges.
+**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **E3** (#90) Semble honesty (SF4-01). **E4** (#91) notifier honesty (SF5-03). **E5** (#92, merge `e9c5299`) background-job health model (SF5-01/02/04): mints **C-D26** — per-loop `JobHealth` + `GET /api/background-jobs/health`. **This slice — E6** — bundle-health visibility (SF2-02/SF2-06): mints **C-D25** — the shared `HealthStatus` tri-state (healthy/degraded/absent) component, rendered in-context (LBD-2). `GET /api/projects/:id/methodology-health` resolves the project's actual bundle so a bound-but-broken bundle reads `degraded` (vs freeform `absent`) and external/per-repo bundle errors surface per-project; the component also renders E5's job-health (the E5-deferred visibility). **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E7 (bootstrap worker/watcher robustness — imports C-D25 for the quarantine surface) off updated `main` after E6 merges.
 
 ---
 
 ## Current Phase
 
 **Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (22-slice floor). Audit-fix A–D and Phases 19–22 remain `production-ready`.
-**Status:** E1 (#88) + E2 (#89) merged (prior run); E3 (#90) + E4 (#91) merged; E5 (background-job health model) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5). C-D25 (E6) still to mint; a T-D10 amendment is planned in E20 (augmentation). Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5.
-**Next concrete action:** Merge E5 on green gate; branch E6 (bundle-health visibility, mints C-D25) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
+**Status:** E1 (#88) + E2 (#89) merged (prior run); E3 (#90) + E4 (#91) + E5 (#92) merged; E6 (bundle-health visibility) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6). All three planned Phase E C-D/T-D anchors are now minted; a T-D10 amendment is planned in E20 (augmentation). Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5.
+**Next concrete action:** Merge E6 on green gate; branch E7 (bootstrap worker/watcher robustness — imports C-D25) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
 
 ---
 
@@ -27,7 +27,7 @@ The **Phase E** cycle holds its anchors here. T-D60 (E1) is Phase E's first anch
 | Anchor | Phase | One-line |
 |---|---|---|
 | T-D60 | Phase E / E1 | Refuse-rather-than-fallback: a degraded or failed capability is **disclosed on the shared wire contract** (extends T-D59), never silently substituted or rendered as healthy-empty. Broad reach (LBD-1a). Supersedes audit-3's blessing of the silent C-D2 SHA1 embedding fallback; narrows C-D2 to capability-absent honest-distinct mode (recorded as a T-D60 supersession note, not a C-D2 body edit). Cited by E2/E3/E4. |
-| _C-D25_ | Phase E / E6 (pending) | System-state visibility frontend pattern (one shared component, tri-state healthy/degraded/absent, rendered in-context). Mints in E6; reused by E5/E7. |
+| C-D25 | Phase E / E6 | System-state visibility frontend component: shared `HealthStatus` (tri-state healthy/degraded/absent) rendered in-context (LBD-2), not a consolidated panel. E6 renders it for per-project methodology bundle health (SF2-02/SF2-06) and background-job health (E5/C-D26); E7 reuses it for the quarantine surface. Distinct from C-D26 backend model (LBD-3). |
 | C-D26 | Phase E / E5 | Background-job health-state backend model: per-loop `JobHealth` (`last_run_at`/`last_error`/`healthy`) on the backup/reminder/poller loops + `JobHealthRegistry` + `GET /api/background-jobs/health`; a failing loop is now observable, not a silent catch-and-log. Distinct from the C-D25 frontend convention (LBD-3). |
 
 ---
@@ -56,11 +56,11 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase E / E5 — Background-job health model (SF5-01/02/04): per-loop `JobHealth` + route (mints **C-D26**) | `handovers/phase-e-execution-log.md` (§E5) |
+| _this PR_ | Phase E / E6 — Bundle-health visibility (SF2-02/SF2-06): `HealthStatus` tri-state + per-project methodology-health route (mints **C-D25**) | `handovers/phase-e-execution-log.md` (§E6) |
+| #92 | Phase E / E5 — Background-job health model (SF5-01/02/04): per-loop `JobHealth` + route (mints **C-D26**) | `handovers/phase-e-execution-log.md` (§E5) |
 | #91 | Phase E / E4 — Notifier capability honesty (SF5-03): disclosed `NotifyResult` + honest unavailable fallback (cites T-D60) | `handovers/phase-e-execution-log.md` (§E4) |
 | #90 | Phase E / E3 — Semble degradation honesty (SF4-01): tri-state `SembleStatus` on the wire (cites T-D60) | `handovers/phase-e-execution-log.md` (§E3) |
 | #89 | Phase E / E2 — AI/capability degradation honesty (SF3-03, SF2-04, SF4-02, SF4-03) | `handovers/phase-e-execution-log.md` (§E2, backfilled) |
-| #88 | Phase E / E1 — RAG embedder & query honesty + T-D60 mint (C-D2 narrowing) | `handovers/phase-e-execution-log.md` (§E1, backfilled) |
 
 (PR #80 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. The Phase E chain uses a single append-only execution log rather than per-slice handover files; see its header for rationale.)
 

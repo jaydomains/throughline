@@ -1,3 +1,5 @@
+import type { BundleStructuralError } from './bundle.js';
+
 // Phase E E5 — background-job health model (C-D26; SF5-01/02/04; T-D60 kinship).
 // The honest, observable state of each long-running background loop (backup scheduler,
 // reminder scheduler, GitHub poller). Pre-E5 these loops caught-and-logged with no state
@@ -19,4 +21,25 @@ export interface BackgroundJobHealth {
 // Response of GET /api/background-jobs/health.
 export interface BackgroundJobsHealthResponse {
   jobs: BackgroundJobHealth[];
+}
+
+// Phase E E6 — the C-D25 tri-state visibility vocabulary (LBD-2). One shared frontend
+// component (`<HealthStatus>`) renders this state in-context beside each feature it
+// concerns, rather than a consolidated "system health" panel.
+//   'healthy'  — the capability is present and working.
+//   'degraded' — the capability is bound/configured but currently failing (the
+//                bound-but-broken case that SF2-02 made indistinguishable from freeform).
+//   'absent'   — the capability is legitimately not in use (e.g. a freeform project with
+//                no methodology gates) — working as intended, not a fault.
+export type HealthState = 'healthy' | 'degraded' | 'absent';
+
+// Per-project methodology bundle health (SF2-02 / SF2-06). Resolves the project's actual
+// bundle through the C-D14/C-D19 precedence (external path → per-repo → install-shipped),
+// so a broken *external or per-repo* bundle is surfaced here per-project — not only the
+// install-cache bundles that GET /api/methodologies lists.
+export interface MethodologyHealthResult {
+  state: HealthState;
+  bundle_id: string;
+  // Present when state === 'degraded' (the bound bundle failed to load).
+  errors?: BundleStructuralError[];
 }

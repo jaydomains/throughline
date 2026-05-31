@@ -41,7 +41,7 @@ async function setup() {
   const sessions = createSessionsService(backend.db, projects);
 
   const app = Fastify();
-  registerMethodologyRoutes(app, backend.registry);
+  registerMethodologyRoutes(app, backend.registry, projects);
   registerItemRoutes(app, projects, items);
   registerSessionRoutes(app, projects, sessions);
   await app.ready();
