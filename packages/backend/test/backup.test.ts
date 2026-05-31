@@ -313,4 +313,24 @@ describe('secrets store write path (T-D4)', () => {
       cfg.cleanup();
     }
   });
+
+  it('S6-04: writes secrets atomically (write-temp + rename) — no stray .tmp, key preserved', () => {
+    const cfg = makeTmpConfig();
+    try {
+      writeSecrets(cfg.secretsPath, { anthropic_api_key: 'sk-a' });
+      // A second read-modify-write that adds a key must not corrupt the file, and must
+      // leave no temp file behind — the atomic rename either fully replaces the target or
+      // leaves the prior file intact (a crash mid-write can't truncate it).
+      writeSecrets(cfg.secretsPath, { github_pat: 'ghp-b' });
+      expect(existsSync(`${cfg.secretsPath}.tmp`)).toBe(false);
+      // The untouched key survived the RMW and the JSON is well-formed.
+      expect(secretsPresence(cfg.secretsPath)).toEqual({
+        anthropic_api_key: true,
+        github_pat: true,
+      });
+      expect(() => JSON.parse(readFileSync(cfg.secretsPath, 'utf8'))).not.toThrow();
+    } finally {
+      cfg.cleanup();
+    }
+  });
 });

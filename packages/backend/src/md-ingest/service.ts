@@ -384,75 +384,85 @@ export function createMdIngestService(opts: CreateOptions): MdIngestService {
         const result = await summariser.summarise({ rel_path: relPath, content });
         const existing = findEntryBySource(projectId, relPath);
 
-        let entryId: string;
-        let status: MdIngestedEntrySummary['status'];
-        if (existing) {
-          library.update(existing.id, {
-            body: content,
-            summary: result.summary,
-            tags: result.tags,
-            source_hash: hash,
-            ingested_at: now,
-          });
-          entryId = existing.id;
-          status = 'reingested';
-        } else {
-          const title = relPath.split(/[\\/]/).pop() ?? relPath;
-          const created = library.create({
-            project_id: projectId,
-            type: 'imported_doc',
-            title,
-            body: content,
-            tags: result.tags,
-            summary: result.summary,
-            source_path: relPath,
-            source_tracked: false,
-            source_hash: hash,
-            ingested_at: now,
-          });
-          entryId = created.id;
-          status = 'created';
-        }
+        // S6-03: commit this file's entry + audit + cost atomically. The AI summarise
+        // above is awaited *before* the transaction (a sqlite txn can't span an await),
+        // so the per-file commit is the unit of atomicity — a crash mid-file can't leave a
+        // library entry without its audit/cost rows. (Whole-batch atomicity is infeasible
+        // and undesirable: it would hold a write lock across N per-file AI calls.)
+        const { entryId, status } = db.transaction(
+          (): { entryId: string; status: MdIngestedEntrySummary['status'] } => {
+            let entryId: string;
+            let status: MdIngestedEntrySummary['status'];
+            if (existing) {
+              library.update(existing.id, {
+                body: content,
+                summary: result.summary,
+                tags: result.tags,
+                source_hash: hash,
+                ingested_at: now,
+              });
+              entryId = existing.id;
+              status = 'reingested';
+            } else {
+              const title = relPath.split(/[\\/]/).pop() ?? relPath;
+              const created = library.create({
+                project_id: projectId,
+                type: 'imported_doc',
+                title,
+                body: content,
+                tags: result.tags,
+                summary: result.summary,
+                source_path: relPath,
+                source_tracked: false,
+                source_hash: hash,
+                ingested_at: now,
+              });
+              entryId = created.id;
+              status = 'created';
+            }
 
-        const triggerContext: Record<string, unknown> = {
-          folder_id: req.folder_id,
-          source_path: relPath,
-          status,
-          repo_path_rooted: repoAbs.length > 0,
-        };
-        if (result.telemetry.model) triggerContext.model = result.telemetry.model;
-        if (result.telemetry.prompt) {
-          triggerContext.prompt_fingerprint = promptFingerprint(
-            'md_ingest_summary',
-            result.telemetry.prompt,
-          );
-        }
-        appendAudit(db, {
-          projectId,
-          entityType: 'library',
-          entityId: entryId,
-          actor: result.telemetry.model ? 'ai' : 'system',
-          field: 'md_ingest',
-          newValue: relPath,
-          triggerContext,
-        });
-        if (
-          result.telemetry.model &&
-          (result.telemetry.input_tokens > 0 || result.telemetry.output_tokens > 0)
-        ) {
-          recordCost(db, {
-            projectId,
-            feature: 'md_ingest_summary',
-            model: result.telemetry.model,
-            inputTokens: result.telemetry.input_tokens,
-            outputTokens: result.telemetry.output_tokens,
-            usdEstimate: usdEstimate(
-              result.telemetry.model,
-              result.telemetry.input_tokens,
-              result.telemetry.output_tokens,
-            ),
-          });
-        }
+            const triggerContext: Record<string, unknown> = {
+              folder_id: req.folder_id,
+              source_path: relPath,
+              status,
+              repo_path_rooted: repoAbs.length > 0,
+            };
+            if (result.telemetry.model) triggerContext.model = result.telemetry.model;
+            if (result.telemetry.prompt) {
+              triggerContext.prompt_fingerprint = promptFingerprint(
+                'md_ingest_summary',
+                result.telemetry.prompt,
+              );
+            }
+            appendAudit(db, {
+              projectId,
+              entityType: 'library',
+              entityId: entryId,
+              actor: result.telemetry.model ? 'ai' : 'system',
+              field: 'md_ingest',
+              newValue: relPath,
+              triggerContext,
+            });
+            if (
+              result.telemetry.model &&
+              (result.telemetry.input_tokens > 0 || result.telemetry.output_tokens > 0)
+            ) {
+              recordCost(db, {
+                projectId,
+                feature: 'md_ingest_summary',
+                model: result.telemetry.model,
+                inputTokens: result.telemetry.input_tokens,
+                outputTokens: result.telemetry.output_tokens,
+                usdEstimate: usdEstimate(
+                  result.telemetry.model,
+                  result.telemetry.input_tokens,
+                  result.telemetry.output_tokens,
+                ),
+              });
+            }
+            return { entryId, status };
+          },
+        )();
         ingested.push({
           entry_id: entryId,
           rel_path: relPath,

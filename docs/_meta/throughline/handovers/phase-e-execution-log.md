@@ -147,14 +147,28 @@
 
 ### E10 — Background-loop correctness (+ §7.10 SPEC clause)
 - **Branch:** `claude/phase-e-e10-background-loop-correctness`
-- **PR:** #97 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #97 (squash-merged)
+- **Merge SHA:** `2338c64`
 - **Closed:** S4-02 (the GitHub poller persisted the new list ETag *before* the snapshot-upsert loop, so a mid-loop throw left the ETag advanced while snapshots were never written → every later poll got a 304 and reused permanently-stale snapshots), S5-05 (`markFired` advanced a recurring reminder one interval from the old `next_fire_at`, which after downtime still landed in the past → the reminder refired every tick to catch up — a catch-up storm).
 - **Fix (no anchor; sanctioned SPEC amendment):** move `cache.setListEtag` to *after* the snapshot loop (a mid-loop throw now retains the old ETag → next poll re-fetches and self-heals); coalesce missed recurrence occurrences in `markFired` (advance past `now` so a gap collapses to a **single** catch-up fire and the cadence re-anchors to the future). Added the one-line **§7.10 missed-occurrence-coalesce clause** to `SPEC.md` (the spec-author-ruled-in clause — the code and spec land together; mints no anchor, per the base plan's E10 note).
 - **Anchor:** none. **Deps:** rebase-coupled with E5 (poller) + E4 (`directives/service.ts`) — both merged; clean on updated `main`.
 - **Verification:** `poller.ts` `setListEtag` at line 167 (before the loop); `directives/service.ts` `advanceRecurrence(base, …)` single-interval advance — both matched current `main`.
 - **LOC:** ~96 insertions / 3 deletions across 5 files; production-side ~25 (+ the §7.10 SPEC line), rest test code — within the 90–140 band.
 - **Tests:** `directives.test.ts` — **S5-05 deterministic lock** (a daily reminder 12 days past coalesces to a *single* fire with `next_fire_at` the first occurrence strictly after `now`, not 11 days in the past). `github.test.ts` — **S4-02 deterministic lock** (a cache whose `upsertSnapshot` throws mid-loop leaves the list ETag at its prior value, not advanced — so the next poll re-fetches). The existing "advances one interval" recurring test still passes (the in-future case doesn't coalesce).
+- **Fix-rounds:** 0 (Gitar approved first pass; both gate runs green first try).
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
+
+### E11 — Transaction atomicity
+- **Branch:** `claude/phase-e-e11-transaction-atomicity`
+- **PR:** _pending (this slice)_
+- **Merge SHA:** pending
+- **Closed:** S5-04 (`items.update` wrote the scalar UPDATE + methodology-context + mentions + audit rows **unwrapped**, unlike `create` — a throw partway left a half-written item), S6-03 (md-ingest batch loop: a file's library entry + audit + cost were separate writes), S6-04 (`writeSecrets` did a read-modify-`writeFileSync` — a crash mid-write could truncate/corrupt the secrets file and lose both keys).
+- **Fix (no anchor):** wrap `items.update`'s write block in a `db.transaction` (mirrors `create`; the status hook + final read stay outside); commit each md-ingest file's entry + audit + cost in a **per-file** `db.transaction` (the AI `summarise` is awaited *before* the txn — whole-batch atomicity is infeasible/undesirable across N per-file AI calls and a sqlite txn can't span an `await`); write secrets atomically via write-temp + `renameSync` (atomic within a filesystem), with temp cleanup on failure.
+- **Anchor:** none. **Deps:** rebase-coupled with E12 on `items/service.ts` (E12 not yet landed — E11 lands first). **Files:** `items/service.ts`, `md-ingest/service.ts`, `secrets/store.ts`.
+- **Verification:** `items.update` write block unwrapped (vs `create`'s `db.transaction`); md-ingest per-file `library.create/update` + `appendAudit` + `recordCost` separate; `writeSecrets` RMW + bare `writeFileSync` — all matched current `main`.
+- **LOC:** diff stat ~218/136 across 5 files, **but inflated by re-indentation** — wrapping a block in `db.transaction(() => {…})` re-indents every line. Net new logic is small (the two txn wrappers + the atomic-write); test code ~48. One coherent unit; the overage is re-indent, not scope — non-halting.
+- **Tests:** `items.test.ts` — **S5-04 deterministic rollback lock** (fault-inject a throw on the in-transaction audit insert → the scalar UPDATE rolls back, item unchanged). `backup.test.ts` — **S6-04** (atomic write leaves no stray `.tmp`, preserves the untouched key, JSON stays well-formed). **S6-03** (md-ingest per-file txn) is inspection-verified — rollback-on-crash isn't deterministically unit-testable without the same fault-injection seam, and the existing md-ingest tests (10/10) confirm the per-file commit behaviour is preserved.
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.

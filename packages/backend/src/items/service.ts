@@ -603,82 +603,90 @@ export function createItemsService(
         }
       }
 
-      db.prepare(
-        `UPDATE items
-           SET type = ?, title = ?, description = ?, status = ?, blocker_text = ?, parent_id = ?, branch_ref = ?, updated_at = ?
-         WHERE id = ?`,
-      ).run(
-        next.type,
-        next.title,
-        next.description,
-        next.status,
-        next.blocker_text,
-        next.parent_id,
-        next.branch_ref,
-        next.updated_at,
-        id,
-      );
+      // S5-04: wrap the scalar UPDATE + context + mentions + audit writes in one
+      // transaction (mirroring create), so a throw partway through (e.g. writeContext or
+      // an audit insert) rolls the whole update back rather than leaving a half-written
+      // item with mismatched context/mentions/audit rows. The status-transition hook and
+      // the final read run after commit, outside the transaction.
+      const applyUpdate = db.transaction(() => {
+        db.prepare(
+          `UPDATE items
+             SET type = ?, title = ?, description = ?, status = ?, blocker_text = ?, parent_id = ?, branch_ref = ?, updated_at = ?
+           WHERE id = ?`,
+        ).run(
+          next.type,
+          next.title,
+          next.description,
+          next.status,
+          next.blocker_text,
+          next.parent_id,
+          next.branch_ref,
+          next.updated_at,
+          id,
+        );
 
-      if (input.methodology_context !== undefined) {
-        const beforeCtx = rowToItem(db, before).methodology_context;
-        writeContext(id, input.methodology_context);
-        const afterCtx = rowToItem(db, getRow(id)!).methodology_context;
-        for (const dim of [
-          'primary_unit_refs',
-          'phase_refs',
-          'anchor_citations',
-          'marker_refs',
+        if (input.methodology_context !== undefined) {
+          const beforeCtx = rowToItem(db, before).methodology_context;
+          writeContext(id, input.methodology_context);
+          const afterCtx = rowToItem(db, getRow(id)!).methodology_context;
+          for (const dim of [
+            'primary_unit_refs',
+            'phase_refs',
+            'anchor_citations',
+            'marker_refs',
+          ] as const) {
+            const oldV = beforeCtx[dim].join(',');
+            const newV = afterCtx[dim].join(',');
+            if (oldV !== newV) {
+              appendAudit(db, {
+                projectId: before.project_id,
+                entityType: 'item',
+                entityId: id,
+                actor: 'user',
+                field: dim,
+                oldValue: oldV,
+                newValue: newV,
+              });
+            }
+          }
+        }
+
+        const mentionsBefore = syncMentions(id, before.project_id, next.description);
+        if (mentionsBefore !== null) {
+          appendAudit(db, {
+            projectId: before.project_id,
+            entityType: 'item',
+            entityId: id,
+            actor: 'user',
+            field: 'mentions',
+            oldValue: mentionsBefore.join(','),
+            newValue: currentMentions(id).join(','),
+          });
+        }
+
+        for (const [field, oldV, newV] of [
+          ['type', before.type, next.type],
+          ['title', before.title, next.title],
+          ['description', before.description, next.description],
+          ['status', before.status, next.status],
+          ['blocker_text', before.blocker_text ?? '', next.blocker_text ?? ''],
+          ['parent_id', before.parent_id ?? '', next.parent_id ?? ''],
+          ['branch_ref', before.branch_ref ?? '', next.branch_ref ?? ''],
         ] as const) {
-          const oldV = beforeCtx[dim].join(',');
-          const newV = afterCtx[dim].join(',');
           if (oldV !== newV) {
             appendAudit(db, {
               projectId: before.project_id,
               entityType: 'item',
               entityId: id,
               actor: 'user',
-              field: dim,
-              oldValue: oldV,
-              newValue: newV,
+              field,
+              oldValue: String(oldV),
+              newValue: String(newV),
             });
           }
         }
-      }
-
-      const mentionsBefore = syncMentions(id, before.project_id, next.description);
-      if (mentionsBefore !== null) {
-        appendAudit(db, {
-          projectId: before.project_id,
-          entityType: 'item',
-          entityId: id,
-          actor: 'user',
-          field: 'mentions',
-          oldValue: mentionsBefore.join(','),
-          newValue: currentMentions(id).join(','),
-        });
-      }
-
-      for (const [field, oldV, newV] of [
-        ['type', before.type, next.type],
-        ['title', before.title, next.title],
-        ['description', before.description, next.description],
-        ['status', before.status, next.status],
-        ['blocker_text', before.blocker_text ?? '', next.blocker_text ?? ''],
-        ['parent_id', before.parent_id ?? '', next.parent_id ?? ''],
-        ['branch_ref', before.branch_ref ?? '', next.branch_ref ?? ''],
-      ] as const) {
-        if (oldV !== newV) {
-          appendAudit(db, {
-            projectId: before.project_id,
-            entityType: 'item',
-            entityId: id,
-            actor: 'user',
-            field,
-            oldValue: String(oldV),
-            newValue: String(newV),
-          });
-        }
-      }
+      });
+      applyUpdate();
 
       if (before.status !== next.status) {
         hooks.onStatusTransition?.(before.project_id, id);
