@@ -24,6 +24,34 @@ async function setup() {
 }
 
 describe('items service', () => {
+  it('S5-04: a throw mid-update rolls the whole update back — no half-written item', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      const item = items.create({ project_id: project.id, title: 'original', description: 'orig' });
+      // Fault-inject a failure on the audit insert that runs INSIDE the update transaction
+      // (after the scalar UPDATE). With the writes wrapped in one transaction (S5-04), the
+      // UPDATE must roll back; pre-fix it would have committed, leaving the title changed
+      // but the audit/mentions/context writes incomplete.
+      const db = backend.db;
+      const realPrepare = db.prepare.bind(db);
+      let armed = false;
+      db.prepare = ((sql: string) => {
+        if (armed && sql.includes('audit_log')) throw new Error('disk full mid-update');
+        return realPrepare(sql);
+      }) as typeof db.prepare;
+      armed = true;
+      expect(() => items.update(item.id, { title: 'changed' })).toThrow('disk full');
+      armed = false;
+      db.prepare = realPrepare;
+
+      // The scalar UPDATE shared the transaction with the audit insert that threw, so it
+      // rolled back: the item is unchanged.
+      expect(items.get(item.id)!.title).toBe('original');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('returns freeform policy with task type and open/done statuses', async () => {
     const { backend, items, project } = await setup();
     try {

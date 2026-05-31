@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 // T-D4: API keys live in a file separate from the datastore, never returned to the browser,
@@ -34,7 +34,23 @@ export function writeSecrets(secretsPath: string, patch: Partial<Secrets>): void
     else next[key] = v;
   }
   mkdirSync(dirname(secretsPath), { recursive: true });
-  writeFileSync(secretsPath, JSON.stringify(next, null, 2), { mode: 0o600 });
+  // S6-04: write atomically (write-temp + rename) so a crash mid-write can't truncate or
+  // corrupt the secrets file and lose both keys — the read-modify-write would otherwise
+  // leave a partial JSON. rename(2) is atomic within a filesystem; the temp sits beside
+  // the target so it shares one. Same 0600 mode as the final file.
+  const tmpPath = `${secretsPath}.tmp`;
+  try {
+    writeFileSync(tmpPath, JSON.stringify(next, null, 2), { mode: 0o600 });
+    renameSync(tmpPath, secretsPath);
+  } catch (err) {
+    // Best-effort cleanup of the temp on failure; surface the original error.
+    try {
+      rmSync(tmpPath, { force: true });
+    } catch {
+      /* ignore cleanup failure */
+    }
+    throw err;
+  }
 }
 
 export interface SecretsPresence {
