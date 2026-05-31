@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { createProjectsService } from '../src/projects/service.js';
@@ -262,6 +262,69 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       expect(badHealth.snapshot().healthy).toBe(false);
       expect(badHealth.snapshot().last_error).toContain('boom');
     } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('drain() awaits an in-flight tick before resolving (S7-03)', async () => {
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    vi.useFakeTimers();
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const directives = createDirectivesService(backend.db, projects, items, library, {
+        now: () => FIXED_NOW,
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+      const item = items.create({ project_id: project.id, title: 'Track item' });
+      directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
+      });
+      // A notifier whose fire blocks on a gate we control, so a tick stays mid-flight.
+      let release!: () => void;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      const gatedNotifier = {
+        kind: 'os' as const,
+        notify: async () => {
+          await gate;
+          return { outcome: 'delivered' as const };
+        },
+      };
+      const scheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: gatedNotifier,
+        items,
+        library,
+        now: () => FIXED_NOW,
+        intervalMs: 1000,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+      });
+      scheduler.start();
+      await vi.advanceTimersByTimeAsync(1000); // fire interval → inFlight tick blocks on gate
+
+      let drained = false;
+      const drainP = scheduler.drain().then(() => {
+        drained = true;
+      });
+      await Promise.resolve();
+      expect(drained).toBe(false);
+
+      release();
+      await drainP;
+      expect(drained).toBe(true);
+      scheduler.stop();
+    } finally {
+      vi.useRealTimers();
       await backend.cleanup();
     }
   });

@@ -722,12 +722,19 @@ export async function startServer(
       reminderScheduler.stop();
       backupScheduler.stop();
       githubPoller.stop();
+      // S7-02 — end every hijacked SSE socket. app.close() does not track them (they were
+      // reply.hijack()'d off the request lifecycle), so without this they hang shutdown.
+      sseHub.closeAll();
       await app.close();
       await inboxWatcher.stop();
       await mdIngestWatcher.stop();
       await bootstrapWatcher!.stop();
       await disciplineDrift.stop();
       await githubPoller.drain();
+      // S7-03 — await any in-flight backup / reminder tick so its DB writes finish before
+      // the handle closes (mirrors the poller drain above; their stop() only clears timers).
+      await reminderScheduler.drain();
+      await backupScheduler.drain();
       await registry.stop();
       db.close();
     },

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { openDb } from '../src/db/index.js';
@@ -208,6 +208,49 @@ describe('backup service (T-D28)', () => {
       db.close();
     } finally {
       cfg.cleanup();
+    }
+  });
+
+  it('drain() awaits an in-flight tick before resolving (S7-03)', async () => {
+    vi.useFakeTimers();
+    try {
+      // A tick blocked inside autoCopy on a gate we control. drain() must not resolve
+      // until that in-flight tick (its DB writes) completes — pre-E8, stop() only cleared
+      // the timer and a mid-flight tick raced the closing DB.
+      let release!: () => void;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      const service = {
+        status: () => ({ auto_copy_target_path: '/tmp/x', last_auto_copy_at: null }),
+        autoCopy: async () => {
+          await gate;
+          return true;
+        },
+        pruneArchive: () => 0,
+      } as unknown as Parameters<typeof createBackupScheduler>[0]['service'];
+      const settings = { get: () => 1 } as unknown as Parameters<
+        typeof createBackupScheduler
+      >[0]['settings'];
+
+      const scheduler = createBackupScheduler({ service, settings, intervalMs: 1000 });
+      scheduler.start();
+      // Fire the interval → inFlight = tick(), which blocks on the gate.
+      await vi.advanceTimersByTimeAsync(1000);
+
+      let drained = false;
+      const drainP = scheduler.drain().then(() => {
+        drained = true;
+      });
+      await Promise.resolve();
+      expect(drained).toBe(false); // tick still in flight
+
+      release();
+      await drainP;
+      expect(drained).toBe(true);
+      scheduler.stop();
+    } finally {
+      vi.useRealTimers();
     }
   });
 
