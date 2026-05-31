@@ -49,6 +49,24 @@ function throwingEmbedder(): TextEmbedder {
   };
 }
 
+// Succeeds on the freshness-sweep embed (call 1) but fails only on the query embed (call 2)
+// — pins the SF3-02 *query-embed* branch, which the freshness-throw test (throwingEmbedder)
+// never reaches because its throw is caught at the ensureFresh boundary. `mode` selects how
+// the query embed fails: a runtime throw (catch branch) or an empty result (the !qv branch).
+function queryFailingEmbedder(mode: 'throw' | 'novector'): TextEmbedder {
+  let calls = 0;
+  return {
+    kind: 'fallback',
+    dim: 4,
+    embed: async (texts) => {
+      calls += 1;
+      if (calls === 1) return texts.map(() => [1, 0, 0, 0]); // freshness sweep succeeds
+      if (mode === 'throw') throw new Error('query embed failed');
+      return []; // produced no query vector
+    },
+  };
+}
+
 async function setup(
   anthropic: AnthropicClient = offAnthropic(),
   semble?: SembleService,
@@ -266,7 +284,7 @@ describe('E1 — embedder honesty on the wire (T-D60: SF3-01, SF3-02, S4-03)', (
     }
   });
 
-  it('a runtime embed-failure surfaces as unavailable, never silent-empty or a crash (SF3-02/S4-03)', async () => {
+  it('an embed-failure in the freshness sweep surfaces as unavailable, never a crash (S4-03)', async () => {
     // A resolved-but-broken extractor: the freshness sweep embeds the stale item and throws.
     // The query must not crash (S4-03) and must not read as "nothing matched" (SF3-02).
     const s = await setup(offAnthropic(), undefined, throwingEmbedder());
@@ -277,6 +295,52 @@ describe('E1 — embedder honesty on the wire (T-D60: SF3-01, SF3-02, S4-03)', (
       expect(r.citations.length).toBe(0);
       expect(r.answer).toBeNull();
       expect(r.used_ai).toBe(false);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a query-embed throw (sweep ok) surfaces as unavailable (SF3-02 query-embed branch)', async () => {
+    // The freshness sweep succeeds; only the query embed throws — exercises the query-embed
+    // catch, which the sweep-throw test above never reaches.
+    const s = await setup(offAnthropic(), undefined, queryFailingEmbedder('throw'));
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const r = await s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' });
+      expect(r.embedder).toBe('unavailable');
+      expect(r.citations.length).toBe(0);
+      expect(r.answer).toBeNull();
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a query embed that yields no vector surfaces as unavailable (SF3-02 !qv branch)', async () => {
+    const s = await setup(offAnthropic(), undefined, queryFailingEmbedder('novector'));
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const r = await s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' });
+      expect(r.embedder).toBe('unavailable');
+      expect(r.citations.length).toBe(0);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('an infra/DB failure in the sweep propagates, not masked as unavailable (T-D60/T-D58)', async () => {
+    // A non-embedder throw inside the freshness sweep (here a service/DB read) must NOT be
+    // swallowed into embedder:'unavailable' — that would mask a real error (and a T-D58
+    // DomainError's canonical status) behind a healthy-looking degraded state.
+    const s = await setup();
+    try {
+      s.items.create({ project_id: s.project.id, title: 'alpha', description: 'do alpha', status: 'open' });
+      const boom = new Error('db unavailable');
+      (s.items as unknown as { list: () => never }).list = () => {
+        throw boom;
+      };
+      await expect(
+        s.rag.query(s.project.id, { query: 'alpha', substrate: 'text' }),
+      ).rejects.toThrow('db unavailable');
     } finally {
       await s.cleanup();
     }

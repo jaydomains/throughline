@@ -4,7 +4,7 @@ import type { ItemsService } from '../items/service.js';
 import type { LibraryService } from '../library/service.js';
 import type { ProjectsService } from '../projects/service.js';
 import type { TextEmbedderState } from '@throughline/shared';
-import { cosine, type TextEmbedder } from './embeddings.js';
+import { cosine, EmbedError, type TextEmbedder } from './embeddings.js';
 
 // C-D2 text substrate index. Indexed entities: item title+description and library entries
 // (notes, prompts, snippets, and `imported_doc` — repo `.md` ingestion lands docs as
@@ -85,6 +85,20 @@ function snippetOf(text: string): string {
 
 export function createTextIndex(opts: CreateOptions): TextIndex {
   const { db, projects, items, library, embedder } = opts;
+
+  // Any throw from the embedding step is classified as an EmbedError at this boundary, so
+  // the search path can tell an embed-failure (→ refused retrieval, embedder:'unavailable')
+  // apart from an infrastructure/DB failure (which must propagate — never be masked as a
+  // healthy-looking degraded state; the same category-confusion T-D60 forbids). Wrapping
+  // here (rather than requiring every TextEmbedder implementation to throw EmbedError)
+  // keeps the classification robust for any injected embedder.
+  async function embedOrThrow(texts: string[]): Promise<number[][]> {
+    try {
+      return await embedder.embed(texts);
+    } catch (e) {
+      throw new EmbedError('text embedding failed', { cause: e });
+    }
+  }
 
   function gather(projectId: string | null): IndexedEntity[] {
     const pids =
@@ -186,7 +200,7 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
     }
 
     if (stale.length > 0) {
-      const vecs = await embedder.embed(stale.map((e) => e.text));
+      const vecs = await embedOrThrow(stale.map((e) => e.text));
       const ins = db.prepare(
         `INSERT INTO text_embeddings
            (entity_type, entity_id, chunk_index, embedding_blob, project_id, content_hash, chunk_text)
@@ -216,14 +230,18 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
     ensureFresh,
 
     async search(projectId, query, k): Promise<TextSearchResult> {
-      // A runtime embedder failure during the freshness sweep (re-embedding stale
-      // entities) must surface as a refused retrieval, not crash the query (S4-03,
-      // T-D60). The fallback only ever covered the *import* failure; a post-resolution
-      // extractor throw propagated and took down the whole RAG call until now.
+      // An embed-failure during the freshness sweep (re-embedding stale entities) must
+      // surface as a refused retrieval, not crash the query (S4-03, T-D60). The fallback
+      // only ever covered the *import* failure; a post-resolution extractor throw
+      // propagated and took down the whole RAG call until now. Only EmbedError is treated
+      // as a refusal here — an infrastructure/DB throw from the sweep propagates so it is
+      // never masked as a healthy-looking 'unavailable' (and a real DomainError keeps its
+      // canonical status, T-D58).
       try {
         await ensureFresh(projectId);
-      } catch {
-        return { hits: [], embedder: 'unavailable' };
+      } catch (e) {
+        if (e instanceof EmbedError) return { hits: [], embedder: 'unavailable' };
+        throw e;
       }
       const rows = (
         projectId === null
@@ -255,10 +273,12 @@ export function createTextIndex(opts: CreateOptions): TextIndex {
       if (rows.length === 0) return { hits: [], embedder: embedder.kind };
       let qv: number[] | undefined;
       try {
-        [qv] = await embedder.embed([query]);
-      } catch {
-        // Query-embed threw at runtime — refuse and surface, never silent empty (SF3-02).
-        return { hits: [], embedder: 'unavailable' };
+        [qv] = await embedOrThrow([query]);
+      } catch (e) {
+        // Query-embed failed — refuse and surface, never silent empty (SF3-02). An infra
+        // throw (non-EmbedError) propagates rather than masquerading as 'unavailable'.
+        if (e instanceof EmbedError) return { hits: [], embedder: 'unavailable' };
+        throw e;
       }
       // No query vector ⇒ the embed failed; report it as such, not as "no matches" (SF3-02).
       if (!qv) return { hits: [], embedder: 'unavailable' };

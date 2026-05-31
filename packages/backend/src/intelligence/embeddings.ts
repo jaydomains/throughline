@@ -25,6 +25,20 @@ export interface TextEmbedder {
   embed(texts: string[]): Promise<number[][]>;
 }
 
+// A failure that originated in the embedding step — a runtime extractor throw, a model
+// backend that broke after resolving, etc. — as opposed to an infrastructure/DB failure.
+// text-index wraps every embedder.embed() call in this type so the search boundary can
+// classify an embed-failure as a refused retrieval (embedder:'unavailable', T-D60) while
+// letting infra throws propagate as real errors (e.g. a T-D58 DomainError → its canonical
+// status). It is deliberately NOT a DomainError: it is caught and converted inside the
+// text index and never reaches a route handler.
+export class EmbedError extends Error {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super(message, options);
+    this.name = 'EmbedError';
+  }
+}
+
 const FALLBACK_DIM = 256;
 
 function l2normalize(v: number[]): number[] {
