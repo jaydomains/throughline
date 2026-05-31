@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   BackupStatus,
+  BackgroundJobHealth,
   BootstrapState,
   CommunicationModelView,
   CostSummary,
   DisciplineScanState,
+  MethodologyHealthResult,
   NotifyOutcome,
   OrphanedRule,
   Project,
@@ -15,6 +17,8 @@ import { api, type MethodologySummary } from '../api.js';
 import { useProjects } from '../hooks/useProjects.js';
 import { useMethodologies } from '../hooks/useMethodologies.js';
 import { BootstrapReviewModal } from '../components/BootstrapReviewModal.js';
+import { HealthStatus } from '../components/HealthStatus.js';
+import { LoadError } from '../components/LoadError.js';
 
 // Phase 15 — settings panel (SPEC §7.25, CODE_SPEC §19). Covers every knob: secrets
 // (write-only, T-D4), backup (T-D28), cost meter threshold (T-D29), the global hygiene
@@ -232,6 +236,8 @@ export function SettingsView() {
         onError={setError}
         onChanged={load}
       />
+
+      <BackgroundJobsSection />
 
       <ProjectSection
         projects={projects}
@@ -498,6 +504,49 @@ function NotificationsSection({
   );
 }
 
+// E6 (C-D25 / C-D26) — background-job loop health, rendered in-context via the shared
+// HealthStatus component. Surfaces the per-loop state E5 made observable: a loop failing
+// every tick now shows 'Degraded' with its last error, not a silent catch-and-log.
+function BackgroundJobsSection() {
+  const [jobs, setJobs] = useState<BackgroundJobHealth[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    api
+      .getBackgroundJobsHealth()
+      .then((r) => {
+        if (alive) setJobs(r.jobs);
+      })
+      .catch((e) => {
+        if (alive) setError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      alive = false;
+    };
+  }, []);
+  return (
+    <Section title="Background jobs">
+      {error && <LoadError error={new Error(error)} what="background-job health" />}
+      {jobs && jobs.length === 0 && <p className="settings-hint">No background jobs running.</p>}
+      {jobs?.map((j) => (
+        <HealthStatus
+          key={j.name}
+          label={j.name}
+          state={j.healthy ? 'healthy' : 'degraded'}
+          detail={
+            j.healthy
+              ? j.last_run_at
+                ? `last run ${new Date(j.last_run_at).toLocaleString()}`
+                : 'not yet run'
+              : (j.last_error ?? 'failing')
+          }
+          testid={`job-health-${j.name}`}
+        />
+      ))}
+    </Section>
+  );
+}
+
 function ProjectSection({
   projects,
   bundles,
@@ -517,6 +566,10 @@ function ProjectSection({
   const [owner, setOwner] = useState('');
   const [repo, setRepo] = useState('');
   const [busy, setBusy] = useState(false);
+  // SF2-02 / SF2-06 (E6, C-D25): the selected project's resolved bundle health —
+  // 'degraded' for a bound-but-broken bundle (distinct from a freeform 'absent'), which
+  // the gate runtime erased by emitting no firings for both.
+  const [health, setHealth] = useState<MethodologyHealthResult | null>(null);
 
   useEffect(() => {
     if (project) {
@@ -527,6 +580,26 @@ function ProjectSection({
       setRepo(project.github_repo ?? '');
     }
   }, [project]);
+
+  useEffect(() => {
+    if (!project) {
+      setHealth(null);
+      return;
+    }
+    let alive = true;
+    api
+      .getMethodologyHealth(project.id)
+      .then((h) => {
+        if (alive) setHealth(h);
+      })
+      .catch(() => {
+        if (alive) setHealth(null);
+      });
+    return () => {
+      alive = false;
+    };
+    // Re-fetch when the binding changes (a save updates bundle_id/path → new resolution).
+  }, [project, project?.bundle_id, project?.bundle_path, project?.repo_path]);
 
   const save = async () => {
     if (!project) return;
@@ -592,6 +665,20 @@ function ProjectSection({
               )}
             </select>
           </label>
+          {health && (
+            <HealthStatus
+              label="Methodology bundle"
+              state={health.state}
+              detail={
+                health.state === 'degraded'
+                  ? (health.errors?.map((e) => e.message).join('; ') ?? 'bound bundle failed to load')
+                  : health.state === 'absent'
+                    ? 'freeform — no methodology gates'
+                    : `bound to ${health.bundle_id}`
+              }
+              testid="methodology-health"
+            />
+          )}
           <label className="settings-row">
             <span>Bundle path (optional)</span>
             <input

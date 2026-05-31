@@ -93,6 +93,8 @@ import type {
   BootstrapResolveResult,
   BootstrapRenderResult,
   BootstrapState,
+  MethodologyHealthResult,
+  BackgroundJobsHealthResponse,
 } from '@throughline/shared';
 
 // MethodologySummary moved to @throughline/shared (T-D59 — wire-contract types live in
@@ -166,6 +168,14 @@ export const api = {
 
   testNotification: () =>
     jsonFetch<NotificationTestResult>('/api/notifications/test', { method: 'POST' }),
+
+  // E6 (C-D25) — per-project methodology bundle health + background-job loop health.
+  getMethodologyHealth: (projectId: string) =>
+    jsonFetch<MethodologyHealthResult>(
+      `/api/projects/${pid(projectId)}/methodology-health`,
+    ),
+  getBackgroundJobsHealth: () =>
+    jsonFetch<BackgroundJobsHealthResponse>('/api/background-jobs/health'),
 
   // Phase 15 — backup (T-D28) + cost meter (T-D29).
   getBackupStatus: () => jsonFetch<BackupStatus>('/api/backup/status'),

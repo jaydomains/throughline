@@ -557,7 +557,7 @@ export async function startServer(
   registerHealthRoute(app);
   registerJobHealthRoutes(app, jobHealth);
   registerEventsRoute(app, sseHub);
-  registerMethodologyRoutes(app, registry);
+  registerMethodologyRoutes(app, registry, projects);
   registerGateRoutes(app, {
     db,
     projects,

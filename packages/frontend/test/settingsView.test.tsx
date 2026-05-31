@@ -155,6 +155,26 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     expect(await screen.findByTestId('notifications-unavailable')).toBeTruthy();
   });
 
+  it('E6/C-D25/C-D26: a degraded background job renders distinctly via HealthStatus', async () => {
+    mockApi.getBackgroundJobsHealth.mockResolvedValueOnce({
+      jobs: [
+        { name: 'backup', last_run_at: '2026-05-31T10:00:00.000Z', last_error: null, healthy: true },
+        {
+          name: 'github-poller',
+          last_run_at: '2026-05-31T11:00:00.000Z',
+          last_error: 'github 500',
+          healthy: false,
+        },
+      ],
+    });
+    renderView();
+    const degraded = await screen.findByTestId('job-health-github-poller');
+    expect(degraded.getAttribute('data-state')).toBe('degraded');
+    expect(degraded.textContent).toContain('github 500');
+    const healthy = await screen.findByTestId('job-health-backup');
+    expect(healthy.getAttribute('data-state')).toBe('healthy');
+  });
+
   it('Phase 18 Slice 2: communication-model section shows the "none" hint for freeform-shaped views', async () => {
     // The default mock returns status: 'none' → the section shows the "nothing to
     // configure" hint instead of any input rows.

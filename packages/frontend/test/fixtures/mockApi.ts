@@ -29,6 +29,8 @@ import type {
   MdIngestFolder,
   MdScanResult,
   NotificationTestResult,
+  MethodologyHealthResult,
+  BackgroundJobsHealthResponse,
   PromptFillRequest,
   Project,
   ProposeRequest,
@@ -296,6 +298,12 @@ export const mockApi = {
   getSecrets: vi.fn(async () => ({ anthropic_api_key: false, github_pat: false })),
   updateSecrets: vi.fn(async () => ({ anthropic_api_key: true, github_pat: false })),
   testNotification: vi.fn(async (): Promise<NotificationTestResult> => ({ outcome: 'delivered' })),
+  getMethodologyHealth: vi.fn(
+    async (): Promise<MethodologyHealthResult> => ({ state: 'healthy', bundle_id: 'freeform' }),
+  ),
+  getBackgroundJobsHealth: vi.fn(
+    async (): Promise<BackgroundJobsHealthResponse> => ({ jobs: [] }),
+  ),
   getBackupStatus: vi.fn(async () => ({
     last_backup_at: null,
     threshold_days: 7,

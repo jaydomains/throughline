@@ -64,8 +64,8 @@
 
 ### E5 — Background-job health model
 - **Branch:** `claude/phase-e-e5-background-job-health`
-- **PR:** #92 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #92 (squash-merged)
+- **Merge SHA:** `e9c5299`
 - **Closed:** SF5-01, SF5-02, SF5-04 (High) — the backup scheduler, reminder scheduler, and GitHub poller each caught-and-logged with **no health/state field**, so a loop failing every tick was indistinguishable from a healthy idle loop.
 - **Fix (mints C-D26):** a per-loop `JobHealth` tracker (`{ last_run_at, last_error, healthy }`) + a `JobHealthRegistry`; each loop records success/failure per tick; `GET /api/background-jobs/health` exposes the snapshot as the shared `BackgroundJobsHealthResponse`. The reminder loop's health reflects only a *thrown* tick failure — a graceful non-delivery (notifier `unavailable`/`failed`, E4) is the notifier's capability state, not a loop fault. The poller records in `pollProject` (the public poll op, so manual refreshes + the loop both update health, and it is directly testable).
 - **Anchor:** **C-D26** minted in `CODE_SPEC.md` (backend health data model; distinct from the C-D25 frontend convention per LBD-3). No T-D count change (C-D, not T-D).
@@ -73,6 +73,21 @@
 - **Verification:** the three cited catch-and-log sites matched current `main` before implementation (`backup/scheduler.ts` nested try/catch, `directives/scheduler.ts` per-reminder catch, `github/poller.ts` tick `.catch`).
 - **LOC:** ~403 insertions across 13 files; production-side ~155 (E5 band 150–210, within band), remainder test code + the C-D26 anchor body. One coherent unit.
 - **Tests:** `job-health.test.ts` (tracker optimistic→success→failure→recover; registry order/idempotency; route snapshot) + per-loop locks: backup throwing tick → healthy:false (`backup.test.ts`), reminder thrown-fire → healthy:false but graceful non-delivery stays healthy (`directives-scheduler.test.ts`), poller failed poll → healthy:false + recovers (`github.test.ts`).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 1 (Gitar "approved with suggestions" — `backup/scheduler` comment said "first sub-op failure" but `tickError` was overwritten; folded `tickError ??= err` at all three sites in `1c7c924` to keep the root error. Re-review: ✅ approved, resolved).
 - **Halt-class fires:** none (C-D26 is the planned E5 anchor — no halt-class 5).
 - **Surfaces to spec author:** the E5/E6 C-D25 sequencing decision above (recorded, not a halt).
+
+### E6 — Bundle-health visibility (mints C-D25; also renders E5 job-health)
+- **Branch:** `claude/phase-e-e6-bundle-health-visibility`
+- **PR:** #93 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** SF2-02 (High), SF2-06 (Med) — `runGates` emitted no firings when `loaded.status !== 'loaded'`, so a bound-but-broken bundle was indistinguishable from a legitimate freeform project; and `GET /api/methodologies` listed only the install cache, so external/per-repo bundle errors were invisible.
+- **Fix (mints C-D25):** `GET /api/projects/:id/methodology-health` resolves the project's **actual** bundle through the C-D14/C-D19 precedence (external → per-repo → install) → tri-state `MethodologyHealthResult` (`degraded` for a bound-but-broken bundle + errors, `absent` for freeform, `healthy` for a methodology bundle). Because it resolves the project's real bundle, an external/per-repo bundle error is surfaced here per-project (closing SF2-06 — see interpretation note). The shared **`HealthStatus`** component (C-D25, tri-state healthy/degraded/absent, rendered **in-context** per LBD-2) renders bundle-health beside the project binding **and** the E5 background-job health (the E5-deferred visibility) in a "Background jobs" section.
+- **Anchor:** **C-D25** minted in `CODE_SPEC.md` (frontend visibility component; distinct from C-D26 backend model per LBD-3). Inserted before C-D26 for numeric order. No T-D count change.
+- **SF2-06 interpretation (flagged for the audit):** the base plan says "widen `/api/methodologies` to include external/per-repo bundle errors." I closed it instead via the per-project `methodology-health` endpoint, which resolves the project's actual (possibly external/repo) bundle and surfaces its error — the user-facing outcome SF2-06 asks for (external/per-repo errors are no longer invisible), at the per-project surface where external bundles inherently live. The global `/api/methodologies` list stays install-shipped by design. Judgment call, not a halt.
+- **Verification:** `runtime.ts:166` (`if (loaded.status !== 'loaded') return []`) and the install-cache-only `registry.list()` (`loader.ts:436`) matched current `main`. Discovered during impl: `resolveBundle` *throws* `BundleNotLoadedError` for a never-existed bundle (create-time validation blocks binding to one) and returns `{status:'error'}` only for a bundle that exists but fails to parse — so the degraded test breaks a *bound* bundle via `reload`, the real SF2-02 scenario.
+- **LOC:** ~352 insertions across 11 files; production-side ~207 (E6 band 150–210, at the ceiling — including the E5 job-health rendering did not breach), remainder test code + the C-D25 anchor body. One coherent unit ("system-state visibility").
+- **Tests:** `methodology-health.test.ts` (healthy / absent / degraded-via-reload / 404) + frontend (`HealthStatus` renders a degraded job distinctly via `data-state`, healthy job too).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none (C-D25 is the planned E6 anchor).
+- **Surfaces to spec author:** the SF2-06 interpretation above (recorded, not a halt).
