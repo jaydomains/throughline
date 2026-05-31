@@ -211,6 +211,50 @@ describe('backup service (T-D28)', () => {
     }
   });
 
+  it('drain() awaits an in-flight tick before resolving (S7-03)', async () => {
+    // NB: real timers only — do NOT use vi.useFakeTimers() here. Faking timers also fakes
+    // setImmediate, which better-sqlite3's async db.backup() depends on; under the full
+    // parallel suite that leaked into the snapshot test's db.backup and flaked it. We drive
+    // the in-flight tick with a real short interval + an explicit "entered" signal, so the
+    // assertion is deterministic without faking globals.
+    let enter!: () => void;
+    const entered = new Promise<void>((r) => {
+      enter = r;
+    });
+    let release!: () => void;
+    const gate = new Promise<void>((r) => {
+      release = r;
+    });
+    const service = {
+      status: () => ({ auto_copy_target_path: '/tmp/x', last_auto_copy_at: null }),
+      autoCopy: async () => {
+        enter(); // signal the tick is in flight
+        await gate; // …then block until the test releases it
+        return true;
+      },
+      pruneArchive: () => 0,
+    } as unknown as Parameters<typeof createBackupScheduler>[0]['service'];
+    const settings = { get: () => 1 } as unknown as Parameters<
+      typeof createBackupScheduler
+    >[0]['settings'];
+
+    const scheduler = createBackupScheduler({ service, settings, intervalMs: 5 });
+    scheduler.start();
+    await entered; // a tick has fired and is blocked inside autoCopy → inFlight engaged
+
+    let drained = false;
+    const drainP = scheduler.drain().then(() => {
+      drained = true;
+    });
+    await Promise.resolve();
+    expect(drained).toBe(false); // drain must not resolve while the tick is in flight
+
+    release();
+    await drainP;
+    expect(drained).toBe(true);
+    scheduler.stop();
+  });
+
   it('scheduler records loop health: a throwing tick flips healthy:false (E5/C-D26)', async () => {
     const cfg = makeTmpConfig();
     try {

@@ -34,6 +34,8 @@ export interface ReminderScheduler {
   start(): void;
   stop(): void;
   tick(): Promise<void>;
+  // S7-03 — await any tick that is mid-flight so its writes complete before the DB closes.
+  drain(): Promise<void>;
 }
 
 export function createReminderScheduler(opts: ReminderSchedulerOptions): ReminderScheduler {
@@ -42,6 +44,9 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
   const log = opts.logger;
   let timer: NodeJS.Timeout | null = null;
   let running = false;
+  // The interval-driven tick promise, tracked so `drain()` can await an in-flight tick at
+  // shutdown (S7-03). Direct test callers await `tick()` themselves.
+  let inFlight: Promise<void> | null = null;
 
   function resolveTitle(d: Directive): string {
     if (d.parent_type === 'item') {
@@ -118,7 +123,13 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
       if (timer) return;
       log?.info(`reminder scheduler started (interval ${interval}ms)`);
       timer = setInterval(() => {
-        void tick();
+        // Skip if a tick is still in flight — otherwise a fast cycle would overwrite
+        // `inFlight` with a re-entrant no-op tick (tick()'s own guard returns immediately),
+        // and drain() would then await the wrong (already-resolved) promise.
+        if (running) return;
+        inFlight = tick().finally(() => {
+          inFlight = null;
+        });
       }, interval);
       // Don't keep the process alive solely for the scheduler.
       if (typeof timer.unref === 'function') timer.unref();
@@ -128,6 +139,9 @@ export function createReminderScheduler(opts: ReminderSchedulerOptions): Reminde
       clearInterval(timer);
       timer = null;
       log?.info('reminder scheduler stopped');
+    },
+    async drain() {
+      await inFlight;
     },
     tick,
   };

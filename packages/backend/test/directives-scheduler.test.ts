@@ -266,6 +266,75 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
     }
   });
 
+  it('drain() awaits an in-flight tick before resolving (S7-03)', async () => {
+    // Real timers only (no vi.useFakeTimers — see the backup drain test: faking setImmediate
+    // leaks into better-sqlite3's db.backup under the full suite). A real short interval +
+    // an explicit "entered" signal drives the in-flight tick deterministically.
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const directives = createDirectivesService(backend.db, projects, items, library, {
+        now: () => FIXED_NOW,
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+      const item = items.create({ project_id: project.id, title: 'Track item' });
+      directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
+      });
+      // A notifier whose fire signals entry then blocks, so a tick stays mid-flight.
+      let enter!: () => void;
+      const entered = new Promise<void>((r) => {
+        enter = r;
+      });
+      let release!: () => void;
+      const gate = new Promise<void>((r) => {
+        release = r;
+      });
+      const gatedNotifier = {
+        kind: 'os' as const,
+        notify: async () => {
+          enter();
+          await gate;
+          return { outcome: 'delivered' as const };
+        },
+      };
+      const scheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: gatedNotifier,
+        items,
+        library,
+        now: () => FIXED_NOW,
+        intervalMs: 5,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+      });
+      scheduler.start();
+      await entered; // a tick has fired and is blocked inside notify → inFlight engaged
+
+      let drained = false;
+      const drainP = scheduler.drain().then(() => {
+        drained = true;
+      });
+      await Promise.resolve();
+      expect(drained).toBe(false);
+
+      release();
+      await drainP;
+      expect(drained).toBe(true);
+      scheduler.stop();
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('pin and include_prompt directives are never picked up by the scheduler', async () => {
     const { backend, directives, notifier, scheduler, project, item } = await setup();
     try {

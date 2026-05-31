@@ -23,6 +23,8 @@ export interface BackupScheduler {
   start(): void;
   stop(): void;
   tick(): Promise<void>;
+  // S7-03 — await any tick that is mid-flight so its writes complete before the DB closes.
+  drain(): Promise<void>;
 }
 
 const DEFAULT_NUDGE_INTERVAL_DAYS = 7;
@@ -37,6 +39,9 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
   const log = opts.logger;
   let timer: NodeJS.Timeout | null = null;
   let running = false;
+  // The interval-driven tick promise, tracked so `drain()` can await an in-flight tick at
+  // shutdown (S7-03). Direct test callers await `tick()` themselves.
+  let inFlight: Promise<void> | null = null;
 
   async function tick(): Promise<void> {
     if (running) return;
@@ -91,7 +96,13 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
     start() {
       if (timer) return;
       timer = setInterval(() => {
-        void tick();
+        // Skip if a tick is still in flight — otherwise a fast cycle would overwrite
+        // `inFlight` with a re-entrant no-op tick (tick()'s own guard returns immediately),
+        // and drain() would then await the wrong (already-resolved) promise.
+        if (running) return;
+        inFlight = tick().finally(() => {
+          inFlight = null;
+        });
       }, interval);
       // Don't keep the event loop alive solely for the backup tick.
       timer.unref?.();
@@ -101,6 +112,9 @@ export function createBackupScheduler(opts: BackupSchedulerOptions): BackupSched
         clearInterval(timer);
         timer = null;
       }
+    },
+    async drain() {
+      await inFlight;
     },
     tick,
   };

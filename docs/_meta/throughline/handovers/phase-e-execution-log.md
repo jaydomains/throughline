@@ -94,8 +94,8 @@
 
 ### E7 — Bootstrap worker/watcher robustness (imports C-D25)
 - **Branch:** `claude/phase-e-e7-bootstrap-robustness`
-- **PR:** #94 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #94 (squash-merged)
+- **Merge SHA:** `bea03ca`
 - **Closed:** SF1-01 residual = SF1-03 = S1-03 (copy-failure quarantine uncounted), S1-01 (1-second timestamp collision), S1-02/SF1-02 (watcher scan-vs-arm TOCTOU), SF5-05/06 (watcher enqueue throw drops the file).
 - **Fix (cites/uses C-D25; no new anchor):**
   - **SF1-03:** `countOutputs`→`countBySuffix`; quarantine now counts the **`.error.json` marker** (written on *every* quarantine, before the payload copy that may fail) instead of the payload copy — so a copy-failure (only the marker on disk) is counted, not invisible. The SettingsView quarantine surface now renders via the shared **`HealthStatus`** component (C-D25, `degraded`), preserving the existing testid/text.
@@ -106,6 +106,26 @@
 - **Verification:** all cited file:line sites matched current `main` (`worker.ts` `timestampPrefix` strips to ~1s; `quarantine()` copy-failure leaves only `.error.json`; `countOutputs` `endsWith('-bootstrap-output.json')`; `watcher.ts` scan-then-arm). Verified no code parses the filename timestamp format (only `endsWith` for counts), so changing it is safe.
 - **LOC:** ~120 insertions across 5 files; production-side ~74 (surgical — *under* the 130–190 band; under-estimate is not a halt, all 5 findings closed coherently), remainder test code.
 - **Tests:** worker (copy-failure `.error.json` counted; S1-01 distinct filenames same clock tick via fake timers) + watcher (throwing `enqueue` doesn't crash `register`; existing present-file-enqueue test confirms the arm-before-scan reorder preserves the scan) + frontend (existing quarantine-alert tests pass against the `HealthStatus` rendering).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar approved first pass, no findings; CI green first run).
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.
+
+### E8 — Shutdown lifecycle completion
+- **Branch:** `claude/phase-e-e8-shutdown-lifecycle`
+- **PR:** #95 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** S7-02 (High — SSE `reply.hijack()` sockets + un-`unref`'d ping; `app.close()` never ended them), SF5-11 (unguarded SSE ping write + no global `unhandledRejection`/`uncaughtException` handler), S7-03 residual (`backup`/`directives` scheduler `stop()` cleared the timer without awaiting an in-flight tick). Poller was already drained — not re-touched.
+- **Fix (no anchor):**
+  - **S7-02:** SSE ping `setInterval` is `unref`'d; the `SSEHub` gains `closeAll()` (each connection registers its `cleanup` as a teardown) and the server shutdown calls `sseHub.closeAll()` before `app.close()` to end the hijacked sockets.
+  - **SF5-11:** the SSE `send` raw writes are wrapped in try/catch → a broken pipe tears down that connection instead of escaping the ping interval; global `unhandledRejection`/`uncaughtException` log handlers added in `index.ts` (the real process entry — *not* `startServer`, which the test suite builds repeatedly).
+  - **S7-03:** both schedulers track the interval-driven tick promise and expose `drain()`; the server shutdown awaits `reminderScheduler.drain()` + `backupScheduler.drain()` (mirroring the existing poller drain) before closing the DB.
+- **Anchor:** none. **Deps:** rebase coupling with E5 on both schedulers (E5 merged; clean on updated `main`).
+- **Verification:** `events.ts:65` ping not `unref`'d + unguarded `send`; both schedulers' `stop()` clear-timer-only; poller already drained (`server.ts` `await githubPoller.drain()`). All matched current `main`.
+- **LOC:** ~240 insertions across 8 files; production-side ~135 (E8 band 120–170, within band), remainder test code. One coherent unit ("shutdown lifecycle").
+- **Tests:** events (`closeAll` ends every connection + empties the registry; tolerates a no-close-fn connection) + backup & directives (`drain()` does not resolve until a gated in-flight tick completes — fake timers, deterministic). The global handler + SSE-route `unref`/guard are integration/process-level (covered by inspection + the existing `server.test.ts` startup/shutdown path).
+- **Fix-rounds:** 2 (two *distinct* findings — not circuit-breaker, which is 3 rounds on the *same* finding).
+  - **Round 1 — Gitar "approved with suggestions":** a real minor edge — if the first `send('welcome')` write fails, `cleanup` ran but the dead connection was still `hub._add`'d, lingering in the client set until `closeAll`. Folded an `if (cleaned) return;` guard before registration. The SSE-route socket path is integration-tested per the established convention; the guard is inspection-verified.
+  - **Round 2 — CI `gate` flake, root-caused (per the "flake is a finding" discipline):** the `gate` failed intermittently (commits `cec923a` then `ec2ac2e`). Root cause: this slice's new `drain()` tests used `vi.useFakeTimers()`, which **also fakes `setImmediate`** — the primitive better-sqlite3's async `db.backup()` relies on. Under the full parallel suite that fake-timer state interacted with the *unrelated* backup-snapshot test's `db.backup`, so `existsSync(snap.path)` came back false. **Confirmed E8-introduced:** full backend suite — `main` 0/12, this branch ~33% (backup-snapshot). **Fix:** rewrote both drain tests **without fake timers** (real 5ms interval + an explicit "entered" signal — deterministic), and added an `if (running) return` guard to both schedulers' interval callbacks so a fast cycle can't overwrite `inFlight` with a re-entrant no-op tick (a latent bug the fake-timer test had masked; benign at the 30s/1h production cadence). **Stress-verified:** 0 backup-snapshot failures across 12 full-suite runs post-fix.
+- **Out-of-scope flake flagged (halt-class 8 — flag, do NOT absorb into E8):** `rag.test.ts` (real Transformers.js embedder) flaked **1/12** under the full post-fix suite but **0/8 in isolation** and **0/12 on `main`** — a pre-existing load-sensitivity of the heavy embedder under parallel contention, *not* an E8 logic regression (E1–E7's gate ran 14/14 clean). **Carried to the Phase-F seed register** for stabilisation (e.g. a generous embedder-test timeout) outside this slice. Not expanded into E8 per the discipline.
+- **Halt-class fires:** none. (Round 2 was one finding root-caused and fixed once — not 3 rounds on the same finding; the rag flake is out-of-scope, flagged not fixed.)
+- **Surfaces to spec author:** none (the rag flake is flagged for the Phase-F register, not a halt).

@@ -28,6 +28,30 @@ describe('SSE hub (UI redesign Slice 4)', () => {
     expect(hub.clientCount()).toBe(0);
   });
 
+  it('closeAll ends every live connection and empties the registry (S7-02)', () => {
+    const hub = createSSEHub();
+    const closeA = vi.fn();
+    const closeB = vi.fn();
+    hub._add(vi.fn(), closeA);
+    hub._add(vi.fn(), closeB);
+    expect(hub.clientCount()).toBe(2);
+
+    hub.closeAll();
+
+    // Each connection's teardown ran (ends the hijacked socket — app.close() can't, S7-02)
+    // and the registry is empty.
+    expect(closeA).toHaveBeenCalledTimes(1);
+    expect(closeB).toHaveBeenCalledTimes(1);
+    expect(hub.clientCount()).toBe(0);
+  });
+
+  it('closeAll tolerates a connection registered without a close fn (test/legacy)', () => {
+    const hub = createSSEHub();
+    hub._add(vi.fn()); // no close fn
+    expect(() => hub.closeAll()).not.toThrow();
+    expect(hub.clientCount()).toBe(0);
+  });
+
   it('drops a client whose send throws without breaking the fan-out', () => {
     const hub = createSSEHub();
     const bad = vi.fn(() => {
