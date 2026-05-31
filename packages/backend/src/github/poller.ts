@@ -164,8 +164,13 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
     if (res.status === 'unavailable' || res.data === null) {
       return cache.listSnapshots(repo).map(toBadge);
     }
-    cache.setListEtag(repo, res.etag);
 
+    // S4-02: persist the new list ETag only AFTER the snapshot upserts below commit. The
+    // ETag was previously set here, before the loop — so a mid-loop throw left the ETag
+    // advanced while the snapshots were never written, and every later poll got a 304
+    // (If-None-Match match) and reused permanently-stale snapshots. Setting it after the
+    // loop means a mid-loop throw retains the old ETag, so the next poll re-fetches.
+    const newListEtag = res.etag;
     const pulls = res.data;
     const badges: PrBadge[] = [];
     for (const pull of pulls) {
@@ -235,6 +240,8 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
       badges.push(toBadge(snap));
     }
 
+    // All snapshots committed — now it is safe to advance the list ETag (S4-02).
+    cache.setListEtag(repo, newListEtag);
     tier4.dismissStale(projectId, now());
     lastPolledAt.set(projectId, now());
     return badges;

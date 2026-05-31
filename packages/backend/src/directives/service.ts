@@ -369,7 +369,19 @@ export function createDirectivesService(
       let nextFireAt: string | null = null;
       if (payload.recurrence) {
         const base = existing.next_fire_at ? new Date(existing.next_fire_at) : now;
-        nextFireAt = advanceRecurrence(base, payload.recurrence).toISOString();
+        let candidate = advanceRecurrence(base, payload.recurrence);
+        // S5-05: coalesce missed occurrences. Advancing a single interval from a
+        // long-past next_fire_at can still land in the past — which makes the reminder
+        // due again on the very next tick and fire repeatedly until it catches up (a
+        // catch-up storm after downtime, e.g. the backend was off for a week). Skip past
+        // `now` so a gap collapses to a single catch-up fire and the cadence re-anchors
+        // to the future (SPEC §7.10). The guard bounds the pathological case (minute
+        // cadence × very long downtime); past it the next tick simply resumes — never an
+        // infinite loop.
+        for (let i = 0; candidate.getTime() <= now.getTime() && i < 100_000; i += 1) {
+          candidate = advanceRecurrence(candidate, payload.recurrence);
+        }
+        nextFireAt = candidate.toISOString();
       }
       db.prepare(
         `UPDATE directives SET last_fired_at = ?, next_fire_at = ? WHERE id = ?`,

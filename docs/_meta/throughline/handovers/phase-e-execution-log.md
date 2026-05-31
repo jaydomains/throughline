@@ -132,8 +132,8 @@
 
 ### E9 — Loader robustness
 - **Branch:** `claude/phase-e-e9-loader-robustness`
-- **PR:** #96 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #96 (squash-merged)
+- **Merge SHA:** `437f576`
 - **Closed:** S3-01/SF2-05 (the methodology watcher's install-unlink and external-unlink branches deleted the cache entry but did **not** `notifyReloaded`, so projects bound to a deleted install/external bundle were never told to reload — only the per-repo arm-2 branch notified), S3-03 (`discoverBundleIds` `statSync` threw on a dangling symlink and aborted the whole startup hydration), SF5-08 (the `watcher.on('all')` handler was the one unguarded watch site — a throw inside chokidar's emit silently dropped the event).
 - **Fix (no anchor):** add `notifyReloaded` to the install-unlink (`projectsBoundToBundle`) and external-unlink (`projectsBoundToPath(dirname)`) branches; guard `discoverBundleIds`'s per-entry `statSync` in try/catch (skip a dangling entry, don't abort the scan); wrap the whole `on('all')` handler body in try/catch + `logger.error`.
 - **Anchor:** none. **Deps:** none. **Files:** `methodology/loader.ts` only.
@@ -141,6 +141,20 @@
 - **LOC:** ~86 insertions across 2 files; production-side ~75 (much is re-indent from wrapping the handler in try/catch; net new logic ~40 — within the 80–130 band).
 - **Tests:** `loader.test.ts` — **S3-03 deterministic lock** (a dangling symlink is skipped, freeform still loads, hydration doesn't abort). S3-01/SF2-05 (watcher unlink-notify) and SF5-08 (handler guard) are **chokidar-internal** — inspection-verified per the established "chokidar event-delivery is unreliable to assert in CI" convention (`loader.test.ts:82`, `bootstrap-watcher.test.ts:219`), consistent with how E7's `onWrite` guard and E8's SSE socket teardown were handled.
 - **Out-of-scope flake observed (halt-class 8 — flag, not fix):** during E9's gate, `directives.test.tsx` (frontend) flaked once but passed 4/4 on retry — a *second* pre-existing flake (after E8's `rag.test.ts`), unrelated to E9 (backend-only). Both carried to the Phase-F register: the repo has latent test flakiness (real-embedder `rag.test.ts` under parallel load; the frontend `directives` group test) that a Phase-F stabilisation pass should address (timeouts / determinism). Not absorbed into E9.
+- **Fix-rounds:** 0 (Gitar approved first pass; both gate runs green first try).
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
+
+### E10 — Background-loop correctness (+ §7.10 SPEC clause)
+- **Branch:** `claude/phase-e-e10-background-loop-correctness`
+- **PR:** _pending (this slice)_
+- **Merge SHA:** pending
+- **Closed:** S4-02 (the GitHub poller persisted the new list ETag *before* the snapshot-upsert loop, so a mid-loop throw left the ETag advanced while snapshots were never written → every later poll got a 304 and reused permanently-stale snapshots), S5-05 (`markFired` advanced a recurring reminder one interval from the old `next_fire_at`, which after downtime still landed in the past → the reminder refired every tick to catch up — a catch-up storm).
+- **Fix (no anchor; sanctioned SPEC amendment):** move `cache.setListEtag` to *after* the snapshot loop (a mid-loop throw now retains the old ETag → next poll re-fetches and self-heals); coalesce missed recurrence occurrences in `markFired` (advance past `now` so a gap collapses to a **single** catch-up fire and the cadence re-anchors to the future). Added the one-line **§7.10 missed-occurrence-coalesce clause** to `SPEC.md` (the spec-author-ruled-in clause — the code and spec land together; mints no anchor, per the base plan's E10 note).
+- **Anchor:** none. **Deps:** rebase-coupled with E5 (poller) + E4 (`directives/service.ts`) — both merged; clean on updated `main`.
+- **Verification:** `poller.ts` `setListEtag` at line 167 (before the loop); `directives/service.ts` `advanceRecurrence(base, …)` single-interval advance — both matched current `main`.
+- **LOC:** ~96 insertions / 3 deletions across 5 files; production-side ~25 (+ the §7.10 SPEC line), rest test code — within the 90–140 band.
+- **Tests:** `directives.test.ts` — **S5-05 deterministic lock** (a daily reminder 12 days past coalesces to a *single* fire with `next_fire_at` the first occurrence strictly after `now`, not 11 days in the past). `github.test.ts` — **S4-02 deterministic lock** (a cache whose `upsertSnapshot` throws mid-loop leaves the list ETag at its prior value, not advanced — so the next poll re-fetches). The existing "advances one interval" recurring test still passes (the in-future case doesn't coalesce).
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.
