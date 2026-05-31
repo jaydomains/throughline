@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   AuditEntry,
   CodeSearchCandidate,
@@ -64,42 +64,51 @@ export function ItemDetailPanel({
   // directive) that previously `await`ed with no catch, leaving the action silent.
   const [mutationError, setMutationError] = useState<Error | null>(null);
 
+  // S8-01 — the six sequential awaits below all `setState`. When the panel is reused for a
+  // different item (sibling-cycle, linked-item click) the effect re-runs `refresh` before the
+  // previous one finishes, so a slow earlier fetch could overwrite the new item's data. A
+  // generation counter, bumped at the start of every `refresh`, lets a superseded run drop its
+  // results: each `setState` is gated on `current()` so only the latest refresh wins.
+  const refreshGen = useRef(0);
+
   const refresh = useCallback(async () => {
+    const gen = ++refreshGen.current;
+    const current = () => refreshGen.current === gen;
     try {
       const r = await api.getItem(projectId, itemId);
-      setItem(r.item);
+      if (current()) setItem(r.item);
     } catch {
-      setItem(null);
+      if (current()) setItem(null);
     }
     try {
       const l = await api.getItemLinks(projectId, itemId);
-      setLinks(l.links);
+      if (current()) setLinks(l.links);
     } catch {
-      setLinks(null);
+      if (current()) setLinks(null);
     }
     try {
       const a = await api.listAudit({ entity_type: 'item', entity_id: itemId, limit: 50 });
-      setAuditEntries(a.entries);
+      if (current()) setAuditEntries(a.entries);
     } catch {
-      setAuditEntries([]);
+      if (current()) setAuditEntries([]);
     }
     try {
       const n = await api.listAttachedNotes(projectId, itemId);
-      setAttachedNotes(n.notes);
+      if (current()) setAttachedNotes(n.notes);
     } catch {
-      setAttachedNotes([]);
+      if (current()) setAttachedNotes([]);
     }
     try {
       const d = await api.listDirectivesForItem(projectId, itemId);
-      setDirectives(d.directives);
+      if (current()) setDirectives(d.directives);
     } catch {
-      setDirectives([]);
+      if (current()) setDirectives([]);
     }
     try {
       const c = await api.listItemCodeRefs(projectId, itemId);
-      setCodeRefs(c.refs);
+      if (current()) setCodeRefs(c.refs);
     } catch {
-      setCodeRefs([]);
+      if (current()) setCodeRefs([]);
     }
   }, [projectId, itemId]);
 

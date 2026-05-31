@@ -586,6 +586,7 @@ export async function startServer(
     orphanRules,
     autoReconcile,
     reverify: driftReverify,
+    pollerHealth: jobHealth.track('github-poller'),
   });
   registerProjectRoutes(app, projects, settings);
   registerSessionRoutes(app, projects, sessions);

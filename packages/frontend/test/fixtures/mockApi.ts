@@ -33,6 +33,7 @@ import type {
   BackgroundJobsHealthResponse,
   PromptFillRequest,
   Project,
+  ProjectPrsResult,
   ProposeRequest,
   ReconcileApplyRequest,
   ReconcileApplyResult,
@@ -415,8 +416,22 @@ export const mockApi = {
   ),
 
   // Phase 10 — GitHub integration & code-drift (C-D16).
-  getProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
-  refreshProjectPrs: vi.fn(async (_projectId: string) => ({ configured: false, prs: [] })),
+  getProjectPrs: vi.fn(
+    async (_projectId: string): Promise<ProjectPrsResult> => ({
+      configured: false,
+      prs: [],
+      poll_healthy: true,
+      poll_error: null,
+    }),
+  ),
+  refreshProjectPrs: vi.fn(
+    async (_projectId: string): Promise<ProjectPrsResult> => ({
+      configured: false,
+      prs: [],
+      poll_healthy: true,
+      poll_error: null,
+    }),
+  ),
   getDriftInbox: vi.fn(async (_projectId: string) => ({
     signals: [] as Array<{
       id: string;

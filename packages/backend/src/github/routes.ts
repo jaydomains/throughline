@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import type { ProjectPrsResult } from '@throughline/shared';
 import type { ProjectsService } from '../projects/service.js';
+import type { JobHealth } from '../health/job-health.js';
 import type { DriftService } from '../drift/service.js';
 import type { GitHubApi } from './api.js';
 import type { GithubStateCache } from './state-cache.js';
@@ -24,10 +25,14 @@ export interface GitHubRoutesDeps {
   orphanRules: OrphanRulesService;
   autoReconcile: AutoReconcileService;
   reverify: DriftReverifyService;
+  // SF6-09 — the github-poller's health tracker (C-D26), so the PR-list response can disclose
+  // when the cache it serves is stale because the background poller is failing.
+  pollerHealth: JobHealth;
 }
 
 export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDeps): void {
-  const { projects, cache, poller, drift, prLinking, orphanRules, autoReconcile, reverify } = deps;
+  const { projects, cache, poller, drift, prLinking, orphanRules, autoReconcile, reverify, pollerHealth } =
+    deps;
 
   function project(id: string) {
     return projects.get(id);
@@ -37,13 +42,21 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     return !!p && !!p.github_owner && !!p.github_repo;
   }
 
+  // SF6-09 — read the github-poller's health (C-D26) for the PR-list response. When the
+  // project is unconfigured there is nothing to poll, so health is reported as healthy/null.
+  function pollHealthFields(isConfigured: boolean): { poll_healthy: boolean; poll_error: string | null } {
+    if (!isConfigured) return { poll_healthy: true, poll_error: null };
+    const h = pollerHealth.snapshot();
+    return { poll_healthy: h.healthy, poll_error: h.last_error };
+  }
+
   app.get<{ Params: { id: string } }>(
     '/api/projects/:id/github/prs',
     async (req, reply) => {
       const p = project(req.params.id);
       if (!p) return reply.code(404).send({ error: 'project_not_found' });
       if (!p.github_owner || !p.github_repo) {
-        return { configured: false, prs: [] } satisfies ProjectPrsResult;
+        return { configured: false, prs: [], ...pollHealthFields(false) } satisfies ProjectPrsResult;
       }
       const repo = `${p.github_owner}/${p.github_repo}`;
       return {
@@ -56,6 +69,7 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
           title: s.title,
           activity_at: s.activity_at,
         })),
+        ...pollHealthFields(true),
       } satisfies ProjectPrsResult;
     },
   );
@@ -65,7 +79,8 @@ export function registerGitHubRoutes(app: FastifyInstance, deps: GitHubRoutesDep
     async (req, reply) => {
       if (!project(req.params.id)) return reply.code(404).send({ error: 'project_not_found' });
       const prs = await poller.pollProject(req.params.id);
-      return { configured: configured(req.params.id), prs } satisfies ProjectPrsResult;
+      const isConfigured = configured(req.params.id);
+      return { configured: isConfigured, prs, ...pollHealthFields(isConfigured) } satisfies ProjectPrsResult;
     },
   );
 
