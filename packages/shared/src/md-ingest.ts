@@ -36,11 +36,32 @@ export interface MdIngestedEntrySummary {
   entry_id: string;
   rel_path: string;
   status: 'created' | 'reingested';
+  // Disclosed when the AI summariser degraded to the heuristic (no key, unparseable AI
+  // output, or a failed call); null when the AI summary was used. Mirrors the dump-zone /
+  // reconcile `extractor_note` twins so an AI summary-failure is not silently presented as a
+  // healthy summary (T-D60, SF4-02).
+  extractor_note: string | null;
+}
+
+// Why a selected file was not ingested — a typed reason, not a flat string, so a deleted /
+// too-large / unreadable / out-of-bounds skip is no longer conflated into one bucket the
+// caller can't tell apart (SF4-03).
+export type MdSkipReason =
+  | 'outside_repo' // path escaped repo_path (lexical containment / `..` escape)
+  | 'outside_folder' // resolved outside the scanned folder
+  | 'missing' // no longer exists on disk (deleted between scan and ingest)
+  | 'symlink' // reachable only by traversing a symlink (C-D10 TOCTOU guard)
+  | 'too_large' // exceeds the max ingest size
+  | 'unreadable'; // read failed (permissions, decode, …)
+
+export interface MdSkippedFile {
+  rel_path: string;
+  reason: MdSkipReason;
 }
 
 export interface MdIngestResult {
   ingested: MdIngestedEntrySummary[];
-  skipped: string[]; // rel_paths that resolved outside the folder / unreadable
+  skipped: MdSkippedFile[];
 }
 
 export interface MdTrackRequest {

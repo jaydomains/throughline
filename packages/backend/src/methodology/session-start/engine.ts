@@ -373,7 +373,12 @@ export function createSessionStartEngine(
         ref: c.ref,
         tier: relevance.tiers[c.ref] ?? 'medium',
       }));
-      const usedAi = relevance.telemetry.model !== null;
+      // `callMade` (a billed AI call happened) drives cost + the AI-call audit — those
+      // reflect resource reality. `classifiedByAi` (the AI produced a usable classification)
+      // drives the user-facing classifier_used_ai — an unparseable response makes a call but
+      // does not classify, so it is reported as not-AI-classified (T-D60, SF2-04).
+      const callMade = relevance.telemetry.model !== null;
+      const classifiedByAi = relevance.classified_by_ai;
 
       // Canonical assembly record + cache (input fingerprint + rendered output). The
       // rendered prompt is user-facing copy output, not an AI input prompt, so it is
@@ -389,12 +394,12 @@ export function createSessionStartEngine(
           companion_mode: mode,
           input_fingerprint: ctx.inputFingerprint,
           rendered_prompt: rendered,
-          classifier_used_ai: usedAi,
+          classifier_used_ai: classifiedByAi,
           classifications,
         },
       });
 
-      if (usedAi && relevance.telemetry.prompt) {
+      if (callMade && relevance.telemetry.prompt) {
         // T-D24 — model + salted fingerprint of the AI input prompt; never its body.
         appendAudit(db, {
           projectId,
@@ -415,7 +420,7 @@ export function createSessionStartEngine(
       }
 
       if (
-        usedAi &&
+        callMade &&
         relevance.telemetry.model &&
         (relevance.telemetry.input_tokens > 0 || relevance.telemetry.output_tokens > 0)
       ) {
@@ -439,7 +444,7 @@ export function createSessionStartEngine(
         prompt: rendered,
         classifications,
         cached: false,
-        classifier_used_ai: usedAi,
+        classifier_used_ai: classifiedByAi,
       };
     },
   };

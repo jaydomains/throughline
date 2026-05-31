@@ -144,6 +144,14 @@ export interface StakeholderViewResult {
 // refine surface. Proposed changes route through the standard dump-zone review modal.
 export type ChatContextType = 'session' | 'dump_zone';
 
+// Why an assistant reply is or isn't AI-generated, disclosed on the contract (T-D60: a
+// failed call must not masquerade as "no key configured").
+//  - 'ok'          : the model replied.
+//  - 'unavailable' : no Anthropic key configured — capability absent (honest stub reply).
+//  - 'failed'      : a key is configured but the call failed (threw / returned empty) —
+//                    surfaced distinctly from the no-key case.
+export type AiCallStatus = 'ok' | 'unavailable' | 'failed';
+
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -166,9 +174,13 @@ export interface ChatSendRequest {
 export interface ChatSendResult {
   user_message: ChatMessage;
   assistant_message: ChatMessage;
-  // false ⇒ no Anthropic key; the user message is still persisted and a stub assistant
-  // reply is stored so the thread stays coherent (no cost).
+  // false ⇒ the reply is a stub (see ai_status for why); the user message is still
+  // persisted and a stub assistant reply is stored so the thread stays coherent (no cost).
   used_ai: boolean;
+  // Why the reply is / isn't AI-generated (T-D60). Distinguishes "no key configured"
+  // ('unavailable') from "a key is set but the call failed" ('failed') — the latter used to
+  // masquerade as the former (SF3-03).
+  ai_status: AiCallStatus;
 }
 
 export interface ChatProposeRequest {

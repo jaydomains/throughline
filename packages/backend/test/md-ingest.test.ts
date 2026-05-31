@@ -231,7 +231,8 @@ describe('md-ingest service (Phase 6c — repo .md ingestion)', () => {
         paths: [join('docs', 'real.md'), join('docs', 'link.md')],
       });
       expect(result.ingested.map((i) => i.rel_path)).toEqual([join('docs', 'real.md')]);
-      expect(result.skipped).toContain(join('docs', 'link.md'));
+      // Typed skip reason (SF4-03): a symlink TOCTOU skip is distinct from missing/too-large.
+      expect(result.skipped).toContainEqual({ rel_path: join('docs', 'link.md'), reason: 'symlink' });
     } finally {
       await backend.cleanup();
     }
@@ -250,6 +251,76 @@ describe('md-ingest service (Phase 6c — repo .md ingestion)', () => {
         title: 'plain note',
       });
       expect(() => md.setTracked(project.id, note.id, true)).toThrow(NotAnImportedDocError);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
+
+describe('E2 — md-ingest honesty (T-D60: SF4-02, SF4-03)', () => {
+  it('ingested entry discloses the heuristic-fallback note when AI is absent (SF4-02)', async () => {
+    const { backend, md, project, repoPath } = await setup(); // default = heuristic (no key)
+    try {
+      writeFileSync(join(repoPath, 'docs', 'a.md'), '# A\n\nsome prose here');
+      const folder = md.addFolder(project.id, 'docs');
+      const result = await md.ingest(project.id, {
+        folder_id: folder.id,
+        paths: [join('docs', 'a.md')],
+      });
+      expect(result.ingested).toHaveLength(1);
+      // The summary-failure is disclosed on the entry, not silently presented as healthy.
+      expect(result.ingested[0]!.extractor_note).toContain('Heuristic summariser used');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('ingested entry discloses an AI-call-failure note distinctly from the no-key note (SF4-02)', async () => {
+    const failing: AnthropicClient = {
+      available: () => true,
+      call: async () => {
+        throw new Error('502 upstream');
+      },
+    };
+    const summariser = createRoutingSummariser({
+      anthropic: createAnthropicSummariser({ client: failing }),
+      heuristic: createHeuristicSummariser(),
+      client: failing,
+    });
+    const { backend, md, project, repoPath } = await setup({ summariser });
+    try {
+      writeFileSync(join(repoPath, 'docs', 'b.md'), '# B\n\nprose');
+      const folder = md.addFolder(project.id, 'docs');
+      const result = await md.ingest(project.id, {
+        folder_id: folder.id,
+        paths: [join('docs', 'b.md')],
+      });
+      expect(result.ingested[0]!.extractor_note).toContain('Anthropic call failed');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('skipped reasons are typed and distinct: missing / too_large / outside_repo (SF4-03)', async () => {
+    const { backend, md, project, repoPath } = await setup();
+    try {
+      writeFileSync(join(repoPath, 'docs', 'small.md'), '# ok');
+      writeFileSync(join(repoPath, 'docs', 'big.md'), '# big\n\n' + 'x'.repeat(2_000_001));
+      const folder = md.addFolder(project.id, 'docs');
+      const result = await md.ingest(project.id, {
+        folder_id: folder.id,
+        paths: [
+          join('docs', 'small.md'), // ingested
+          join('docs', 'gone.md'), // never written ⇒ missing (deleted between scan + ingest)
+          join('docs', 'big.md'), // exceeds the size cap ⇒ too_large
+          join('..', 'escape.md'), // escapes repo_path ⇒ outside_repo
+        ],
+      });
+      expect(result.ingested.map((i) => i.rel_path)).toEqual([join('docs', 'small.md')]);
+      const byReason = Object.fromEntries(result.skipped.map((sk) => [sk.reason, sk.rel_path]));
+      expect(byReason.missing).toBe(join('docs', 'gone.md'));
+      expect(byReason.too_large).toBe(join('docs', 'big.md'));
+      expect(byReason.outside_repo).toBe(join('..', 'escape.md'));
     } finally {
       await backend.cleanup();
     }

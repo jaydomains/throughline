@@ -11,6 +11,7 @@ import type {
   MdIngestedEntrySummary,
   MdScanCandidate,
   MdScanResult,
+  MdSkippedFile,
 } from '@throughline/shared';
 import { ProjectNotFoundError } from '@throughline/shared';
 import { DomainError, NotFoundError } from '@throughline/shared';
@@ -337,36 +338,45 @@ export function createMdIngestService(opts: CreateOptions): MdIngestService {
       const folderAbs = confine(project.repo_path, folder.rel_path);
       const repoAbs = resolve(project.repo_path);
       const ingested: MdIngestedEntrySummary[] = [];
-      const skipped: string[] = [];
+      const skipped: MdSkippedFile[] = [];
+      const skip = (relPath: string, reason: MdSkippedFile['reason']) => {
+        skipped.push({ rel_path: relPath, reason });
+      };
 
       for (const relPath of req.paths) {
         let abs: string;
         try {
           abs = confine(project.repo_path, relPath);
         } catch {
-          skipped.push(relPath);
+          skip(relPath, 'outside_repo');
           continue;
         }
         // Selected paths must live under the scanned folder, not just somewhere in repo,
         // and must be reachable without traversing a symlink (C-D10 — guards the
-        // scan→ingest TOCTOU window).
-        if (
-          !isInside(folderAbs, abs) ||
-          !existsSync(abs) ||
-          hasSymlinkComponent(folderAbs, abs)
-        ) {
-          skipped.push(relPath);
+        // scan→ingest TOCTOU window). Each cause is reported distinctly (SF4-03): a file
+        // deleted between scan and ingest ('missing') is not the same as one outside the
+        // folder or swapped for a symlink.
+        if (!isInside(folderAbs, abs)) {
+          skip(relPath, 'outside_folder');
+          continue;
+        }
+        if (!existsSync(abs)) {
+          skip(relPath, 'missing');
+          continue;
+        }
+        if (hasSymlinkComponent(folderAbs, abs)) {
+          skip(relPath, 'symlink');
           continue;
         }
         let content: string;
         try {
           if (statSync(abs).size > MAX_FILE_BYTES) {
-            skipped.push(relPath);
+            skip(relPath, 'too_large');
             continue;
           }
           content = readFileSync(abs, 'utf8');
         } catch {
-          skipped.push(relPath);
+          skip(relPath, 'unreadable');
           continue;
         }
         const hash = hashContent(content);
@@ -443,7 +453,12 @@ export function createMdIngestService(opts: CreateOptions): MdIngestService {
             ),
           });
         }
-        ingested.push({ entry_id: entryId, rel_path: relPath, status });
+        ingested.push({
+          entry_id: entryId,
+          rel_path: relPath,
+          status,
+          extractor_note: result.extractor_note,
+        });
       }
       return { ingested, skipped };
     },
