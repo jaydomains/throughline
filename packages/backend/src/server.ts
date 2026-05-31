@@ -593,7 +593,7 @@ export async function startServer(
   registerCommunicationModelRoutes(app, { projects, items, registry });
   registerAuditRoutes(app, db);
   registerSettingsRoutes(app, settings);
-  registerSecretsRoutes(app, config.secretsPath);
+  registerSecretsRoutes(app, config.secretsPath, db);
   registerBackupRoutes(app, backup);
   registerCostRoutes(app, costSummary);
   registerNotifierRoutes(app, notifier, settings);

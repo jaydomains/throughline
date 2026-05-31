@@ -21,6 +21,28 @@ function plantFreeformBundle(methodologiesDir: string): void {
 }
 
 describe('projects service', () => {
+  it('SF7-02/SF7-03: settings_json changes are audited via update() and updateSettings()', async () => {
+    const cfg = makeTmpConfig();
+    plantFreeformBundle(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const project = projects.create({ name: 'p', repo_path: '/tmp/p' });
+      // SF7-02: update({ settings }) — the path the communication-model route uses.
+      projects.update(project.id, { settings: { communication_model: { contract_sources: {} } } });
+      // SF7-03: updateSettings — the generic merge writer.
+      projects.updateSettings(project.id, { cost_daily_threshold_usd: 5 });
+      // A no-op updateSettings (no change) must NOT add a spurious row.
+      projects.updateSettings(project.id, { cost_daily_threshold_usd: 5 });
+      const rows = backend.db
+        .prepare("SELECT field FROM audit_log WHERE entity_id = ? AND field = 'settings_json'")
+        .all(project.id) as Array<{ field: string }>;
+      expect(rows.length).toBe(2); // one per settings-changing call; the no-op added none
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('defaults bundle_id to freeform on create and writes an audit row', async () => {
     const cfg = makeTmpConfig();
     plantFreeformBundle(cfg.methodologiesDir);

@@ -12,6 +12,8 @@ import {
 import { createBackupScheduler } from '../src/backup/scheduler.js';
 import { createJobHealth } from '../src/health/job-health.js';
 import { writeSecrets, secretsPresence } from '../src/secrets/store.js';
+import { registerSecretsRoutes } from '../src/secrets/routes.js';
+import Fastify from 'fastify';
 import { makeTmpConfig } from './helpers.js';
 
 describe('backup service (T-D28)', () => {
@@ -287,6 +289,44 @@ describe('backup service (T-D28)', () => {
       }).tick();
       expect(badHealth.snapshot().healthy).toBe(false);
       expect(badHealth.snapshot().last_error).toContain('backup status unreadable');
+      db.close();
+    } finally {
+      cfg.cleanup();
+    }
+  });
+});
+
+describe('secrets route audit (SF7-01)', () => {
+  it('audits credential set/clear EVENT-ONLY — records which key + action, never the value', async () => {
+    const cfg = makeTmpConfig();
+    try {
+      const db = openDb(cfg.dbPath);
+      runMigrations(db);
+      const app = Fastify();
+      registerSecretsRoutes(app, cfg.secretsPath, db);
+      await app.ready();
+
+      // Set a key, then clear it.
+      await app.inject({
+        method: 'PUT',
+        url: '/api/secrets',
+        payload: { anthropic_api_key: 'sk-super-secret-value' },
+      });
+      await app.inject({ method: 'PUT', url: '/api/secrets', payload: { anthropic_api_key: '' } });
+      await app.close();
+
+      const rows = db
+        .prepare(
+          "SELECT field, new_value FROM audit_log WHERE entity_type = 'settings' AND entity_id = 'secrets' ORDER BY timestamp",
+        )
+        .all() as Array<{ field: string; new_value: string }>;
+      expect(rows.map((r) => `${r.field}=${r.new_value}`)).toEqual([
+        'credential:anthropic_api_key=set',
+        'credential:anthropic_api_key=cleared',
+      ]);
+      // T-D24: the secret value must never appear anywhere in the audit trail.
+      const allAudit = JSON.stringify(db.prepare('SELECT * FROM audit_log').all());
+      expect(allAudit.includes('sk-super-secret-value')).toBe(false);
       db.close();
     } finally {
       cfg.cleanup();

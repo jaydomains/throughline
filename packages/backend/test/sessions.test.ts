@@ -24,6 +24,22 @@ async function setup() {
 }
 
 describe('sessions service', () => {
+  it('SF7-05: a session settings_json change is audited', async () => {
+    const { backend, sessions, project } = await setup();
+    try {
+      const session = sessions.create({ project_id: project.id, name: 's' });
+      sessions.update(session.id, { settings: { pinned: true } });
+      const rows = backend.db
+        .prepare(
+          "SELECT field FROM audit_log WHERE entity_type = 'session' AND entity_id = ? AND field = 'settings_json'",
+        )
+        .all(session.id) as Array<{ field: string }>;
+      expect(rows.length).toBe(1);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('creates and lists sessions per project with audit entries (T-D36)', async () => {
     const { backend, sessions, project } = await setup();
     try {
