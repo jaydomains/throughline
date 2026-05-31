@@ -147,7 +147,7 @@
 
 ### E10 — Background-loop correctness (+ §7.10 SPEC clause)
 - **Branch:** `claude/phase-e-e10-background-loop-correctness`
-- **PR:** _pending (this slice)_
+- **PR:** #97 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** S4-02 (the GitHub poller persisted the new list ETag *before* the snapshot-upsert loop, so a mid-loop throw left the ETag advanced while snapshots were never written → every later poll got a 304 and reused permanently-stale snapshots), S5-05 (`markFired` advanced a recurring reminder one interval from the old `next_fire_at`, which after downtime still landed in the past → the reminder refired every tick to catch up — a catch-up storm).
 - **Fix (no anchor; sanctioned SPEC amendment):** move `cache.setListEtag` to *after* the snapshot loop (a mid-loop throw now retains the old ETag → next poll re-fetches and self-heals); coalesce missed recurrence occurrences in `markFired` (advance past `now` so a gap collapses to a **single** catch-up fire and the cadence re-anchors to the future). Added the one-line **§7.10 missed-occurrence-coalesce clause** to `SPEC.md` (the spec-author-ruled-in clause — the code and spec land together; mints no anchor, per the base plan's E10 note).
