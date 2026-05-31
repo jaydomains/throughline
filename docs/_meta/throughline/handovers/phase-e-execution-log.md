@@ -44,21 +44,35 @@
 - **Anchor:** none (cites T-D60, minted in E1).
 - **Verification:** all cited file:line claims matched current `main` before implementation (`semble/client.ts:149` catch→`[]`; `available()` true on non-ENOENT at `:130`).
 - **LOC:** ~233 insertions / 51 deletions across 7 files; production-code delta ~90–110 net (within the 70–110 band), remainder test code. One coherent unit — test-driven overage, non-halting per the E1/E3 estimate-breach precedent (halt-class 4).
-- **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none. (Noted for the audit, not a halt: the prior run left `PLATFORM_STATUS.md` un-rolled to Phase E and wrote no E1/E2 handovers; this slice rolls `PLATFORM_STATUS.md` and establishes this execution log as the durable record.)
 - **Fix-rounds:** 0 (Gitar approved first pass, no findings; CI green first run).
 
 ### E4 — Notifier capability honesty
 - **Branch:** `claude/phase-e-e4-notifier-honesty`
-- **PR:** #91 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #91 (squash-merged)
+- **Merge SHA:** `b61e0e8`
 - **Closed:** SF5-03 (Crit) — when `node-notifier` was absent, `createOsNotifier` fell back to a no-op whose `notify()` resolved as if delivered; the test endpoint returned `{ok:true}` + flipped `os_notifications_enabled=true`, and the reminder scheduler called `markFired` regardless. A non-delivery masqueraded as a delivery (the reminder was silently consumed and never surfaced).
 - **Fix (T-D60, on-contract; no new anchor):** `notify()` now returns a disclosed `NotifyResult` (`outcome: 'delivered' | 'unavailable' | 'failed'`) and `Notifier` carries a `kind` (`'os' | 'unavailable'`). The old `createNoopNotifier` is split into `createRecordingNotifier` (test double that delivers) and `createUnavailableNotifier` (the honest capability-absent production fallback `createOsNotifier` now returns). The test endpoint returns a shared `NotificationTestResult` and sets the setting **only** on `delivered`; the scheduler calls `markFired` **only** on `delivered`, leaving the directive armed otherwise; the settings panel renders an honest "no backend" warning on `unavailable`.
 - **Anchor:** none (cites T-D60).
 - **Verification:** cited claims matched `main` — `notifier/index.ts` no-op resolves; `routes.ts` `{ok:true}` + setting flip; `scheduler.ts:83` unconditional `markFired`.
 - **LOC:** ~287 insertions / 55 deletions across 11 files; production-side delta ~120–140 net (E4 band 100–150), remainder test code. One coherent unit ("notifier capability honesty") — non-halting per the E1/E3 estimate-breach precedent.
 - **Tests:** notifier unit (recording delivers / unavailable never delivers / OS degrades to unavailable / OS failure disclosed-not-thrown) + route-honesty (delivered enables setting; unavailable & failed do not) + scheduler (unavailable notifier leaves the reminder armed, not fired — the SF5-03 lock) + frontend (unavailable surfaces the warning).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 1 (Gitar "approved with suggestions" — one readability finding on the scheduler warn-log split-paren template, a false positive Gitar self-marked "no fix needed"; folded a clarity refactor `38a3586` anyway. Re-review: ✅ approved, resolved).
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.
+
+### E5 — Background-job health model
+- **Branch:** `claude/phase-e-e5-background-job-health`
+- **PR:** _pending (this slice)_
+- **Merge SHA:** pending
+- **Closed:** SF5-01, SF5-02, SF5-04 (High) — the backup scheduler, reminder scheduler, and GitHub poller each caught-and-logged with **no health/state field**, so a loop failing every tick was indistinguishable from a healthy idle loop.
+- **Fix (mints C-D26):** a per-loop `JobHealth` tracker (`{ last_run_at, last_error, healthy }`) + a `JobHealthRegistry`; each loop records success/failure per tick; `GET /api/background-jobs/health` exposes the snapshot as the shared `BackgroundJobsHealthResponse`. The reminder loop's health reflects only a *thrown* tick failure — a graceful non-delivery (notifier `unavailable`/`failed`, E4) is the notifier's capability state, not a loop fault. The poller records in `pollProject` (the public poll op, so manual refreshes + the loop both update health, and it is directly testable).
+- **Anchor:** **C-D26** minted in `CODE_SPEC.md` (backend health data model; distinct from the C-D25 frontend convention per LBD-3). No T-D count change (C-D, not T-D).
+- **Sequencing decision (flagged for the audit — judgment call, not a halt):** the base plan's E5 lists "frontend surfaces / rendered per-feature in-context (LBD-2)", but the C-D25 visibility component mints in **E6** ("the first visibility slice" per LBD-2) which is *after* E5 — E5 cannot consume a component that doesn't exist yet. SF5-01/02/04 are purely backend ("no health/state field"), so **E5 closes them backend-side** (health observable via the route + test-locked) and the **in-context rendering is folded into E6** (which mints C-D25 and renders both bundle-health and this job-health). This keeps each anchor in its planned slice and avoids building an E5 frontend E6 would immediately refactor. LBD-2's "C-D25 reused by E5" is satisfied by E6 rendering E5's route.
+- **Verification:** the three cited catch-and-log sites matched current `main` before implementation (`backup/scheduler.ts` nested try/catch, `directives/scheduler.ts` per-reminder catch, `github/poller.ts` tick `.catch`).
+- **LOC:** ~403 insertions across 13 files; production-side ~155 (E5 band 150–210, within band), remainder test code + the C-D26 anchor body. One coherent unit.
+- **Tests:** `job-health.test.ts` (tracker optimistic→success→failure→recover; registry order/idempotency; route snapshot) + per-loop locks: backup throwing tick → healthy:false (`backup.test.ts`), reminder thrown-fire → healthy:false but graceful non-delivery stays healthy (`directives-scheduler.test.ts`), poller failed poll → healthy:false + recovers (`github.test.ts`).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none (C-D26 is the planned E5 anchor — no halt-class 5).
+- **Surfaces to spec author:** the E5/E6 C-D25 sequencing decision above (recorded, not a halt).

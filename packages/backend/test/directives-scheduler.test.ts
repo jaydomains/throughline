@@ -7,6 +7,7 @@ import { createLibraryService } from '../src/library/service.js';
 import { createDirectivesService } from '../src/directives/service.js';
 import { createReminderScheduler } from '../src/directives/scheduler.js';
 import { createRecordingNotifier, createUnavailableNotifier } from '../src/notifier/index.js';
+import { createJobHealth } from '../src/health/job-health.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -202,6 +203,64 @@ describe('reminder scheduler (Phase 6b — T-D32 capability layer)', () => {
       const refreshed = directives.get(d.id);
       expect(refreshed?.last_fired_at).toBeNull();
       expect(refreshed?.next_fire_at).toBe('2026-05-13T11:00:00.000Z');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('records loop health: a thrown fire degrades the loop, a graceful non-delivery does not (E5/C-D26)', async () => {
+    const cfg = makeTmpConfig();
+    plantFreeform(cfg.methodologiesDir);
+    const backend = await makeBackend(cfg);
+    try {
+      const projects = createProjectsService(backend.db, backend.registry);
+      const items = createItemsService(backend.db, projects, backend.registry);
+      const library = createLibraryService(backend.db, projects);
+      const directives = createDirectivesService(backend.db, projects, items, library, {
+        now: () => FIXED_NOW,
+      });
+      const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+      const item = items.create({ project_id: project.id, title: 'Track item' });
+      directives.create({
+        project_id: project.id,
+        parent_type: 'item',
+        parent_id: item.id,
+        kind: 'reminder',
+        payload: { mode: 'absolute', fire_at: '2026-05-13T11:00:00.000Z' },
+      });
+
+      // A graceful non-delivery (notifier 'unavailable') is the notifier's capability
+      // state (E4), not a scheduler-loop fault — the loop stays healthy.
+      const okHealth = createJobHealth('reminders');
+      const okScheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: createUnavailableNotifier(),
+        items,
+        library,
+        now: () => FIXED_NOW,
+        health: okHealth,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+      });
+      await okScheduler.tick();
+      expect(okHealth.snapshot().healthy).toBe(true);
+      expect(okHealth.snapshot().last_run_at).toBe(FIXED_NOW.toISOString());
+
+      // A notifier that THROWS is an unexpected loop failure → degrade the loop's health.
+      const badHealth = createJobHealth('reminders');
+      const badScheduler = createReminderScheduler({
+        db: backend.db,
+        service: directives,
+        notifier: { kind: 'os' as const, notify: async () => { throw new Error('boom'); } },
+        items,
+        library,
+        now: () => FIXED_NOW,
+        health: badHealth,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+      });
+      await badScheduler.tick();
+      expect(badHealth.snapshot().healthy).toBe(false);
+      expect(badHealth.snapshot().last_error).toContain('boom');
     } finally {
       await backend.cleanup();
     }

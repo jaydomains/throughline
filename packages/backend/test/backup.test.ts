@@ -10,6 +10,7 @@ import {
   InvalidAutoCopyTargetError,
 } from '../src/backup/service.js';
 import { createBackupScheduler } from '../src/backup/scheduler.js';
+import { createJobHealth } from '../src/health/job-health.js';
 import { writeSecrets, secretsPresence } from '../src/secrets/store.js';
 import { makeTmpConfig } from './helpers.js';
 
@@ -204,6 +205,44 @@ describe('backup service (T-D28)', () => {
       const scheduler = createBackupScheduler({ service: backup, settings });
       await scheduler.tick();
       expect(existsSync(target)).toBe(true);
+      db.close();
+    } finally {
+      cfg.cleanup();
+    }
+  });
+
+  it('scheduler records loop health: a throwing tick flips healthy:false (E5/C-D26)', async () => {
+    const cfg = makeTmpConfig();
+    try {
+      const db = openDb(cfg.dbPath);
+      runMigrations(db);
+      const settings = createSettingsService(db);
+
+      // A clean tick records success.
+      const okBackup = createBackupService({ db, settings, archiveDir: cfg.archiveDir });
+      const okHealth = createJobHealth('backup');
+      await createBackupScheduler({ service: okBackup, settings, health: okHealth }).tick();
+      expect(okHealth.snapshot().healthy).toBe(true);
+      expect(okHealth.snapshot().last_run_at).not.toBeNull();
+
+      // A tick whose work throws (status() blows up) degrades the loop instead of the
+      // failure vanishing into the void tick() (SF5-01).
+      const badHealth = createJobHealth('backup');
+      const throwingService = {
+        status() {
+          throw new Error('backup status unreadable');
+        },
+        autoCopy: async () => false,
+        pruneArchive: () => 0,
+      } as unknown as Parameters<typeof createBackupScheduler>[0]['service'];
+      await createBackupScheduler({
+        service: throwingService,
+        settings,
+        health: badHealth,
+        logger: { info: () => {}, warn: () => {}, error: () => {} },
+      }).tick();
+      expect(badHealth.snapshot().healthy).toBe(false);
+      expect(badHealth.snapshot().last_error).toContain('backup status unreadable');
       db.close();
     } finally {
       cfg.cleanup();
