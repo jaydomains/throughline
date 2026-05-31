@@ -210,7 +210,7 @@
 
 ### E14 — Audit-trail wiring
 - **Branch:** `claude/phase-e-e14-audit-trail-wiring`
-- **PR:** _pending (this slice)_
+- **PR:** #101 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** SF7-01 (credential set/clear/rotate via `PUT /api/secrets` left **no** audit row), SF7-02 (`projects.update({ settings })` — the path the communication-model route uses — wrote `settings_json` but the field-loop omitted it), SF7-03 (`projects.updateSettings` generic writer unaudited), SF7-05 (session `update` wrote `settings_json` unaudited). Completes the 3-of-3 `settings_json` audit discipline.
 - **Fix (no anchor):** secrets routes take `db` and emit an **event-only** audit row per touched key (`field: credential:<key>`, `new_value: set|cleared`, **never the value** — T-D24 / T-D4); `settings_json` added to the projects `update` field-loop and the session `update` field-loop; `updateSettings` audits the change when it actually changes.
