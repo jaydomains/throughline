@@ -8,29 +8,27 @@
 
 ## Snapshot
 
-**As of 2026-05-30.** Audit-fix cohort (**Phases A–D**) **`production-ready`** — promoted by this cohort-level heavy hardener pass (the second under codified discipline; the first was PR #43). All four phases landed and verified: Phase A (dual-condition workspace `exports`, **C-D22**); Phase B (shared `DomainError` hierarchy + central Fastify handler + `resolveProjectBundle`, **T-D58** / **C-D23**); Phase C (`useResource` / `usePolledResource` error-surfacing hooks, **C-D24**); Phase D (wire-contract types in `@throughline/shared` + backend lifecycle locks, **T-D59**). This pass swept cross-doc drift: stale T-D index count (57→59 in `CODE_SPEC.md §1`), kill-switch wording in `SESSION_START.md`, the ROADMAP-backfill checklist example, and **corrected a compaction-inherited false claim that `SESSION_START.md` was absent** — the file is present at the repo root and authoritative (root cause now codified in `AUTO_CONTINUE_WORKFLOW.md` § Pre-Flight State Verification). `AUTO_CONTINUE_WORKFLOW.md` absorbed the arc's process findings (doc-PR collision and merge-on-green polling landed earlier via PR #76; this pass added pre-flight state verification, the poll-driven-not-subscription-driven directive, and the explicit one-PR-per-slice canonical rhythm). PR #76's missing handover was backfilled. **Next:** no chain in flight; the next phase/cohort opens a fresh cycle and rolls the Locked Decisions table on its first anchor.
+**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **This slice — E3** — Semble degradation honesty (SF4-01): tri-state `SembleStatus` (`available`/`unavailable`/`degraded`) disclosed on the shared wire contract so a crashed/timed-out Semble no longer reads as "no code matches". Cites T-D60; no new anchor. **Prior cohort:** audit-fix A–D remains `production-ready`; Phases 19–22 remain `production-ready`. **Next:** continue the chain — E4 (notifier capability honesty) branches off updated `main` after E3 merges.
 
 ---
 
 ## Current Phase
 
-**Phase:** Audit-fix cohort (A–D) **complete and `production-ready`** — heavy hardener pass (this PR). Phases 19–22 build cohort remains `production-ready`.
-**Status:** All audit-fix phases done and promoted. No chain in flight.
-**Next concrete action:** Spec author opens the next phase/cohort. The Locked Decisions This Cycle table holds the audit-fix anchors until that cohort mints its first T-D / C-D anchor, then rolls per the Update Protocol.
+**Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (22-slice floor). Audit-fix A–D and Phases 19–22 remain `production-ready`.
+**Status:** E1 (#88) + E2 (#89) merged (prior run); E3 (Semble degradation honesty) is the current slice. Anchors so far: **T-D60** (E1). C-D25 (E6) and C-D26 (E5) still to mint; a T-D10 amendment is planned in E20 (augmentation). Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5.
+**Next concrete action:** Merge E3 on green gate; branch E4 (notifier capability honesty) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
 
 ---
 
 ## Locked Decisions This Cycle
 
-The audit-fix cohort (Phases A → D), now **`production-ready`**, holds its anchors here. C-D22 (Phase A) reset the cycle off the now-`production-ready` Phases 19–22 entries (T-D49…T-D57, C-D19…C-D21; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and `git log`). One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. Per the Update Protocol "Cycle reset" rule the table does **not** roll in the hardener pass; it rolls only when a successor cohort mints its first T-D / C-D anchor.
+The **Phase E** cycle holds its anchors here. T-D60 (E1) is Phase E's first anchor → it reset the cycle off the now-`production-ready` audit-fix A–D entries (C-D22, T-D58, C-D23, C-D24, T-D59; full bodies remain in `DECISIONS.md` / `CODE_SPEC.md` and `git log`). One line each; full bodies in `DECISIONS.md` / `CODE_SPEC.md`. The table rolls again only when a successor cohort mints its first anchor.
 
 | Anchor | Phase | One-line |
 |---|---|---|
-| C-D22 | Audit-fix A | Dual-condition `exports` for TS-source workspace packages: `types` / `development` → `src`, `default` → built `dist/`; backend tsx kept on source via `--conditions=development`. Makes `dist` node-runnable without forcing a build into the dev loop. |
-| T-D58 | Audit-fix B/S1 | Shared domain-error hierarchy in `@throughline/shared`: domain errors carry canonical HTTP `statusCode` + stable `code`; routes never re-decide status (central handler reads it — slice 3 / C-D23). Closes 17+5+2 duplicate NotFound defs and the SF6-09 status drift. |
-| C-D23 | Audit-fix B/S3 | Central Fastify `setErrorHandler` + `mapDomainError` reads `statusCode`/`code`/`details` off any thrown `DomainError` → canonical `ErrorResponse` body; ~50 hand-rolled try/catch blocks deleted. Spans slices 1+3. |
-| C-D24 | Audit-fix C/S1 | `useResource` / `usePolledResource` frontend hook pair: one `ResourceState<T>` (`{ data, loading, error, refresh }`) owns the loading/error triple + `alive` unmount guard + stable refresh; callers pass a memoised fetcher (or `null` to disable). The `error` slot is the SF6 surface, made uniform here. |
-| T-D59 | Audit-fix D/S1 | Wire-contract response types live in `@throughline/shared` (`wire.ts`): backend handlers annotate their payload against the shared envelope, `jsonFetch` targets it, and `wire-contract.test.ts` asserts the running backend emits the shape — contract verified (compile time + runtime), not cast with `as T`. Closes green-gate Gap 2. |
+| T-D60 | Phase E / E1 | Refuse-rather-than-fallback: a degraded or failed capability is **disclosed on the shared wire contract** (extends T-D59), never silently substituted or rendered as healthy-empty. Broad reach (LBD-1a). Supersedes audit-3's blessing of the silent C-D2 SHA1 embedding fallback; narrows C-D2 to capability-absent honest-distinct mode (recorded as a T-D60 supersession note, not a C-D2 body edit). Cited by E2/E3/E4. |
+| _C-D25_ | Phase E / E6 (pending) | System-state visibility frontend pattern (one shared component, tri-state healthy/degraded/absent, rendered in-context). Mints in E6; reused by E5/E7. |
+| _C-D26_ | Phase E / E5 (pending) | Background-job health-state backend model (`lastRunAt`/`lastError`/`healthy` per loop) — distinct from C-D25. Mints in E5. |
 
 ---
 
@@ -58,13 +56,13 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Cohort-level heavy hardener — audit-fix A–D → `production-ready` (cross-doc drift sweep, workflow-finding absorption, PR #76 handover backfill) | `handovers/2026-05-30-cohort-hardener-audit-fix-a-d.md` |
-| #81 | Phase D / Slice 3 — backend lifecycle locks: S4-01 dismissal idempotency, S7-01 shutdown ordering, F1-01 lock (chain close) | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
-| #80 | Phase D / Slice 2 — backend data-integrity locks: S2-01 ReDoS bypass, SF2-01 scanner-throw, S5-01 dump-zone atomicity | `handovers/2026-05-30-phase-d-slice-2-data-integrity-locks.md` |
-| #79 | Phase D / Slice 1 — wire-contract types → `@throughline/shared` + contract test (mints T-D59, closes Gap 2) | `handovers/2026-05-30-phase-d-slice-1-wire-contract.md` |
-| #78 | Phase C / Slice 2 — surface data-hook errors in consumers + mutation catches (SF6), `<LoadError>` + regression test | `handovers/2026-05-30-phase-c-slice-2-error-surfacing.md` |
+| _this PR_ | Phase E / E3 — Semble degradation honesty (SF4-01): tri-state `SembleStatus` on the wire (cites T-D60) | `handovers/phase-e-execution-log.md` (§E3) |
+| #89 | Phase E / E2 — AI/capability degradation honesty (SF3-03, SF2-04, SF4-02, SF4-03) | `handovers/phase-e-execution-log.md` (§E2, backfilled) |
+| #88 | Phase E / E1 — RAG embedder & query honesty + T-D60 mint (C-D2 narrowing) | `handovers/phase-e-execution-log.md` (§E1, backfilled) |
+| _hardener_ | Cohort-level heavy hardener — audit-fix A–D → `production-ready` | `handovers/2026-05-30-cohort-hardener-audit-fix-a-d.md` |
+| #81 | Phase D / Slice 3 — backend lifecycle locks: S4-01, S7-01, F1-01 lock | `handovers/2026-05-30-phase-d-slice-3-lifecycle-locks.md` |
 
-(PR #77 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`.)
+(PR #80 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. The Phase E chain uses a single append-only execution log rather than per-slice handover files; see its header for rationale.)
 
 ---
 

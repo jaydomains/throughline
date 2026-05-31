@@ -83,7 +83,15 @@ async function setup(
     projects,
     items,
     library,
-    semble: semble ?? stubSemble({ answer: null, sources: [], semble_available: false, summarised: false }),
+    semble:
+      semble ??
+      stubSemble({
+        answer: null,
+        sources: [],
+        status: 'unavailable',
+        semble_available: false,
+        summarised: false,
+      }),
     anthropic,
     embedder: embedder ?? createTextEmbedder(),
   });
@@ -230,6 +238,7 @@ describe('Phase 14 — audit & code substrates (T-D25)', () => {
       stubSemble({
         answer: 'It lives in server.ts [1].',
         sources: [{ path: 'src/server.ts', line_start: 10, line_end: 20, snippet: 'startServer()' }],
+        status: 'available',
         semble_available: true,
         summarised: true,
       }),
@@ -352,6 +361,7 @@ describe('E1 — embedder honesty on the wire (T-D60: SF3-01, SF3-02, S4-03)', (
       stubSemble({
         answer: 'It lives in server.ts [1].',
         sources: [{ path: 'src/server.ts', line_start: 1, line_end: 2, snippet: 'x' }],
+        status: 'available',
         semble_available: true,
         summarised: true,
       }),

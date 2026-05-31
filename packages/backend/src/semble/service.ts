@@ -83,13 +83,19 @@ export function createSembleService(opts: CreateOptions): SembleService {
     async searchForItem(itemId) {
       const item = items.get(itemId);
       if (!item) throw new ItemNotFoundError(itemId);
-      if (!(await client.available())) return { candidates: [], available: false };
+      const status = await client.probe();
+      if (status !== 'available') return { candidates: [], available: false, status };
       const repoPath = repoPathForProject(item.project_id);
       const query = `${item.title}\n${item.description}`.trim();
-      const hits = await client.search({ repoPath, query, limit: QA_HIT_LIMIT });
+      const outcome = await client.search({ repoPath, query, limit: QA_HIT_LIMIT });
+      // A degraded search is disclosed, not surfaced as a healthy empty (T-D60, SF4-01).
+      if (outcome.status === 'degraded') {
+        return { candidates: [], available: false, status: 'degraded' };
+      }
       return {
         available: true,
-        candidates: hits.map((h) => ({
+        status: 'available',
+        candidates: outcome.hits.map((h) => ({
           path: h.path,
           line_start: h.line_start,
           line_end: h.line_end,
@@ -163,21 +169,41 @@ export function createSembleService(opts: CreateOptions): SembleService {
     },
 
     async searchRepo(projectId, query, limit) {
-      if (!(await client.available())) return [];
+      if ((await client.probe()) !== 'available') return [];
       const repoPath = repoPathForProject(projectId);
-      return client.search(
+      const outcome = await client.search(
         limit === undefined ? { repoPath, query } : { repoPath, query, limit },
       );
+      // Background read-only enrichment: a degraded search yields no suggestions (not
+      // presented to the user as authoritative "no code exists").
+      return outcome.status === 'ok' ? outcome.hits : [];
     },
 
     async codeQa(projectId, question) {
       const q = question.trim();
-      const sembleAvailable = await client.available();
-      if (!sembleAvailable || q.length === 0) {
-        return { answer: null, sources: [], semble_available: false, summarised: false };
+      const status = await client.probe();
+      if (status !== 'available' || q.length === 0) {
+        return {
+          answer: null,
+          sources: [],
+          status,
+          semble_available: status === 'available',
+          summarised: false,
+        };
       }
       const repoPath = repoPathForProject(projectId);
-      const hits = await client.search({ repoPath, query: q, limit: QA_HIT_LIMIT });
+      const outcome = await client.search({ repoPath, query: q, limit: QA_HIT_LIMIT });
+      // A degraded search is disclosed, not surfaced as a healthy empty (T-D60, SF4-01).
+      if (outcome.status === 'degraded') {
+        return {
+          answer: null,
+          sources: [],
+          status: 'degraded',
+          semble_available: false,
+          summarised: false,
+        };
+      }
+      const hits = outcome.hits;
       const sources = hits.map((h) => ({
         path: h.path,
         line_start: h.line_start,
@@ -188,6 +214,7 @@ export function createSembleService(opts: CreateOptions): SembleService {
         return {
           answer: null,
           sources,
+          status: 'available',
           semble_available: true,
           summarised: false,
         };
@@ -236,12 +263,19 @@ export function createSembleService(opts: CreateOptions): SembleService {
         return {
           answer: res.text,
           sources,
+          status: 'available',
           semble_available: true,
           summarised: true,
         };
       } catch {
         // Anthropic call failed: still useful — return the located sources unsummarised.
-        return { answer: null, sources, semble_available: true, summarised: false };
+        return {
+          answer: null,
+          sources,
+          status: 'available',
+          semble_available: true,
+          summarised: false,
+        };
       }
     },
   };

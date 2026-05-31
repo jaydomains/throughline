@@ -213,9 +213,15 @@ export function ItemDetailPanel({
     setCodeMsg(null);
     try {
       const { result } = await api.codeSearchItem(projectId, itemId);
-      if (!result.available) {
+      if (result.status !== 'available') {
+        // Distinguish a crash/timeout from an honest absence (T-D60): a degraded
+        // backend must not read as "Semble not configured" or "no matches".
         setCodeCandidates([]);
-        setCodeMsg('Semble is not configured — code search is unavailable.');
+        setCodeMsg(
+          result.status === 'degraded'
+            ? 'Semble is installed but not responding — code search is unavailable right now.'
+            : 'Semble is not configured — code search is unavailable.',
+        );
       } else {
         setCodeCandidates(result.candidates);
         setCodeSelected(new Set());

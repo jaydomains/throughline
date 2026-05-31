@@ -67,28 +67,42 @@ function fakePull(n: number): GhPull {
 }
 
 describe('semble client', () => {
-  it('available() is false when the command does not resolve (ENOENT)', async () => {
+  it('probe() is unavailable when the command does not resolve (ENOENT)', async () => {
     const exec: SembleExec = async () => {
       const err = new Error('spawn semble ENOENT') as Error & { code?: string };
       err.code = 'ENOENT';
       throw err;
     };
     const client = createSembleClient({ command: 'semble', execImpl: exec });
-    expect(await client.available()).toBe(false);
+    expect(await client.probe()).toBe('unavailable');
   });
 
-  it('available() is true when --version runs (keyless: even a non-zero exit means present)', async () => {
+  it('probe() is available when --version runs (keyless: even a non-zero exit means present)', async () => {
     const ok: SembleExec = async () => ({ stdout: 'semble 1.0.0', stderr: '' });
-    expect(await createSembleClient({ command: 'semble', execImpl: ok }).available()).toBe(true);
+    expect(await createSembleClient({ command: 'semble', execImpl: ok }).probe()).toBe('available');
 
     const nonZero: SembleExec = async () => {
       const err = new Error('exit 2') as Error & { code?: number };
       err.code = 2;
       throw err;
     };
-    expect(
-      await createSembleClient({ command: 'semble', execImpl: nonZero }).available(),
-    ).toBe(true);
+    expect(await createSembleClient({ command: 'semble', execImpl: nonZero }).probe()).toBe(
+      'available',
+    );
+  });
+
+  it('probe() is degraded when the binary is present but times out / fails abnormally (SF4-01)', async () => {
+    // execFile timeout: the child is killed, the rejection carries killed:true and a
+    // non-numeric code — present-but-not-responding, not absent and not healthy.
+    const timeout: SembleExec = async () => {
+      const err = new Error('killed: timeout') as Error & { killed?: boolean; signal?: string };
+      err.killed = true;
+      err.signal = 'SIGTERM';
+      throw err;
+    };
+    expect(await createSembleClient({ command: 'semble', execImpl: timeout }).probe()).toBe(
+      'degraded',
+    );
   });
 
   it('search() passes the assumed argv and parses a JSON hits array', async () => {
@@ -103,7 +117,7 @@ describe('semble client', () => {
       };
     };
     const client = createSembleClient({ command: 'semble', execImpl: exec });
-    const hits = await client.search({ repoPath: '/repo', query: 'upload validation', limit: 5 });
+    const out = await client.search({ repoPath: '/repo', query: 'upload validation', limit: 5 });
     expect(seenArgs).toEqual([
       'search',
       '--json',
@@ -114,12 +128,13 @@ describe('semble client', () => {
       '--',
       'upload validation',
     ]);
-    expect(hits).toEqual([
-      { path: 'src/a.ts', line_start: 10, line_end: 20, snippet: 'fn a()', score: 0.9 },
-    ]);
+    expect(out).toEqual({
+      status: 'ok',
+      hits: [{ path: 'src/a.ts', line_start: 10, line_end: 20, snippet: 'fn a()', score: 0.9 }],
+    });
   });
 
-  it('search() tolerates object-wrapped output, JSON-lines, and garbage', async () => {
+  it('search() tolerates object-wrapped output, JSON-lines, and garbage (all honest ok)', async () => {
     const wrapped: SembleExec = async () => ({
       stdout: JSON.stringify({ results: [{ file: 'x.ts', line: 3, text: 'hi' }] }),
       stderr: '',
@@ -129,7 +144,10 @@ describe('semble client', () => {
         repoPath: '/r',
         query: 'q',
       }),
-    ).toEqual([{ path: 'x.ts', line_start: 3, line_end: 3, snippet: 'hi', score: null }]);
+    ).toEqual({
+      status: 'ok',
+      hits: [{ path: 'x.ts', line_start: 3, line_end: 3, snippet: 'hi', score: null }],
+    });
 
     const lines: SembleExec = async () => ({
       stdout: '{"path":"a"}\nnot json\n{"path":"b","line_start":2}',
@@ -139,18 +157,20 @@ describe('semble client', () => {
       repoPath: '/r',
       query: 'q',
     });
-    expect(got.map((h) => h.path)).toEqual(['a', 'b']);
+    expect(got.status).toBe('ok');
+    expect(got.status === 'ok' && got.hits.map((h) => h.path)).toEqual(['a', 'b']);
 
+    // Unparseable stdout from a command that *ran* is an honest empty, not a degradation.
     const garbage: SembleExec = async () => ({ stdout: 'totally not json', stderr: '' });
     expect(
       await createSembleClient({ command: 'c', execImpl: garbage }).search({
         repoPath: '/r',
         query: 'q',
       }),
-    ).toEqual([]);
+    ).toEqual({ status: 'ok', hits: [] });
   });
 
-  it('search() degrades to [] when the binary is absent', async () => {
+  it('search() discloses degraded (not empty) when the exec fails (SF4-01)', async () => {
     const enoent: SembleExec = async () => {
       const e = new Error('ENOENT') as Error & { code?: string };
       e.code = 'ENOENT';
@@ -161,7 +181,27 @@ describe('semble client', () => {
         repoPath: '/r',
         query: 'q',
       }),
-    ).toEqual([]);
+    ).toEqual({ status: 'degraded' });
+
+    const crash: SembleExec = async () => {
+      throw new Error('semble crashed mid-search');
+    };
+    expect(
+      await createSembleClient({ command: 'semble', execImpl: crash }).search({
+        repoPath: '/r',
+        query: 'q',
+      }),
+    ).toEqual({ status: 'degraded' });
+  });
+
+  it('search() returns an honest empty (not degraded) for an empty query', async () => {
+    const exec: SembleExec = async () => ({ stdout: '[]', stderr: '' });
+    expect(
+      await createSembleClient({ command: 'c', execImpl: exec }).search({
+        repoPath: '/r',
+        query: '   ',
+      }),
+    ).toEqual({ status: 'ok', hits: [] });
   });
 });
 
@@ -183,8 +223,33 @@ describe('semble service — done-time linking', () => {
       });
       const item = items.create({ project_id: project.id, title: 'add upload validation' });
       const res = await semble.searchForItem(item.id);
-      expect(res).toEqual({ candidates: [], available: false });
+      expect(res).toEqual({ candidates: [], available: false, status: 'unavailable' });
       void drift;
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('searchForItem discloses degraded — a present-but-broken search is NOT a healthy empty (SF4-01)', async () => {
+    const { backend, projects, items, project } = await setup();
+    try {
+      // The binary is present (--version succeeds → probe 'available') but the search
+      // itself crashes. Pre-fix this surfaced as { available: true, candidates: [] } —
+      // "search worked, nothing here". It must now disclose 'degraded'.
+      const brokenSearch: SembleExec = async (_c, args) => {
+        if (args[0] === '--version') return { stdout: 'semble 1', stderr: '' };
+        throw new Error('semble search crashed');
+      };
+      const semble = createSembleService({
+        db: backend.db,
+        projects,
+        items,
+        client: createSembleClient({ command: 'semble', execImpl: brokenSearch }),
+        anthropic: unavailableAnthropic(),
+      });
+      const item = items.create({ project_id: project.id, title: 'add upload validation' });
+      const res = await semble.searchForItem(item.id);
+      expect(res).toEqual({ candidates: [], available: false, status: 'degraded' });
     } finally {
       await backend.cleanup();
     }
@@ -275,6 +340,7 @@ describe('semble service — code Q&A', () => {
         anthropic: unavailableAnthropic(),
       });
       const res = await semble.codeQa(project.id, 'where is login handled?');
+      expect(res.status).toBe('available');
       expect(res.semble_available).toBe(true);
       expect(res.summarised).toBe(false);
       expect(res.answer).toBeNull();
@@ -330,6 +396,34 @@ describe('semble service — code Q&A', () => {
       expect(res).toEqual({
         answer: null,
         sources: [],
+        status: 'unavailable',
+        semble_available: false,
+        summarised: false,
+      });
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('codeQa discloses degraded — a present-but-broken search is NOT a healthy empty (SF4-01)', async () => {
+    const { backend, projects, items, project } = await setup();
+    try {
+      const brokenSearch: SembleExec = async (_c, args) => {
+        if (args[0] === '--version') return { stdout: 'semble 1', stderr: '' };
+        throw new Error('semble search crashed');
+      };
+      const semble = createSembleService({
+        db: backend.db,
+        projects,
+        items,
+        client: createSembleClient({ command: 'semble', execImpl: brokenSearch }),
+        anthropic: stubAnthropic('unused'),
+      });
+      const res = await semble.codeQa(project.id, 'where is login handled?');
+      expect(res).toEqual({
+        answer: null,
+        sources: [],
+        status: 'degraded',
         semble_available: false,
         summarised: false,
       });

@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
-import type { SembleHit } from '@throughline/shared';
+import type { SembleHit, SembleStatus } from '@throughline/shared';
 
 // Phase 11 — Semble client (C-D17, T-D27, T-D13; SPEC §7.15/§15/§10).
 //
@@ -34,9 +34,20 @@ export interface SembleSearchInput {
   limit?: number;
 }
 
+// A search outcome that distinguishes a real, possibly-empty result ('ok') from a
+// degradation ('degraded' — the binary crashed, timed out, or exited abnormally). Per
+// T-D60 a degradation is disclosed, never collapsed into an empty hit list that reads
+// as "search worked, nothing here".
+export type SembleSearchOutcome =
+  | { status: 'ok'; hits: SembleHit[] }
+  | { status: 'degraded' };
+
 export interface SembleClient {
-  available(): Promise<boolean>;
-  search(input: SembleSearchInput): Promise<SembleHit[]>;
+  // Probe the capability state. 'unavailable' ⇒ the command does not resolve (ENOENT);
+  // 'degraded' ⇒ it is present but the probe crashed/timed out; 'available' otherwise
+  // (including a non-zero exit from a command that *did* run — keyless, T-D27).
+  probe(): Promise<SembleStatus>;
+  search(input: SembleSearchInput): Promise<SembleSearchOutcome>;
 }
 
 interface CreateClientOptions {
@@ -118,21 +129,26 @@ function parseHits(stdout: string): SembleHit[] {
 export function createSembleClient({ command, execImpl }: CreateClientOptions): SembleClient {
   const exec = execImpl ?? defaultExec;
   return {
-    async available() {
+    async probe() {
       try {
         await exec(command, ['--version'], { windowsHide: true, timeout: 10_000 });
-        return true;
+        return 'available';
       } catch (err) {
-        // ENOENT ⇒ command does not resolve ⇒ not configured. A non-zero exit from a
-        // command that *did* run still means Semble is present (keyless, T-D27).
-        const code = (err as { code?: unknown }).code;
-        if (code === 'ENOENT') return false;
-        return true;
+        const e = err as { code?: unknown; killed?: unknown };
+        // ENOENT ⇒ the command does not resolve ⇒ not configured (absent).
+        if (e.code === 'ENOENT') return 'unavailable';
+        // A numeric exit code means the command *did* run, just exited non-zero —
+        // still present (keyless, T-D27).
+        if (typeof e.code === 'number') return 'available';
+        // Timed out / killed / spawn failure: installed but not responding. Disclose it
+        // rather than masquerading as 'available' (T-D60).
+        return 'degraded';
       }
     },
     async search({ repoPath, query, limit }) {
       const q = query.trim();
-      if (!repoPath || q.length === 0) return [];
+      // An empty query or missing repo is an honest empty, not a degradation.
+      if (!repoPath || q.length === 0) return { status: 'ok', hits: [] };
       const n = Math.min(Math.max(limit ?? DEFAULT_LIMIT, 1), 50);
       try {
         const { stdout } = await exec(
@@ -145,11 +161,13 @@ export function createSembleClient({ command, execImpl }: CreateClientOptions): 
             timeout: SEARCH_TIMEOUT_MS,
           },
         );
-        return parseHits(stdout).slice(0, n);
+        // Unparseable output still parses to [] (parseHits never throws) — that is an
+        // honest empty. Only an exec rejection below is a degradation.
+        return { status: 'ok', hits: parseHits(stdout).slice(0, n) };
       } catch {
-        // Absent binary, non-zero exit, timeout, unparseable output: degrade to empty
-        // (SPEC §15 — code intelligence inert, everything else unaffected).
-        return [];
+        // Absent binary, non-zero exit, timeout: a real degradation. Disclose it (T-D60)
+        // instead of returning [] (which read as "search worked, nothing here" — SF4-01).
+        return { status: 'degraded' };
       }
     },
   };
