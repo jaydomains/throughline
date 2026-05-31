@@ -37,7 +37,7 @@
 
 ### E3 — Semble degradation honesty
 - **Branch:** `claude/phase-e-e3-semble-honesty`
-- **PR:** _pending (this slice)_
+- **PR:** #90 (draft → ready on green)
 - **Merge SHA:** pending
 - **Closed:** SF4-01 (High) — a present-but-broken Semble binary reported `available:true` and `search()` swallowed the crash to `[]`, surfacing to the user as "no code matches found" (a crash masquerading as healthy-empty).
 - **Fix:** introduced a tri-state `SembleStatus` (`available` / `unavailable` / `degraded`) disclosed **on the shared wire contract** (T-D60, on-contract per LBD-1b — no new anchor). `client.available()` → `probe()` returning the tri-state; `client.search()` → a discriminated `SembleSearchOutcome` (`{status:'ok',hits}` vs `{status:'degraded'}`); threaded through `searchForItem` / `codeQa` onto `CodeSearchResponse.status` / `CodeQaResult.status`; both frontend surfaces (ItemDetailPanel code-search, LibraryView code-Q&A) render the degraded state distinctly from absence.
