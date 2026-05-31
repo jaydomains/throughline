@@ -8,15 +8,15 @@
 
 ## Snapshot
 
-**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (appends E19/E20/E21; revises the E1 anchor-amendment mechanism). Durable per-slice record: `handovers/phase-e-execution-log.md`. **Landed:** **E1** (#88) — RAG embedder & query honesty; minted **T-D60** (refuse-rather-than-fallback) with C-D2 narrowed via a T-D60 supersession note (count 59→60). **E2** (#89) — AI/capability degradation honesty (cites T-D60). Both merged by a prior multi-session run that left no per-slice handovers and did **not** roll this file; that gap is corrected here (execution log established; this Snapshot + Locked Decisions table rolled to the Phase E cycle, T-D60 being its first anchor). **E3** (#90) Semble honesty. **E4** (#91) notifier honesty. **E5** (#92) background-job health model (mints **C-D26**). **E6** (#93, merge `5beadc4`) bundle-health visibility (SF2-02/SF2-06): mints **C-D25** — the shared `HealthStatus` tri-state component (in-context, LBD-2) + per-project `methodology-health` route; also renders E5's job-health. **E7** (#94, merge `bea03ca`) bootstrap worker/watcher robustness (SF1-03, S1-01, S1-02/SF1-02, SF5-05/06 — first C-D25 consumer). **This slice — E8** — shutdown lifecycle completion: closes S7-02 (SSE `reply.hijack()` sockets now ended at shutdown via `sseHub.closeAll()`; ping `unref`'d), SF5-11 (SSE writes guarded + global `unhandledRejection`/`uncaughtException` handlers in `index.ts`), S7-03 residual (backup + reminder schedulers gain `drain()`, awaited in shutdown). No new anchor. **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E9 (loader robustness — S3-01/SF2-05, S3-03, SF5-08) off updated `main` after E8 merges.
+**As of 2026-05-31.** **Phase E — Full Audit-Fix Close** chain is **in flight** (22-slice floor; one PR per slice). Plans on `main`: base `plans/2026-05-30-phase-e-full-audit-close.md` (E1–E18, E17a) + augmentation `plans/2026-05-31-phase-e-augmentation-feature-builds.md` (E19/E20/E21 + the E1 anchor-amendment mechanism). **Durable per-slice record (PR #, merge SHA, fix-rounds, halt/flake flags): `handovers/phase-e-execution-log.md` — read it for slice detail.** **Merged: E1–E8** (#88–#95). All three planned Phase E anchors are minted: **T-D60** (E1, refuse-rather-than-fallback), **C-D26** (E5, background-job health model), **C-D25** (E6, `HealthStatus` visibility component). **This slice — E9** — loader robustness: closes S3-01/SF2-05 (methodology watcher install/external unlink now `notifyReloaded`, not just arm-2), S3-03 (`discoverBundleIds` guards `statSync` so a dangling symlink doesn't abort hydration), SF5-08 (the `on('all')` handler wrapped in try/catch). No new anchor; `loader.ts` only. **Pre-existing test flakes flagged for Phase-F** (out-of-scope, halt-8; pass on retry/isolation, not chain regressions): `rag.test.ts` (real embedder under parallel load) + `directives.test.tsx` (frontend). **Prior cohort:** audit-fix A–D + Phases 19–22 remain `production-ready`. **Next:** E10 (background-loop correctness — S4-02, S5-05; adds the §7.10 missed-occurrence-coalesce SPEC clause) off updated `main` after E9 merges.
 
 ---
 
 ## Current Phase
 
 **Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (22-slice floor). Audit-fix A–D and Phases 19–22 remain `production-ready`.
-**Status:** E1–E7 merged (#88–#94); E8 (shutdown lifecycle completion) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6) — all three planned Phase E anchors minted. A T-D10 amendment is planned in E20 (augmentation); any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E8–E16 + E17a mint no anchors.
-**Next concrete action:** Merge E8 on green gate; branch E9 (loader robustness) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
+**Status:** E1–E8 merged (#88–#95); E9 (loader robustness) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6) — all three planned Phase E anchors minted. A T-D10 amendment is planned in E20 (augmentation); any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E9–E16 + E17a mint no anchors.
+**Next concrete action:** Merge E9 on green gate; branch E10 (background-loop correctness) off updated `main`. Chain halts at **E17** for the spec-author product-decision gate (halt-class 9).
 
 ---
 
@@ -56,11 +56,11 @@ Most recent merged PRs, one line each + handover path. Last five only; older ent
 
 | PR | Title | Handover |
 |---|---|---|
-| _this PR_ | Phase E / E8 — Shutdown lifecycle completion (S7-02, SF5-11, S7-03): SSE `closeAll` + `unref` + guarded writes, global handlers, scheduler `drain()` | `handovers/phase-e-execution-log.md` (§E8) |
-| #94 | Phase E / E7 — Bootstrap worker/watcher robustness (SF1-03, S1-01, S1-02/SF1-02, SF5-05/06): marker-count, unique timestamps, arm-before-scan, guarded enqueue (imports C-D25) | `handovers/phase-e-execution-log.md` (§E7) |
+| _this PR_ | Phase E / E9 — Loader robustness (S3-01/SF2-05, S3-03, SF5-08): unlink notifies all arms, dangling-symlink-safe hydration, guarded watch handler | `handovers/phase-e-execution-log.md` (§E9) |
+| #95 | Phase E / E8 — Shutdown lifecycle completion (S7-02, SF5-11, S7-03): SSE `closeAll` + `unref` + guarded writes, global handlers, scheduler `drain()` | `handovers/phase-e-execution-log.md` (§E8) |
+| #94 | Phase E / E7 — Bootstrap worker/watcher robustness (SF1-03, S1-01, S1-02/SF1-02, SF5-05/06): marker-count, unique timestamps, arm-before-scan, guarded enqueue | `handovers/phase-e-execution-log.md` (§E7) |
 | #93 | Phase E / E6 — Bundle-health visibility (SF2-02/SF2-06): `HealthStatus` tri-state + per-project methodology-health route (mints **C-D25**) | `handovers/phase-e-execution-log.md` (§E6) |
 | #92 | Phase E / E5 — Background-job health model (SF5-01/02/04): per-loop `JobHealth` + route (mints **C-D26**) | `handovers/phase-e-execution-log.md` (§E5) |
-| #91 | Phase E / E4 — Notifier capability honesty (SF5-03): disclosed `NotifyResult` + honest unavailable fallback (cites T-D60) | `handovers/phase-e-execution-log.md` (§E4) |
 
 (PR #80 and earlier roll off — covered by their handovers in `docs/_meta/throughline/handovers/`. The Phase E chain uses a single append-only execution log rather than per-slice handover files; see its header for rationale.)
 

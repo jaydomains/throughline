@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import chokidar from 'chokidar';
@@ -33,6 +41,35 @@ describe('methodology loader', () => {
         watch: false,
       });
       const list = registry.list();
+      expect(list.length).toBe(1);
+      expect(list[0]?.status).toBe('loaded');
+      await registry.stop();
+      db.close();
+    } finally {
+      cfg.cleanup();
+    }
+  });
+
+  it('S3-03: a dangling symlink in the methodologies dir is skipped, not fatal to hydration', async () => {
+    const cfg = makeTmpConfig();
+    try {
+      plantFreeformBundle(cfg.methodologiesDir);
+      // A symlink whose target does not exist — statSync on it throws ENOENT. Pre-S3-03,
+      // that threw out of discoverBundleIds and aborted the whole startup scan, so the
+      // valid freeform bundle never loaded (registry creation threw).
+      symlinkSync(
+        join(cfg.methodologiesDir, 'no-such-target'),
+        join(cfg.methodologiesDir, 'dangling'),
+      );
+      const db = openDb(cfg.dbPath);
+      runMigrations(db);
+      const registry = createMethodologyRegistry({
+        db,
+        methodologiesDir: cfg.methodologiesDir,
+        watch: false,
+      });
+      const list = registry.list();
+      // The dangling entry was skipped; freeform still loaded — the scan did not abort.
       expect(list.length).toBe(1);
       expect(list[0]?.status).toBe('loaded');
       await registry.stop();

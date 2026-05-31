@@ -53,7 +53,13 @@ function discoverBundleIds(methodologiesDir: string): string[] {
   if (!existsSync(methodologiesDir)) return [];
   return readdirSync(methodologiesDir).filter((entry) => {
     const full = join(methodologiesDir, entry);
-    if (!statSync(full).isDirectory()) return false;
+    try {
+      if (!statSync(full).isDirectory()) return false;
+    } catch {
+      // S3-03: a dangling symlink (or otherwise unreadable entry) makes statSync throw.
+      // Skip just that entry rather than letting it abort the whole startup hydration.
+      return false;
+    }
     return existsSync(join(full, 'bundle.md'));
   });
 }
@@ -300,38 +306,53 @@ export function createMethodologyRegistry(opts: CreateRegistryOptions): Methodol
   if (watch) {
     watcher = chokidar.watch(join(methodologiesDir, '**/bundle.md'), { ignoreInitial: true });
     watcher.on('all', (event, filePath) => {
-      if (filePath.startsWith(methodologiesDir + sep)) {
-        const rel = filePath.slice(methodologiesDir.length + 1);
-        const id = rel.split(sep)[0];
-        if (!id) return;
-        if (event === 'unlink') {
-          cache.delete(id);
+      // SF5-08: guard the whole handler. This is the one watch site whose callback was
+      // unguarded — a throw here runs inside chokidar's emit and would be swallowed (the
+      // file event silently lost). Contain it so the watcher stays alive.
+      try {
+        if (filePath.startsWith(methodologiesDir + sep)) {
+          const rel = filePath.slice(methodologiesDir.length + 1);
+          const id = rel.split(sep)[0];
+          if (!id) return;
+          if (event === 'unlink') {
+            cache.delete(id);
+            // S3-01/SF2-05: notify projects bound to this install bundle so they reload
+            // (and surface the now-absent/error state) — was silent for arm-3 deletion.
+            notifyReloaded(id, projectsBoundToBundle(id));
+            return;
+          }
+          reload(id);
           return;
         }
-        reload(id);
-        return;
-      }
-      // External per-project bundle file (C-D14).
-      const externalMetaEntry = externalMeta.get(filePath);
-      if (externalMetaEntry) {
-        if (event === 'unlink') {
-          externalCache.delete(filePath);
+        // External per-project bundle file (C-D14).
+        const externalMetaEntry = externalMeta.get(filePath);
+        if (externalMetaEntry) {
+          if (event === 'unlink') {
+            externalCache.delete(filePath);
+            // S3-01/SF2-05: notify projects bound to this external path so they reload via
+            // the arm-3 install fallback — was silent for arm-1 deletion.
+            notifyReloaded(externalMetaEntry.bundleId, projectsBoundToPath(dirname(filePath)));
+            return;
+          }
+          loadExternalFile(filePath, externalMetaEntry.bundleId);
           return;
         }
-        loadExternalFile(filePath, externalMetaEntry.bundleId);
-        return;
+        // Per-repo bundle file (C-D19 surface 1).
+        const repoMetaEntry = repoMeta.get(filePath);
+        if (!repoMetaEntry) return;
+        if (event === 'unlink') {
+          repoCache.delete(filePath);
+          // Notify projects bound to this repo so they reload via arm 3 fallback.
+          const bound = projectsBoundToRepoFile(filePath);
+          notifyReloaded(repoMetaEntry.bundleId, bound);
+          return;
+        }
+        loadRepoFile(filePath, repoMetaEntry.bundleId);
+      } catch (err) {
+        logger?.error(
+          `methodology watcher handler failed for ${event} ${filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        );
       }
-      // Per-repo bundle file (C-D19 surface 1).
-      const repoMetaEntry = repoMeta.get(filePath);
-      if (!repoMetaEntry) return;
-      if (event === 'unlink') {
-        repoCache.delete(filePath);
-        // Notify projects bound to this repo so they reload via arm 3 fallback.
-        const bound = projectsBoundToRepoFile(filePath);
-        notifyReloaded(repoMetaEntry.bundleId, bound);
-        return;
-      }
-      loadRepoFile(filePath, repoMetaEntry.bundleId);
     });
   }
 

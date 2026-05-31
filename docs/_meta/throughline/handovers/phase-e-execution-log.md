@@ -112,8 +112,8 @@
 
 ### E8 — Shutdown lifecycle completion
 - **Branch:** `claude/phase-e-e8-shutdown-lifecycle`
-- **PR:** #95 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #95 (squash-merged)
+- **Merge SHA:** `327949b`
 - **Closed:** S7-02 (High — SSE `reply.hijack()` sockets + un-`unref`'d ping; `app.close()` never ended them), SF5-11 (unguarded SSE ping write + no global `unhandledRejection`/`uncaughtException` handler), S7-03 residual (`backup`/`directives` scheduler `stop()` cleared the timer without awaiting an in-flight tick). Poller was already drained — not re-touched.
 - **Fix (no anchor):**
   - **S7-02:** SSE ping `setInterval` is `unref`'d; the `SSEHub` gains `closeAll()` (each connection registers its `cleanup` as a teardown) and the server shutdown calls `sseHub.closeAll()` before `app.close()` to end the hijacked sockets.
@@ -129,3 +129,18 @@
 - **Out-of-scope flake flagged (halt-class 8 — flag, do NOT absorb into E8):** `rag.test.ts` (real Transformers.js embedder) flaked **1/12** under the full post-fix suite but **0/8 in isolation** and **0/12 on `main`** — a pre-existing load-sensitivity of the heavy embedder under parallel contention, *not* an E8 logic regression (E1–E7's gate ran 14/14 clean). **Carried to the Phase-F seed register** for stabilisation (e.g. a generous embedder-test timeout) outside this slice. Not expanded into E8 per the discipline.
 - **Halt-class fires:** none. (Round 2 was one finding root-caused and fixed once — not 3 rounds on the same finding; the rag flake is out-of-scope, flagged not fixed.)
 - **Surfaces to spec author:** none (the rag flake is flagged for the Phase-F register, not a halt).
+
+### E9 — Loader robustness
+- **Branch:** `claude/phase-e-e9-loader-robustness`
+- **PR:** #96 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** S3-01/SF2-05 (the methodology watcher's install-unlink and external-unlink branches deleted the cache entry but did **not** `notifyReloaded`, so projects bound to a deleted install/external bundle were never told to reload — only the per-repo arm-2 branch notified), S3-03 (`discoverBundleIds` `statSync` threw on a dangling symlink and aborted the whole startup hydration), SF5-08 (the `watcher.on('all')` handler was the one unguarded watch site — a throw inside chokidar's emit silently dropped the event).
+- **Fix (no anchor):** add `notifyReloaded` to the install-unlink (`projectsBoundToBundle`) and external-unlink (`projectsBoundToPath(dirname)`) branches; guard `discoverBundleIds`'s per-entry `statSync` in try/catch (skip a dangling entry, don't abort the scan); wrap the whole `on('all')` handler body in try/catch + `logger.error`.
+- **Anchor:** none. **Deps:** none. **Files:** `methodology/loader.ts` only.
+- **Verification:** `loader.ts` watcher install-unlink (`cache.delete(id); return`) and external-unlink lacked notify while repo-unlink had it; `discoverBundleIds` `statSync` unguarded; `on('all')` unguarded — all matched current `main`.
+- **LOC:** ~86 insertions across 2 files; production-side ~75 (much is re-indent from wrapping the handler in try/catch; net new logic ~40 — within the 80–130 band).
+- **Tests:** `loader.test.ts` — **S3-03 deterministic lock** (a dangling symlink is skipped, freeform still loads, hydration doesn't abort). S3-01/SF2-05 (watcher unlink-notify) and SF5-08 (handler guard) are **chokidar-internal** — inspection-verified per the established "chokidar event-delivery is unreliable to assert in CI" convention (`loader.test.ts:82`, `bootstrap-watcher.test.ts:219`), consistent with how E7's `onWrite` guard and E8's SSE socket teardown were handled.
+- **Out-of-scope flake observed (halt-class 8 — flag, not fix):** during E9's gate, `directives.test.tsx` (frontend) flaked once but passed 4/4 on retry — a *second* pre-existing flake (after E8's `rag.test.ts`), unrelated to E9 (backend-only). Both carried to the Phase-F register: the repo has latent test flakiness (real-embedder `rag.test.ts` under parallel load; the frontend `directives` group test) that a Phase-F stabilisation pass should address (timeouts / determinism). Not absorbed into E9.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none.
