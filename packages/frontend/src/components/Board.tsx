@@ -86,10 +86,15 @@ function BoardColumn({
 }: BoardColumnProps) {
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
+  // S8-04 — inline-create previously had try/finally with no catch, so a failed createItem
+  // (e.g. a policy rejection or a 500) swallowed the error: the spinner cleared, the draft
+  // stayed, and nothing told the user why nothing was added. Surface the failure inline.
+  const [createError, setCreateError] = useState<Error | null>(null);
 
   async function create() {
     if (draft.trim().length === 0) return;
     setBusy(true);
+    setCreateError(null);
     try {
       await api.createItem(projectId, {
         title: draft.trim(),
@@ -99,6 +104,8 @@ function BoardColumn({
       });
       setDraft('');
       onRefresh();
+    } catch (e: unknown) {
+      setCreateError(e instanceof Error ? e : new Error(String(e)));
     } finally {
       setBusy(false);
     }
@@ -164,6 +171,11 @@ function BoardColumn({
           }}
         />
       </form>
+      {createError && (
+        <p className="error" role="alert" data-testid={`column-create-error-${board.id}-${status}`}>
+          Could not add item: {createError.message}
+        </p>
+      )}
     </div>
   );
 }

@@ -84,11 +84,17 @@ export function LibraryView() {
 
   // Debounced FTS search. Empty query → fall back to per-type list.
   const debounceRef = useRef<number | null>(null);
+  // S8-02 — clearing the debounce timer cancels a *pending* request, but a request already
+  // in flight when the query changes still resolves and used to overwrite the current result
+  // with stale matches. A sequence counter, bumped on every effect run (keystroke / filter
+  // change), lets each resolved search drop its result unless it is still the latest.
+  const searchSeq = useRef(0);
   useEffect(() => {
     if (!projectId) return;
     if (debounceRef.current !== null) {
       window.clearTimeout(debounceRef.current);
     }
+    const seq = ++searchSeq.current;
     const q = searchQuery.trim();
     if (q.length === 0) {
       setSearchResult(null);
@@ -103,19 +109,40 @@ export function LibraryView() {
       if (typeFilter !== 'all') body.type = typeFilter;
       api
         .searchLibrary(projectId, body)
-        .then((r) =>
+        .then((r) => {
+          if (searchSeq.current !== seq) return;
           setSearchResult({
             via: r.result.via,
             entries: r.result.entries,
             truncated: r.result.truncated,
-          }),
-        )
-        .catch(() => setSearchResult(null));
+          });
+        })
+        .catch(() => {
+          if (searchSeq.current !== seq) return;
+          setSearchResult(null);
+        });
     }, 200);
     return () => {
       if (debounceRef.current !== null) window.clearTimeout(debounceRef.current);
     };
   }, [projectId, searchQuery, typeFilter, scope]);
+
+  // S8-03 — the copy toast schedules a `setTimeout(setCopyToast(null))`. Previously the timer
+  // was never cleared, so a copy immediately before unmount fired `setState` on an unmounted
+  // component (and rapid copies leaked overlapping timers). Hold the live timer in a ref;
+  // `showToast` clears any prior timer before scheduling, and an unmount effect clears the last.
+  const toastTimer = useRef<number | null>(null);
+  const showToast = useCallback((msg: string) => {
+    setCopyToast(msg);
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setCopyToast(null), 1500);
+  }, []);
+  useEffect(
+    () => () => {
+      if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    },
+    [],
+  );
 
   const allVisibleEntries = searchResult ? searchResult.entries : entries;
   // Phase 6b — pinned entries sticky to the top of the sidebar list (pin scope for
@@ -163,11 +190,9 @@ export function LibraryView() {
   async function onCopySnippet(entry: LibraryEntry) {
     try {
       await navigator.clipboard.writeText(entry.body);
-      setCopyToast(`Copied ${entry.title}`);
-      window.setTimeout(() => setCopyToast(null), 1500);
+      showToast(`Copied ${entry.title}`);
     } catch {
-      setCopyToast('Copy failed');
-      window.setTimeout(() => setCopyToast(null), 1500);
+      showToast('Copy failed');
     }
   }
 

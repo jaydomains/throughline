@@ -38,6 +38,13 @@ export interface ProjectPrsResult {
   // (graceful degradation, SPEC §10).
   configured: boolean;
   prs: PrBadge[];
+  // SF6-09 / T-D60 — the PR list is served from the poller's cache, so an empty `prs` on a
+  // configured project is ambiguous: genuinely no PRs, or the background poller failing and
+  // the cache stale/empty. Surface the github-poller's health (C-D26) on the wire so the UI
+  // can tell "none tracked" apart from "polling is broken — this data may be stale".
+  poll_healthy: boolean;
+  // The poller's last error message when unhealthy; null when healthy or not yet run.
+  poll_error: string | null;
 }
 
 // Manual item-to-PR linking (T-D34).

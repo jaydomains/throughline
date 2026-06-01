@@ -210,8 +210,8 @@
 
 ### E14 — Audit-trail wiring
 - **Branch:** `claude/phase-e-e14-audit-trail-wiring`
-- **PR:** #101 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #101 (squash-merged)
+- **Merge SHA:** `9647dbc`
 - **Closed:** SF7-01 (credential set/clear/rotate via `PUT /api/secrets` left **no** audit row), SF7-02 (`projects.update({ settings })` — the path the communication-model route uses — wrote `settings_json` but the field-loop omitted it), SF7-03 (`projects.updateSettings` generic writer unaudited), SF7-05 (session `update` wrote `settings_json` unaudited). Completes the 3-of-3 `settings_json` audit discipline.
 - **Fix (no anchor):** secrets routes take `db` and emit an **event-only** audit row per touched key (`field: credential:<key>`, `new_value: set|cleared`, **never the value** — T-D24 / T-D4); `settings_json` added to the projects `update` field-loop and the session `update` field-loop; `updateSettings` audits the change when it actually changes.
 - **Anchor:** none. **Deps:** rebase-coupled with E16 on `projects/service.ts` (E16 not yet landed — E14 first). **Files:** `secrets/routes.ts` (+ `server.ts` call site passes `db`), `projects/service.ts`, `sessions/service.ts`.
@@ -219,6 +219,28 @@
 - **Note:** **SF7-04** (chat-no-AI unaudited) and **SF7-06** (verifier `last_status` unaudited) are **NOT** here — audit-trail-only with no operational misbelief → deferred-tail register (per the base plan).
 - **LOC:** ~123 insertions across 7 files; production-side ~48 — within the 110–160 band.
 - **Tests:** `backup.test.ts` — **SF7-01** (set then clear → two event-only rows `credential:anthropic_api_key=set|cleared`; the secret value appears **nowhere** in the audit trail). `projects.test.ts` — **SF7-02/03** (`update({settings})` and `updateSettings` each add one `settings_json` row; a no-op `updateSettings` adds none). `sessions.test.ts` — **SF7-05** (session settings change → one row).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (gate green; squash-merged as #101 at `9647dbc`).
 - **Halt-class fires:** none.
 - **Surfaces to spec author:** none.
+
+### E15 — Frontend races & error surfacing
+- **Branch:** `claude/phase-e-e15-frontend-races`
+- **PR:** #102 (draft → ready on green)
+- **Merge SHA:** pending
+- **Closed:** S8-01 (`ItemDetailPanel.refresh` ran 6 sequential `await`s each `setState`ing, with no stale guard — a sibling-cycle / linked-item click that swapped `itemId` mid-flight let a slow earlier fetch overwrite the new item's data), S8-02 (`LibraryView` debounced search **cleared the pending timer** but not an already-in-flight request — a stale result resolving late overwrote the current query's), S8-03 (the copy toast's `setTimeout(setCopyToast(null))` was never cleared → setState-after-unmount + leaked overlapping timers on rapid copies), S8-04 (**Board** inline-create had `try/finally(setBusy)` with **no `catch`** → a failed `createItem` cleared the spinner, kept the draft, and told the user nothing), SF6-09 (`PrBadges` `.catch(()=>setPrs([]))` rendered a fetch failure as the healthy "none tracked"; the backend `GET /github/prs` served the poller's cache success-shaped, so an empty list on a *failing* poller was indistinguishable from a genuine absence).
+- **Records S8-04-DriftInbox already closed:** the `DriftInbox` half of S8-04 was **closed in Phase C** — `DriftInbox.tsx`'s `act` helper already has the SF6 `catch` → `setActionError` → `<LoadError>` render. Only the **Board** half was open. Recorded here, not re-fixed (consistent with E12's S6-02 closed-record).
+- **Fix (no anchor):**
+  - **S8-01:** a `useRef` generation counter, bumped at the start of every `refresh`; each of the 12 `setState`s is gated on `current()` (gen still latest) so a superseded run drops its results.
+  - **S8-02:** a `searchSeq` ref bumped on every search-effect run (keystroke / filter / scope change); the `.then`/`.catch` setState is gated on the seq still being current → stale in-flight results dropped.
+  - **S8-03:** hold the toast timer in a ref; a `showToast` helper clears any prior timer before scheduling, and an unmount effect clears the last.
+  - **S8-04:** `Board` inline-create gains a `catch` → `createError` state rendered inline (`column-create-error-<board>-<status>`).
+  - **SF6-09:** the github-poller's `JobHealth` (C-D26 / E5) is threaded into `registerGitHubRoutes` and surfaced on the wire — `ProjectPrsResult` gains `poll_healthy` + `poll_error` (T-D60: a degraded capability is disclosed on the shared contract, not rendered as healthy-empty). `PrBadges` consumes them to distinguish three states: **fetch-fail** (`pr-badges-error`), **poller-failing/stale** (`pr-badges-stale` with the poller's `last_error` as the title), and a genuine healthy **"none tracked"**. An unconfigured project still renders nothing.
+- **Anchor:** none. Reuses **T-D60** (SF6-09 wire-disclosure) and **C-D26** (the github-poller JobHealth, threaded — not re-minted). `ProjectPrsResult.poll_healthy/poll_error` are fields, not anchors.
+- **Deps:** soft pattern dep on E5 (C-D26 poller health) — satisfied (E5 merged). `github/routes.ts` rebase-coupling with E14/E16 noted in the plan; E14 merged first, no overlap (E14 touched `secrets/routes.ts`/`projects`/`sessions`, not `github/routes.ts`).
+- **Verification:** `ItemDetailPanel.tsx:67-104` (6 awaits, no abort flag); `LibraryView.tsx:88-118` (timer cleared, request not guarded) + the two toast `setTimeout`s (167/170); `Board.tsx:90-105` (try/finally, no catch); `DriftInbox.tsx:22-35` (**already** has the catch — closed); `PrBadges.tsx:21-27` (`.catch(()=>setPrs([]))` → "none tracked" at 40-41); `github/routes.ts:40-73` (success-shaped `{configured,prs}`) — all matched current `main`.
+- **SF6-09 visual judgment (recorded):** the degraded indicator in `PrBadges` is a **compact inline** element, not the C-D25 `<HealthStatus>` `<p>` block — PrBadges is a horizontal badge strip, and C-D25's intent (a degraded capability reads distinctly from an absence) is honoured by consuming the wire `poll_healthy`/`poll_error` and the three distinct states. Judgment call (in-context tri-state surfacing without forcing the block layout), not a deviation from LBD-2.
+- **LOC:** diff stat ~140 insertions / 29 deletions across 8 src/fixture files + 2 new test files (~300 incl. tests); production-side ~110 — within the 170–240 band (the band counts tests). All 5 findings closed; SF6-09 **not** peeled (the backend signal was a clean ~21-line thread of the existing E5 JobHealth, no breach).
+- **Tests:** `frontendRaces.test.tsx` (new, 8 tests) — **SF6-09** PrBadges (healthy-empty ⇒ "none tracked"; fetch-fail ⇒ distinct error, not "none"; failing poller ⇒ stale warning carrying `last_error`; unconfigured ⇒ renders nothing); **S8-04** Board (rejected `createItem` ⇒ inline error); **S8-01** ItemDetailPanel (deferred getItem per item; cycle A→B; B resolves then A resolves late ⇒ panel shows Item B, A's stale result dropped); **S8-02** LibraryView (deferred searchLibrary; type "old" then "new"; new resolves then old resolves late ⇒ RESULT NEW shown, RESULT OLD dropped); **S8-03** toast (copy ⇒ toast shown; unmount clean, no console error). `github-prs-health.test.ts` (new, 4 tests, backend) — **SF6-09 wire**: healthy poller ⇒ `poll_healthy:true`; failing poller ⇒ `poll_healthy:false` + `poll_error` contains the message, recovers on a clean tick; unconfigured ⇒ `configured:false`, healthy poll (doesn't borrow another project's failure); unknown project ⇒ 404.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Surfaces to spec author:** none (the SF6-09 visual-treatment and S8-04-DriftInbox-closed notes are recorded, not halts).
