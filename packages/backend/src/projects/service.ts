@@ -316,6 +316,13 @@ export function createProjectsService(
         registry.registerProjectBundle(id, next.bundle_id, next.bundle_path, next.repo_path);
       }
 
+      // F1-02: a re-init (`reinit_throughline: true`) records the declared single
+      // `project_reinit` audit row, NOT one row per changed field — per-field rows are
+      // noise for a bulk file-driven re-apply. The per-field detail rides as structured
+      // payload (`changed_fields`) on that single row. A normal update keeps the per-field
+      // rows (each field change is its own operational signal).
+      const isReinit = input.reinit_throughline === true;
+      const reinitChanges: Array<{ field: string; old: string; new: string }> = [];
       for (const [field, oldV, newV] of [
         ['name', before.name, next.name],
         ['repo_path', before.repo_path, next.repo_path],
@@ -330,7 +337,10 @@ export function createProjectsService(
         // recording the value is fine; secrets live in a separate file, T-D4).
         ['settings_json', JSON.stringify(before.settings_json), JSON.stringify(next.settings_json)],
       ] as const) {
-        if (oldV !== newV) {
+        if (oldV === newV) continue;
+        if (isReinit) {
+          reinitChanges.push({ field, old: String(oldV), new: String(newV) });
+        } else {
           appendAudit(db, {
             projectId: id,
             entityType: 'project',
@@ -341,6 +351,16 @@ export function createProjectsService(
             newValue: String(newV),
           });
         }
+      }
+      if (isReinit && reinitChanges.length > 0) {
+        appendAudit(db, {
+          projectId: id,
+          entityType: 'project',
+          entityId: id,
+          actor: 'user',
+          field: 'project_reinit',
+          triggerContext: { changed_fields: reinitChanges },
+        });
       }
 
       return this.get(id)!;

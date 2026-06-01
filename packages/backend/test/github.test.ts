@@ -427,6 +427,112 @@ describe('Phase 10 — GitHub poller', () => {
 });
 
 describe('Phase 10 — code-drift tiers 1-3', () => {
+  it('tier-1 F6-02: matches by path-stem; a rule id only mentioned in the message does NOT over-match', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, '.semgrep/rules/no-secret-logging.yml', 'secret-log');
+
+    // (a) Over-match guard: the rule id appears in the annotation *message*, but the title
+    //     differs and the flagged path lacks the rule_path stem → must NOT badge (the old
+    //     `message.includes(rule_id)` substring match would have falsely fired).
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/unrelated.ts', annotation_level: 'failure', message: 'mentions secret-log', title: 'other' }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+
+    // (b) Documented path-stem match: the flagged path contains the rule_path stem
+    //     (`no-secret-logging`), title absent → badge.
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/no-secret-logging-helpers.ts', annotation_level: 'failure', message: 'x', title: null }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
+  it('tier-1 F6-02: a short stem does NOT over-match an arbitrary path (token-boundary + min length)', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    // rule_path `.semgrep/x.yml` → stem `x` (1 char). A bare substring match would badge
+    // `src/index.ts` (it contains "x"); the token-boundary + min-length guard must not.
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, '.semgrep/x.yml', 'rule-x');
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/index.ts', annotation_level: 'failure', message: 'x marks it', title: 'unrelated' }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+    await s.backend.cleanup();
+  });
+
+  it('tier-1 F6-02: a stem appearing mid-word does NOT match; only a delimited token does', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    // stem `index` must match `src/index.ts` but not `src/reindexer.ts` (mid-word).
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, 'rules/index.yml', 'idx');
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/reindexer.ts', annotation_level: 'failure', message: 'x', title: null }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/index.ts', annotation_level: 'failure', message: 'x', title: null }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
+  it('tier-1 F6-02: title equal to the rule id still matches', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, '.semgrep/x.yml', 'no-eval');
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/whatever.ts', annotation_level: 'failure', message: 'blah', title: 'no-eval' }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
   it('tier-1: failing Semgrep annotation badges the item; passing clears it', async () => {
     const s = await setup();
     const item = s.items.create({ project_id: s.project.id, title: 'verified work', status: 'done' });

@@ -21,6 +21,33 @@ const PR_REF_RE = /#(\d+)/g;
 // gap #7 — verifier-tool plurality — is surfaced, not resolved here): an annotation maps
 // to a verifier rule when its rule id (annotation title) equals item_verifier_rules
 // .rule_id, or its flagged path contains the rule_path stem.
+// The stem of a verifier rule_path: its basename without extension (e.g.
+// `rules/security/no-eval.yml` → `no-eval`). Used for the SPEC §7.14 path-stem match.
+function ruleStem(rulePath: string): string {
+  const base = rulePath.split(/[\\/]/).pop() ?? '';
+  const dot = base.lastIndexOf('.');
+  return dot > 0 ? base.slice(0, dot) : base;
+}
+
+// A path "contains the rule_path stem" only when the stem appears as a delimited token —
+// bounded by a path separator, dot, hyphen, underscore, or the string ends — and is at
+// least 3 chars. A bare substring test would re-introduce the exact over-match F6-02 fixes
+// (a 1-char stem like `x` would match `src/index.ts`; a stem mid-word would false-fire).
+const STEM_MIN_LENGTH = 3;
+const STEM_DELIMS = new Set(['/', '\\', '.', '-', '_']);
+function pathHasStemToken(path: string, stem: string): boolean {
+  if (stem.length < STEM_MIN_LENGTH) return false;
+  for (let from = 0; ; ) {
+    const idx = path.indexOf(stem, from);
+    if (idx === -1) return false;
+    const before = idx === 0 ? '/' : path[idx - 1]!;
+    const afterIdx = idx + stem.length;
+    const after = afterIdx >= path.length ? '/' : path[afterIdx]!;
+    if (STEM_DELIMS.has(before) && STEM_DELIMS.has(after)) return true;
+    from = idx + 1;
+  }
+}
+
 export function runTier1(
   db: DB,
   drift: DriftService,
@@ -58,11 +85,15 @@ export function runTier1(
   const now = new Date().toISOString();
 
   for (const rule of rules) {
+    // F6-02 / SPEC §7.14: an annotation maps to a verifier rule when its title equals the
+    // rule id, OR its flagged path contains the rule_path stem. The previous substring
+    // match on `message`/`raw_details` over-matched (a rule id mentioned anywhere in the
+    // annotation prose falsely fired); it is dropped in favour of the documented contract.
+    const stem = ruleStem(rule.rule_path);
     const hit = failing.find(
       (a) =>
-        (a.title && a.title.trim() === rule.rule_id) ||
-        (a.raw_details ?? '').includes(rule.rule_id) ||
-        a.message.includes(rule.rule_id),
+        (a.title !== null && a.title.trim() === rule.rule_id) ||
+        pathHasStemToken(a.path, stem),
     );
     const status = hit ? 'fail' : 'pass';
     db.prepare(
