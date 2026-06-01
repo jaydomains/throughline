@@ -279,6 +279,36 @@
 - **Deferred (no slice):** F3-01 (§7.14-vs-T-D57 scan-gate layer) → re-surfaced to the spec author as a separate decision after E17; SF4-05/SF4-06 (cost under-count) → Phase F.
 - **Anchor:** none (descopes narrow existing prose; the C-D12 amendment is a wording alignment, no new anchor — consistent with "SPEC.md only for ratified descopes").
 - **Backfill:** E16 merge SHA `95b3673` + fix-rounds 0 recorded above (established next-branch backfill pattern).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar ✅ no findings; gate green first try; merged at `f47d7a7`).
 - **Halt-class fires:** none (this *is* the blessed halt-class-9 gate; resolved by the ruling).
 - **Surfaces to spec author:** F3-01 re-surfaced as a separate post-E17 decision (above).
+
+### E17a — Dependency range-bumps — **HALTED (halt-class 4, awaiting spec-author re-scope)**
+- **Branch:** `claude/phase-e-e17a-dep-bumps` (investigation only — no files changed, not pushed).
+- **Status:** **halted before any bump.** Verified against the live npm registry (2026-06-01): the plan's "in-range / range-closeable" premise is **stale** — every remaining advisory now requires a **major**:
+  - **vite** `5.4.21` (latest 5.x) — path-traversal fixed only in `>=6.4.2` → vite 5→6 major.
+  - **esbuild** `0.21.5` (pinned by vite 5) — fix `>=0.25.0` rides the vite major.
+  - **protobufjs** `6.11.6` (transitive via optional `@xenova/transformers > onnx-proto@4.0.4`) — all fixes in `7.x` → 6→7 major; onnx-proto wants `^6`, so a forced override is runtime-risky for embeddings.
+  - **fastify** `4.29.1` / **fast-uri** `2.4.0` — already accepted (LBD-5): fixes require fastify 5.
+- **Action:** honoured the E17a plan's explicit halt clause ("if a 'range' bump turns out to require a major → halt, re-scope; don't silently pull in a major"). **Surfaced to spec author** (2026-06-01) with three options: (1) defer all to the fastify-v5 major-migration phase [recommended]; (2) vite 5→6 + esbuild only; (3) vite 6 + protobufjs 7 override. **Awaiting ruling.** E17a is independent, so the chain continues at E22 without it.
+- **Halt-class fires:** **4 (estimate/scope breach)** — resolved-pending the spec author's re-scope.
+
+### E22 — Audit-log filters (F7-04) · feature-build
+- **Branch:** `claude/phase-e-e22-audit-log-filters`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** F7-04 (Major, BUILD). **Class:** feature-build (spec-author ruled BUILD; audit-trail discipline is load-bearing).
+- **Spec basis:** SPEC §7.22 — the audit log is "searchable by **time range, actor, or trigger type**." The `/api/audit` route shipped only `entity_type`/`entity_id`/`project_id`/`limit` filters — none of the three §7.22 search axes.
+- **Fix (no anchor):**
+  - **Time range:** `since` / `until` ISO query params → `timestamp >= ? / <= ?` on the existing `idx_audit_timestamp` index.
+  - **Actor:** `actor` query param, validated against the 7-actor vocabulary (a typo is a **400**, not a silent empty).
+  - **Trigger type:** new `audit/trigger-type.ts` derives `github | ai | methodology | manual` from the SPEC §7.22-documented trigger-context discriminators (`pr_number`/`repo` → github; `model`/`prompt_fingerprint` → ai; `gate_id`/`moment`/`checklist_id` → methodology; else manual). **Single source of truth** — one key-map drives both the JS `deriveTriggerType` (testable) and the SQL `triggerTypeSqlPredicate` (a fixed server-side key whitelist → injection-safe, no user input in the SQL string). **Precedence-partitioned** (github > ai > methodology) so a row with overlapping keys is classified exactly once and a per-type filter never double-counts.
+  - Frontend `api.ts listAudit` extended to expose the four new params (the query capability is reachable end-to-end).
+- **Scope note:** trigger type is **filter-only** (derived, not stored) — no `audit_log` column added (would need a 40-caller backfill, halt-class 4) and **no `AuditEntry` wire-shape change** (so no T-D59 wire-contract scope). The deliverable is the §7.22 *queryable* capability; a history-tab filter **UI** is a thin optional follow-up (noted, not built).
+- **Files:** `audit/trigger-type.ts` (new), `audit/routes.ts` (3 filter axes), `packages/frontend/src/api.ts` (`listAudit` params), `test/audit-filters.test.ts` (new).
+- **Anchor:** none. **Deps:** none (audit module is self-contained).
+- **Tests:** `audit-filters.test.ts` (4) — time-range/actor/trigger-type independently + combined (AND); overlapping-keys precedence (github over ai, SQL agrees with JS deriver); unknown actor / trigger_type → 400; `deriveTriggerType` unit coverage of every discriminator + manual default. Backend suite **585 pass** (60 files).
+- **LOC:** ~small (1 new ~70-line module + ~40 route lines + ~10 api lines + ~150 test). Within the build band.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
+- **Known-flake note:** `gatesView.test.tsx` flaked once under parallel load (passed 7/7 in isolation); unrelated to this change (only `api.ts listAudit` touched on the frontend) — same class as the Phase-F-flagged `directives.test.tsx`/`rag.test.ts`.
