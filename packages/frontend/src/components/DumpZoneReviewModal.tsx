@@ -108,6 +108,7 @@ export function DumpZoneReviewModal({
       }),
       clarifying_questions: proposal.payload.clarifying_questions,
       suggested_session_id: proposal.payload.suggested_session_id,
+      primary_unit_name: proposal.payload.primary_unit_name,
       extractor_note: proposal.payload.extractor_note,
     };
     try {
@@ -233,6 +234,23 @@ export function DumpZoneReviewModal({
                         </option>
                       ))}
                     </select>
+                    {/* F5-04: primary-unit routing — editable, shown only when the bundle
+                        declares a primary unit (freeform ⇒ no field). */}
+                    {proposal.payload.primary_unit_name !== null && (
+                      <input
+                        type="text"
+                        className="dump-zone-primary-unit"
+                        placeholder={proposal.payload.primary_unit_name}
+                        value={r.suggested_primary_unit_ref ?? ''}
+                        onChange={(e) =>
+                          updateSessionRow(i, {
+                            suggested_primary_unit_ref:
+                              e.target.value.trim() === '' ? null : e.target.value,
+                          })
+                        }
+                        data-testid={`dump-zone-row-${i}-primary-unit`}
+                      />
+                    )}
                   </td>
                 </tr>
                 {r.suggested_code_refs && r.suggested_code_refs.length > 0 && (

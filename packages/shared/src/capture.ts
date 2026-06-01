@@ -23,6 +23,11 @@ export interface ProposedItem {
   description: string;
   tags: string[];
   target_session_id: string | null;
+  // F5-04: the AI-suggested primary-unit ref to route this item to (SPEC §7.6 "suggests
+  // target session and primary unit"). Editable in the review modal; on apply it is written
+  // to the item's primary_unit_refs. null when the bundle declares no primary unit (freeform)
+  // or the extractor (heuristic / no AI) made no suggestion.
+  suggested_primary_unit_ref: string | null;
   // Optional code reference surfaced by the code-TODO scanner (file:line). Read-only in v1.
   code_ref?: { path: string; line: number };
   // Phase 11 — Semble enrichment suggestions (SPEC §7.15; C-D17). Best-effort, read-only
@@ -55,6 +60,10 @@ export interface ProposalPayload {
   library: ProposedLibraryEntry[]; // empty when target='session'
   clarifying_questions: string[];
   suggested_session_id: string | null;
+  // F5-04: the bundle's primary-unit concept label (e.g. "Feature"), or null for a freeform
+  // bundle that declares no primary unit. The review modal shows + labels the per-item
+  // primary-unit field only when this is non-null (freeform ⇒ no primary-unit routing).
+  primary_unit_name: string | null;
   // Diagnostic from the AI/heuristic path so the UI can show "AI" vs "heuristic" badge.
   extractor_note: string | null;
 }
