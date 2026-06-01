@@ -395,3 +395,20 @@
 
 #### E20b — Spec-revision LLM-assist surface (split from E20) — **surfaced to spec author**
 The augmentation plan "sized E20 up" to also include an **LLM-assisted spec-revision authoring surface** (user-mediated suggest/draft/accept-reject, "reusing the existing item-edit AI-assist pattern"). On execution there is **no cheap reuse target** — it is a net-new frontend surface + a backend AI endpoint. Folding a new AI-assist UX into the same PR as a delicate `CHECK`-relaxing table-rebuild migration would make a large, high-variance PR. Per the plan's own halt-class-4 "watch estimate breach → re-scope" instruction, the authoring surface is **split to E20b** and **surfaced to the spec author** (it is an authoring convenience; the core F4-01 finding — session-start omits 2 of 7 inputs — is fully closed by E20a, since a `project_spec` is creatable/editable via the standard library CRUD today). **Awaiting a fold-in-now vs E20b ruling.**
+
+### E21 — Dump-zone primary-unit re-route (F5-04) · augmentation feature-build
+- **Branch:** `claude/phase-e-e21-dumpzone-primary-unit`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** F5-04 (Mod, BUILD). **Class:** feature-build (last of the three augmentation builds).
+- **Spec basis:** SPEC §7.6 — the dump-zone "AI extracts items, classifies …, suggests **target session and primary unit**." The proposal carried `target_session_id` but **no primary-unit suggestion/route** (`capture.ts:25`).
+- **Fix:**
+  - **Shared (`capture.ts`):** `ProposedItem` gains `suggested_primary_unit_ref: string | null`; `ProposalPayload` gains `primary_unit_name: string | null` (the bundle's primary-unit concept label, null for freeform — gates/labels the modal field). *(Refines the plan's "payload-level suggested ref" to a concept-label field, since an aggregate per-payload ref is functionally redundant with the per-item ref and the modal needs the label + a freeform gate.)*
+  - **Extractor:** when the bundle declares a primary unit, the AI system prompt asks for an optional `"primary_unit"` per item (free-form label naming the unit; bundle-agnostic — concept name comes from the bundle, no unit names baked); `coerceItem` honours it **only** when the concept is declared (a stray suggestion against freeform is dropped). Heuristic path suggests nothing. Both payload builders set `primary_unit_name` from `bundle.project_layout.primary_unit?.name`.
+  - **Apply (`dump-zone/service.ts`):** routes the (possibly user-edited) ref into the item's `primary_unit_refs` via `methodology_context` — which `items.create` already writes through `writeContext`, so **no `items/service.ts` change** (the plan's tentative items.ts edit proved unnecessary).
+  - **Frontend (`DumpZoneReviewModal`):** an editable primary-unit text input per session item, co-located in the session cell, shown only when `payload.primary_unit_name !== null` (freeform ⇒ no field); carried through the apply payload.
+- **Files:** `shared/src/capture.ts`, `dump-zone/extractor.ts` (suggestion + prompt + payload label), `dump-zone/service.ts` (apply routing), `frontend/.../DumpZoneReviewModal.tsx`, `frontend/test/fixtures/mockApi.ts` (new fields), `test/dumpZone.test.ts`.
+- **Anchor:** none (reuses C-D9 + the existing methodology_context write path). **Deps:** none outstanding (E2 dump-zone extractor + E11 items transactionality already on main; no apply-path conflict).
+- **Tests:** `dumpZone.test.ts` (+3) — PU-declaring bundle: AI suggestion carried + applied item routed to it (`methodology_context.primary_unit_refs`); user-overridden ref routes to the override; freeform bundle: `primary_unit_name` null, suggestion dropped even when the AI emits one, no routing. Backend **603 pass** (61 files); frontend 197; typecheck/lint/build green.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.

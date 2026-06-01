@@ -276,6 +276,16 @@ export function createDumpZoneService(opts: CreateOptions): DumpZoneService {
             description: proposed.description,
             tags: proposed.tags,
             session_ids: proposed.target_session_id ? [proposed.target_session_id] : [],
+            // F5-04: route to the (possibly user-edited) suggested primary unit. primary_unit_refs
+            // rides methodology_context, which items.create writes via writeContext. The key is
+            // included only when a ref is set (exactOptionalPropertyTypes forbids an explicit undefined).
+            ...(proposed.suggested_primary_unit_ref?.trim()
+              ? {
+                  methodology_context: {
+                    primary_unit_refs: [proposed.suggested_primary_unit_ref.trim()],
+                  },
+                }
+              : {}),
           });
           applied_item_ids.push(item.id);
         }

@@ -73,6 +73,12 @@ function titleFromBlock(block: string): { title: string; description: string } {
   return { title, description };
 }
 
+// F5-04: the bundle's primary-unit concept label, or null for a freeform bundle. Bundle-
+// agnostic — the name comes from the bundle's declaration, no unit names are baked in.
+function primaryUnitName(input: ExtractionInput): string | null {
+  return input.bundle.project_layout.primary_unit?.name ?? null;
+}
+
 function heuristicSessionItems(input: ExtractionInput): ProposedItem[] {
   const blocks = paragraphs(input.text);
   if (blocks.length === 0) return [];
@@ -88,6 +94,9 @@ function heuristicSessionItems(input: ExtractionInput): ProposedItem[] {
       description,
       tags: [],
       target_session_id: input.suggested_session_id,
+      // Heuristic extraction makes no primary-unit suggestion (no AI to infer it); the user
+      // can still set one in the review modal when the bundle declares a primary unit.
+      suggested_primary_unit_ref: null,
       confidence: null,
     };
   });
@@ -119,6 +128,7 @@ function heuristicPayload(input: ExtractionInput, extraNote?: string): ProposalP
       library: [],
       clarifying_questions: [],
       suggested_session_id: input.suggested_session_id,
+      primary_unit_name: primaryUnitName(input),
       extractor_note: note,
     };
   }
@@ -130,6 +140,7 @@ function heuristicPayload(input: ExtractionInput, extraNote?: string): ProposalP
     library: heuristicLibraryEntries(input),
     clarifying_questions: [],
     suggested_session_id: null,
+    primary_unit_name: primaryUnitName(input),
     extractor_note: note,
   };
 }
@@ -142,10 +153,22 @@ For target='library', return: {"library":[{"type":"note","title":"...","body":".
 Titles are single-line and at most 80 chars. Descriptions hold the supporting text. If the input is empty or unparseable, return empty arrays.`;
 
 function buildPrompt(input: ExtractionInput): string {
-  return AI_SYSTEM_TEMPLATE.replace('BUNDLE_ID', input.policy.bundle_id)
+  const base = AI_SYSTEM_TEMPLATE.replace('BUNDLE_ID', input.policy.bundle_id)
     .replace('TYPES', JSON.stringify(input.policy.types))
     .replace('STATUSES', JSON.stringify(input.policy.statuses))
     .replace('TARGET', input.target);
+  // F5-04: when the bundle organises work into primary units, ask the extractor to suggest
+  // one per item (a free-form ref/label naming the unit it belongs to). Omitted for freeform.
+  const puName = primaryUnitName(input);
+  if (input.target === 'session' && puName !== null) {
+    return (
+      base +
+      `\nThis project organises work into "${puName}" units. For each item you may add an ` +
+      `optional "primary_unit" field: a short label naming the ${puName} the item belongs to ` +
+      `(reuse an existing one when it fits). Omit it when unsure.`
+    );
+  }
+  return base;
 }
 
 interface AnthropicProposedItem {
@@ -154,6 +177,7 @@ interface AnthropicProposedItem {
   title?: unknown;
   description?: unknown;
   tags?: unknown;
+  primary_unit?: unknown;
 }
 interface AnthropicProposedLibraryEntry {
   type?: unknown;
@@ -176,13 +200,24 @@ function asStringArray(v: unknown): string[] {
   return v.filter((t): t is string => typeof t === 'string');
 }
 
-function coerceItem(raw: AnthropicProposedItem, policy: ItemPolicy, targetSessionId: string | null): ProposedItem | null {
+function coerceItem(
+  raw: AnthropicProposedItem,
+  policy: ItemPolicy,
+  targetSessionId: string | null,
+  primaryUnitDeclared: boolean,
+): ProposedItem | null {
   const title = typeof raw.title === 'string' ? raw.title.trim() : '';
   if (title.length === 0) return null;
   const type = typeof raw.type === 'string' && policy.types.includes(raw.type) ? raw.type : policy.types[0];
   const status =
     typeof raw.status === 'string' && policy.statuses.includes(raw.status) ? raw.status : policy.statuses[0];
   if (type === undefined || status === undefined) return null;
+  // F5-04: only honour a suggested primary unit when the bundle actually declares the concept;
+  // a stray suggestion against a freeform bundle is dropped.
+  const suggestedPrimaryUnit =
+    primaryUnitDeclared && typeof raw.primary_unit === 'string' && raw.primary_unit.trim().length > 0
+      ? raw.primary_unit.trim()
+      : null;
   return {
     proposal_item_id: nanoid(),
     type,
@@ -191,6 +226,7 @@ function coerceItem(raw: AnthropicProposedItem, policy: ItemPolicy, targetSessio
     description: typeof raw.description === 'string' ? raw.description : '',
     tags: asStringArray(raw.tags),
     target_session_id: targetSessionId,
+    suggested_primary_unit_ref: suggestedPrimaryUnit,
     confidence: null,
   };
 }
@@ -278,7 +314,9 @@ export function createAnthropicExtractor({
         const items: ProposedItem[] =
           input.target === 'session'
             ? (parsed.items ?? [])
-                .map((raw) => coerceItem(raw, input.policy, input.suggested_session_id))
+                .map((raw) =>
+                  coerceItem(raw, input.policy, input.suggested_session_id, primaryUnitName(input) !== null),
+                )
                 .filter((i): i is ProposedItem => i !== null)
             : [];
         const library: ProposedLibraryEntry[] =
@@ -297,6 +335,7 @@ export function createAnthropicExtractor({
             library,
             clarifying_questions: clarifying,
             suggested_session_id: input.target === 'session' ? input.suggested_session_id : null,
+            primary_unit_name: primaryUnitName(input),
             extractor_note: null,
           },
           telemetry: {

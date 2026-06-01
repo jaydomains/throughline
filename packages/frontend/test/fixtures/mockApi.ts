@@ -690,6 +690,7 @@ export const mockApi = {
                 description: '',
                 tags: [],
                 target_session_id: input.session_id ?? null,
+                suggested_primary_unit_ref: null,
                 confidence: null,
               }))
             : [],
@@ -705,6 +706,7 @@ export const mockApi = {
             : [],
         clarifying_questions: [],
         suggested_session_id: input.session_id ?? null,
+        primary_unit_name: null,
         extractor_note: 'mock extractor',
       },
       status: 'pending',

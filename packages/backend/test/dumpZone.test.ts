@@ -347,3 +347,125 @@ describe('dump zone — Phase 11 Semble enrichment (SPEC §7.15)', () => {
     }
   });
 });
+
+const TEST_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'test-bundle', 'bundle.md');
+
+function plantBundleFile(methodologiesDir: string, name: string, src: string): void {
+  const target = join(methodologiesDir, name);
+  mkdirSync(target, { recursive: true });
+  copyFileSync(src, join(target, 'bundle.md'));
+}
+
+// An available client returning a fixed JSON extraction (with an optional primary_unit per item).
+function jsonClient(items: Array<Record<string, unknown>>): AnthropicClient {
+  return {
+    available: () => true,
+    call: async () => ({
+      text: JSON.stringify({ items, clarifying_questions: [] }),
+      input_tokens: 10,
+      output_tokens: 5,
+      stop_reason: 'end_turn',
+    }),
+  };
+}
+
+async function setupWithClient(client: AnthropicClient, bundleId = 'test-bundle') {
+  const cfg = makeTmpConfig();
+  plantFreeform(cfg.methodologiesDir);
+  plantBundleFile(cfg.methodologiesDir, 'test-bundle', TEST_BUNDLE_PATH);
+  const backend = await makeBackend(cfg);
+  const projects = createProjectsService(backend.db, backend.registry);
+  const items = createItemsService(backend.db, projects, backend.registry);
+  const library = createLibraryService(backend.db, projects);
+  const extractor = createRoutingExtractor({
+    anthropic: createAnthropicExtractor({ client }),
+    heuristic: createHeuristicExtractor(),
+    client,
+  });
+  const dumpZone = createDumpZoneService({
+    db: backend.db,
+    projects,
+    registry: backend.registry,
+    items,
+    library,
+    extractor,
+  });
+  const project = projects.create({ name: 'p', repo_path: `/tmp/${bundleId}-dz`, bundle_id: bundleId });
+  return { backend, items, dumpZone, project };
+}
+
+describe('E21 / F5-04 — dump-zone primary-unit suggestion + route', () => {
+  it('suggests a primary unit for a PU-declaring bundle and routes the applied item to it', async () => {
+    const client = jsonClient([
+      { type: 'task', status: 'open', title: 'Wire auth', description: '', primary_unit: 'auth-feature' },
+    ]);
+    const { backend, items, dumpZone, project } = await setupWithClient(client);
+    try {
+      const proposal = await dumpZone.propose({
+        project_id: project.id,
+        text: 'auth work',
+        target: 'session',
+        source: 'paste',
+        session_id: null,
+      });
+      // The bundle declares a primary unit → its concept label rides the payload; the AI's
+      // per-item suggestion is carried through.
+      expect(proposal.payload.primary_unit_name).not.toBeNull();
+      expect(proposal.payload.items[0]!.suggested_primary_unit_ref).toBe('auth-feature');
+
+      const result = dumpZone.apply({ proposal_id: proposal.id, payload: proposal.payload });
+      const created = items.get(result.applied_item_ids[0]!)!;
+      expect(created.methodology_context.primary_unit_refs).toContain('auth-feature');
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('routes the applied item to a user-overridden primary unit', async () => {
+    const client = jsonClient([
+      { type: 'task', status: 'open', title: 'Wire auth', primary_unit: 'auth-feature' },
+    ]);
+    const { backend, items, dumpZone, project } = await setupWithClient(client);
+    try {
+      const proposal = await dumpZone.propose({
+        project_id: project.id,
+        text: 'auth work',
+        target: 'session',
+        source: 'paste',
+        session_id: null,
+      });
+      const edited = {
+        ...proposal.payload,
+        items: proposal.payload.items.map((i) => ({ ...i, suggested_primary_unit_ref: 'billing-feature' })),
+      };
+      const result = dumpZone.apply({ proposal_id: proposal.id, payload: edited });
+      const created = items.get(result.applied_item_ids[0]!)!;
+      expect(created.methodology_context.primary_unit_refs).toEqual(['billing-feature']);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('freeform bundle: no primary-unit concept, no suggestion, no routing (even if the AI emits one)', async () => {
+    const client = jsonClient([
+      { type: 'task', status: 'open', title: 'thing', primary_unit: 'should-be-ignored' },
+    ]);
+    const { backend, items, dumpZone, project } = await setupWithClient(client, 'freeform');
+    try {
+      const proposal = await dumpZone.propose({
+        project_id: project.id,
+        text: 'a thing',
+        target: 'session',
+        source: 'paste',
+        session_id: null,
+      });
+      expect(proposal.payload.primary_unit_name).toBeNull();
+      expect(proposal.payload.items[0]!.suggested_primary_unit_ref).toBeNull();
+      const result = dumpZone.apply({ proposal_id: proposal.id, payload: proposal.payload });
+      const created = items.get(result.applied_item_ids[0]!)!;
+      expect(created.methodology_context.primary_unit_refs).toEqual([]);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+});
