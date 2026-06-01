@@ -577,11 +577,25 @@ export const api = {
       `/api/projects/${pid(projectId)}/bootstrap/state`,
     ),
 
-  listAudit: (opts: { entity_type?: string; entity_id?: string; project_id?: string; limit?: number }) => {
+  listAudit: (opts: {
+    entity_type?: string;
+    entity_id?: string;
+    project_id?: string;
+    // F7-04 / SPEC §7.22 — searchable by time range, actor, or trigger type.
+    since?: string;
+    until?: string;
+    actor?: string;
+    trigger_type?: 'github' | 'ai' | 'methodology' | 'manual';
+    limit?: number;
+  }) => {
     const params = new URLSearchParams();
     if (opts.entity_type) params.set('entity_type', opts.entity_type);
     if (opts.entity_id) params.set('entity_id', opts.entity_id);
     if (opts.project_id) params.set('project_id', opts.project_id);
+    if (opts.since) params.set('since', opts.since);
+    if (opts.until) params.set('until', opts.until);
+    if (opts.actor) params.set('actor', opts.actor);
+    if (opts.trigger_type) params.set('trigger_type', opts.trigger_type);
     if (opts.limit) params.set('limit', String(opts.limit));
     return jsonFetch<{ entries: AuditEntry[] }>(`/api/audit?${params.toString()}`);
   },

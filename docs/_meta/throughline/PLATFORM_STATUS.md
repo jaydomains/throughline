@@ -15,8 +15,8 @@
 ## Current Phase
 
 **Phase:** Phase E — Full Audit-Fix Close. Chain in flight, one PR per slice (**27-slice floor** post-E17-ruling). Audit-fix A–D and Phases 19–22 remain `production-ready`.
-**Status:** E1–E16 merged (#88–#103); E17 (product-decision gate — spec-author ruling encoded, doc/SPEC-only) is the current slice. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6) — all three planned Phase E anchors minted. A T-D10 amendment is planned in E20 (augmentation); any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E17 + E17a mint no anchors.
-**Next concrete action:** Merge E17 on green gate. Then run the appended chain to close in ruled order: **E17a** (dep range-bumps) → **E22** (F7-04 audit-log filters) → **E23** (SF2 rides) → **E24** (SF5/SF6 rides) → **E25** (cluster-B bugs F6-02 + F1-02) → **E26** (doc-fixes) → **E18** (closure-verification; F4-04 verified-closed) → **E19 → E20 → E21** (augmentation builds; E20 carries the T-D10 amendment).
+**Status:** E1–E17 merged (#88–#104; E17 at `f47d7a7`). **E22** (F7-04 audit-log filters — time-range/actor/trigger-type on `/api/audit`) is the current slice. **E17a is HALTED** (halt-class 4): the live registry shows the plan's "in-range" premise is stale — vite/esbuild/protobufjs all now require *majors* (same class as the accepted fastify v5); **surfaced to the spec author for re-scope** (defer-all / vite-6-only / vite-6+protobufjs-7). E17a is independent, so the chain continues without it. Anchors so far: **T-D60** (E1), **C-D26** (E5), **C-D25** (E6); a T-D10 amendment is planned in E20. Any anchor beyond T-D60/C-D25/C-D26/T-D10-amendment trips halt-class 5. E22 mints no anchor.
+**Next concrete action:** Merge E22 on green gate, then continue: **E23** (SF2 rides) → **E24** (SF5/SF6 rides) → **E25** (cluster-B bugs F6-02 + F1-02) → **E26** (doc-fixes) → **E18** (closure-verification; F4-04 verified-closed) → **E19 → E20 → E21** (augmentation builds). **E17a lands whenever the spec author rules its re-scope.**
 
 ---
 
