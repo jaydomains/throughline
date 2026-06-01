@@ -341,3 +341,17 @@
 - **Tests:** `github.test.ts` (+4) — F6-02: a rule id only in the annotation message does NOT badge (over-match guard); a flagged path containing the rule_path stem DOES badge (title absent); title===rule_id still badges; **a short stem (`x`) does NOT over-match `src/index.ts`** and **a mid-word stem does NOT match (only a delimited token does)** — the round-1 hardening. `projects.test.ts` (+2) — F1-02: a config-driven re-init changing 3 fields emits exactly one `project_reinit` row (no per-field rows) with `changed_fields` payload; a normal update still emits a per-field row. Backend suite **595 pass** (61 files).
 - **Fix-rounds:** 1 — Gitar flagged that `a.path.includes(stem)` re-introduced the F6-02 over-match class for short stems (`x` matching `src/index.ts`). Hardened to a **token-boundary** match (`pathHasStemToken`: stem delimited by `/ \ . - _` or string ends) with a **3-char minimum**; chose this over Gitar's segment-only suggestion because segment-only would miss legitimate prefix-token matches (e.g. `no-secret-logging` in `no-secret-logging-helpers.ts`). +2 regression tests.
 - **Halt-class fires:** none.
+
+### E26 — Minors-cleanup doc-fixes (F1-04, F8-01, I8) · spec-author-ruled doc-fix
+- **Branch:** `claude/phase-e-e26-minors-cleanup`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** F1-04, F8-01, I8 (audit-3 Minors / audit-1; spec-author ruled DOC FIX in cluster D). **Class:** doc/config/cosmetic.
+- **F1-04 (health endpoint doc-staleness):** SPEC §7.26 + the T-D52 index row said the CLI probes `/api/health`, but the code probes `/health` (`cli/init.ts:43`; route `routes/health.ts` is `GET /health`; T-D52 amended 2026-05-27 to match). Fix: SPEC prose aligned to `/health` (doc-only; code already correct).
+- **F8-01 (companion step badge colour):** `GatesView.tsx stepStateClass` mapped `passed→pass / failed→fail / skipped→skipped` and **everything else → `error`** (the alarm colour), so non-terminal `pending` / `in-progress` steps wore the alarm badge (text was correct). Fix: terminal states keep their colours; `pending` → `gate-status-pending` (neutral `--fg-dim`), `in-progress` → `gate-status-in-progress` (`--info` blue, "active"); two CSS rules added. No more false-alarm colour on not-yet-run steps.
+- **I8 (CI hygiene):** `.github/workflows/ci.yml` had no `concurrency` and no `timeout-minutes`. Fix: a `concurrency` group keyed on `github.ref` with `cancel-in-progress` for non-`main` refs (main gets full uncancelled verification of every merged commit); `timeout-minutes: 20` on the gate job (a hung step fails fast vs the 6h default).
+- **Files:** `SPEC.md` (F1-04), `packages/frontend/src/views/GatesView.tsx` + `styles.css` (F8-01), `.github/workflows/ci.yml` (I8), `packages/frontend/test/gatesView.test.tsx` (F8-01 assertion).
+- **Anchor:** none. **Deps:** none.
+- **Tests:** `gatesView.test.tsx` — a pending step's badge has `gate-status-pending` and NOT `gate-status-error` (F8-01). F1-04/I8 are doc/config (no test; CI itself exercises I8). Frontend suite **197 pass**; full typecheck/lint/build green.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.

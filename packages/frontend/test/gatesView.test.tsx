@@ -201,6 +201,10 @@ describe('Phase 8 — methodology-gates view', () => {
     expect(screen.getByTestId('companion-run-step-anchors')).toBeInTheDocument();
     expect(screen.getByTestId('companion-ai-judge-scope')).toBeInTheDocument();
     expect(screen.getByTestId('companion-judge-scope')).toBeInTheDocument();
+    // F8-01: a pending step's badge is neutral, not the alarm (`error`) colour.
+    const pendingBadge = screen.getByTestId('companion-step-state-anchors');
+    expect(pendingBadge).toHaveClass('gate-status-pending');
+    expect(pendingBadge).not.toHaveClass('gate-status-error');
   });
 
   it('Phase 13 — session-start surface generates and copies a prompt (C-D9, T-D12)', async () => {

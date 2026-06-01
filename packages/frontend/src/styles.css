@@ -1079,6 +1079,10 @@ button.directive-badge { cursor: pointer; }
 .gate-status-fail { color: #ff8080; }
 .gate-status-error { color: #ffb86b; }
 .gate-status-skipped { color: var(--fg-dim); }
+/* F8-01: non-terminal companion-step states — neutral (pending) / active (in-progress),
+   never the alarm colour. */
+.gate-status-pending { color: var(--fg-dim); }
+.gate-status-in-progress { color: var(--info); }
 
 /* Phase 9 — discipline-drift (SPEC §7.14). Advisory warning tint, consistent with the
    T-D21 drift-signal semantics; never a blocking-red. */

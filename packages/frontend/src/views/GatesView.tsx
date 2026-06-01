@@ -247,7 +247,12 @@ export function GatesView({
 // review patterns share UI vocabulary — rows of state, override/retry actions). Hidden
 // when the bundle declares no checklists.
 function stepStateClass(s: ChecklistRunStep['state']): string {
-  return `gate-status gate-status-${s === 'passed' ? 'pass' : s === 'failed' ? 'fail' : s === 'skipped' ? 'skipped' : 'error'}`;
+  // F8-01: `pending` and `in-progress` are non-terminal — they must not wear the alarm
+  // (`error`) colour. Terminal states map to their badge colours; non-terminal states get
+  // their own neutral/active classes (`gate-status-pending` muted, `-in-progress` info).
+  const variant =
+    s === 'passed' ? 'pass' : s === 'failed' ? 'fail' : s === 'skipped' ? 'skipped' : s;
+  return `gate-status gate-status-${variant}`;
 }
 
 function CompanionReview({ projectId }: { projectId: string | undefined }) {

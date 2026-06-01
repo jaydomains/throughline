@@ -19,9 +19,19 @@ on:
       - main
       - 'claude/**'
 
+# I8: cancel superseded in-flight runs for the same ref so a rapid push series
+# doesn't queue redundant gate runs (the latest commit is the one that matters).
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  # `main` is exempt — every merged commit gets a full, uncancelled verification.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   gate:
     runs-on: ubuntu-latest
+    # I8: a hung step (e.g. a watcher/test deadlock) fails fast instead of burning
+    # the 6h default runner budget.
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
