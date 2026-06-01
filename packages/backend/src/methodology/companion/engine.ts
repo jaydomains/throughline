@@ -615,6 +615,8 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
       if (row.state === 'completed') throw new RunCompletedError(runId);
       const now = new Date().toISOString();
       let summaryEntryId: string | null = null;
+      const attachedItems: string[] = [];
+      const attachFailures: string[] = [];
       const summary = input.summary?.trim();
       if (summary) {
         // The run summary is a normal library note (T-D10) and follows the same
@@ -630,8 +632,12 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
         for (const itemId of input.itemIds ?? []) {
           try {
             library.attach(entry.id, itemId);
+            attachedItems.push(itemId);
           } catch {
-            /* a bad item id must not fail run completion (best-effort attach) */
+            // SF2-07: a bad item id must not fail run completion (best-effort attach),
+            // but the audit must reflect what actually attached — record the failure
+            // rather than asserting every requested id was attached.
+            attachFailures.push(itemId);
           }
         }
       }
@@ -651,7 +657,9 @@ export function createCompanionEngine(opts: CreateCompanionEngineOptions): Compa
           run_id: runId,
           checklist_id: row.checklist_id,
           summary_entry_id: summaryEntryId,
-          attached_items: input.itemIds ?? [],
+          // SF2-07: the items that actually attached — not every requested id.
+          attached_items: attachedItems,
+          ...(attachFailures.length > 0 ? { attach_failures: attachFailures } : {}),
         },
       });
       return loadRun(runId);
