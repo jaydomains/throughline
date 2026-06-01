@@ -371,6 +371,8 @@ The State machine section already owns lifecycle/transition semantics, so per-ty
 - `bundleItemPolicy` is the single place that maps a `LoadedBundle` to boards/types/statuses; no consumer hardcodes item-type vocabulary.
 - The four methodology-context join tables (`item_primary_unit_refs`, `item_phase_refs`, `item_anchor_citations`, `item_marker_refs`) round-trip on the `Item` shape and through create/update with audit-logged per-dimension diffs (T-D36).
 
+> **Amendment (E17, 2026-06-01 — F4-04 C-D12-wording ruling).** C-D12's operative validation contract is: *create/update validate status **membership** against the item type's lifecycle (the `statuses:` set)* — **not** transition **adjacency**. The parsed `transitions:` field records the bundle author's declared lifecycle edges (available to consumers and future tooling) but is **not** runtime-enforced as a create/update guard. Rationale: reconcile, auto-reconcile-on-merge, and dump-zone-apply legitimately set a status directly (e.g. `open → done`, `reconcile/engine.ts`) without walking intermediate states, so adjacency enforcement would reject valid platform writes. The audit-3 one-line summary ("enforce per-type transitions") is superseded by this wording — the body always specified status-membership validation, and the code matches the body in all three write paths. (Spec-author ruled, cluster B; F4-04 is verified-closed in E18.)
+
 ---
 
 ## C-D13 — Modules view endpoint: primary units derived from item refs; tier classification is bundle-rule-driven

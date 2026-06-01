@@ -265,7 +265,7 @@ A view mode toggle in the header switches between renderings of the same data:
 - **Projects** — list of all projects, switching surface, project state at a glance.
 - **Sessions** — sidebar of session views for the current project; main area shows the selected session's boards.
 - **Modules** — primary-unit-grouped view. Hidden for projects bound to bundles that declare no primary unit (freeform). For bundles that do declare a primary unit, this view shows primary units with their tier classification, current phase, gating state, anchor count, marker count, and build state per the bundle's primary-unit rules.
-- **Tree** — file-explorer-style hierarchy with grouping selector (by tag, session, primary unit, status, blocker). Drag-drop between folders re-tags items.
+- **Tree** — file-explorer-style hierarchy with grouping selector (by tag, session, primary unit, status, blocker). *Drag-drop between folders to re-tag items is **deferred** (E17 descope ruling, 2026-06-01, F5-02); in v1, re-tagging is done via the item detail panel and board moves.*
 - **Graph** — interactive node-edge graph rendering. Nodes are items; edges show parent-child, blocked-by, and cross-session mentions. "Show chains" mode highlights blocker dependency paths and root blockers. For methodologies whose bundle declares a communication model (§6 of the bundle grammar: tier vocabulary in §2, edge types, tier-routing overrides, producer-ownership rule), a "Show communication model" toggle switches the canvas to a module-level layer (T-D49, T-D50). Module nodes are synthesised from items' primary-unit refs and grouped into swimlanes by architectural tier; edges are rule-level — one per declared edge type expanded over module pairs whose tiers satisfy its `when:` clause. Mediated edges (`mechanism: via <module-id>`) render as two arrows through the mediator when the mediator is itself a module in the graph. The communication-model layer tracks current item state: the synthesised module set re-derives whenever the project's items change, since modules depend on items' `primary_unit_refs`. Per-project settings supply where contract files live on disk for each edge type that declares a `contract_source:`, and which architectural tier each item-derived module belongs to (Settings view); Phase-18 ships parse-and-render only — concrete contract-file ingestion and routing-invariant enforcement are deferred to a later phase.
 - **Library** — sidebar of library entries with category filters and search; main area shows selected entry with editor (notes, prompts, snippets) or reader (imported docs).
 - **Directives** — directives across the app, grouped by type per 7.10.
@@ -404,10 +404,12 @@ Chat history is persisted per context, retrievable later.
 
 ### 7.20 Multi-list and AI consolidation export
 
-- **Combine sessions into markdown** — multi-select sessions, pick combine mode (one big `.md` with each session as a section, or zip of separate `.md` files), apply optional filters (only open items, only tagged X, only blocked), download.
-- **AI consolidation** — drag in files plus paste text plus optionally pick existing sessions or library entries, AI synthesises a polished single `.md` document. Generated document opens in editor for final adjustments before download.
+> *The multi-session combine + AI-consolidation export surface below is **deferred** (E17 descope ruling, 2026-06-01, F7-01). The v1 export surface is the per-session markdown fast-path (last paragraph) plus `/api/backup/export`.*
 
-Per-session markdown export available as a fast path: copy a session as markdown to clipboard, formatted for paste-back into Claude Code.
+- **Combine sessions into markdown** *(deferred)* — multi-select sessions, pick combine mode (one big `.md` with each session as a section, or zip of separate `.md` files), apply optional filters (only open items, only tagged X, only blocked), download.
+- **AI consolidation** *(deferred)* — drag in files plus paste text plus optionally pick existing sessions or library entries, AI synthesises a polished single `.md` document. Generated document opens in editor for final adjustments before download.
+
+Per-session markdown export available as a fast path: copy a session as markdown to clipboard, formatted for paste-back into Claude Code. *(This fast-path is the shipped v1 export surface.)*
 
 ### 7.21 Mermaid generation
 
@@ -429,9 +431,9 @@ Header indicator turns red when no backup has been made in the configurable thre
 
 ### 7.24 Command palette and keyboard navigation
 
-`Cmd+K` (or `Ctrl+K`) opens fuzzy-search command palette. Jump to any project, session, item, library entry, directive, primary unit, methodology gate. Run any action: new item, reconcile, export, switch view mode, switch project, open settings.
+`Cmd+K` (or `Ctrl+K`) opens fuzzy-search command palette. **v1 (shipped):** jump to any project, jump to a view mode, open the projects list. *The full jump-target set (session, item, library entry, directive, primary unit, methodology gate) and action set (new item, reconcile, export, switch project, open settings) are **deferred** (E17 descope ruling, 2026-06-01, F7-06).*
 
-Keyboard navigation throughout: tab/shift-tab for indent/outdent in lists, arrow keys for item navigation, Enter to edit, Esc to close panels, `?` for keyboard reference.
+Keyboard navigation: v1 retains row focusability (`tabIndex`) and Esc-to-close on panels/modals. *The full keyboard-navigation contract (tab/shift-tab indent/outdent, arrow-key item navigation, Enter-to-edit, `?` keyboard reference) is **deferred** (E17 descope ruling, 2026-06-01, F7-07).*
 
 ### 7.25 Settings and cost meter
 
