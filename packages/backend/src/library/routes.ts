@@ -207,7 +207,7 @@ export function registerLibraryRoutes(
       }
       const parsed = parseSearch(req.body ?? {});
       if ('error' in parsed) return reply.code(400).send({ error: parsed.error });
-      return { result: service.semanticSearch(parsed, req.params.id) };
+      return { result: await service.semanticSearch(parsed, req.params.id) };
     },
   );
 }

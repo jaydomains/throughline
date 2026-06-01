@@ -6,6 +6,7 @@ import type {
   LibraryEntryType,
   LibrarySearchRequest,
   LibrarySearchResult,
+  LibrarySearchVia,
   PromptFillRequest,
   PromptFillResult,
   UpdateLibraryEntryInput,
@@ -16,6 +17,7 @@ import { LIBRARY_ENTRY_TYPES, isLibraryEntryType, renderPromptBody } from '@thro
 import { appendAudit } from '../audit/log.js';
 import type { DB } from '../db/index.js';
 import type { ProjectsService } from '../projects/service.js';
+import type { TextIndex } from '../intelligence/text-index.js';
 
 // Phase 6a — full library content surface (T-D9, T-D10, T-D36).
 // Four content types are first-class. Notes attach to items many-to-many; the attach
@@ -104,11 +106,18 @@ export interface LibraryService {
   listAttachedItems(entryId: string): AttachedItemSummary[];
   listAttachedNotes(itemId: string): LibraryEntry[];
   search(request: LibrarySearchRequest, projectScope: string): LibrarySearchResult;
-  semanticSearch(request: LibrarySearchRequest, projectScope: string): LibrarySearchResult;
+  semanticSearch(request: LibrarySearchRequest, projectScope: string): Promise<LibrarySearchResult>;
   fillPrompt(entryId: string, request: PromptFillRequest): PromptFillResult;
 }
 
-export function createLibraryService(db: DB, projects: ProjectsService): LibraryService {
+export function createLibraryService(
+  db: DB,
+  projects: ProjectsService,
+  // E19: a lazy provider for the shared text substrate. Lazy because the index depends on
+  // this very service (construction cycle), so it can only be resolved post-composition.
+  // Absent provider (or `null`) ⇒ semantic search discloses `semantic-unavailable`.
+  textIndexProvider?: () => TextIndex | null,
+): LibraryService {
   function getRow(id: string): LibraryRow | null {
     const row = db.prepare('SELECT * FROM library_entries WHERE id = ?').get(id) as
       | LibraryRow
@@ -393,13 +402,50 @@ export function createLibraryService(db: DB, projects: ProjectsService): Library
       return { entries, via: 'fts', truncated };
     },
 
-    semanticSearch(_request, _projectScope) {
-      // Text semantic substrate stub — lands Phase 14 (local embeddings via C-D2). The
-      // code substrate (Semble, C-D17) is served by the dedicated `POST .../code-qa`
-      // endpoint, not folded into library-entry results: Semble returns code chunks, not
-      // LibraryEntry rows, so shoehorning them into LibrarySearchResult would misrepresent
-      // the shape. The route stays so the frontend cross-substrate router binds today.
-      return { entries: [], via: 'semantic-stub', truncated: false };
+    // F7-03 / E19 — per-entry semantic search over the text substrate (local embeddings,
+    // C-D2). The code substrate (Semble, C-D17) stays on its dedicated `code-qa` endpoint:
+    // it returns code chunks, not LibraryEntry rows, so folding it in here would misrepresent
+    // the shape. T-D60: the result's `via` discloses the embedder capability — a refused or
+    // degraded retrieval is surfaced, never rendered as a healthy empty.
+    async semanticSearch(request, projectScope) {
+      const limit = Math.min(Math.max(request.limit ?? 50, 1), 200);
+      if (request.type && !isLibraryEntryType(request.type)) {
+        throw new LibraryEntryTypeError(request.type);
+      }
+      // Resolve the substrate BEFORE the empty-query short-circuit so `via` never claims a
+      // healthy `semantic` retrieval when no substrate is wired (T-D60 honesty — an unwired
+      // empty query is `semantic-unavailable`, not a healthy empty).
+      const textIndex = textIndexProvider?.() ?? null;
+      if (!textIndex) {
+        return { entries: [], via: 'semantic-unavailable', truncated: false };
+      }
+      // Wired but empty query → an honest empty: the substrate exists, the embedder simply
+      // isn't run for empty input (mirrors the FTS path's empty-query short-circuit).
+      const trimmed = request.query.trim();
+      if (trimmed.length === 0) return { entries: [], via: 'semantic', truncated: false };
+
+      const scope = request.scope === 'project' ? projectScope : null;
+      await textIndex.ensureFresh(scope);
+      // The index interleaves item + library hits; over-fetch so the page still fills after
+      // we drop non-library (and type-mismatched) hits, capped so a huge `limit` stays bounded.
+      const k = Math.min((limit + 1) * 4, 400);
+      const { hits, embedder } = await textIndex.search(scope, trimmed, k);
+      if (embedder === 'unavailable') {
+        return { entries: [], via: 'semantic-unavailable', truncated: false };
+      }
+      const via: LibrarySearchVia = embedder === 'fallback' ? 'semantic-fallback' : 'semantic';
+
+      const entries: LibraryEntry[] = [];
+      for (const hit of hits) {
+        if (hit.entity_type !== 'library') continue;
+        const row = getRow(hit.entity_id);
+        if (!row) continue; // index lag: entry deleted since last ensureFresh — skip silently
+        if (request.type && row.type !== request.type) continue;
+        entries.push(rowToEntry(row));
+        if (entries.length > limit) break;
+      }
+      const truncated = entries.length > limit;
+      return { entries: truncated ? entries.slice(0, limit) : entries, via, truncated };
     },
 
     fillPrompt(entryId, request) {
