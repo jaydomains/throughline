@@ -412,3 +412,27 @@ The augmentation plan "sized E20 up" to also include an **LLM-assisted spec-revi
 - **Tests:** `dumpZone.test.ts` (+3) — PU-declaring bundle: AI suggestion carried + applied item routed to it (`methodology_context.primary_unit_refs`); user-overridden ref routes to the override; freeform bundle: `primary_unit_name` null, suggestion dropped even when the AI emits one, no routing. Backend **603 pass** (61 files); frontend 197; typecheck/lint/build green.
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
+
+### E24 — Residual frontend/background swallows (SF5-07/09/10, SF6-13/14/15) · RIDE · Option-2 judgment audit
+- **Branch:** `claude/phase-e-e24-frontend-swallows`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** SF6-13/14/15 (by judgment attribution — see below); SF5-07/09/10 recorded **no-residual**. **Class:** silent-failure fix (frontend) + audit-ID accountability.
+- **Spec-author ruling (Option 2):** judgment-audit the residual swallow sites; document the SF-ID↔site attribution for review; **do not invent findings** to force six closures — where an ID has no defensible residual site, record that.
+- **Key finding (audit-doc gap):** audit-4 enumerates *described* swallows only through **SF6-12 / SF5-11**. **SF5-07/09/10 and SF6-13/14/15 are undescribed tally IDs** — the auditor reserved "~15 Low" slots but never wrote locations for these six. A thorough survey (frontend `.catch`/`catch{}` + background loops/workers/watchers/SSE/loaders) grounds the attribution below.
+
+**Accountability table (SF-ID → disposition):**
+| ID | Disposition |
+|---|---|
+| **SF5-07 / SF5-09 / SF5-10** (background) | **No residual site.** The background segment's described swallows are the *Mediums* SF5-05/06/08/11, all already closed: guarantee-loops (backup/reminder/poller) carry C-D26 `JobHealth` (E5); SSE writes are cleanup-guarded (SF5-11); per-item workers (inbox-drain, md-ingest-resync, bootstrap-worker) log-and-continue with graceful per-item degradation — defensible, not silent-as-healthy. Forcing `JobHealth` onto every minor loop would be invented scope. **Recorded, not fixed.** |
+| **SF6-13** (frontend) | **Fixed → SettingsView auxiliary loaders.** `getSecrets`/`getBackupStatus`/`getCostSummary` swallowed (`.catch(()=>{})`), leaving panels stuck on "Loading…" (failure read as healthy-empty). Now a shared `loadError` → `<LoadError what="settings">`. *(Same site the audit Medium **SF6-11** describes — closing both.)* |
+| **SF6-14** (frontend) | **Fixed → IntelligenceView panels.** `getPeriodicReview`/`getDoNext` `.catch(()=>setX(null))` rendered an empty panel indistinguishable from "no data". Now `panelError` → `<LoadError what="intelligence">`. *(= audit Medium **SF6-10**.)* |
+| **SF6-15** (frontend) | **Fixed → SettingsView BootstrapBlock.** `listBootstrapConflicts`/`getBootstrapState` `.catch(()=>setX(null))` suppressed the whole block on failure. Now `bootstrapError` → `<LoadError what="bootstrap">` inside the block. |
+| *useStaleThreshold* `.catch(()=>{})` | **Best-effort, not fixed.** A display threshold (stale-badge cutoff); the 14-day fallback is a reasonable default, same class as the theme/switchProject best-effort catches. Recorded. |
+| *SF6-12 (LibraryView edits)* | Out of E24 scope — a separate audit **Medium**, not one of the six Lows. Noted, not addressed here. |
+- **Transparency note (for review):** SF6-13/14/15 are discharged by *judgment attribution* to the genuine residual frontend swallows present; two of those sites (IntelligenceView, SettingsView loaders) are also what the audit **Mediums** SF6-10/11 describe, so this PR closes those Mediums too. The Low IDs had no recorded locations; this is the defensible mapping, surfaced for the spec author rather than invented.
+- **Files:** `frontend/src/views/IntelligenceView.tsx`, `frontend/src/views/SettingsView.tsx` (+ BootstrapBlock), `test/intelligenceView.test.tsx`, `test/settingsView.test.tsx`. All reuse the existing `<LoadError>` (C-D24) convention — no anchor.
+- **Anchor:** none. **Deps:** none (independent of E18; E18 verifies it).
+- **Tests:** intelligenceView (+1) — a rejected `getPeriodicReview` ⇒ `load-error-intelligence` carrying the message (not a silent empty panel). settingsView (+1) — a rejected `getCostSummary` ⇒ `load-error-settings`. Frontend suite **199 pass** (31 files); backend 603; typecheck/lint/build green.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none. (No invented findings; six-ID accountability recorded; three genuine residual swallows fixed.)

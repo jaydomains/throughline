@@ -23,6 +23,13 @@ function renderView() {
 describe('Phase 14 — Intelligence (RAG) surface', () => {
   beforeEach(() => resetMockApi());
 
+  it('E24/SF6-10: a failed periodic-review fetch surfaces a load error, not a silent empty panel', async () => {
+    mockApi.getPeriodicReview.mockRejectedValueOnce(new Error('review boom'));
+    renderView();
+    await waitFor(() => expect(screen.getByTestId('load-error-intelligence')).toBeTruthy());
+    expect(screen.getByTestId('load-error-intelligence').textContent).toContain('review boom');
+  });
+
   it('runs a query through the router and renders the answer + citations', async () => {
     renderView();
     fireEvent.change(screen.getByTestId('rag-input'), {

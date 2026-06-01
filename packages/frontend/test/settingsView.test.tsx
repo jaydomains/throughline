@@ -23,6 +23,13 @@ function renderView() {
 describe('Phase 15 — settings panel (SPEC §7.25)', () => {
   beforeEach(() => resetMockApi());
 
+  it('E24/SF6-11: a failed auxiliary loader surfaces a load error, not a stuck panel', async () => {
+    mockApi.getCostSummary.mockRejectedValueOnce(new Error('cost boom'));
+    renderView();
+    await waitFor(() => expect(screen.getByTestId('load-error-settings')).toBeTruthy());
+    expect(screen.getByTestId('load-error-settings').textContent).toContain('cost boom');
+  });
+
   it('warns when no auto-copy target is configured (local-only backup caveat)', async () => {
     renderView();
     await waitFor(() => expect(screen.getByTestId('autocopy-warning')).toBeTruthy());
