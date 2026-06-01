@@ -58,6 +58,7 @@ import { createDumpZoneService } from './dump-zone/service.js';
 import { registerDumpZoneRoutes } from './dump-zone/routes.js';
 import { createLibraryService } from './library/service.js';
 import { registerLibraryRoutes } from './library/routes.js';
+import { createSpecAssistService, registerSpecAssistRoutes } from './library/spec-assist.js';
 import { createScratchpadService } from './scratchpad/service.js';
 import { registerScratchpadRoutes } from './scratchpad/routes.js';
 import { createSembleClient } from './semble/client.js';
@@ -605,6 +606,17 @@ export async function startServer(
   registerNotifierRoutes(app, notifier, settings);
   registerDumpZoneRoutes(app, projects, dumpZone);
   registerLibraryRoutes(app, projects, library);
+  // E20b — user-mediated LLM-assist for the project_spec entry (draft-only; never writes).
+  registerSpecAssistRoutes(
+    app,
+    createSpecAssistService({
+      db,
+      projects,
+      library,
+      anthropic: anthropicClient,
+      resolveModel: () => modelFor('project_spec_assist', 'claude-sonnet-4-6'),
+    }),
+  );
   registerScratchpadRoutes(app, projects, scratchpad);
   registerSembleRoutes(app, projects, semble);
   registerInboxRoutes(app, inboxWorker, inboxWatcher);

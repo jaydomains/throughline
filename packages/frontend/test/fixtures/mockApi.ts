@@ -834,6 +834,16 @@ export const mockApi = {
       return { entry };
     },
   ),
+  draftProjectSpec: vi.fn(
+    async (
+      _pid: string,
+      _instruction: string,
+    ): Promise<{
+      result: { draft: string | null; used_ai: boolean; status: 'ok' | 'unavailable' | 'failed' };
+    }> => ({
+      result: { draft: '# Project Spec\n\nMock revised spec.', used_ai: true, status: 'ok' },
+    }),
+  ),
   deleteLibraryEntry: vi.fn(async (_pid: string, entryId: string) => {
     state.library = state.library.filter((e) => e.id !== entryId);
     state.attachments = state.attachments.filter((a) => a.library_entry_id !== entryId);
