@@ -409,18 +409,20 @@ export function createLibraryService(
     // degraded retrieval is surfaced, never rendered as a healthy empty.
     async semanticSearch(request, projectScope) {
       const limit = Math.min(Math.max(request.limit ?? 50, 1), 200);
-      const trimmed = request.query.trim();
       if (request.type && !isLibraryEntryType(request.type)) {
         throw new LibraryEntryTypeError(request.type);
       }
-      if (trimmed.length === 0) return { entries: [], via: 'semantic', truncated: false };
-
+      // Resolve the substrate BEFORE the empty-query short-circuit so `via` never claims a
+      // healthy `semantic` retrieval when no substrate is wired (T-D60 honesty — an unwired
+      // empty query is `semantic-unavailable`, not a healthy empty).
       const textIndex = textIndexProvider?.() ?? null;
       if (!textIndex) {
-        // Substrate not wired (no embedder/index in this composition) — disclose it as a
-        // refused retrieval, not a healthy empty (T-D60).
         return { entries: [], via: 'semantic-unavailable', truncated: false };
       }
+      // Wired but empty query → an honest empty: the substrate exists, the embedder simply
+      // isn't run for empty input (mirrors the FTS path's empty-query short-circuit).
+      const trimmed = request.query.trim();
+      if (trimmed.length === 0) return { entries: [], via: 'semantic', truncated: false };
 
       const scope = request.scope === 'project' ? projectScope : null;
       await textIndex.ensureFresh(scope);

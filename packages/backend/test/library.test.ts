@@ -318,6 +318,12 @@ describe('library service (Phase 6a — full surface)', () => {
       );
       expect(notesOnly.entries.every((e) => e.type === 'note')).toBe(true);
       expect(notesOnly.entries.map((e) => e.id)).toContain(hit.id);
+
+      // Empty query on a wired substrate → honest `semantic` empty (substrate exists; the
+      // embedder isn't run for empty input) — NOT `semantic-unavailable`.
+      const empty = await library.semanticSearch({ query: '   ', scope: 'project' }, project.id);
+      expect(empty.via).toBe('semantic');
+      expect(empty.entries).toEqual([]);
     } finally {
       await backend.cleanup();
     }
