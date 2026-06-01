@@ -65,7 +65,19 @@ A register distinct from the Phase-F quality-tail seed (dedup/perf/a11y). Phase 
 
 | Item | Ruling | Basis |
 |---|---|---|
-| **W1 — fastify v5 advisory** | **ACCEPTED** (do not remediate in this chain) | LBD-5: the fastify v5 advisory is accepted; its major migration is a separate future phase. The **in-range** protobufjs / vite / esbuild bumps are the separable **E17a** slice (greenlit). |
+| **W1 — fastify v5 advisory** | **ACCEPTED** (do not remediate in this chain) | LBD-5: the fastify v5 advisory is accepted; its major migration is a separate future phase. |
+| **E17a — dependency remediation** | **DEFERRED-MAJOR** (2026-06-01 ruling, Option 1) | E17a was greenlit for the *in-range* protobufjs/vite/esbuild bumps, but the live registry (verified 2026-06-01) showed every remaining advisory now requires a **major** — the in-range premise is stale. Per the spec-author ruling, **all** dep remediation is deferred into the **future fastify-v5 major-migration phase** (LBD-5), bundled as one workstream. **No code change lands in this chain.** Carried-forward set below. |
+
+### Carried-forward to the fastify-v5 major-migration phase (deferred-major handoff)
+
+| Advisory | Current (pinned) | Fix requires | Notes |
+|---|---|---|---|
+| **fastify** | `4.29.1` | `5.x` (major) | The anchor of the migration phase (LBD-5). |
+| **fast-uri** | `2.4.0` | rides fastify 5 | Pinned transitively by fastify 4. |
+| **vite** | `5.4.21` | `6.x` (major) | Path-traversal fix is `>=6.4.2`; vite 5→6. |
+| **esbuild** | `0.21.5` | rides vite 6 | Pinned by vite 5; fix `>=0.25.0`. |
+| **protobufjs** | `6.11.6` | `7.x` (major) | Transitive via optional `@xenova/transformers > onnx-proto@4.0.4` (which wants `^6`); a forced 7.x override is runtime-risky for embeddings, so it rides the major-migration phase rather than a standalone override. |
+
 
 ## Register: accepted minors (documented, no action)
 
@@ -98,7 +110,7 @@ The base + augmentation floor was 22. The 2026-06-01 rulings append **E22** (F7-
 ## Execution order (spec-author-ruled, 2026-06-01)
 
 1. **E17** (this slice) — descope SPEC amendments + C-D12 F4-04 amendment + registers seeded.
-2. **E17a** — in-range dependency range-bumps (independent).
+2. **E17a** — ~~in-range dependency range-bumps~~ → **DEFERRED-MAJOR** (2026-06-01, Option 1): all remaining advisories now require majors; bundled into the future fastify-v5 migration phase. Recorded only (deferral PR), no code change.
 3. **Appended build/bug slices:** E22 (F7-04 filters) → E23 (SF2 rides) → E24 (SF5/SF6 rides) → E25 (cluster-B bugs F6-02 + F1-02) → E26 (cluster-D doc-fixes).
 4. **E18** — closure-verification appendix, including **F4-04 verified-closed**.
 5. **E19 → E20 → E21** — the augmentation feature builds (E20 carries the T-D10 amendment).
