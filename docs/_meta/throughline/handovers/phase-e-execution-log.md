@@ -283,15 +283,16 @@
 - **Halt-class fires:** none (this *is* the blessed halt-class-9 gate; resolved by the ruling).
 - **Surfaces to spec author:** F3-01 re-surfaced as a separate post-E17 decision (above).
 
-### E17a — Dependency range-bumps — **HALTED (halt-class 4, awaiting spec-author re-scope)**
+### E17a — Dependency remediation — **DEFERRED-MAJOR (halt-class 4, ruled Option 1 — 2026-06-01)**
+- **Resolution:** spec author ruled **Option 1 — defer all** dep remediation into the future **fastify-v5 major-migration phase** (LBD-5). E17a lands **no code** in this chain; the deferral is recorded in the E17 decision record's accepted-advisories register (W1 + the carried-forward set: fastify 4→5, fast-uri, vite 5→6, esbuild, protobufjs 6→7) and PLATFORM_STATUS. Branch `claude/phase-e-e17a-deferral-record` carries the doc-only deferral PR. **E17a is closed as deferred — it no longer counts toward the remediation roster.**
 - **Branch:** `claude/phase-e-e17a-dep-bumps` (investigation only — no files changed, not pushed).
 - **Status:** **halted before any bump.** Verified against the live npm registry (2026-06-01): the plan's "in-range / range-closeable" premise is **stale** — every remaining advisory now requires a **major**:
   - **vite** `5.4.21` (latest 5.x) — path-traversal fixed only in `>=6.4.2` → vite 5→6 major.
   - **esbuild** `0.21.5` (pinned by vite 5) — fix `>=0.25.0` rides the vite major.
   - **protobufjs** `6.11.6` (transitive via optional `@xenova/transformers > onnx-proto@4.0.4`) — all fixes in `7.x` → 6→7 major; onnx-proto wants `^6`, so a forced override is runtime-risky for embeddings.
   - **fastify** `4.29.1` / **fast-uri** `2.4.0` — already accepted (LBD-5): fixes require fastify 5.
-- **Action:** honoured the E17a plan's explicit halt clause ("if a 'range' bump turns out to require a major → halt, re-scope; don't silently pull in a major"). **Surfaced to spec author** (2026-06-01) with three options: (1) defer all to the fastify-v5 major-migration phase [recommended]; (2) vite 5→6 + esbuild only; (3) vite 6 + protobufjs 7 override. **Awaiting ruling.** E17a is independent, so the chain continues at E22 without it.
-- **Halt-class fires:** **4 (estimate/scope breach)** — resolved-pending the spec author's re-scope.
+- **Action:** honoured the E17a plan's explicit halt clause ("if a 'range' bump turns out to require a major → halt, re-scope; don't silently pull in a major"). **Surfaced to spec author** (2026-06-01) with three options: (1) defer all to the fastify-v5 major-migration phase [recommended]; (2) vite 5→6 + esbuild only; (3) vite 6 + protobufjs 7 override. **Ruled Option 1** (defer all) — see Resolution above.
+- **Halt-class fires:** **4 (estimate/scope breach)** — **resolved** by the Option-1 deferral ruling (no silent major pulled in; the halt clause did its job).
 
 ### E22 — Audit-log filters (F7-04) · feature-build
 - **Branch:** `claude/phase-e-e22-audit-log-filters`
