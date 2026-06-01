@@ -29,6 +29,25 @@ function ruleStem(rulePath: string): string {
   return dot > 0 ? base.slice(0, dot) : base;
 }
 
+// A path "contains the rule_path stem" only when the stem appears as a delimited token —
+// bounded by a path separator, dot, hyphen, underscore, or the string ends — and is at
+// least 3 chars. A bare substring test would re-introduce the exact over-match F6-02 fixes
+// (a 1-char stem like `x` would match `src/index.ts`; a stem mid-word would false-fire).
+const STEM_MIN_LENGTH = 3;
+const STEM_DELIMS = new Set(['/', '\\', '.', '-', '_']);
+function pathHasStemToken(path: string, stem: string): boolean {
+  if (stem.length < STEM_MIN_LENGTH) return false;
+  for (let from = 0; ; ) {
+    const idx = path.indexOf(stem, from);
+    if (idx === -1) return false;
+    const before = idx === 0 ? '/' : path[idx - 1]!;
+    const afterIdx = idx + stem.length;
+    const after = afterIdx >= path.length ? '/' : path[afterIdx]!;
+    if (STEM_DELIMS.has(before) && STEM_DELIMS.has(after)) return true;
+    from = idx + 1;
+  }
+}
+
 export function runTier1(
   db: DB,
   drift: DriftService,
@@ -74,7 +93,7 @@ export function runTier1(
     const hit = failing.find(
       (a) =>
         (a.title !== null && a.title.trim() === rule.rule_id) ||
-        (stem.length > 0 && a.path.includes(stem)),
+        pathHasStemToken(a.path, stem),
     );
     const status = hit ? 'fail' : 'pass';
     db.prepare(

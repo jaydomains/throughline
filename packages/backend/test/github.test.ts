@@ -463,6 +463,57 @@ describe('Phase 10 — code-drift tiers 1-3', () => {
     await s.backend.cleanup();
   });
 
+  it('tier-1 F6-02: a short stem does NOT over-match an arbitrary path (token-boundary + min length)', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    // rule_path `.semgrep/x.yml` → stem `x` (1 char). A bare substring match would badge
+    // `src/index.ts` (it contains "x"); the token-boundary + min-length guard must not.
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, '.semgrep/x.yml', 'rule-x');
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/index.ts', annotation_level: 'failure', message: 'x marks it', title: 'unrelated' }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+    await s.backend.cleanup();
+  });
+
+  it('tier-1 F6-02: a stem appearing mid-word does NOT match; only a delimited token does', async () => {
+    const s = await setup();
+    const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
+    // stem `index` must match `src/index.ts` but not `src/reindexer.ts` (mid-word).
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', item.id, 'rules/index.yml', 'idx');
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/reindexer.ts', annotation_level: 'failure', message: 'x', title: null }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/index.ts', annotation_level: 'failure', message: 'x', title: null }],
+      ['done'],
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
   it('tier-1 F6-02: title equal to the rule id still matches', async () => {
     const s = await setup();
     const item = s.items.create({ project_id: s.project.id, title: 'verified', status: 'done' });
