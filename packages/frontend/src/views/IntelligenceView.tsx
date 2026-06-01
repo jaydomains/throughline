@@ -10,6 +10,7 @@ import type {
   StakeholderViewResult,
 } from '@throughline/shared';
 import { api } from '../api.js';
+import { LoadError } from '../components/LoadError.js';
 
 // Phase 14 — intelligence surface (T-D22, T-D25, C-D2; SPEC §7.18, §9). RAG query box
 // (heuristic router unless pinned), an end-of-session retro action, and a periodic-review
@@ -39,6 +40,7 @@ export function IntelligenceView() {
   const [review, setReview] = useState<PeriodicReviewResult | null>(null);
   const [reviewSynthesis, setReviewSynthesis] = useState<string | null>(null);
   const [doNext, setDoNext] = useState<DoNextResult | null>(null);
+  const [panelErrors, setPanelErrors] = useState<Error[]>([]);
   const [stakeItem, setStakeItem] = useState('');
   const [stake, setStake] = useState<StakeholderViewResult | null>(null);
   const [chatCtxType, setChatCtxType] = useState<ChatContextType>('session');
@@ -48,14 +50,26 @@ export function IntelligenceView() {
 
   useEffect(() => {
     if (!projectId) return;
+    // E24 (SF6-10): a failed periodic-review / do-next fetch previously set state to null
+    // and rendered as an empty panel — indistinguishable from "no data". Surface each
+    // failure; accumulate so two concurrent failures don't overwrite each other.
+    setPanelErrors([]);
+    const addErr = (e: unknown) =>
+      setPanelErrors((prev) => [...prev, e instanceof Error ? e : new Error(String(e))]);
     api
       .getPeriodicReview(projectId)
       .then(setReview)
-      .catch(() => setReview(null));
+      .catch((e) => {
+        setReview(null);
+        addErr(e);
+      });
     api
       .getDoNext(projectId)
       .then(setDoNext)
-      .catch(() => setDoNext(null));
+      .catch((e) => {
+        setDoNext(null);
+        addErr(e);
+      });
   }, [projectId]);
 
   if (!projectId) return null;
@@ -306,6 +320,9 @@ export function IntelligenceView() {
           </span>
         )}
       </h2>
+      {panelErrors.map((err, i) => (
+        <LoadError key={i} error={err} what="intelligence" />
+      ))}
       {review && (
         <div className="periodic-review" data-testid="periodic-review">
           <ul className="hygiene-buckets">
