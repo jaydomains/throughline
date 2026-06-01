@@ -450,3 +450,20 @@ The augmentation plan "sized E20 up" to also include an **LLM-assisted spec-revi
 - **Tests:** backend (4) — drafts via AI **without persisting** (no project_spec written) + audits `applied:false` + records cost; AI-unavailable ⇒ no draft (T-D60); AI-throws ⇒ `failed`, no draft; an over-long instruction is **capped at 2000 chars** before the model (round-1). frontend (3) — draft previews then applies **only on Accept** (`onAccept` not called before); Reject discards; unavailable ⇒ honest inline error, no preview, no apply. Backend **607 pass** (62 files); frontend **204 pass** (32 files); typecheck/lint/build green.
 - **Fix-rounds:** 1 — Gitar flagged the unbounded `instruction` (token-cost risk). Capped at **2000 chars** in the service (the contract boundary, also test-covered); +1 regression test (5000-char instruction ⇒ 2000 in the prompt).
 - **Halt-class fires:** none.
+
+### E18 — Closure-verification appendix (chain close) · verify-already-closed
+- **Branch:** `claude/phase-e-e18-closure-verification`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** F4-04 (verified-closed), S6-02 (verified-closed); records the chain's verify-already-closed set + the deferred tail. **Class:** closure-verification (doc + verify tests where a lock was missing). **The closing slice of Phase E.**
+- **Deliverable:** `handovers/phase-e-closure-verification.md` (the chain-close certification) + two new regression locks:
+  - **F4-04 (headline):** create (`items/service.ts:524-533`) + update (`:602-609`) validate status **membership**, not transition adjacency — matching the **E17 C-D12 amendment**. Bulk writers (reconcile / auto-reconcile / dump-zone-apply / bootstrap) inherit it via `items.create/update`. **Lock:** `test/test-bundle.test.ts` — a non-adjacent `open → done` jump (member status, not a declared edge) is **accepted**; an out-of-lifecycle status is rejected. (The prior membership test didn't cover the non-adjacency case.)
+  - **S6-02:** `ItemPolicyError` is a `DomainError(400)` mapped by the central C-D23 handler (`http/error-handler.ts`). **Lock:** `test/error-handler.test.ts` — thrown `ItemPolicyError` ⇒ 400 `policy_violation` (not an unhandled 500); a generic 5xx is logged but never leaks its message.
+  - Prior-work closures recorded with evidence: F1-01 (Phase B/D), SF1-01-bulk/SF1-03/S1-03 (E7), SF6-01/02 (Phase C/E12), SF6-08 (Phase C), SF6-09 (E15), SF6-10/11 (E24), Phase-D locks.
+- **Deferred tail (recorded homes, not closed):** SF4-05/06 + SF6-12 → Phase F; F3-01 → separate spec-author decision; dep-remediation → fastify-v5 phase (E17a); SF5-07/09/10 + SF6-13/14/15 → no residual (§E24); the two test flakes → Phase F.
+- **PLATFORM_STATUS:** rolled to **chain COMPLETE**.
+- **Files:** `handovers/phase-e-closure-verification.md` (new), `test/test-bundle.test.ts` (F4-04 lock), `test/error-handler.test.ts` (new, S6-02 lock), `PLATFORM_STATUS.md`.
+- **Anchor:** none. **Deps:** rides the whole chain (it certifies it).
+- **Tests:** test-bundle (+1, F4-04 non-adjacency lock); error-handler (+2, S6-02 + C-D23 no-leak). Full backend/frontend suites green.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none. **Chain closed.**

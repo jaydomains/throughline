@@ -78,6 +78,25 @@ describe('test-bundle fixture', () => {
     }
   });
 
+  it('F4-04 (verified-closed, C-D12 amended E17): a non-adjacent status jump is allowed — membership is enforced, transition adjacency is NOT', async () => {
+    const { backend, items, project } = await setup();
+    try {
+      // task lifecycle: open, doing, blocked, done; declared transitions are
+      // open->doing->blocked->doing->done->open. `open -> done` is a *member* status but NOT
+      // a declared adjacent edge. Per the amended C-D12, create/update validate membership
+      // only — so the direct jump must succeed (reconcile/auto-reconcile/dump-zone-apply rely
+      // on this). Adjacency enforcement would wrongly reject it.
+      const task = items.create({ project_id: project.id, title: 't', type: 'task' });
+      expect(task.status).toBe('open');
+      const jumped = items.update(task.id, { status: 'done' });
+      expect(jumped.status).toBe('done'); // non-adjacent open->done accepted (membership-only)
+      // A status outside the type's lifecycle is still rejected (membership IS enforced).
+      expect(() => items.update(task.id, { status: 'archived' })).toThrow(ItemPolicyError);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('round-trips methodology-context refs and audits context changes', async () => {
     const { backend, items, project } = await setup();
     try {
