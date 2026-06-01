@@ -27,15 +27,26 @@ export function runTier1(
   projectId: string,
   pull: GhPull,
   annotations: GhAnnotation[],
+  doneStatuses: string[] | null,
+  annotationsAvailable: boolean,
 ): void {
+  // F6-01: only badge done items (SPEC §7.14, matching the tier-4 done filter). A null set
+  // means the bundle isn't loaded — refuse to badge rather than guess.
+  if (doneStatuses === null || doneStatuses.length === 0) return;
+  // SF3-04 (refuse-rather-than-fallback / SF2-01 precedent): a failed per-PR annotation
+  // sub-fetch arrives here as an empty list, which the pass/clear logic below would read as
+  // "every rule passed" and silently dismiss real tier-1 signals. When the fetch did not
+  // succeed we have no evidence either way, so leave existing signals + last_status untouched.
+  if (!annotationsAvailable) return;
+  const placeholders = doneStatuses.map(() => '?').join(',');
   const rules = db
     .prepare(
       `SELECT vr.id AS rule_row_id, vr.item_id, vr.rule_id, vr.rule_path
          FROM item_verifier_rules vr
          JOIN items i ON i.id = vr.item_id
-        WHERE i.project_id = ?`,
+        WHERE i.project_id = ? AND i.status IN (${placeholders})`,
     )
-    .all(projectId) as Array<{
+    .all(projectId, ...doneStatuses) as Array<{
     rule_row_id: string;
     item_id: string;
     rule_id: string;
@@ -85,7 +96,10 @@ export function runTier2(
   projectId: string,
   pull: GhPull,
   repo: string,
+  doneStatuses: string[] | null,
 ): void {
+  // F6-01: only badge done items (SPEC §7.14). Null/empty = bundle not loaded → refuse.
+  if (doneStatuses === null || doneStatuses.length === 0) return;
   const text = `${pull.title}\n${pull.body ?? ''}`;
   if (!REVERT_RE.test(text)) return;
   const referenced = new Set<number>();
@@ -98,9 +112,11 @@ export function runTier2(
       .prepare(
         `SELECT a.item_id FROM item_pr_associations a
            JOIN items i ON i.id = a.item_id
-          WHERE i.project_id = ? AND a.repo = ? AND a.pr_number = ?`,
+          WHERE i.project_id = ? AND a.repo = ? AND a.pr_number = ? AND i.status IN (${doneStatuses
+            .map(() => '?')
+            .join(',')})`,
       )
-      .all(projectId, repo, revertedPr) as Array<{ item_id: string }>;
+      .all(projectId, repo, revertedPr, ...doneStatuses) as Array<{ item_id: string }>;
     for (const { item_id } of items) {
       drift.createCodeSignalIdempotent({
         projectId,
@@ -120,16 +136,19 @@ export function runTier3(
   projectId: string,
   pull: GhPull,
   changedFiles: string[],
+  doneStatuses: string[] | null,
 ): void {
+  // F6-01: only badge done items (SPEC §7.14). Null/empty = bundle not loaded → refuse.
+  if (doneStatuses === null || doneStatuses.length === 0) return;
   if (changedFiles.length === 0) return;
   const changed = new Set(changedFiles);
   const refs = db
     .prepare(
       `SELECT cr.item_id, cr.path FROM item_code_refs cr
          JOIN items i ON i.id = cr.item_id
-        WHERE i.project_id = ?`,
+        WHERE i.project_id = ? AND i.status IN (${doneStatuses.map(() => '?').join(',')})`,
     )
-    .all(projectId) as Array<{ item_id: string; path: string }>;
+    .all(projectId, ...doneStatuses) as Array<{ item_id: string; path: string }>;
   const byItem = new Map<string, string[]>();
   for (const r of refs) {
     if (changed.has(r.path)) {

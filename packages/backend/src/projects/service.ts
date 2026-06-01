@@ -173,6 +173,12 @@ export function createProjectsService(
       if (existing) {
         throw new DuplicateRepoPathError(repoPath, existing);
       }
+      // F1-03 (T-D51 / C-D19): validate any `.throughline/project.json` in the repo at
+      // CREATE, not just on the reinit/update path and the CLI. A present-but-invalid config
+      // — chiefly a `bundle_id_mismatch` between project.json and the sibling bundle.md §1
+      // Identity — is a hard 400, mirroring the update(reinit) path. Absent config ⇒ null ⇒
+      // no-op (creating a project against a not-yet-init'd repo stays allowed).
+      readProjectConfig(repoPath);
       if (!registry.hasBundle(bundleId, bundlePath, repoPath)) {
         throw new BundleNotLoadedError(bundleId);
       }

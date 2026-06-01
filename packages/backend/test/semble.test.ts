@@ -274,14 +274,16 @@ describe('semble service — done-time linking', () => {
         client: createSembleClient({ command: 'semble', execImpl: exec }),
         anthropic: unavailableAnthropic(),
       });
-      const item = items.create({ project_id: project.id, title: 'upload validation' });
+      // F6-01: tier-3 badges only DONE items, so this item must be done for the badge to
+      // fire below (it previously asserted a badge on a non-done item — the F6-01 bug).
+      const item = items.create({ project_id: project.id, title: 'upload validation', status: 'done' });
 
       const search = await semble.searchForItem(item.id);
       expect(search.available).toBe(true);
       expect(search.candidates[0]?.path).toBe('src/upload.ts');
 
       // Tier-3 is dormant with no refs.
-      runTier3(backend.db, drift, project.id, fakePull(1), ['src/upload.ts']);
+      runTier3(backend.db, drift, project.id, fakePull(1), ['src/upload.ts'], ['done']);
       expect(
         backend.db
           .prepare("SELECT COUNT(*) AS n FROM drift_signals WHERE category = 'tier-3'")
@@ -301,8 +303,8 @@ describe('semble service — done-time linking', () => {
         .get(item.id) as { trigger_context_json: string };
       expect(JSON.parse(audit.trigger_context_json).source).toBe('semble');
 
-      // Now tier-3 fires: a PR touching the referenced file badges the item.
-      runTier3(backend.db, drift, project.id, fakePull(2), ['src/upload.ts']);
+      // Now tier-3 fires: a PR touching the referenced file badges the (done) item.
+      runTier3(backend.db, drift, project.id, fakePull(2), ['src/upload.ts'], ['done']);
       const sig = backend.db
         .prepare(
           "SELECT item_id FROM drift_signals WHERE category = 'tier-3' AND item_id = ?",

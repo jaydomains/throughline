@@ -338,6 +338,33 @@ describe('projects service', () => {
       }
     });
 
+    it('F1-03: CREATE rejects a project.json that mismatches the sibling bundle.md (T-D51/C-D19)', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      const { repoPath: cleanRepo, cleanup: rmClean } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        // Plant a sibling bundle.md whose §1 Identity name is "freeform" but a project.json
+        // claiming a different bundle_id — the mismatch update(reinit)/CLI already reject.
+        copyFileSync(FREEFORM_BUNDLE_PATH, join(repoPath, '.throughline', 'bundle.md'));
+        writeProjectJson(repoPath, { bundle_id: 'not-freeform' });
+        // Pre-F1-03 the POST create path never read project.json, so this slipped through;
+        // it must now be a hard 400 (bundle_id_mismatch), like the other binding paths.
+        expect(() => projects.create({ name: 'Mismatch', repo_path: repoPath })).toThrow(
+          BundleIdMismatchError,
+        );
+        // A repo with no project.json still creates fine (absent config ⇒ no-op).
+        const ok = projects.create({ name: 'Clean', repo_path: cleanRepo });
+        expect(ok.bundle_id).toBe('freeform');
+      } finally {
+        rmRepo();
+        rmClean();
+        await backend.cleanup();
+      }
+    });
+
     it('strict-boolean check — only `reinit_throughline === true` triggers the re-init path', async () => {
       // Regression: declared-type-boolean is enforced at runtime. A
       // non-boolean truthy value (e.g. `"yes"`, `1`) must not activate

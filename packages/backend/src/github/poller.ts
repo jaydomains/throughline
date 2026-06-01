@@ -7,7 +7,7 @@ import type { DriftService } from '../drift/service.js';
 import type { JobHealth } from '../health/job-health.js';
 import type { GateRuntime } from '../methodology/gates/runtime.js';
 import type { ProjectsService } from '../projects/service.js';
-import type { GhPull, GitHubApi } from './api.js';
+import type { GhAnnotation, GhPull, GitHubApi } from './api.js';
 import type { LocalGit } from './local-git.js';
 import type { GithubStateCache } from './state-cache.js';
 import type { AutoReconcileService } from './auto-reconcile.js';
@@ -201,12 +201,19 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
           .catch((e) => logger?.warn(`pr-open dispatch failed: ${e}`));
       }
 
+      // F6-01: tiers 1-3 badge only done items (SPEC §7.14). Resolve the project's per-type
+      // done statuses once; null (bundle not loaded) makes the tiers refuse to badge.
+      const doneStatuses = tier4.doneStatuses(projectId);
+
       // Tier 1 (Semgrep annotations) + Tier 2 (revert) — GitHub-only metadata facts.
+      // SF3-04: track whether the annotation sub-fetch actually succeeded — an empty list
+      // from a *failed* fetch must not be read as "all rules passed" and clear real signals.
       const annotations = await api
         .listAnnotations(owner, repoName, pull.head.sha)
-        .catch(() => []);
-      runTier1(db, drift, projectId, pull, annotations);
-      runTier2(db, drift, projectId, pull, repo);
+        .then((data) => ({ ok: true, data }))
+        .catch(() => ({ ok: false, data: [] as GhAnnotation[] }));
+      runTier1(db, drift, projectId, pull, annotations.data, doneStatuses, annotations.ok);
+      runTier2(db, drift, projectId, pull, repo, doneStatuses);
 
       // Tier 3 — changed-file overlap, local-git-first with API fallback (C-D16).
       let changed: string[] = [];
@@ -225,7 +232,7 @@ export function createGitHubPoller(opts: CreateGitHubPollerOptions): GitHubPolle
           .listPullFiles(owner, repoName, pull.number)
           .catch(() => []);
       }
-      runTier3(db, drift, projectId, pull, changed);
+      runTier3(db, drift, projectId, pull, changed, doneStatuses);
 
       // Auto-reconcile on merge (T-D6/T-D18): only for a PR we previously tracked open
       // (a tracked branch that merges) — never a PR first seen already-merged.

@@ -14,6 +14,7 @@ import { createPrLinkingService } from '../src/github/pr-linking.js';
 import { createOrphanRulesService } from '../src/github/orphan-rules.js';
 import { createAutoReconcileService } from '../src/github/auto-reconcile.js';
 import { createTier4Service } from '../src/github/tier4.js';
+import { runTier1, runTier2, runTier3 } from '../src/github/tiers.js';
 import type { GhPull, GitHubApi } from '../src/github/api.js';
 import type { LocalGit } from '../src/github/local-git.js';
 import type { ReconcileService } from '../src/reconcile/service.js';
@@ -1079,6 +1080,102 @@ describe('Phase 10 — local git diff seam', () => {
     const res = await lg.changedFiles(repo, base, head, 1);
     expect(res.status).toBe('ok');
     expect(res.files).toContain('b.txt');
+    await s.backend.cleanup();
+  });
+});
+
+describe('Phase E E16 — F6-01 done-item filter + SF3-04 annotation refuse', () => {
+  // test-bundle declares task (terminal `done`) and note (terminal `published`); the poller
+  // passes this per-type done set. A non-done item must not be badged by any tier (SPEC §7.14).
+  const DONE = ['done', 'published'];
+
+  it('F6-01: tiers 1-3 do NOT badge a non-done item', async () => {
+    const s = await setup();
+    const wip = s.items.create({ project_id: s.project.id, title: 'wip', status: 'doing' });
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', wip.id, '.semgrep/throughline/x.yml', 'no-eval');
+    s.backend.db
+      .prepare(
+        'INSERT INTO item_pr_associations (item_id, pr_number, repo, auto_detected_at) VALUES (?,?,?,?)',
+      )
+      .run(wip.id, 7, 'o/r', null);
+    s.backend.db
+      .prepare('INSERT INTO item_code_refs (id, item_id, path, line_start, line_end) VALUES (?,?,?,?,?)')
+      .run('cr1', wip.id, 'src/x.ts', 1, 10);
+
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/x.ts', annotation_level: 'failure', message: 'no-eval', title: 'no-eval' }],
+      DONE,
+      true,
+    );
+    runTier2(s.backend.db, s.drift, s.project.id, pull({ number: 12, title: 'Revert "wip" (#7)' }), 'o/r', DONE);
+    runTier3(s.backend.db, s.drift, s.project.id, pull(), ['src/x.ts'], DONE);
+
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-2' })).toHaveLength(0);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-3' })).toHaveLength(0);
+
+    // Flip the same item to done → the identical signals now fire (proves the gate, not a
+    // mis-wired query, is what suppressed them).
+    s.items.update(wip.id, { status: 'done' });
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/x.ts', annotation_level: 'failure', message: 'no-eval', title: 'no-eval' }],
+      DONE,
+      true,
+    );
+    runTier3(s.backend.db, s.drift, s.project.id, pull(), ['src/x.ts'], DONE);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-3' })).toHaveLength(1);
+    await s.backend.cleanup();
+  });
+
+  it('F6-01: a null done set (bundle not loaded) makes the tiers refuse to badge', async () => {
+    const s = await setup();
+    const done = s.items.create({ project_id: s.project.id, title: 'shipped', status: 'done' });
+    s.backend.db
+      .prepare('INSERT INTO item_code_refs (id, item_id, path, line_start, line_end) VALUES (?,?,?,?,?)')
+      .run('cr1', done.id, 'src/x.ts', 1, 10);
+    runTier3(s.backend.db, s.drift, s.project.id, pull(), ['src/x.ts'], null);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-3' })).toHaveLength(0);
+    await s.backend.cleanup();
+  });
+
+  it('SF3-04: a failed annotation sub-fetch does NOT clear an existing tier-1 signal', async () => {
+    const s = await setup();
+    const done = s.items.create({ project_id: s.project.id, title: 'shipped', status: 'done' });
+    s.backend.db
+      .prepare('INSERT INTO item_verifier_rules (id, item_id, rule_path, rule_id) VALUES (?,?,?,?)')
+      .run('vr1', done.id, '.semgrep/throughline/x.yml', 'no-eval');
+
+    // A prior poll saw a failing annotation and opened a tier-1 signal.
+    runTier1(
+      s.backend.db,
+      s.drift,
+      s.project.id,
+      pull(),
+      [{ path: 'src/x.ts', annotation_level: 'failure', message: 'no-eval', title: 'no-eval' }],
+      DONE,
+      true,
+    );
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+
+    // Next poll's annotation sub-fetch FAILED (annotationsAvailable=false). Pre-SF3-04 the
+    // empty list read as "rule passed" and cleared the real signal. It must be left intact.
+    runTier1(s.backend.db, s.drift, s.project.id, pull(), [], DONE, false);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(1);
+
+    // A *successful* fetch that genuinely returns no failing annotation still clears (pass).
+    runTier1(s.backend.db, s.drift, s.project.id, pull(), [], DONE, true);
+    expect(s.drift.listOpenCodeSignals(s.project.id, { category: 'tier-1' })).toHaveLength(0);
     await s.backend.cleanup();
   });
 });
