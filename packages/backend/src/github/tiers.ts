@@ -21,6 +21,14 @@ const PR_REF_RE = /#(\d+)/g;
 // gap #7 — verifier-tool plurality — is surfaced, not resolved here): an annotation maps
 // to a verifier rule when its rule id (annotation title) equals item_verifier_rules
 // .rule_id, or its flagged path contains the rule_path stem.
+// The stem of a verifier rule_path: its basename without extension (e.g.
+// `rules/security/no-eval.yml` → `no-eval`). Used for the SPEC §7.14 path-stem match.
+function ruleStem(rulePath: string): string {
+  const base = rulePath.split(/[\\/]/).pop() ?? '';
+  const dot = base.lastIndexOf('.');
+  return dot > 0 ? base.slice(0, dot) : base;
+}
+
 export function runTier1(
   db: DB,
   drift: DriftService,
@@ -58,11 +66,15 @@ export function runTier1(
   const now = new Date().toISOString();
 
   for (const rule of rules) {
+    // F6-02 / SPEC §7.14: an annotation maps to a verifier rule when its title equals the
+    // rule id, OR its flagged path contains the rule_path stem. The previous substring
+    // match on `message`/`raw_details` over-matched (a rule id mentioned anywhere in the
+    // annotation prose falsely fired); it is dropped in favour of the documented contract.
+    const stem = ruleStem(rule.rule_path);
     const hit = failing.find(
       (a) =>
-        (a.title && a.title.trim() === rule.rule_id) ||
-        (a.raw_details ?? '').includes(rule.rule_id) ||
-        a.message.includes(rule.rule_id),
+        (a.title !== null && a.title.trim() === rule.rule_id) ||
+        (stem.length > 0 && a.path.includes(stem)),
     );
     const status = hit ? 'fail' : 'pass';
     db.prepare(

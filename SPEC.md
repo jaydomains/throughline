@@ -313,7 +313,7 @@ Two streams of drift detection running in parallel.
 
 **Code drift (four tiers):**
 
-- **Tier 1** — Semgrep failure on a verifier rule attached to a done item. Item badged red.
+- **Tier 1** — Semgrep failure on a verifier rule attached to a done item. Item badged red. A check-run annotation maps to a verifier rule when the annotation **title equals the rule id**, or its **flagged path contains the rule's `rule_path` stem** (basename without extension). Substring matching of the rule id against the annotation message is **not** used — it over-matches. *(E25 / F6-02 — code aligned to this documented contract, 2026-06-01.)*
 - **Tier 2** — GitHub revert event on a PR a done item is associated with. Item badged orange.
 - **Tier 3** — new PR touches files in a done item's code references. Item badged yellow.
 - **Tier 4** — duplicate-looking dump zone entry matching a done item (cosine similarity ≥ 0.80, with AI confirmation pass for borderline 0.70–0.80). Goes to drift inbox; auto-dismissed with audit-logged "stale-no-action" reason after 7 days.

@@ -240,6 +240,64 @@ describe('projects service', () => {
       }
     });
 
+    it('F1-02: re-init emits a single `project_reinit` audit row, not per-field rows', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      const { repoPath, cleanup: rmRepo } = makeRealRepo();
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Original', repo_path: repoPath });
+        writeProjectJson(repoPath, {
+          bundle_id: 'freeform',
+          github_owner: 'acme',
+          github_repo: 'widgets',
+          project_name: 'Renamed by config',
+        });
+        projects.update(project.id, { reinit_throughline: true });
+
+        const fields = (
+          backend.db
+            .prepare('SELECT field, trigger_context_json FROM audit_log WHERE entity_id = ?')
+            .all(project.id) as Array<{ field: string; trigger_context_json: string }>
+        );
+        // Exactly one re-init row; no per-field rows for the three fields the re-init changed.
+        const reinitRows = fields.filter((r) => r.field === 'project_reinit');
+        expect(reinitRows).toHaveLength(1);
+        expect(fields.some((r) => ['name', 'github_owner', 'github_repo'].includes(r.field))).toBe(
+          false,
+        );
+        // The per-field detail rides as structured payload on the single row.
+        const changed = (
+          JSON.parse(reinitRows[0]!.trigger_context_json) as {
+            changed_fields: Array<{ field: string }>;
+          }
+        ).changed_fields.map((c) => c.field);
+        expect(changed).toEqual(expect.arrayContaining(['name', 'github_owner', 'github_repo']));
+      } finally {
+        rmRepo();
+        await backend.cleanup();
+      }
+    });
+
+    it('F1-02: a normal (non-reinit) update still emits a per-field audit row', async () => {
+      const cfg = makeTmpConfig();
+      plantFreeformBundle(cfg.methodologiesDir);
+      const backend = await makeBackend(cfg);
+      try {
+        const projects = createProjectsService(backend.db, backend.registry);
+        const project = projects.create({ name: 'Original', repo_path: '/tmp/normal-update' });
+        projects.update(project.id, { name: 'Renamed directly' });
+        const fields = backend.db
+          .prepare('SELECT field FROM audit_log WHERE entity_id = ?')
+          .all(project.id) as Array<{ field: string }>;
+        expect(fields.some((r) => r.field === 'name')).toBe(true);
+        expect(fields.some((r) => r.field === 'project_reinit')).toBe(false);
+      } finally {
+        await backend.cleanup();
+      }
+    });
+
     it('returns the project unchanged when `.throughline/project.json` is absent', async () => {
       const cfg = makeTmpConfig();
       plantFreeformBundle(cfg.methodologiesDir);
