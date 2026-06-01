@@ -247,8 +247,8 @@
 
 ### E16 — Audit-3 spec-contradiction bugs
 - **Branch:** `claude/phase-e-e16-spec-contradictions`
-- **PR:** #103 (draft → ready on green)
-- **Merge SHA:** pending
+- **PR:** #103 (squash-merged)
+- **Merge SHA:** `95b3673`
 - **Closed (3 of 4):** **F6-01** (SPEC §7.14 — code-drift tiers 1-3 badged *any* matching item, omitting the done-item filter tier-4 already enforced → non-done items got tier-1/2/3 badges), **SF3-04** (refuse-rather-than-fallback / SF2-01 precedent — a failed per-PR annotation sub-fetch was swallowed to `[]`, which tier-1 read as "every rule passed" and silently *cleared* real open signals), **F1-03** (T-D51 / C-D19 — project *create* never validated `.throughline/project.json`; a `bundle_id_mismatch` was caught only on update(reinit) + the CLI).
 - **F4-04 NOT closed — re-classified to E17 (spec-author ruling 2026-06-01).** The E16 plan tagged F4-04 a "clean bug" (enforce per-type transitions), but audit-3's own §load-bearing list flags **C-D12 transitions** as a wording ambiguity ("one-line says enforce, body says status-only" → "spec edits, not code fixes"). The code already enforces status **membership** (the body's reading) at create + update (`items/service.ts:528-533/605-609`); only transition **adjacency** is unenforced, and reconcile/auto-reconcile/dump-zone all set `open→done` directly (`reconcile/engine.ts:190`), so enforcing it would force a C-D12 amendment + 3-caller cascade into a bug-fix slice. The spec author ruled **defer to E17** as a C-D12-wording decision item (next to F3-01). Plan updated (audit table row + E16 §note + E17 spec-silent bullet). **Hardener lesson recorded in the plan:** an audit finding tagged "bug" may be wording-ambiguity in disguise — verify the spec body agrees with its one-line summary before treating as a code defect.
 - **Fix (no anchor):**
@@ -260,6 +260,25 @@
 - **Per-type-vs-union note (recorded):** the cited reference `tier4.ts:82-85` uses the **union** terminal for its dedup scan; mirroring that for tiers 1-3 would have mis-filtered multi-type bundles (and broken the existing test-bundle tier tests, whose done-tasks are not the union terminal). Tiers 1-3 use per-type terminals (more correct); `tier4.doneItems` is left on the union (unchanged behaviour, freeform-tested) — out of F6-01 scope.
 - **LOC:** ~diff stat across 4 src + 3 test files; production-side small (3 SQL filters + 1 poller wrap + 1 method + 1 create-guard line). 3-of-4 findings closed (F4-04 deferred); under the 130–190 band because F4-04's would-be transition-enforcement (the largest piece) was correctly routed out.
 - **Tests:** `github.test.ts` — **F6-01** (tiers 1-3 do NOT badge a non-done item; flipping it to done makes the same signals fire; a null done-set refuses), **SF3-04** (a failed-fetch tier-1 run leaves an open signal intact; a successful empty run clears). `projects.test.ts` — **F1-03** (create rejects a mismatched `project.json` with `BundleIdMismatchError`; a repo with no config still creates). `semble.test.ts` — tier-3 test corrected to a done item (F6-01).
-- **Fix-rounds:** TBD.
+- **Fix-rounds:** 0 (Gitar ✅ approved no findings; both gate runs green first try; merged at `95b3673`).
 - **Halt-class fires:** none. (F4-04 surfaced as a verification-gap / spec-wording decision → spec author ruled "defer to E17"; the chain continued at 3-of-4 per the ruling, not a halt.)
 - **Surfaces to spec author:** **F4-04** (C-D12 transitions wording ambiguity) — surfaced 2026-06-01, ruled "defer to E17" (above).
+
+### E17 — Product-decision gate (spec-author ruling encoded)
+- **Branch:** `claude/phase-e-e17-decision-gate`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Class:** product-decision gate (LBD-4, halt-class 9, blessed). The chain halted here for the spec author (2026-06-01); this slice **encodes the full ruling**. **No code; no tests** (per the base plan's E17 contract). Durable ruling record: `handovers/phase-e-E17-decision-record.md`.
+- **Deliverable (lands in this slice):**
+  - **4 descope SPEC amendments:** F5-02 (§7.11 tree drag-retag → deferred), F7-01 (§7.20 multi-list AI export → deferred; per-session md + `/api/backup/export` remain the v1 surface), F7-06 (§7.24 command palette → narrowed to shipped subset), F7-07 (§7.24 keyboard nav → deferred; focusability + Esc retained).
+  - **F4-04 C-D12 amendment** (CODE_SPEC): one-line summary aligned to the body — *validate status **membership** against the type lifecycle, **not** transition adjacency* (reconcile/auto-reconcile/dump-zone set status directly). F4-04 → **verified-closed in E18**.
+  - **Phase-G register seeded:** F5-01, F5-03, F7-02 (scheduled features, named not dropped).
+  - **Accepted-advisory register:** W1 fastify v5 accepted (LBD-5); in-range protobufjs/vite/esbuild → E17a.
+  - **Accepted-minors register:** F1-05, F1-06, F2-01, F2-02, F3-02, F4-02, F4-03, F5-05, F7-05, S1-04, I2 (documented, no action).
+- **Routing of build/ride rulings to appended slices:** F7-04 → **E22** (BUILD: audit-log filters); SF2-07/SF2-08 → **E23** (RIDE: methodology-parsing visibility); SF5-07/SF5-09/SF5-10/SF6-13/SF6-14/SF6-15 → **E24** (RIDE: frontend swallows); F6-02 + F1-02 → **E25** (cluster-B bugs); F1-04 + F8-01 + I8 → **E26** (doc-fix); F7-03/F4-01/F5-04 → **E19/E20/E21** (augmentation builds). **New roster floor: 27.**
+- **Deferred (no slice):** F3-01 (§7.14-vs-T-D57 scan-gate layer) → re-surfaced to the spec author as a separate decision after E17; SF4-05/SF4-06 (cost under-count) → Phase F.
+- **Anchor:** none (descopes narrow existing prose; the C-D12 amendment is a wording alignment, no new anchor — consistent with "SPEC.md only for ratified descopes").
+- **Backfill:** E16 merge SHA `95b3673` + fix-rounds 0 recorded above (established next-branch backfill pattern).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none (this *is* the blessed halt-class-9 gate; resolved by the ruling).
+- **Surfaces to spec author:** F3-01 re-surfaced as a separate post-E17 decision (above).
