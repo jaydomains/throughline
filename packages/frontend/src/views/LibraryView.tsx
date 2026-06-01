@@ -499,6 +499,86 @@ interface EditorProps {
   onDeleteDirective: (d: Directive) => void;
 }
 
+// E20b — user-mediated LLM-assist for the project_spec entry. Drafts a revision (draft-only;
+// the backend never writes), shows it for review, and on Accept hands it to the editor's
+// standard save path. AI-unavailable / failed states are disclosed, never a fake draft (T-D60).
+export function SpecAssistPanel({
+  projectId,
+  onAccept,
+}: {
+  projectId: string;
+  onAccept: (draft: string) => void;
+}) {
+  const [instruction, setInstruction] = useState('');
+  const [draft, setDraft] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const generate = async () => {
+    setBusy(true);
+    setError(null);
+    setDraft(null);
+    try {
+      const r = await api.draftProjectSpec(projectId, instruction);
+      if (r.result.status === 'ok' && r.result.draft !== null) {
+        setDraft(r.result.draft);
+      } else if (r.result.status === 'unavailable') {
+        setError('AI is not configured — set an Anthropic API key in settings to draft revisions.');
+      } else {
+        setError('The draft request failed — try again.');
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'The draft request failed.');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section className="spec-assist" data-testid="spec-assist">
+      <h3>Revise with AI</h3>
+      <p className="form-hint">
+        AI drafts a revision for you to review — nothing is saved until you accept.
+      </p>
+      <input
+        type="text"
+        placeholder="What should change? (optional — leave blank to improve overall)"
+        value={instruction}
+        onChange={(e) => setInstruction(e.target.value)}
+        data-testid="spec-assist-instruction"
+      />
+      <button type="button" onClick={() => void generate()} disabled={busy} data-testid="spec-assist-draft">
+        {busy ? 'Drafting…' : 'Draft revision'}
+      </button>
+      {error && (
+        <p className="error" role="alert" data-testid="spec-assist-error">
+          {error}
+        </p>
+      )}
+      {draft !== null && (
+        <div className="spec-assist-preview" data-testid="spec-assist-preview">
+          <textarea readOnly value={draft} rows={10} aria-label="Proposed spec draft" />
+          <div className="spec-assist-actions">
+            <button
+              type="button"
+              onClick={() => {
+                onAccept(draft);
+                setDraft(null);
+              }}
+              data-testid="spec-assist-accept"
+            >
+              Accept
+            </button>
+            <button type="button" onClick={() => setDraft(null)} data-testid="spec-assist-reject">
+              Reject
+            </button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function EntryEditor({
   entry,
   attachedItems,
@@ -611,6 +691,17 @@ function EntryEditor({
         rows={16}
         data-testid="library-editor-body"
       />
+      {entry.type === 'project_spec' && (
+        <SpecAssistPanel
+          projectId={entry.project_id}
+          onAccept={(draft) => {
+            // User-mediated: the AI never writes — the user clicked Accept. Load the draft
+            // into the editor and persist it via the standard library update path.
+            setBody(draft);
+            onPatch({ body: draft });
+          }}
+        />
+      )}
       <section className="library-directives" data-testid="library-directives">
         <h3>Directives ({directives.length})</h3>
         {directives.length === 0 && (

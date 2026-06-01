@@ -342,6 +342,15 @@ export const api = {
       `/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}`,
       { method: 'PATCH', body: JSON.stringify(input) },
     ),
+  // E20b — draft-only LLM-assist for the project_spec entry. Returns a proposed revision for
+  // the user to review/accept; never persists (the accept path is the standard update above).
+  draftProjectSpec: (projectId: string, instruction: string) =>
+    jsonFetch<{
+      result: { draft: string | null; used_ai: boolean; status: 'ok' | 'unavailable' | 'failed' };
+    }>(`/api/projects/${pid(projectId)}/library/project-spec/draft`, {
+      method: 'POST',
+      body: JSON.stringify({ instruction }),
+    }),
   deleteLibraryEntry: (projectId: string, entryId: string) =>
     fetch(`/api/projects/${pid(projectId)}/library/${encodeURIComponent(entryId)}`, {
       method: 'DELETE',
