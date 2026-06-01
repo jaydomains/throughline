@@ -30,6 +30,13 @@ describe('Phase 15 — settings panel (SPEC §7.25)', () => {
     expect(screen.getByTestId('load-error-settings').textContent).toContain('cost boom');
   });
 
+  it('E24: two concurrent loader failures both surface (accumulated, not overwritten)', async () => {
+    mockApi.getSecrets.mockRejectedValueOnce(new Error('secrets boom'));
+    mockApi.getCostSummary.mockRejectedValueOnce(new Error('cost boom'));
+    renderView();
+    await waitFor(() => expect(screen.getAllByTestId('load-error-settings').length).toBe(2));
+  });
+
   it('warns when no auto-copy target is configured (local-only backup caveat)', async () => {
     renderView();
     await waitFor(() => expect(screen.getByTestId('autocopy-warning')).toBeTruthy());

@@ -134,7 +134,7 @@ export function SettingsView() {
   const [cost, setCost] = useState<CostSummary | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<Error | null>(null);
+  const [loadErrors, setLoadErrors] = useState<Error[]>([]);
 
   const load = useCallback(() => {
     // SF6 — getSettings previously had no catch: a failed settings load was an
@@ -145,15 +145,14 @@ export function SettingsView() {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
     // E24 (SF6-11): the secrets / backup / cost loaders previously swallowed failures
     // (`.catch(() => {})`), leaving their panels stuck on "Loading…" — a failed fetch read
-    // as a healthy empty. Surface it on a shared load-error banner instead.
-    setLoadError(null);
-    const toErr = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
-    void api.getSecrets().then(setSecrets).catch((e) => setLoadError(toErr(e)));
-    void api.getBackupStatus().then(setBackup).catch((e) => setLoadError(toErr(e)));
-    void api
-      .getCostSummary({ scope: 'global' })
-      .then(setCost)
-      .catch((e) => setLoadError(toErr(e)));
+    // as a healthy empty. Surface each failure; accumulate so concurrent failures don't
+    // overwrite one another (one shared slot would only show the last to settle).
+    setLoadErrors([]);
+    const addErr = (e: unknown) =>
+      setLoadErrors((prev) => [...prev, e instanceof Error ? e : new Error(String(e))]);
+    void api.getSecrets().then(setSecrets).catch(addErr);
+    void api.getBackupStatus().then(setBackup).catch(addErr);
+    void api.getCostSummary({ scope: 'global' }).then(setCost).catch(addErr);
   }, []);
 
   useEffect(() => {
@@ -180,7 +179,9 @@ export function SettingsView() {
       <h1>Settings</h1>
       {msg && <p className="settings-msg" role="status">{msg}</p>}
       {error && <p className="error" role="alert">{error}</p>}
-      <LoadError error={loadError} what="settings" />
+      {loadErrors.map((err, i) => (
+        <LoadError key={i} error={err} what="settings" />
+      ))}
 
       <AppearanceSection settings={settings} onSaveSettings={saveSettings} />
 
@@ -780,20 +781,18 @@ export function BootstrapBlock({ project }: { project: Project }) {
   const [rendering, setRendering] = useState(false);
   const [renderError, setRenderError] = useState<string | null>(null);
   const [bootstrapState, setBootstrapState] = useState<BootstrapState | null>(null);
-  const [bootstrapError, setBootstrapError] = useState<Error | null>(null);
+  const [bootstrapErrors, setBootstrapErrors] = useState<Error[]>([]);
 
   const refreshConflicts = useCallback(() => {
     // E24 (SF6-11 sibling): a failed conflicts fetch set staleCount=null, which suppresses
     // the whole block — a load failure read as "no stale rows". Surface it instead.
+    setBootstrapErrors([]);
     api
       .listBootstrapConflicts(projectId)
-      .then((res) => {
-        setStaleCount(res.result.stale.length);
-        setBootstrapError(null);
-      })
+      .then((res) => setStaleCount(res.result.stale.length))
       .catch((e) => {
         setStaleCount(null);
-        setBootstrapError(e instanceof Error ? e : new Error(String(e)));
+        setBootstrapErrors((prev) => [...prev, e instanceof Error ? e : new Error(String(e))]);
       });
   }, [projectId]);
 
@@ -803,7 +802,7 @@ export function BootstrapBlock({ project }: { project: Project }) {
       .then((res) => setBootstrapState(res.result))
       .catch((e) => {
         setBootstrapState(null);
-        setBootstrapError(e instanceof Error ? e : new Error(String(e)));
+        setBootstrapErrors((prev) => [...prev, e instanceof Error ? e : new Error(String(e))]);
       });
   }, [projectId]);
 
@@ -841,7 +840,9 @@ export function BootstrapBlock({ project }: { project: Project }) {
       data-testid="bootstrap-block"
       data-status={status ?? 'unknown'}
     >
-      <LoadError error={bootstrapError} what="bootstrap" />
+      {bootstrapErrors.map((err, i) => (
+        <LoadError key={i} error={err} what="bootstrap" />
+      ))}
       {statusLabel && (
         <div
           className="settings-throughline-status"

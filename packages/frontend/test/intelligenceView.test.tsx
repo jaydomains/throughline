@@ -30,6 +30,13 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
     expect(screen.getByTestId('load-error-intelligence').textContent).toContain('review boom');
   });
 
+  it('E24: two concurrent panel failures both surface (accumulated, not overwritten)', async () => {
+    mockApi.getPeriodicReview.mockRejectedValueOnce(new Error('review boom'));
+    mockApi.getDoNext.mockRejectedValueOnce(new Error('do-next boom'));
+    renderView();
+    await waitFor(() => expect(screen.getAllByTestId('load-error-intelligence').length).toBe(2));
+  });
+
   it('runs a query through the router and renders the answer + citations', async () => {
     renderView();
     fireEvent.change(screen.getByTestId('rag-input'), {

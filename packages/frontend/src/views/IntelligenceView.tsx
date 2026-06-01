@@ -40,7 +40,7 @@ export function IntelligenceView() {
   const [review, setReview] = useState<PeriodicReviewResult | null>(null);
   const [reviewSynthesis, setReviewSynthesis] = useState<string | null>(null);
   const [doNext, setDoNext] = useState<DoNextResult | null>(null);
-  const [panelError, setPanelError] = useState<Error | null>(null);
+  const [panelErrors, setPanelErrors] = useState<Error[]>([]);
   const [stakeItem, setStakeItem] = useState('');
   const [stake, setStake] = useState<StakeholderViewResult | null>(null);
   const [chatCtxType, setChatCtxType] = useState<ChatContextType>('session');
@@ -51,22 +51,24 @@ export function IntelligenceView() {
   useEffect(() => {
     if (!projectId) return;
     // E24 (SF6-10): a failed periodic-review / do-next fetch previously set state to null
-    // and rendered as an empty panel — indistinguishable from "no data". Surface it.
-    setPanelError(null);
-    const toErr = (e: unknown) => (e instanceof Error ? e : new Error(String(e)));
+    // and rendered as an empty panel — indistinguishable from "no data". Surface each
+    // failure; accumulate so two concurrent failures don't overwrite each other.
+    setPanelErrors([]);
+    const addErr = (e: unknown) =>
+      setPanelErrors((prev) => [...prev, e instanceof Error ? e : new Error(String(e))]);
     api
       .getPeriodicReview(projectId)
       .then(setReview)
       .catch((e) => {
         setReview(null);
-        setPanelError(toErr(e));
+        addErr(e);
       });
     api
       .getDoNext(projectId)
       .then(setDoNext)
       .catch((e) => {
         setDoNext(null);
-        setPanelError(toErr(e));
+        addErr(e);
       });
   }, [projectId]);
 
@@ -318,7 +320,9 @@ export function IntelligenceView() {
           </span>
         )}
       </h2>
-      <LoadError error={panelError} what="intelligence" />
+      {panelErrors.map((err, i) => (
+        <LoadError key={i} error={err} what="intelligence" />
+      ))}
       {review && (
         <div className="periodic-review" data-testid="periodic-review">
           <ul className="hygiene-buckets">
