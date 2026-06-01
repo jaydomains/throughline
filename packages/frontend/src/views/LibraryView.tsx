@@ -26,6 +26,7 @@ const TYPE_LABEL: Record<LibraryEntryType, string> = {
   prompt: 'Prompts',
   snippet: 'Snippets',
   imported_doc: 'Imported docs',
+  project_spec: 'Project spec',
 };
 
 type TypeFilter = 'all' | LibraryEntryType;

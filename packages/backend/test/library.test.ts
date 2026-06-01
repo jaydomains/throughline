@@ -9,6 +9,7 @@ import {
   LibraryEntryNotFoundError,
   LibraryEntryTypeError,
   NotAPromptError,
+  ProjectSpecExistsError,
   createLibraryService,
 } from '../src/library/service.js';
 import { createTextIndex, type TextIndex } from '../src/intelligence/text-index.js';
@@ -324,6 +325,27 @@ describe('library service (Phase 6a — full surface)', () => {
       const empty = await library.semanticSearch({ query: '   ', scope: 'project' }, project.id);
       expect(empty.via).toBe('semantic');
       expect(empty.entries).toEqual([]);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('E20/T-D10: project_spec is one-per-project (second create rejected; other projects unaffected)', async () => {
+    const { backend, library, projects, project } = await setup();
+    try {
+      const spec = library.create({ project_id: project.id, type: 'project_spec', title: 'Spec', body: 'v1' });
+      expect(spec.type).toBe('project_spec');
+      // A second project_spec for the same project is refused (422).
+      expect(() =>
+        library.create({ project_id: project.id, type: 'project_spec', title: 'Spec 2', body: 'v2' }),
+      ).toThrow(ProjectSpecExistsError);
+      // A different project can have its own.
+      const other = projects.create({ name: 'other', repo_path: '/tmp/other-spec' });
+      const otherSpec = library.create({ project_id: other.id, type: 'project_spec', title: 'Spec', body: 'x' });
+      expect(otherSpec.id).not.toBe(spec.id);
+      // The created project_spec is FTS-searchable after the table rebuild (migration 0013).
+      const found = library.search({ query: 'Spec', scope: 'project' }, project.id);
+      expect(found.entries.map((e) => e.id)).toContain(spec.id);
     } finally {
       await backend.cleanup();
     }

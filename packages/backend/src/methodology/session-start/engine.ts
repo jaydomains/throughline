@@ -88,9 +88,17 @@ interface AssembledContext {
   dependencies: string[];
   // Resolved include-in-prompt directive bodies (T-D12), auto-prepended verbatim.
   includeBlocks: string[];
+  // F4-01: the 2 previously-omitted SPEC §7 inputs. `projectSpec` is the canonical
+  // `project_spec` library entry's content read directly (bounded); `executionPlan` is the
+  // bundle's whole `execution_plan` template. Either is null when absent (block omitted).
+  projectSpec: string | null;
+  executionPlan: string | null;
   // Stable hash over everything that affects the rendered prompt — the cache key.
   inputFingerprint: string;
 }
+
+// F4-01: cap the project-spec content so a long spec can't crowd out the rest of the prompt.
+const PROJECT_SPEC_MAX_CHARS = 8000;
 
 export function createSessionStartEngine(
   opts: CreateSessionStartEngineOptions,
@@ -209,6 +217,17 @@ export function createSessionStartEngine(
     const dependencies = crossUnitDependencies(all);
     const blocks = includeBlocks(projectId);
 
+    // F4-01: project-spec excerpts — read the canonical `project_spec` library entry directly
+    // (current state at read time; one-per-project by T-D10), NOT via the semantic substrate.
+    const specEntry = library.list({ projectId, type: 'project_spec' })[0] ?? null;
+    const projectSpec = specEntry
+      ? `${specEntry.title}\n${specEntry.body}`.trim().slice(0, PROJECT_SPEC_MAX_CHARS) || null
+      : null;
+    // F4-01: execution-plan slice — the bundle's whole `execution_plan` template when present.
+    // `execution_plan` is a single bundle-global string (not mode-keyed), so "for the chosen
+    // mode" is satisfied by mode-driven template *selection*, not by slicing this field.
+    const executionPlan = bundle.templates.execution_plan?.trim() || null;
+
     const template = templateFor(bundle, mode);
 
     const fp = createHash('sha256');
@@ -232,6 +251,8 @@ export function createSessionStartEngine(
     for (const m of markers) fp.update(`mrk:${m}\n`);
     for (const e of dependencies) fp.update(`dep:${e}\n`);
     for (const b of blocks) fp.update(`inc:${b}\n`);
+    if (projectSpec) fp.update(`spec:${projectSpec}\n`);
+    if (executionPlan) fp.update(`plan:${executionPlan}\n`);
 
     return {
       mode,
@@ -242,6 +263,8 @@ export function createSessionStartEngine(
       markers,
       dependencies,
       includeBlocks: blocks,
+      projectSpec,
+      executionPlan,
       inputFingerprint: fp.digest('hex').slice(0, 32),
     };
   }
@@ -356,7 +379,16 @@ export function createSessionStartEngine(
         ctx.includeBlocks.length > 0
           ? `## Include-in-prompt (T-D12)\n\n${ctx.includeBlocks.join('\n\n')}\n\n---\n\n`
           : '';
+      // F4-01: the two previously-omitted inputs lead the prompt as labelled blocks (like the
+      // include-in-prompt prefix) so they land regardless of whether a bundle template happens
+      // to reference them — project spec first (foundational), then execution plan.
+      const specPrefix = ctx.projectSpec ? `## Project spec\n\n${ctx.projectSpec}\n\n---\n\n` : '';
+      const planPrefix = ctx.executionPlan
+        ? `## Execution plan\n\n${ctx.executionPlan}\n\n---\n\n`
+        : '';
       const rendered =
+        specPrefix +
+        planPrefix +
         includePrefix +
         renderTemplate(ctx.template, {
           project_name: p.name,
