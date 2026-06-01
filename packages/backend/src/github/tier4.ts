@@ -1,7 +1,7 @@
 import type { DB } from '../db/index.js';
 import type { DriftService } from '../drift/service.js';
 import { appendAudit } from '../audit/log.js';
-import { bundleDoneStatus, bundleItemPolicy } from '../items/policy.js';
+import { bundleDoneStatus, bundleDoneStatusForType, bundleItemPolicy } from '../items/policy.js';
 import type { MethodologyRegistry } from '../methodology/loader.js';
 import type { ProjectsService } from '../projects/service.js';
 
@@ -61,6 +61,12 @@ export type Tier4Confirm = (
 export interface Tier4Service {
   scanCandidates(projectId: string, candidates: Tier4Candidate[]): Promise<void>;
   dismissStale(projectId: string, nowMs?: number): number;
+  // F6-01 — the set of bundle-defined "done" statuses for a project: the terminal status of
+  // every declared item type (per-type, because a multi-type bundle's union terminal is just
+  // one type's done — e.g. test-bundle's union ends at note's `published`, not task's `done`).
+  // null when the bundle is not loaded, so callers can refuse to badge rather than guess.
+  // Tiers 1-3 use it to badge only done items.
+  doneStatuses(projectId: string): string[] | null;
 }
 
 export interface CreateTier4Options {
@@ -74,12 +80,33 @@ export interface CreateTier4Options {
 export function createTier4Service(opts: CreateTier4Options): Tier4Service {
   const { db, projects, registry, drift, confirm } = opts;
 
-  function doneItems(projectId: string): Array<{ id: string; title: string; description: string }> {
+  // Union-terminal done status — the tier-4 dedup scan's existing behaviour (a single
+  // done concept for similarity matching). Kept distinct from the per-type set used by
+  // tiers 1-3 below.
+  function unionDoneStatus(projectId: string): string | null {
     const project = projects.get(projectId);
-    if (!project) return [];
+    if (!project) return null;
     const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
-    if (loaded.status !== 'loaded') return [];
-    const done = bundleDoneStatus(bundleItemPolicy(loaded.bundle));
+    if (loaded.status !== 'loaded') return null;
+    return bundleDoneStatus(bundleItemPolicy(loaded.bundle));
+  }
+
+  // Per-type terminal statuses (F6-01) — one "done" per declared item type, deduped.
+  function perTypeDoneStatuses(projectId: string): string[] | null {
+    const project = projects.get(projectId);
+    if (!project) return null;
+    const loaded = registry.resolveBundle(project.bundle_id, project.bundle_path, project.repo_path);
+    if (loaded.status !== 'loaded') return null;
+    const policy = bundleItemPolicy(loaded.bundle);
+    const set = new Set<string>();
+    for (const type of policy.types) set.add(bundleDoneStatusForType(policy, type));
+    if (set.size === 0) set.add(bundleDoneStatus(policy));
+    return [...set];
+  }
+
+  function doneItems(projectId: string): Array<{ id: string; title: string; description: string }> {
+    const done = unionDoneStatus(projectId);
+    if (done === null) return [];
     return db
       .prepare(
         'SELECT id, title, description FROM items WHERE project_id = ? AND status = ?',
@@ -145,6 +172,10 @@ export function createTier4Service(opts: CreateTier4Options): Tier4Service {
         }
       }
       return n;
+    },
+
+    doneStatuses(projectId) {
+      return perTypeDoneStatuses(projectId);
     },
   };
 }
