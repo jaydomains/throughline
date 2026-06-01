@@ -65,6 +65,25 @@ describe('E20b — project-spec LLM-assist (draft-only, user-mediated)', () => {
     }
   });
 
+  it('caps an over-long instruction before it reaches the model (bounds token cost)', async () => {
+    let seen = '';
+    const recording: AnthropicClient = {
+      available: () => true,
+      call: async (input) => {
+        seen = String(input.messages[0]?.content ?? '');
+        return { text: '# Spec', input_tokens: 1, output_tokens: 1, stop_reason: 'end_turn' };
+      },
+    };
+    const { backend, specAssist, project } = await setup(recording);
+    try {
+      await specAssist.draft(project.id, 'x'.repeat(5000));
+      const instrPart = seen.split('Revision instruction:\n')[1] ?? '';
+      expect(instrPart.length).toBe(2000); // capped, not the full 5000
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
   it('discloses unavailable (no draft) when AI is not configured — never a fabricated draft (T-D60)', async () => {
     const { backend, specAssist, project } = await setup(client({ available: false }));
     try {

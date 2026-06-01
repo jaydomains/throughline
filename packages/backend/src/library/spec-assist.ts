@@ -23,6 +23,9 @@ import type { LibraryService } from './service.js';
 
 const MODEL = 'claude-sonnet-4-6';
 const MAX_TOKENS = 2048;
+// Bound the free-text instruction so a pasted wall of text can't drive unexpected token
+// cost (the spec body itself is already bounded by its 8000-char read in E20a's session-start).
+const MAX_INSTRUCTION_CHARS = 2000;
 
 export type SpecDraftStatus = 'ok' | 'unavailable' | 'failed';
 
@@ -62,9 +65,10 @@ export function createSpecAssistService(opts: {
         'GitHub-flavored markdown — no preamble, no commentary, no code fences. Preserve the ' +
         'author’s intent and any decisions already recorded; improve clarity, structure, and ' +
         'completeness. If there is no current spec, draft one from the instruction.';
+      const instr = instruction.trim().slice(0, MAX_INSTRUCTION_CHARS);
       const user =
         `Current project spec:\n${current || '(none yet)'}\n\n` +
-        `Revision instruction:\n${instruction.trim() || 'Improve and expand the spec.'}`;
+        `Revision instruction:\n${instr || 'Improve and expand the spec.'}`;
       try {
         const res = await anthropic.call({
           model,
