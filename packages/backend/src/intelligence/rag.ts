@@ -50,6 +50,11 @@ export function routeQuery(query: string): RagSubstrate {
 export interface RagService {
   query(projectId: string, req: RagQueryRequest): Promise<RagQueryResult>;
   reindex(projectId: string): Promise<RagReindexResult>;
+  // E19: the shared text substrate, exposed so the library service's per-entry semantic
+  // search reuses this one index (the index already covers `library` entities). Injected
+  // lazily into the library service to avoid a construction cycle (the index needs the
+  // library service, so the library service can only resolve it after composition).
+  textIndex: TextIndex;
 }
 
 interface CreateOptions {
@@ -233,6 +238,7 @@ export function createRagService(opts: CreateOptions): RagService {
   }
 
   return {
+    textIndex,
     async reindex(projectId) {
       if (!projects.get(projectId)) throw new ProjectNotFoundError(projectId);
       const r = await textIndex.ensureFresh(projectId, { force: true });

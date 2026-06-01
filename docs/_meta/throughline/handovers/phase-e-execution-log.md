@@ -356,3 +356,18 @@
 - **Tests:** `gatesView.test.tsx` — a pending step's badge has `gate-status-pending` and NOT `gate-status-error` (F8-01). F1-04/I8 are doc/config (no test; CI itself exercises I8). Frontend suite **197 pass**; full typecheck/lint/build green.
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
+
+### E19 — Per-entry semantic search (F7-03) · augmentation feature-build
+- **Branch:** `claude/phase-e-e19-library-semantic-search`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** F7-03 (Mod, BUILD — spec-author ruled). **Class:** feature-build (SPEC §7.8 per-entry semantic search was a permanent stub).
+- **Spec basis:** SPEC §7.8 — "All library entries support … AI semantic search (routed to Semble for code-related queries, **local embeddings for text-content queries**)." The library service's `semanticSearch` returned a hardcoded empty `{ via: 'semantic-stub' }`.
+- **Fix:** wire `semanticSearch` to the existing shared `TextIndex` (which already indexes `library` entities). It now `ensureFresh`es + `search`es the substrate, keeps `entity_type === 'library'` hits, maps them to `LibraryEntry` rows, applies the optional `type` filter, and pages to `limit`.
+- **Honesty (T-D60, on-contract):** the result's `via` **is** the embedder-capability discriminator — `LibrarySearchVia` extended (shared, T-D59-verified; frontend doesn't branch on `via`, so the union widening is wire-safe) to `'fts' | 'semantic' | 'semantic-fallback' | 'semantic-unavailable'`. A healthy transformers embedder → `semantic`; the offline deterministic fallback (capability-absent, T-D60) → `semantic-fallback`; a refused embed **or an unwired substrate** → `semantic-unavailable` (empty *because retrieval failed*, never a healthy empty). Consumes the post-E1 honest embedder (the `text-index.ts:284` `if (!qv)` embed-failure split made in E1) — surfaces it, never re-buries it.
+- **Composition (no anchor):** the `TextIndex` depends on the `LibraryService` (cycle), so it's injected **lazily** — `createLibraryService(db, projects, () => ragRef?.textIndex ?? null)`; `RagService` now exposes its `textIndex`; the thunk resolves at request time after `rag` is assigned (`ragRef = rag`). No wider refactor (halt-class-4 watch cleared). `semanticSearch` became `async`; the one route caller awaits it.
+- **Files:** `packages/shared/src/library.ts` (`LibrarySearchVia`), `packages/backend/src/library/service.ts` (impl + lazy provider param), `intelligence/rag.ts` (expose `textIndex`), `server.ts` (lazy wiring), `library/routes.ts` (await), `test/library.test.ts` (rewrote the stub test + wired test).
+- **Anchor:** none (reuses C-D2/T-D60). **Deps:** rides E1's honest embedder (merged). Independent of E20/E21.
+- **Tests:** `library.test.ts` — unwired substrate ⇒ `semantic-unavailable` (T-D60, not a healthy empty); a wired substrate (offline-fallback-or-transformers, env-robust assertion) returns the matching entry via an exact-text query + honest `via`, and the `type` filter narrows correctly. Backend **596 pass** (61 files); frontend 197; typecheck/lint/build green.
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none (composition-cycle resolved by lazy injection; halt-class-4 estimate-breach watch cleared — no wider refactor).

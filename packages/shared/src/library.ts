@@ -65,7 +65,16 @@ export interface AttachedItemSummary {
 }
 
 export type LibrarySearchScope = 'project' | 'global';
-export type LibrarySearchVia = 'fts' | 'semantic-stub';
+// `via` discloses how a result set was produced. For the semantic substrate (F7-03 / E19)
+// it doubles as the T-D60 embedder-capability discriminator, so a caller can never mistake
+// a refused/degraded retrieval for a healthy empty:
+//   - `semantic`             — a healthy (transformers) embedder produced the results.
+//   - `semantic-fallback`    — the offline deterministic fallback embedder (capability-absent,
+//                              T-D60) produced them; matches are coarse, and that is disclosed.
+//   - `semantic-unavailable` — the query embed was refused (embedder threw, or the substrate
+//                              is unwired); `entries` is empty *because retrieval failed*,
+//                              NOT because nothing matched.
+export type LibrarySearchVia = 'fts' | 'semantic' | 'semantic-fallback' | 'semantic-unavailable';
 
 export interface LibrarySearchRequest {
   query: string;

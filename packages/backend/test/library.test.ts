@@ -11,6 +11,8 @@ import {
   NotAPromptError,
   createLibraryService,
 } from '../src/library/service.js';
+import { createTextIndex, type TextIndex } from '../src/intelligence/text-index.js';
+import { createTextEmbedder } from '../src/intelligence/embeddings.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -29,6 +31,27 @@ async function setup() {
   const items = createItemsService(backend.db, projects, backend.registry);
   const library = createLibraryService(backend.db, projects);
   const project = projects.create({ name: 'demo', repo_path: '/tmp/demo' });
+  return { backend, projects, items, library, project };
+}
+
+// E19: a library service wired to a live text index (the offline fallback embedder), using
+// the same lazy-provider pattern as the composition root to break the index↔library cycle.
+async function setupWired() {
+  const cfg = makeTmpConfig();
+  plantFreeform(cfg.methodologiesDir);
+  const backend = await makeBackend(cfg);
+  const projects = createProjectsService(backend.db, backend.registry);
+  const items = createItemsService(backend.db, projects, backend.registry);
+  let textIndex: TextIndex | null = null;
+  const library = createLibraryService(backend.db, projects, () => textIndex);
+  textIndex = createTextIndex({
+    db: backend.db,
+    projects,
+    items,
+    library,
+    embedder: createTextEmbedder(),
+  });
+  const project = projects.create({ name: 'demo', repo_path: '/tmp/demo-wired' });
   return { backend, projects, items, library, project };
 }
 
@@ -260,12 +283,41 @@ describe('library service (Phase 6a — full surface)', () => {
     }
   });
 
-  it('semantic-search returns the stub envelope', async () => {
+  it('E19/F7-03: semantic search with no substrate wired discloses unavailable (T-D60), not a healthy empty', async () => {
     const { backend, library, project } = await setup();
     try {
-      const result = library.semanticSearch({ query: 'anything', scope: 'project' }, project.id);
-      expect(result.via).toBe('semantic-stub');
+      // `setup()` builds the library without a text-index provider — the unwired path.
+      const result = await library.semanticSearch({ query: 'anything', scope: 'project' }, project.id);
+      expect(result.via).toBe('semantic-unavailable');
       expect(result.entries).toEqual([]);
+    } finally {
+      await backend.cleanup();
+    }
+  });
+
+  it('E19/F7-03: a wired substrate returns matching library entries, disclosing the embedder', async () => {
+    const { backend, library, project } = await setupWired();
+    try {
+      // Title-only entry → indexed text is exactly "quokka"; an identical query embeds to the
+      // same vector under the deterministic offline embedder → a guaranteed top hit.
+      const hit = library.create({ project_id: project.id, type: 'note', title: 'quokka' });
+      library.create({ project_id: project.id, type: 'prompt', title: 'quokka', body: 'p' });
+      library.create({ project_id: project.id, type: 'note', title: 'wholly different subject' });
+
+      const result = await library.semanticSearch({ query: 'quokka', scope: 'project' }, project.id);
+      // The embedder kind depends on whether the optional transformers backend is installed
+      // in the runner — either way it discloses a *working* embedder (T-D60), never the
+      // `semantic-unavailable` refusal that a wired-but-failed substrate would report.
+      expect(['semantic', 'semantic-fallback']).toContain(result.via);
+      expect(result.entries.map((e) => e.id)).toContain(hit.id);
+
+      // The `type` filter narrows to a single content type.
+      const notesOnly = await library.semanticSearch(
+        { query: 'quokka', scope: 'project', type: 'note' },
+        project.id,
+      );
+      expect(notesOnly.entries.every((e) => e.type === 'note')).toBe(true);
+      expect(notesOnly.entries.map((e) => e.id)).toContain(hit.id);
     } finally {
       await backend.cleanup();
     }

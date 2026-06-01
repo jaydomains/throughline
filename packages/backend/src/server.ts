@@ -272,7 +272,11 @@ export async function startServer(
     onStatusTransition: (projectId) => gateRuntime.onItemStatusTransition(projectId),
     onDelete: (projectId, itemId) => orphanRules.captureForItem(projectId, itemId),
   });
-  const library = createLibraryService(db, projects);
+  // E19: the library service's semantic search reuses the RAG text index, but that index
+  // depends on the library service — so it's injected lazily via this holder, resolved at
+  // request time (long after `rag` below is assigned).
+  let ragRef: ReturnType<typeof createRagService> | null = null;
+  const library = createLibraryService(db, projects, () => ragRef?.textIndex ?? null);
   // Phase 12 — companion review runtime (C-D8, T-D45). Mechanical steps reuse the Phase-8
   // mechanical-check pipeline; judgement steps take a user call or an AI-via-Anthropic
   // proposal (default Sonnet per SPEC §9). Inert-but-present for freeform (no checklists).
@@ -463,6 +467,7 @@ export async function startServer(
     embedder: textEmbedder,
     resolveModel: modelFor,
   });
+  ragRef = rag; // E19: resolves the library service's lazy text-index provider.
   // Phase 14 — end-of-session retro (SPEC §7.18, user-initiated) and periodic review
   // (T-D22: hygiene queries with no AI; AI synthesis only on user open). Capability-gated
   // like the rest of the intelligence layer.
