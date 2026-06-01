@@ -181,7 +181,9 @@ function regexScan(
 // "we could not determine the current state" and the engine must NOT dismiss anything —
 // a transient read error otherwise reads as a clean repo and wipes real open signals.
 export type DisciplineScanResult =
-  | { ok: true; findings: ScanFinding[] }
+  // `warnings` carry bundle-authoring diagnostics that are NOT repo drift but must not be
+  // silent (SF2-08): e.g. a refused/invalid `format_regex` whose constraint went unenforced.
+  | { ok: true; findings: ScanFinding[]; warnings?: string[] }
   | { ok: false; error: Error };
 
 export function runDisciplineScan(
@@ -197,10 +199,39 @@ export function runDisciplineScan(
         return { ok: true, findings: bannedStringScan(repoPath, bundle) };
       case 'structural':
         return { ok: true, findings: structuralScan(repoPath, bundle) };
-      case 'cross_reference':
-        return { ok: true, findings: crossReferenceScan(db, projectId, repoPath, bundle) };
-      case 'regex':
+      case 'cross_reference': {
+        // SF2-08: a refused/invalid format_regex silently dropped the anchor-format
+        // constraint. The other cross-reference checks (resolution/liveness) are still
+        // valid, so this stays ok:true — but the dropped constraint surfaces as a warning
+        // rather than reading as a clean format check.
+        const fr = bundle.anchor_system.format_regex;
+        const warnings: string[] =
+          fr && safeCompile(fr) === null
+            ? [
+                `cross_reference: anchor format_regex was refused (invalid or ` +
+                  `catastrophic-backtracking); the anchor-format constraint is NOT enforced ` +
+                  `this scan — fix the bundle's anchor_system.format_regex.`,
+              ]
+            : [];
+        return { ok: true, findings: crossReferenceScan(db, projectId, repoPath, bundle), warnings };
+      }
+      case 'regex': {
+        // SF2-08: a refused/invalid regex-category pattern means the category could not be
+        // evaluated at all — returning ok:true/[] would reconcile its open signals away and
+        // read as "clean". Treat it as unevaluable (ok:false) so the engine PRESERVES the
+        // category's signals (same posture as a transient scanner error, SF2-01) and logs it.
+        const pattern = category.details.trim();
+        if (pattern && safeCompile(pattern) === null) {
+          return {
+            ok: false,
+            error: new Error(
+              `regex category "${category.name}" pattern was refused (invalid or ` +
+                `catastrophic-backtracking); category not evaluated — fix the bundle pattern.`,
+            ),
+          };
+        }
         return { ok: true, findings: regexScan(repoPath, bundle, category) };
+      }
       default:
         return { ok: true, findings: [] };
     }

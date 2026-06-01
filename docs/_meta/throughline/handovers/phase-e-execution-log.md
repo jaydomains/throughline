@@ -312,3 +312,19 @@
 - **Fix-rounds:** TBD.
 - **Halt-class fires:** none.
 - **Known-flake note:** `gatesView.test.tsx` flaked once under parallel load (passed 7/7 in isolation); unrelated to this change (only `api.ts listAudit` touched on the frontend) — same class as the Phase-F-flagged `directives.test.tsx`/`rag.test.ts`.
+
+### E23 — Methodology-parsing visibility (SF2-07, SF2-08) · RIDE (audit-4 wrong-belief Lows)
+- **Branch:** `claude/phase-e-e23-methodology-parse-visibility`
+- **PR:** #pending (draft → ready on green)
+- **Merge SHA:** pending
+- **Closes:** SF2-07, SF2-08 (audit-4 Lows; spec-author ruled RIDE — close cousins of E13). **Class:** silent-failure fix (wrong-belief-about-state).
+- **SF2-07 (companion attach audit asserts success):** `companion/engine.ts` run-completion attached the run-summary note to `input.itemIds` best-effort (a bad id is swallowed so it can't fail the run), but the audit recorded `attached_items: input.itemIds ?? []` — asserting *every requested* id attached, even ones that threw. Fix: track the ids that actually attached vs failed; audit now records `attached_items: <actually-attached>` and `attach_failures: <rejected>` (only when non-empty). The audit reflects reality, not the request.
+- **SF2-08 (refused bundle regex → silent skip):** `drift/discipline/scanners.ts` — a bundle-authored regex refused by `safeCompile` (catastrophic-backtracking / invalid) silently became "no constraint." Two sites, two postures:
+  - **regex category:** a refused pattern means the category is **unevaluable** — returning `ok:true/[]` would reconcile its open signals away and read as "clean." Now returns **`ok:false`** so the engine **preserves** the category's signals (same posture as a transient scanner error, SF2-01) and logs it. A refused pattern no longer reads as a clean category.
+  - **cross_reference format_regex:** the other sub-checks (resolution/liveness) stay valid, so the scan stays `ok:true` but carries a **`warnings`** entry (new optional field on the `ok:true` result) that the engine surfaces via `logger.warn` — the dropped anchor-format constraint is disclosed, not silent.
+- **Design note:** `warnings` is optional on the `ok:true` variant (existing `{ok:true, findings}` constructions unchanged); the refused-pattern detection reuses `safeCompile` in `runDisciplineScan` (a one-line precheck on a short pattern), leaving the scanner helpers' signatures untouched (minimal blast radius; existing scan tests unaffected).
+- **Files:** `methodology/companion/engine.ts` (SF2-07), `methodology/drift/discipline/scanners.ts` + `.../engine.ts` (SF2-08), `test/methodology-parse-visibility.test.ts` (new).
+- **Anchor:** none. **Deps:** none (reuses the Phase-D `safe-regex` already on main + the SF2-01 scan-result contract).
+- **Tests:** `methodology-parse-visibility.test.ts` (4) — SF2-07: a run with one good + one bogus item id ⇒ note attaches to the good item, audit records `attached_items:[good]` + `attach_failures:[bogus]`. SF2-08: refused regex-category pattern ⇒ `ok:false` (signals preserved); valid pattern ⇒ `ok:true`; refused cross_reference `format_regex` ⇒ `ok:true` with a `format_regex was refused` warning. Backend suite **589 pass** (61 files).
+- **Fix-rounds:** TBD.
+- **Halt-class fires:** none.
