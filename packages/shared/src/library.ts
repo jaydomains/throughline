@@ -3,7 +3,11 @@
 // Notes attach to items many-to-many (T-D9); prompts use `{{var_name}}` placeholders
 // (§13 adopted default). Whiteboards remain deferred to v1.1.
 
-export const LIBRARY_ENTRY_TYPES = ['note', 'prompt', 'snippet', 'imported_doc'] as const;
+// T-D10 (amended, Phase E / E20): the library has five canonical content types. `project_spec`
+// is the canonical project-specification entry — exactly one per project (uniqueness enforced
+// at create-time, not by a flag). It is a library-entry stratum type, NOT a methodology-owned
+// core item type (T-D47 stays intact); whiteboards remain deferred (T-D43).
+export const LIBRARY_ENTRY_TYPES = ['note', 'prompt', 'snippet', 'imported_doc', 'project_spec'] as const;
 export type LibraryEntryType = (typeof LIBRARY_ENTRY_TYPES)[number];
 
 export function isLibraryEntryType(value: unknown): value is LibraryEntryType {

@@ -188,14 +188,16 @@ Item detail panel shows attached notes (linked, not embedded). Library is where 
 
 ---
 
-## T-D10 — Library has four content types: notes, prompts, snippets, imported docs
+## T-D10 — Library content types: notes, prompts, snippets, imported docs, project_spec
 
-- **Date:** 2026-05-09
+- **Date:** 2026-05-09 (amended 2026-06-01, Phase E / E20)
 - **Status:** active
 - **Sections affected:** 7.8, 12
 
 ### Decision
-The library supports exactly four content types in v1: notes, prompts, snippets, imported docs. Each first-class. Whiteboards are deferred to v1.1 (T-D43) and reconsidered once Throughline is in regular use and the gap is felt empirically.
+The library supports five canonical content types: notes, prompts, snippets, imported docs, and **`project_spec`**. Each first-class. Whiteboards remain deferred to v1.1 (T-D43) and reconsidered once Throughline is in regular use and the gap is felt empirically.
+
+**Amendment (2026-06-01, E20 / F4-01).** `project_spec` is added as the fifth content type: the canonical project-specification entry, **exactly one per project** (uniqueness enforced at create-time, not by a flag field). It lives in the library-entry stratum — it is **not** a methodology-owned core item type, so T-D47 (bundle-owned core item types) stays intact and the methodology-agnostic-core property is preserved. Session-start reads this entry directly (current state at read time) for the project-spec input (F4-01); it is not routed through the semantic substrate. This is an amendment of T-D10, not a new anchor (no new T-D/C-D number minted); T-D43 is kept consistent (whiteboards still deferred; `project_spec` is distinct from the deferred whiteboard surface).
 
 ### Context
 The library is the home for non-item reference content captured or referenced during sessions.
@@ -878,7 +880,7 @@ Bundle parser walks the eleven sections by heading. The state-machine parser mod
 - **Sections affected:** 7.8, 12
 
 ### Decision
-The library has four content types in v1 (notes, prompts, snippets, imported docs — T-D10). Whiteboards as a fifth canvas-based ideation surface with AI extraction are deferred to v1.1, reconsidered once Throughline is in regular use and the gap is felt empirically.
+The library's canonical content types are notes, prompts, snippets, imported docs, and `project_spec` (T-D10, amended 2026-06-01). Whiteboards as a canvas-based ideation surface with AI extraction remain deferred to v1.1, reconsidered once Throughline is in regular use and the gap is felt empirically. (The E20 `project_spec` addition does not revive whiteboards — it is a distinct canonical-spec type, not the deferred canvas surface.)
 
 ### Context
 Whiteboards were considered as a v1 library content type. The feature has obvious appeal but uncertain shape.

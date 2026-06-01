@@ -428,3 +428,91 @@ describe('Phase 13 — session-start scaffolding (C-D9, T-D12)', () => {
     }
   });
 });
+
+const EXEC_PLAN_SENTINEL = 'EXEC-PLAN-SENTINEL ship in vertical slices';
+const SPEC_SENTINEL = 'PROJECT-SPEC-SENTINEL the north star';
+
+// test-bundle with an `execution_plan` template injected into §9 Templates (the fixture
+// otherwise declares none) — so the F4-01 execution-plan wiring has a bundle to read from.
+async function setupExecPlan() {
+  const cfg = makeTmpConfig();
+  const src = readFileSync(TEST_BUNDLE_PATH, 'utf8').replace(
+    '### Template: session_start:standard',
+    `### Template: execution_plan\n\n${EXEC_PLAN_SENTINEL}\n\n### Template: session_start:standard`,
+  );
+  const target = join(cfg.methodologiesDir, 'test-bundle');
+  mkdirSync(target, { recursive: true });
+  writeFileSync(join(target, 'bundle.md'), src);
+  plantBundle(cfg.methodologiesDir, 'freeform', FREEFORM_BUNDLE_PATH);
+  const backend = await makeBackend(cfg);
+  const repoPath = makeRepo(join(cfg.dataDir, 'repo'));
+  const projects = createProjectsService(backend.db, backend.registry);
+  const items = createItemsService(backend.db, projects, backend.registry, {});
+  const library = createLibraryService(backend.db, projects);
+  const directives = createDirectivesService(backend.db, projects, items, library);
+  const engine = createSessionStartEngine({
+    db: backend.db,
+    projects,
+    registry: backend.registry,
+    items,
+    library,
+    directives,
+    classifier: stubClassifier(),
+  });
+  const project = projects.create({ name: 'tb', repo_path: repoPath, bundle_id: 'test-bundle' });
+  return { backend, library, engine, project, cleanup: () => backend.cleanup() };
+}
+
+describe('E20 / F4-01 — session-start assembles all declared inputs', () => {
+  it('includes the canonical project_spec content and the execution-plan slice', async () => {
+    const s = await setupExecPlan();
+    try {
+      s.library.create({
+        project_id: s.project.id,
+        type: 'project_spec',
+        title: 'Project Spec',
+        body: SPEC_SENTINEL,
+      });
+      const r = await s.engine.generate(s.project.id, 'standard');
+      // Project spec (input #6) — read directly from the canonical entry.
+      expect(r.prompt).toContain('## Project spec');
+      expect(r.prompt).toContain(SPEC_SENTINEL);
+      // Execution-plan slice (input #5) — the bundle's whole execution_plan template.
+      expect(r.prompt).toContain('## Execution plan');
+      expect(r.prompt).toContain(EXEC_PLAN_SENTINEL);
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('omits both blocks when neither input is present (no project_spec, no execution_plan)', async () => {
+    const s = await setup(); // plain test-bundle declares no execution_plan
+    try {
+      const r = await s.engine.generate(s.project.id, 'standard');
+      expect(r.prompt).not.toContain('## Project spec');
+      expect(r.prompt).not.toContain('## Execution plan');
+    } finally {
+      await s.cleanup();
+    }
+  });
+
+  it('a project_spec edit changes the input fingerprint (no stale cached prompt)', async () => {
+    const s = await setupExecPlan();
+    try {
+      const spec = s.library.create({
+        project_id: s.project.id,
+        type: 'project_spec',
+        title: 'Project Spec',
+        body: 'first version',
+      });
+      const before = await s.engine.generate(s.project.id, 'standard');
+      expect(before.prompt).toContain('first version');
+      s.library.update(spec.id, { body: 'SECOND-VERSION-SENTINEL' });
+      const after = await s.engine.generate(s.project.id, 'standard');
+      expect(after.prompt).toContain('SECOND-VERSION-SENTINEL');
+      expect(after.prompt).not.toContain('first version');
+    } finally {
+      await s.cleanup();
+    }
+  });
+});

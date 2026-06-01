@@ -90,6 +90,17 @@ export class NotAPromptError extends DomainError {
   }
 }
 
+// T-D10 (amended): `project_spec` is canonical — exactly one per project. A second create
+// is refused at the service boundary (mirrors the E16 create-time validators).
+export class ProjectSpecExistsError extends DomainError {
+  constructor(projectId: string, existingId: string) {
+    super(
+      `project ${projectId} already has a project_spec entry (${existingId}); edit it instead of creating another`,
+      { statusCode: 422, code: 'project_spec_exists' },
+    );
+  }
+}
+
 export interface ListLibraryFilter {
   projectId: string | null; // null → global (cross-project)
   type?: LibraryEntryType;
@@ -153,6 +164,14 @@ export function createLibraryService(
       const project = projects.get(input.project_id);
       if (!project) throw new ProjectNotFoundError(input.project_id);
       if (!isLibraryEntryType(input.type)) throw new LibraryEntryTypeError(input.type);
+      // T-D10 (amended): `project_spec` is one-per-project. Enforce at create-time (the
+      // canonical identity is structural — the type tag + this uniqueness — not a flag).
+      if (input.type === 'project_spec') {
+        const existing = db
+          .prepare(`SELECT id FROM library_entries WHERE project_id = ? AND type = 'project_spec'`)
+          .get(input.project_id) as { id: string } | undefined;
+        if (existing) throw new ProjectSpecExistsError(input.project_id, existing.id);
+      }
       const id = nanoid();
       const now = new Date().toISOString();
       db.prepare(

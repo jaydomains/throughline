@@ -224,16 +224,17 @@ User reviews the whole diff and applies it. The one exception is GitHub-triggere
 
 ### 7.8 Library
 
-Four content types, all first-class:
+Five canonical content types, all first-class:
 
 - **Notes** — long-form markdown. Tagged. Optionally attached to one or more items. Replaces per-item journal fields — one place for journaled thinking.
 - **Prompts** — saved prompt templates with optional `{{variable}}` placeholders. One-click "use" opens a fill-in modal and copies the resulting prompt to clipboard.
 - **Snippets** — short reference text or code blocks. Quick-copy button always visible.
 - **Imported docs** — `.md` files dragged in or repo-ingested. AI generates summary and tag suggestions on import.
+- **Project spec** — the canonical project-specification entry, **exactly one per project** (T-D10, amended E20). Read directly by session-start as a declared input (§7, F4-01). A second `project_spec` for a project is refused at create-time; edit the existing one instead.
 
 All library entries support full-text search, AI semantic search (routed to Semble for code-related queries, local embeddings for text-content queries), tag filtering, and pinning to sidebar top.
 
-Whiteboards as a fifth library content type are deferred to v1.1 (see §12).
+Whiteboards as a canvas-based ideation surface remain deferred to v1.1 (see §12) — distinct from the `project_spec` type added in E20.
 
 ### 7.9 Repo `.md` ingestion
 
@@ -585,7 +586,7 @@ Throughline v1 ships when all of the following are true:
 - Scratchpad, dump zone (session and library), voice input, Claude Code push, code TODO import (manual invocation), manual entry all functional with consistent review-before-apply where applicable
 - Reconcile produces structured diffs with all six categories and applies cleanly
 - Three directive types (pin, reminder, include-in-prompt) functional, with OS notification integration for reminders. Directives view groups by type.
-- Four library content types (notes, prompts, snippets, imported docs) all first-class
+- Five canonical library content types (notes, prompts, snippets, imported docs, project_spec) all first-class
 - GitHub integration polls at documented cadence, surfaces PR state, triggers reconcile on merge with confidence-thresholded behaviour. Manual item-to-PR linking functional.
 - Methodology gates fire on PR open, transition events, and commit-prep moments. Failures surface as proposals; never silently block.
 - Drift detection: both code-drift (four tiers; tier-4 similarity threshold cosine ≥ 0.80 with AI confirmation pass for borderline 0.70–0.80) and discipline-drift (bundle-defined categories) streams active and surfacing
@@ -646,7 +647,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D7 | Polling-only for GitHub (single-user, local backend doesn't need webhooks) | 7.13 |
 | T-D8 | Free-text blockers and structured blocker references coexist on items | 7.4 |
 | T-D9 | Notes consolidated into library; library notes attach to items via many-to-many. No per-item journal field. | 7.4, 7.8 |
-| T-D10 | Library has four content types: notes, prompts, snippets, imported docs. Whiteboards deferred to v1.1. | 7.8, 12 |
+| T-D10 | Library content types: notes, prompts, snippets, imported docs, and `project_spec` (amended E20 — fifth canonical type, one-per-project, library-entry stratum; T-D47 intact). Whiteboards deferred to v1.1. | 7.8, 12 |
 | T-D11 | Folder-opt-in for repo `.md` ingestion; snapshot by default with per-entry track-source toggle for re-ingest on change | 7.9 |
 | T-D12 | Three directive types in v1: pin, reminder, include-in-prompt. Others deferred. | 7.10 |
 | T-D13 | Code architecture visualisation dropped from Throughline; delegated to Semble (search) and Semgrep (rule verification) | 7.11, 7.15, 7.16 |
@@ -679,7 +680,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D40 | Projects as first-class entities, multiple projects coexist, each binds to a methodology bundle. v1 multi-project from day one. | 7.2, 8 |
 | T-D41 | The `freeform` default and a generic `test-bundle` grammar fixture ship with Throughline as the repo-shipped bundles. Rich user-owned discipline bundles are authored as markdown and bound per-project via `bundle_path` (C-D14) so proprietary discipline stays outside the repo; additional repo-shipped bundles may be added under `methodologies/`. In-app bundle authoring deferred to v2. | 7.1, 12 |
 | T-D42 | Eleven-section bundle structure: identity, project layout, anchor system, marker system, state machine, communication model, gating model, review patterns, templates, validation rules, authority hierarchy. Bundle structure is the contract; bundle content is methodology-specific. State-machine section declares one or more gates per phase moment, each with its own check definitions. | 7.1, 7.12 |
-| T-D43 | Whiteboards deferred to v1.1. Library has four content types in v1. Whiteboards reconsidered once Throughline is in regular use and the gap is felt empirically. | 7.8, 12 |
+| T-D43 | Whiteboards deferred to v1.1. Library's canonical content types are notes/prompts/snippets/imported docs/`project_spec` (T-D10, amended E20). Whiteboards reconsidered once Throughline is in regular use and the gap is felt empirically. | 7.8, 12 |
 | T-D44 | Methodology gates fire as proposals to the user, never as enforced blocks on the underlying repo. The user can override (with audit log entry) or fix and retry. | 5, 7.12 |
 | T-D45 | Companion review checklist runs inside Throughline as a structured workflow. Methodology bundle defines which steps are mechanical (Throughline runs) vs judgement (Throughline surfaces for human or AI reviewer). | 7.18 |
 | T-D46 | Stale threshold yellow flag appears next to item titles in all list views (session boards, tree view, search results) and in the item detail panel header | 7.17, 7.25 |
