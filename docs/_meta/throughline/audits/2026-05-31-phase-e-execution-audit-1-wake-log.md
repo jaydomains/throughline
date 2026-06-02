@@ -11,4 +11,12 @@
 - Code-verified (parallel) the highest-risk slices: E1, E5/E6, E16/E22/E25, E20a migration, E20b, E24, plus the SF6 frontend cluster.
 - Confirmed at git level: Phase E used squash merges (single-parent) vs the documented two-parent merge-commit norm.
 - Opened the draft PR with the initial audit document.
-- Last-action SHA: _(this commit)_. Polling armed via PR-activity subscription.
+- Last-action SHA: `8c244df`. Polling armed via PR-activity subscription.
+
+## 2026-06-02 — Wake 1 (Auditor 2 round 1)
+
+- Gitar bot auto-approved (no action). Auditor 2 posted round-1 review + 4 inline threads; concurs on headline + core-slice clean bills.
+- Verified Auditor 2's net-new **G-7** at `IntelligenceView.tsx:247-274` (RAG query block omits `embedder`; `embedder` consumed only at :100 reindex msg) — accepted, folded as new gap G-7 (LOW–MEDIUM, sibling to G-3).
+- Verified the **G-2 refine** (`closure-verification.md:65` vs base-plan line 49): SF6-10/11 mis-attributed to Phase C (closed E24), SF6-12 live — range-claim wrong 3/4. Folded into G-2.
+- Reframed the T-D60 architecture claim ("on the wire" + visibility residuals). Updated I-1 to two-part (lint + render-the-state). Fixed a self-reference bug (E1/E2 cited nonexistent "G-6" → W-3). Added peer-review log.
+- Pushed revision; replied on the PR with convergence summary.
