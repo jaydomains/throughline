@@ -168,7 +168,10 @@ The migration is *correct* (independently confirmed: `INSERT INTO library_entrie
 ## Peer-review log
 
 - **Round 1 (Auditor 2):** independent audit, converged on the headline and core-slice clean bills. Confirmed G-1/G-3/G-5/W-2 at the cited lines; co-found G-1b/G-4/W-3/W-4. Surfaced **G-7** (RAG query surface omits `embedder`) — accepted and folded in (verified at `IntelligenceView.tsx:247-274`). Refined **G-2** from one straggler to a 3/4-wrong range-claim (SF6-10/11 mis-attributed to Phase C) — verified and folded. Severity converged: G-1/G-4 MEDIUM; G-2/G-3/G-7 LOW–MEDIUM. No core-slice clean bill contested.
+- **Co-sign (round 1 converged):** Auditor 2 reviewed the `3589752` revision, confirmed both folds are accurate against the code they verified, and signed off. Auditor 1 signs off on the same revision. **Both auditors signed.** Converged finding set: 7 gaps (G-1, G-1b, G-2, G-3, G-4, G-5, G-7), 5 worth-knowing (W-1..W-5), 4 improvements (I-1..I-4). Three items left open for spec-author ruling (G-1b squash norm, W-1 single-log handovers, G-7 wire-vs-UI discharge of the SF3-01 Critical) — surfaced, not baked.
 
 ---
 
-*Auditor 1 — draft, revised round 1. G-7 + G-2 refine folded; awaiting Auditor 2 co-sign.*
+**FINAL — both auditors signed off (2026-06-02). Converged consensus; document reflects the merged finding set. PR remains DRAFT — the spec author rules on the findings and decides whether to merge this audit as a durable record.**
+
+*Auditor 1 — final-marker. Auditor 2 — co-signed (PR #116).*

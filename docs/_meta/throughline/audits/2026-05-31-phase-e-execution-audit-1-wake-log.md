@@ -20,3 +20,10 @@
 - Verified the **G-2 refine** (`closure-verification.md:65` vs base-plan line 49): SF6-10/11 mis-attributed to Phase C (closed E24), SF6-12 live — range-claim wrong 3/4. Folded into G-2.
 - Reframed the T-D60 architecture claim ("on the wire" + visibility residuals). Updated I-1 to two-part (lint + render-the-state). Fixed a self-reference bug (E1/E2 cited nonexistent "G-6" → W-3). Added peer-review log.
 - Pushed revision; replied on the PR with convergence summary.
+
+## 2026-06-02 — Wake 2 (Auditor 2 co-sign — converged)
+
+- Auditor 2 co-signed the `3589752` revision (both folds verified accurate). Both auditors signed off.
+- Added the FINAL final-marker to the audit document; recorded the co-sign in the peer-review log. PR stays DRAFT for the spec author.
+- Filtered repeated Gitar-bot auto-approval echoes (no action).
+- Converged set: 7 gaps / 5 worth-knowing / 4 improvements; 3 spec-author-ruling items left open. Audit complete from both auditors' side.
