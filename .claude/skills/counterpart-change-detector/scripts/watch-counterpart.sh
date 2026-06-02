@@ -18,6 +18,13 @@
 #   SELF_EXCLUDE  Extended-regex (grep -E) of ref *names* to drop  Default: <empty> → none
 #                 from the broad arm. SET THIS TO YOUR OWN BRANCH so your own pushes do not
 #                 wake you. Example: 'my-review-branch|wip/me/'
+#   WATCH_INCLUDE Extended-regex (grep -E) the broad arm KEEPS —   Default: <empty> → keep all
+#                 a positive filter applied after SELF_EXCLUDE. In a busy multi-branch repo
+#                 the broad arm otherwise wakes you on EVERY ref movement (every unrelated
+#                 branch), which floods the loop and can trip a harness's "too many events →
+#                 task auto-stopped" guard, silently killing the watcher. Scope the broad arm
+#                 to the counterpart's ref space. Example: 'review|audit|claude/'. Leave empty
+#                 only on a quiet remote or for genuine first-branch discovery (see §below).
 #   REF_GLOB      Ref namespace to scan.                           Default: refs/heads/*
 #   POLL_SECONDS  Poll cadence in seconds (>=30 for remotes).      Default: 90
 #
@@ -37,15 +44,21 @@ set -u
 REMOTE="${REMOTE:-origin}"
 WATCH_BRANCH="${WATCH_BRANCH:-}"
 SELF_EXCLUDE="${SELF_EXCLUDE:-}"
+WATCH_INCLUDE="${WATCH_INCLUDE:-}"
 REF_GLOB="${REF_GLOB:-refs/heads/*}"
 POLL_SECONDS="${POLL_SECONDS:-90}"
 
-# grep -v the self-filter only when one is set (an empty pattern matches everything).
+# Broad-arm filter: drop your own refs (SELF_EXCLUDE), then optionally keep only the
+# counterpart's ref space (WATCH_INCLUDE). Each grep runs only when its pattern is set —
+# an empty pattern would otherwise match everything (drop-all / keep-all respectively).
 _filter() {
-  if [ -n "$SELF_EXCLUDE" ]; then grep -Ev -- "$SELF_EXCLUDE"; else cat; fi
+  { if [ -n "$SELF_EXCLUDE" ];  then grep -Ev -- "$SELF_EXCLUDE"; else cat; fi; } \
+  | { if [ -n "$WATCH_INCLUDE" ]; then grep -E  -- "$WATCH_INCLUDE"; else cat; fi; }
 }
 
-# Full sorted ref snapshot, self-filtered. Empty on transient failure (caller guards).
+# Full sorted ref snapshot, filtered. Empty on transient failure OR when WATCH_INCLUDE
+# legitimately matches nothing yet — both are caller-guarded (skip, don't clobber baseline),
+# so a not-yet-existing counterpart ref is simply detected on the poll it first appears.
 _snapshot() {
   git ls-remote "$REMOTE" "$REF_GLOB" 2>/dev/null | _filter | sort
 }
@@ -58,12 +71,15 @@ _tip() {
 
 prev_tip="$(_tip)"
 prev_all="$(_snapshot)"
-echo "START remote=$REMOTE branch=${WATCH_BRANCH:-<none>} glob=$REF_GLOB every=${POLL_SECONDS}s self_exclude=${SELF_EXCLUDE:-<none>}"
+echo "START remote=$REMOTE branch=${WATCH_BRANCH:-<none>} glob=$REF_GLOB every=${POLL_SECONDS}s self_exclude=${SELF_EXCLUDE:-<none>} watch_include=${WATCH_INCLUDE:-<none>}"
 
 while true; do
   sleep "$POLL_SECONDS"
 
   # ── Targeted arm: the counterpart's known branch tip. ──────────────────────────────────
+  # (If ls-remote failed at START, prev_tip is empty; the first successful poll then emits
+  #  one cosmetic "MOVED <branch> ..<sha>" with an empty left side. Harmless — the on-wake
+  #  verify step absorbs it — but don't read it as a real push without checking the diff.)
   if [ -n "$WATCH_BRANCH" ]; then
     cur_tip="$(_tip)"
     if [ -n "$cur_tip" ] && [ "$cur_tip" != "$prev_tip" ]; then

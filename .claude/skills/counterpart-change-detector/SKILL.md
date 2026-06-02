@@ -37,6 +37,10 @@ ref watcher used alone will silently miss every reply-only round.
 ## When NOT to use
 
 - You control both sides synchronously (just do the next step).
+- **An orchestrator already relays the counterpart's state to you.** If an external
+  controller wakes both sessions and hands off between them, don't run a second waker — its
+  wakes compete with the orchestrator's signal and you double-react. The detector is for
+  *un-orchestrated* peering, where nothing else tells you the other party moved.
 - A reliable push subscription exists for *all* the events you care about (use it). Note:
   in practice subscriptions often deliver failures/comments but **not** clean-green or
   silent progress — if in doubt, poll.
@@ -57,6 +61,21 @@ line only on a delta from its in-memory baseline:
 
 Both arms run together; the broad arm makes the targeted arm optional-but-faster.
 
+**Two cautions on the broad arm — both bite in real repos:**
+
+- **It wakes on *every* ref, not just the counterpart's.** The self-filter only removes
+  *your* branch; in a busy multi-branch repo every unrelated branch push fires a `REF` wake.
+  That floods the loop and can trip a harness's "too many events → task auto-stopped" guard,
+  **silently killing the watcher** (looks identical to "counterpart idle"). Scope it with
+  `WATCH_INCLUDE` (a positive regex for the counterpart's ref space) the moment you can, or
+  drop the broad arm and run targeted-only once you know the branch. Leave it unscoped only
+  on a quiet remote or for genuine first-branch discovery.
+- **It only reports refs that appear/change _after_ arming.** The baseline is captured at
+  `START`, so a counterpart branch that **already exists when you arm is absorbed into the
+  baseline and never emitted.** If the counterpart may have branched before you armed, do one
+  manual `git ls-remote $REMOTE $REF_GLOB` at arm time to catch the pre-existing ref — the
+  loop alone will not. (This is the #1 "why didn't it fire?" cause.)
+
 ## The load-bearing pairing — on every wake
 
 When a `MOVED`/`REF` line wakes you, the change could be a commit **or** the watcher could
@@ -75,7 +94,10 @@ fold. Treat the watcher as a *prompt to verify*, never as the verification.
 
 Set `SELF_EXCLUDE` to an extended-regex matching **your own** ref name(s) so your own
 pushes (wake-logs, fix commits) don't wake you. Filtering is by ref name, not author — keep
-your branch name distinct from the counterpart's.
+your branch name distinct from the counterpart's. It's a `grep -E` match over the whole
+`<sha> <ref>` line, so beware regex metacharacters in branch names (a literal `.`, `+`, etc.
+matches more than you mean) and over-broad patterns that could also swallow the
+counterpart's ref — anchor or escape when in doubt.
 
 ## Parameters (all via env; nothing project-specific is baked in)
 
@@ -84,6 +106,7 @@ your branch name distinct from the counterpart's.
 | `REMOTE` | `origin` | Remote name/URL to query. |
 | `WATCH_BRANCH` | _(empty)_ | Counterpart's known branch (targeted arm). Empty ⇒ broad arm only. |
 | `SELF_EXCLUDE` | _(empty)_ | Extended-regex of ref names to ignore — **set to your own branch.** |
+| `WATCH_INCLUDE` | _(empty)_ | Extended-regex the broad arm **keeps** (positive filter, after `SELF_EXCLUDE`). Scope to the counterpart's ref space in busy repos. Empty ⇒ keep all. |
 | `REF_GLOB` | `refs/heads/*` | Ref namespace to scan. |
 | `POLL_SECONDS` | `90` | Poll cadence. 30–90s for remotes (rate limits); never sub-second. |
 
@@ -94,9 +117,20 @@ anchor system, or discipline rule.
 
 - **Comment-blind.** Refs only. Mitigation = the on-wake pairing above. *This is not
   optional.*
-- **Background-runtime cap.** Harness background tasks are often killed at a cap (e.g.
-  ~30 min). On the stop/timeout notification, **re-arm immediately**; assume a finite
-  lifetime, not "set and forget."
+- **Broad-arm noise → silent death.** In a multi-branch repo the broad arm wakes on every
+  ref, not just the counterpart's; the flood can trip a harness's "too many events →
+  auto-stopped" guard and kill the watcher without a signal. Scope with `WATCH_INCLUDE` or
+  run targeted-only. (Confirmed live: the harness this skill came from auto-stops noisy
+  monitors.)
+- **Broad arm is blind to pre-existing refs.** It reports only what changes *after* arming;
+  a counterpart branch that predates `START` is baselined-in and never emitted. Do a manual
+  `git ls-remote` at arm time if the branch may already exist.
+- **Background-runtime cap.** Harness background tasks are killed at a cap (commonly
+  ~30 min) — **including** `persistent`-mode monitors, despite any "no timeout" claim in the
+  primitive's own docs (confirmed: a `persistent:true` monitor was capped at 30 min three
+  times running). On the stop/timeout notification, **re-arm immediately** with a fresh
+  baseline; assume a finite lifetime, not "set and forget." See the operating guide on
+  surviving this across context compaction.
 - **Latency.** Up to `POLL_SECONDS` + harness scheduling. Not instant.
 - **Transient `ls-remote` failure.** The script guards empty results (skips, never clobbers
   the baseline) but has no retry/backoff — sustained remote failure = silent no-wake.

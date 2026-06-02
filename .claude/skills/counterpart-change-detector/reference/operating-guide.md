@@ -18,12 +18,26 @@ Run the script under a long-lived background-notification primitive (e.g. the Mo
 with `persistent: true`). Pass config as env on the command line:
 
 ```bash
-SELF_EXCLUDE='my-review-branch' WATCH_BRANCH='their-branch' POLL_SECONDS=90 \
+SELF_EXCLUDE='my-review-branch' WATCH_BRANCH='their-branch' \
+  WATCH_INCLUDE='review|audit' POLL_SECONDS=90 \
   bash .claude/skills/counterpart-change-detector/scripts/watch-counterpart.sh
 ```
 
 Each `START` / `MOVED` / `REF` line arrives as a notification. The task runs until killed
-or until the harness's runtime cap (see §4).
+or until the harness's runtime cap (see §4) — **`persistent` mode does not exempt you from
+the cap.** "Preferred" means *less ceremony per arming*, not *immortal*: empirically a
+`persistent:true` monitor was still killed at ~30 min, three times in a row, despite the
+primitive's docs claiming no timeout. Plan to re-arm regardless of mode.
+
+**At arm time, do one manual scan** if the counterpart may have branched before you armed:
+
+```bash
+git ls-remote origin 'refs/heads/*'   # catch any pre-existing counterpart ref
+```
+
+The broad arm baselines whatever exists at `START` and only emits changes *after* that — so
+a branch that already exists when you arm is invisible to the loop. The manual scan is the
+only thing that catches it.
 
 ### B. One-shot "wake me when it first appears"
 
@@ -95,6 +109,9 @@ stop/timeout notification when they hit it. Treat the watcher as having a finite
 - When the loop is genuinely over (e.g. both parties signed off), **stop the task** rather
   than leaving it emitting baseline/timeout noise.
 
+The re-arm obligation lives in your working context, which **does not survive compaction or
+a session boundary** — see §7 for how to anchor it so a re-arm isn't silently dropped.
+
 ---
 
 ## 5. Limitations and mitigations (full)
@@ -102,7 +119,9 @@ stop/timeout notification when they hit it. Treat the watcher as having a finite
 | Limitation | Why | Mitigation |
 |---|---|---|
 | **Comment-blind** | Watches refs only; comments/reviews change no SHA. | The §2 on-wake comment read. Non-negotiable — the skill is the pairing, not the loop. |
-| **Runtime cap** | Background primitives are time-boxed. | §4 re-arm on every stop/timeout; assume finite life. |
+| **Broad-arm noise → silent death** | The broad arm wakes on *every* ref, not just the counterpart's; only `SELF_EXCLUDE` is removed. A busy repo floods the loop, and a harness may auto-stop a task that "produces too many events" — killing the watcher with no signal. | `WATCH_INCLUDE` positive regex to scope the broad arm to the counterpart's ref space; or run targeted-only once you know the branch. Leave the broad arm unscoped only on a quiet remote / for first-branch discovery. |
+| **Pre-existing ref blindness** | The broad-arm baseline is captured at `START`; a counterpart branch that already exists is absorbed and never emitted. | One manual `git ls-remote $REMOTE $REF_GLOB` at arm time (§1.A). The loop reports only post-`START` changes. |
+| **Runtime cap (incl. `persistent`)** | Background primitives are time-boxed — and `persistent` mode does **not** exempt you (confirmed: a `persistent:true` monitor capped at ~30 min, three runs in a row, despite "no timeout" in its docs). | §4 re-arm on every stop/timeout; assume finite life regardless of mode. Anchor the re-arm obligation per §7 so compaction doesn't drop it. |
 | **Latency** | Up to `POLL_SECONDS` + harness scheduling. | Tune `POLL_SECONDS` down for tighter loops (≥30s for remote rate limits); accept it's not real-time. |
 | **Transient remote failure** | `ls-remote` can fail (network/auth blip). | Script guards empty results (skips, never clobbers the baseline). No retry/backoff, so *sustained* failure = silent no-wake — sanity-check liveness if a wake is overdue. |
 | **Self-echo** | Your own pushes change refs too. | `SELF_EXCLUDE` regex on your branch name. Coarse (name-based, not author) — keep names distinct. |
@@ -116,13 +135,53 @@ stop/timeout notification when they hit it. Treat the watcher as having a finite
 
 1. You open work on `my-branch`; the counterpart will review on a branch whose name you
    don't yet know.
-2. Arm broad-only (no `WATCH_BRANCH`), `SELF_EXCLUDE='my-branch'`. First `REF` line reveals
-   the counterpart's branch.
-3. Re-arm with `WATCH_BRANCH=<their-branch>` (faster targeted signal) + keep the broad arm.
+2. **Manual scan first** (`git ls-remote origin 'refs/heads/*'`) — if their branch already
+   exists, the loop won't surface it. Then arm broad-only (no `WATCH_BRANCH`),
+   `SELF_EXCLUDE='my-branch'`. The first `REF` line for a branch created *after* arming
+   reveals the counterpart's branch.
+3. Re-arm with `WATCH_BRANCH=<their-branch>` (faster targeted signal) and scope the broad
+   arm with `WATCH_INCLUDE` to their ref space — otherwise, in a shared repo, every
+   unrelated branch keeps waking you and may get the watcher auto-stopped.
 4. On each `MOVED`/`REF`: run the §2 checklist — fetch+diff their commits **and** read their
    PR comments/reviews — then respond.
-5. On a timeout notification mid-loop: re-arm (§4).
+5. On a timeout notification mid-loop: re-arm (§4). After a compaction or new session:
+   re-confirm the watcher is alive and re-establish the protocol (§7).
 6. When both sides sign off: stop the task.
 
 This is exactly the loop the skill was abstracted from; nothing in steps 1–6 is
 project-specific — every name is a parameter.
+
+---
+
+## 7. Surviving compaction and session boundaries
+
+A long counterpart loop outlives a single context window. Two things can silently break it,
+and both are about *where the obligation lives*, not about the script:
+
+- **The watcher is a background task; the discipline is in your context.** The script keeps
+  running, but the rules that make it useful — re-arm on cap (§4), pair every wake with a
+  comment read (§2) — live in working context that gets **summarized away on compaction.**
+  After a compaction you can be left with a still-emitting monitor and no memory that a wake
+  obligates a comment read, or that a timeout obligates a re-arm. The watcher firing into a
+  context that has forgotten what to do with it is a silent failure.
+
+- **Across a session/container boundary the watcher is gone entirely.** A `persistent`
+  monitor dies with its session; nothing carries to the next one. A fresh session must
+  re-arm from scratch — and must *know* to.
+
+**Mitigation — anchor the obligation in the durable surface, not in working memory:**
+
+1. **Put the standing rules in the role/system prompt, not just in a turn.** The calling
+   role prompt must state, as a standing instruction: *"You are running a counterpart loop
+   via the counterpart-change-detector skill. On every wake, do the on-wake pairing. On
+   every stop/timeout, re-arm. These hold for the whole session."* A role prompt survives
+   compaction; a mid-conversation note does not.
+2. **Name the skill by path in that prompt** so a compacted or fresh session can reload
+   `SKILL.md` + this guide and recover the full protocol from disk.
+3. **On the first action after any compaction or session start, reconcile:** is a watcher
+   armed? If not, re-arm (with the §1.A manual scan). Confirm the current baseline against
+   `git ls-remote` before trusting silence.
+
+The rule of thumb: **the script is disposable and re-creatable; the obligation to re-arm it
+and to pair every wake is the part that must be written somewhere that compaction can't
+erase.**

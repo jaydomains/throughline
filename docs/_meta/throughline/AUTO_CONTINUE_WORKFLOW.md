@@ -160,6 +160,25 @@ Pre-flight and chain-open findings about canonical-file state — "X file is mis
 
 ---
 
+## Two-Party Review Loops and Spec-Author Merge Authority
+
+The slice-chain gate above assumes a single executor whose work is checked by automated review (Gitar) + CI. A second, distinct mode runs alongside it: **two-party review loops** — planner↔auditor, author↔auditor, executor↔reviewer — where one role-prompted session produces a draft and an *independent* session adversarially audits it. These are the loops the `counterpart-change-detector` skill exists to drive. They have their own merge governance, and it must be **explicit**, because the implicit version was relied on once and only worked by luck of a good audit.
+
+**The intended convergence shape** (as briefed) was: both sessions sign off via a final-marker commit + approval comment; the PR stays draft throughout; the spec author rules on merge. That presumes the author session *engages the audit* — folds findings or pushes back — and the two converge.
+
+**What actually happened (PR #117, the detector skill's own authoring).** The author session went silent: it never responded to either round of the independent audit and never pushed a revision. The convergence round did not happen. The spec author merged the draft directly, on the strength of the independent audit, which had substantively cleared the skill (transportability, the four load-bearing rules, and script correctness all verified). The merge was **defensible** — the audit, not the absent author handshake, was the thing that cleared the work — but it executed a merge authority the "done" definition never stated, and it shipped with audit findings uncovered (folded later as a post-merge follow-up; see the follow-up PR referencing #117 and the Phase E audit PR #116).
+
+**The rule, made explicit:**
+
+1. **The spec author may merge a draft under independent audit once the audit substantively clears it — even if the counterpart/author session has not signed off.** A silent or stalled counterpart is *not* a halt condition for the spec author's merge decision (mirroring "reviewer-stall is not a halt class" for the chain runner). The independent audit is the clearing instrument; the author handshake is desirable, not load-bearing.
+2. **Uncovered findings at merge are tracked as explicit follow-up**, not dropped. A follow-up PR (or tracked issue) referencing the merged PR captures every finding the audit raised that wasn't folded before merge. Merging-with-known-gaps is legitimate only when the gaps are recorded.
+3. **The auditor never merges and never converges on the author's behalf.** The auditor's job is independent clearance + findings; the spec author rules on merge. This separation is what lets (1) be safe — the merge authority and the clearing authority are different parties.
+4. **A draft staying draft is not a blocker to this authority.** Draft status keeps the chain runner from polling it (per the Slice Lifecycle), but the spec author can merge a draft directly after reviewing the audit. Draft ⇒ "not under automated chain gating," not "un-mergeable."
+
+The discipline this codifies: **author silence degrades the process gracefully to "independent audit + spec-author merge call," rather than stalling indefinitely waiting for a handshake that may never come** — provided the audit was real and the residue is tracked.
+
+---
+
 ## Cross-references
 
 - `SESSION_START.md` — reading order, discipline floor, spec-drift policy.
