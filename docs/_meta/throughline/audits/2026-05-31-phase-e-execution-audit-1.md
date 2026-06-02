@@ -159,9 +159,23 @@ The migration is *correct* (independently confirmed: `INSERT INTO library_entrie
 
 *Numbering note: there is no G-6 (G-7 was added in peer review as the next free number; the provenance item is W-3).*
 
-**Visibility-surface honesty residuals (Phase-F grouping):** G-3 + G-7 are the same architectural shortfall by two mechanisms — a wire-disclosed honesty signal that never reaches the user (G-3 swallows it, G-7 never renders it). Bundle them so I-1's two parts land together.
+**Visibility-surface honesty residuals (Phase-F grouping):** G-3 + G-7 are the same architectural shortfall by two mechanisms — a wire-disclosed honesty signal that never reaches the user (G-3 swallows it, G-7 never renders it). Bundle them so I-1's two parts land together. **→ RULED 2026-06-02: both deferred to the frontend design phase as design requirements (see § Spec-author rulings), not Phase-F code slices.**
 
-**Spec-author judgment required (not auditor calls):** G-1b (is squash the new merge norm?); W-1 (is the single-log the go-forward handover model?); whether wire-only disclosure discharges the SF3-01 Critical (G-7). Everything else is mechanical follow-up.
+**Spec-author judgment required (not auditor calls) — RULED 2026-06-02 (see § Spec-author rulings):** G-1b (is squash the new merge norm?); W-1 (is the single-log the go-forward handover model?); whether wire-only disclosure discharges the SF3-01 Critical (G-7). Everything else is mechanical follow-up.
+
+---
+
+## Spec-author rulings (2026-06-02)
+
+The three items both auditors deliberately left open are now ruled. These are the dispositions of record; with them, the audit is **fully resolved**.
+
+- **G-7 (RAG query surface omits `embedder`) — DEFER TO FRONTEND DESIGN PHASE; design requirement, not a Phase-F code task.** The wire-contract honesty (T-D60) landed correctly and is not in question. The UI surface that renders embedder state will be **designed in from the start** when `IntelligenceView` and related views are redesigned (Claude Design), rather than retrofitted as a Phase-F code slice. **The same posture applies to every surface where the C-D25 tri-state should render but currently doesn't** — so **G-3** (the methodology-health surface vanishing on fetch failure) rides the same ruling: a design requirement carried into the frontend redesign, not a retrofit slice. → The "visibility-surface honesty residuals" bundle (G-3 + G-7) and the I-1(b) "render-the-disclosed-state" guarantee move **out of the Phase-F code register and into the frontend-design-phase requirements.** (The wire/backend side — T-D60 disclosure — stays closed and correct; only the *rendering* is the design-phase item.)
+
+- **G-1b (squash-merge norm) — RULED: squash is the chain norm; amend `AUTO_CONTINUE_WORKFLOW.md` to record it.** The squashes from #88 onward produced a clean chain; reverting to two-parent merges would re-introduce intermediate fix-round noise in `main`'s history. **Documentation-only change, no code.** → Executes in the **I-4** workflow-doc pass, bundled with **G-1** (halt-classes 4–9 codification) since both edit the same doc. G-1b is now *ruled*, pending that doc edit — no longer an open question.
+
+- **W-1 (per-slice handovers vs single execution log) — RULED: accept the execution log as the durable record for routine slices.** Updated discipline: a per-slice **handover file is required** when a slice **introduces a new pattern, mints an anchor with non-obvious implications, or carries forward open state**; otherwise the execution-log entry is sufficient. **No E1/E2 backfill needed** — this also closes **W-3** (thin foundational-slice provenance is acceptable under the new rule). → Executes as a `SESSION_START.md` / `AUTHORING_DISCIPLINE.md` handover-discipline edit.
+
+**Net.** All three open items are resolved: **G-7 + G-3 → frontend design phase** (design requirements); **G-1b → ruled** (squash is the norm; doc edit in the I-4 pass); **W-1 → ruled** (execution log accepted; conditional-handover rule; no backfill, W-3 closed). The remaining gaps — **G-1** (halt-class codification), **G-2** (SF6-12 live edit-swallow fix), **G-4** (migration-rebuild test, I-3 harness), **G-5** (`project_spec` unique index) — stand as the mechanical follow-up the audit already names. **PR #116 is fully resolved and cleared to merge as the durable record.**
 
 ---
 
@@ -172,6 +186,6 @@ The migration is *correct* (independently confirmed: `INSERT INTO library_entrie
 
 ---
 
-**FINAL — both auditors signed off (2026-06-02). Converged consensus; document reflects the merged finding set. PR remains DRAFT — the spec author rules on the findings and decides whether to merge this audit as a durable record.**
+**FINAL — both auditors signed off (2026-06-02), and the spec author has RULED on the three open items (§ Spec-author rulings). Converged consensus; document reflects the merged finding set plus the spec-author dispositions. The audit is fully resolved; PR cleared to land as the durable record.**
 
-*Auditor 1 — final-marker. Auditor 2 — co-signed (PR #116).*
+*Auditor 1 — final-marker. Auditor 2 — co-signed. Spec author — ruled (G-7 → frontend design phase; G-1b → squash is the norm; W-1 → execution log accepted). PR #116.*
