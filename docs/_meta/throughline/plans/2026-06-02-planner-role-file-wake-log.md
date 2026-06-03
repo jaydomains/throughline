@@ -1,5 +1,12 @@
 # Planner role-file — wake-log
 
+> **STATUS: PLANNER FINAL-MARKER — APPROVED at `ae770cb`.** Three-party convergence reached:
+> planner ✅ + plan-auditor ✅ (`dcf7015`, approval 4610455135) + plan-overseer ✅ (`e3a2523`,
+> approval 4610447116), all at `ae770cb`. The role file `.claude/roles/planner.md` is
+> byte-identical to `ae770cb`; this final-marker commit touches only this wake-log, so the
+> reviewers' content sign-offs are **not** stale. Awaiting the spec author's merge (§8). The
+> planner does not flip draft→ready and does not merge.
+
 Planner session's durable loop-state memory for PR #119 (`.claude/roles/planner.md`, the first
 of six reusable role files). One line per plan-PR commit. Per `.claude/roles/planner.md` §5,
 each entry records the **last-seen remote HEAD** (via `git ls-remote`), the **audit-ID set-diff**
@@ -71,3 +78,17 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   - **Out-of-band push test** authorized (ruling 2a) — runs as a **separate follow-up PR**, not a
     revision to this file; this file folds the conservative push-as-latency-only language now and
     is amended only if the test refutes it. Planner convergence is **not** gated on the test.
+
+- **2026-06-03 · PLANNER FINAL-MARKER + approval (this commit)** — §4.7 marker. Both reviewers
+  verified `ae770cb` against the file text and signed off unconditionally (auditor `dcf7015` +
+  4610455135; overseer `e3a2523` + 4610447116); the new §4.9 / §3-obligation-7 / A-2r content is
+  peer-cleared, so I post my final-marker, completing three-party convergence (§8).
+  last-seen HEAD: planner `ae770cb`; auditor `3ee69b8`; overseer `2dd51ef`.
+  set-diff: `0 dropped / 0 added` — **no plan-content change**; this commit flips only the status
+  token above + this entry. `.claude/roles/planner.md` is unchanged from `ae770cb`.
+  round-trips: all threads RESOLVED/converged; none open (no 5/5 escalation). A-1…A-6, A-2r,
+  F1…F8 all resolved at `ae770cb`; dormant-wait folded (ruling 1a); push test split to PR #120
+  (ruling 2a, non-gating).
+  next: stay subscribed; on the spec author's merge, do the terminal stand-down (§4.8) — verify
+  via `git ls-remote`, unsubscribe #119, stop the watcher, end the role. Planner is the standing
+  re-initiator if the loop goes quiet before merge (§4.9).
