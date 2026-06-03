@@ -1,11 +1,12 @@
 # Planner role-file — wake-log
 
-> **STATUS: PLANNER FINAL-MARKER — APPROVED at `ae770cb`.** Three-party convergence reached:
-> planner ✅ + plan-auditor ✅ (`dcf7015`, approval 4610455135) + plan-overseer ✅ (`e3a2523`,
-> approval 4610447116), all at `ae770cb`. The role file `.claude/roles/planner.md` is
-> byte-identical to `ae770cb`; this final-marker commit touches only this wake-log, so the
-> reviewers' content sign-offs are **not** stale. Awaiting the spec author's merge (§8). The
-> planner does not flip draft→ready and does not merge.
+> **STATUS: MERGE-AUTHORITY AMENDMENT — convergence RE-OPENED.** The prior 3-party convergence at
+> `ae770cb` is superseded: the role file changed (spec-author-commissioned amendment baking the
+> **overseer-executed merge**), so every `ae770cb` sign-off — including the planner final-marker —
+> is now **stale**. New amendment revision posted; auditor + overseer re-engaged for a fresh round
+> at the new SHA. Convergence = three new sign-offs at the **same new SHA** + green CI; then the
+> **overseer executes the merge** per the newly-baked rule (this amendment is the first live test
+> of the mechanism). Planner is the standing re-initiator.
 
 Planner session's durable loop-state memory for PR #119 (`.claude/roles/planner.md`, the first
 of six reusable role files). One line per plan-PR commit. Per `.claude/roles/planner.md` §5,
@@ -92,3 +93,33 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   next: stay subscribed; on the spec author's merge, do the terminal stand-down (§4.8) — verify
   via `git ls-remote`, unsubscribe #119, stop the watcher, end the role. Planner is the standing
   re-initiator if the loop goes quiet before merge (§4.9).
+
+- **2026-06-03 · MERGE-AUTHORITY AMENDMENT — revision (this commit)** — spec-author-commissioned
+  topology amendment: the **overseer executes** the merge mechanically once three independent
+  sign-offs land at one SHA + green CI + an elapsed spec-author **override window** (default 24 h,
+  project-tunable); enumerated **ratification scope-classes** (anchor mint, spec amendment, scope
+  decision, durable precedent) still require explicit spec-author ratification before merge; §8.1
+  justifies why three-sign-off-with-mechanical-execution is **not** the #118 two-sign-off-self-merge
+  risk class; §8.2 override window; §8.3 ratification classes; §8.4 stand-down updated (overseer
+  merges → all three confirm via `git ls-remote` → stand down); frontmatter gains
+  `merge-executor: plan-overseer`; §4.7 same-SHA marker-binding; §7 topology line + glossary updated.
+  **This re-opens convergence** — the file changed past `ae770cb`, so all prior markers (incl. mine)
+  are stale.
+  last-seen HEAD: planner `c8450a3`; auditor `97e45d2` (amendment positions AP-1…AP-7 pre-registered
+  independently before seeing this revision); overseer `2dd51ef`. main `2330be3` (NOT merged — the
+  amendment supersedes the manual merge).
+  set-diff: `0 dropped / 0 added` — spec-author-commissioned new content, not a reviewer-finding
+  fold. The A-1/F1 **invariant** (three independent sign-offs · sign-off separated from execution ·
+  planner does neither) is **preserved, not dropped** — only the merge *executor* changes
+  (spec-author → overseer), which is the amendment's whole point. A-1…A-6 / A-2r / F1…F8 / dormancy
+  all intact (auditor AP-4 no-regression).
+  round-trips: amendment round opens at 0/5 (auditor pre-registered AP-1…AP-7; overseer to engage on
+  this revision commit).
+  **key tension flagged for the cycle — auditor AP-2:** whether baking *who* executes (overseer)
+  universally is a transportability regression vs. baking only the invariants (3-sign-off gate ·
+  merge only post-full-convergence · no unilateral clear-and-merge) and externalizing the executor.
+  Folded **baked** per explicit spec-author direction ("bake the merge authority into the overseer
+  role"); cycle to pressure-test; surface to spec author only if it deadlocks.
+  next: re-engage auditor + overseer (their #119 push subs + ref-moving revision commit); re-arm the
+  watcher over both reviewers; as standing re-initiator, if a reviewer doesn't engage within §4.9's
+  bound, surface to spec author (a workflow finding, not a ruling).
