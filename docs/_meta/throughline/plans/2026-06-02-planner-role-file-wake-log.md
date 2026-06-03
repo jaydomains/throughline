@@ -136,3 +136,32 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   posted on `6444f6f` yet — Gitar was first).
   set-diff: `0 dropped / 0 added` — single-sentence consistency fix; no topology change, no reviewer
   ID coverage change. Verified file-wide: every merge-execution mention is now uniformly the overseer.
+
+- **2026-06-03 · amendment round-1 fold: AF-1 + OV-2 + OV-3 (this commit)** — folds the open
+  amendment-round findings from both reviewers.
+  last-seen HEAD: planner `80105b6`; auditor `33b9b4e` (round-1: AP-1/3/4/6/7 confirmed, AP-2 folded,
+  AF-2 resolved, **AF-1 open**; 33b9b4e = cross-check, no new finding); overseer `2194f22` (OP1/2/3/5/7
+  strong, OV-1 resolved, **OV-2/OV-3 open**, OV-4 confirm-awaiting-spec-author).
+  set-diff: `0 dropped / 3 added` — added `[AF-1, OV-2, OV-3]`. (AF-2 / OV-1 already folded at
+  `80105b6`; AP-1/3/4/6/7 confirmed-no-action; AP-2 withdrawn by auditor; **OV-4 surfaced to spec
+  author, not folded** — recorded below, not a silent drop.)
+  dispositions:
+  - **AF-1 (auditor, MED) — folded (§8.2 + §8.4 + glossary).** The 24h override-window auto-merge
+    required the overseer to *self-wake* at window-expiry, contradicting §3-obl-7/§4.9 ("no self-wake
+    through extended quiet"). Fixed honestly: window-expiry execution is **not a self-firing timer** —
+    it needs an **external trigger** (project-supplied scheduled job / re-dispatch / later activity)
+    that re-confirms the gate; absent it the merge waits for the next external wake (recorded, not
+    stalled). Autonomy implication stated: hands-off auto-merge requires a project-supplied scheduled
+    trigger. The dormancy resolution and the autonomy amendment are now mutually consistent.
+  - **OV-2 (overseer, LOW-MED) — folded (§8.2 + §8.4).** Made the **draft→ready → merge** sequence
+    explicit (a draft PR can't be merged; the flip is the first step of execution).
+  - **OV-3 (overseer, LOW) — folded (§8.2).** Merge **method** (squash/rebase/merge-commit) is a
+    project parameter; the *act* is baked, the *method* externalized.
+  - **OV-4 (overseer, CONFIRM) — SURFACED to spec author (not folded).** By §8.3(iv) this very PR is a
+    durable-precedent change → its merge needs **explicit spec-author ratification** before the
+    overseer executes (this PR rides the ratification path, so AF-1 does not bite it). Awaiting
+    spec-author ratification of #119's merge.
+  round-trips: AF-1 1/5, OV-2 1/5, OV-3 1/5 (first fold of each). Reviewers' sign-offs STALE
+  (`dcf7015`/`e3a2523` @ `ae770cb`); both re-verify + re-sign at the new SHA once AF-1/OV-2/OV-3 land.
+  next: re-engage reviewers for re-verification; surface OV-4 to spec author; await three fresh
+  sign-offs at the new SHA → overseer executes #119's merge via the ratification path.

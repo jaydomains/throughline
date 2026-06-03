@@ -403,6 +403,23 @@ elapses with no spec-author halt/override, and at execution time **re-confirms**
 all three markers still point at the convergence SHA. Any plan change during the window resets
 convergence (markers go stale — §8 head).
 
+**Execution is not a self-firing timer — it needs an external trigger.** The window defines the
+*earliest* the overseer may execute, not a moment it auto-fires. Because no session self-wakes
+through extended quiet (§3 obligation 7, §4.9), the overseer cannot rely on waking *itself* at
+window-expiry to merge; window-expiry execution therefore depends on an **external trigger** — a
+project-supplied scheduled job, a re-dispatch, or any later activity that wakes the overseer —
+which then re-confirms the gate before merging. Fully hands-off auto-merge thus requires the
+project to supply that external/scheduled trigger; absent it the merge waits for the next external
+wake — **recorded and resumable via the wake-log, never a silent stall** (the same honest
+substrate-limit as §4.9). The override window bounds *when the spec author may still halt*; it does
+not promise a self-executing merge the substrate cannot deliver.
+
+**The overseer flips draft→ready, then merges.** A draft PR cannot be merged, so the draft→ready
+flip is the **first step of execution**, not a separate ceremony: the overseer flips draft→ready
+and then performs the merge, as one execution sequence. The **merge method** (squash / rebase /
+merge-commit) is a **project parameter** (`REQUIRED_READING.md`) — the *act* of merging is baked;
+the *method* is project policy (baked-act-vs-externalized-policy).
+
 ### 8.3 Scope-classes that retain explicit spec-author ratification
 Some changes are too consequential to auto-merge on the three-sign-off gate alone. For these the
 overseer does **not** auto-merge; the change requires **explicit spec-author ratification** before
@@ -426,9 +443,9 @@ merge execution — it merges, then confirms via `git ls-remote` and stands down
 and you (each on next resume if dormant).
 
 A draft staying draft is **not** a blocker — draft means "not under automated chain gating," not
-"un-mergeable." But the draft→ready flip and the merge are **the overseer's** to perform (the
-merge mechanically, after the gate + override window; an enumerated scope-class additionally after
-spec-author ratification), never yours.
+"un-mergeable." But the draft→ready flip and then the merge are **the overseer's** to perform (in
+that order, §8.2; the merge mechanically, after the gate + override window + an external trigger at
+window-expiry; an enumerated scope-class additionally after spec-author ratification), never yours.
 
 ---
 
@@ -462,7 +479,8 @@ spec-author ratification), never yours.
   own work (§8.1).
 - **Override window** — the defined wall-clock window after convergence (default **24 h**,
   project-tunable via `REQUIRED_READING.md`) during which the spec author may halt/override before
-  the overseer executes the merge (§8.2).
+  the overseer executes the merge. It bounds *when a halt is still possible*; it is **not** a
+  self-firing timer — window-expiry execution needs an external trigger, not a self-wake (§8.2).
 - **Ratification scope-class** — a category of change (anchor mint, spec amendment, scope
   decision, durable project-level precedent) that requires explicit spec-author ratification
   *before* merge rather than auto-merging on the three-sign-off gate; the project supplies the
