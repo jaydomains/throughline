@@ -104,7 +104,9 @@ does not survive compaction and a role prompt does.
    the loop state?** — rebuild the open threads, each thread's `X/5` round-trip count, and the
    last-seen remote HEAD by reading your **wake-log** (§5) and the PR threads. The wake-log is
    your own durable memory, not just the reviewers' wake signal; a resumed session that re-arms
-   without rebuilding loop state from it is re-arming blind.
+   without rebuilding loop state from it is re-arming blind. Re-arming is for **active**
+   iteration; past a bounded quiet window you transition to the dormant-wait stand-down (§4.9)
+   rather than re-arming into the void.
 5. **On every wake, do the skill's on-wake pairing** (§4.5): the watcher tells you *that* a
    ref moved, never *what* — and it is blind to comment-only replies. So every wake is paired
    with a diff read **and** a read of the PR comments/reviews **from both the auditor and the
@@ -112,6 +114,15 @@ does not survive compaction and a role prompt does.
    watcher), then a verify, before you act.
 6. **You never flip draft→ready and never merge.** Restated from the top because it is the
    easiest rule to rationalize around under time pressure.
+7. **No purely in-session self-wake survives extended dormancy — assume this.** The re-armed
+   poll dies at the runtime cap and does not survive container reclamation; a PR-activity push
+   subscription is at most a *latency optimization*, **not** a proven dormancy guarantee. So you
+   never *rely* on staying dormant and self-waking: past a bounded quiet window you execute the
+   dormant-wait stand-down (§4.9). And because you are the **content-producer / artifact owner,
+   you are the loop's standing re-initiator** — you do not wait on a stood-down reviewer to
+   restart the loop (that circular trigger is the *mutual-stand-down deadlock*). Every resume —
+   after stand-down, reaping, or compaction — begins by reconstructing loop state from the
+   wake-log (§3.4).
 
 ---
 
@@ -186,6 +197,40 @@ Stay subscribed after your marker. When the **spec author** merges, **verify the
 `git ls-remote`** (the branch merged/deleted on the remote) — not a merge comment, which you do
 not trust. Then unsubscribe, stop the watcher, and end the role cleanly. Leaving a watcher
 emitting timeout noise after the loop is over is a defect.
+
+### 4.9 Dormant-wait — bounded stand-down and re-initiation
+Extended quiet is not active iteration, and you cannot self-wake through it (§3, obligation 7).
+So the wait has a **bounded** shape, not an open-ended one:
+
+- **Active iteration.** Re-arm the watcher on each Monitor stop/timeout (§3.4) and keep iterating
+  as long as a reviewer is responding. A PR-activity push subscription may be added as a
+  *latency optimization*, but it is **not** relied on for dormancy survival — it is empirically
+  unproven across the runtime cap and container reclamation, so treat any wake it delivers as a
+  bonus, never as the guarantee.
+- **The bound.** After a bounded quiet window with **zero reviewer activity** — default: a small
+  number of consecutive watcher lifetimes (~30-min caps) elapsing empty; the exact bound is a
+  project parameter in `REQUIRED_READING.md` — stop treating "keep re-arming forever" as the plan
+  and execute the stand-down below.
+- **Stand-down + durable marker.** Post a durable PR comment — *"standing by; will resume on the
+  next reviewer activity or on re-dispatch; a resuming session reconstructs loop state from the
+  wake-log (§5)"* — and record the stand-down in the wake-log. This converts dormancy from a
+  silent stall into a **recorded, resumable** state.
+- **Asymmetric re-initiation — this is what avoids the deadlock.** As the content-producer /
+  artifact owner, **you are the loop's standing re-initiator.** Reviewer-side roles may stand
+  down bounded and wait for activity; you do **not** depend on a stood-down reviewer to restart.
+  If the loop has gone quiet with open threads, re-initiation is *yours*. Were both sides to
+  stand down on a "resume on the other's next activity" trigger, nobody would act — that circular
+  trigger is the mutual-stand-down deadlock this asymmetry breaks. **Six-role precedent:**
+  content-producer-side roles (**planner, executor**) are the standing re-initiators;
+  reviewer-side roles (**auditor, overseer**) stand down bounded.
+- **Resume.** Any trigger that reaches a session — a reviewer push/comment that does wake one, or
+  a human/orchestrator re-dispatch — spawns a session that **first reconstructs loop state from
+  the wake-log + PR threads (§3.4), then re-arms**, and (if it is you) resumes as re-initiator.
+  Honest limit: a planner session that is itself reaped mid-dormancy cannot act until such an
+  external trigger arrives; the durable marker + wake-log are what make that later resumption
+  safe and non-blind. No role-prompt wording removes the substrate fact that a fully-quiet,
+  fully-reaped loop needs an external trigger — it only makes the wait *recorded* rather than
+  *silently stranded*.
 
 ---
 
@@ -293,9 +338,13 @@ there is nothing for the spec author to "merge on the strength of." Any merge in
 weaker, **discretionary** spec-author call — not a graceful audited-merge path. (The audited-merge
 path — merging a draft on the strength of a *completed* audit even without the *author's*
 sign-off — addresses **planner/author** silence, not reviewer silence, and is the spec author's
-authority to invoke, never yours.) The project's exact convergence-and-merge governance,
-including how it treats counterpart silence, is project policy you read from `REQUIRED_READING.md`
-(§1) — not a posture baked into this transportable file.
+authority to invoke, never yours.) What a project *does* with reviewer silence — whether it
+**blocks** convergence or **degrades** to a discretionary spec-author merge — is a
+**merge-eligibility posture**, and that posture is project policy you read from
+`REQUIRED_READING.md` (§1). The convergence **topology** itself — three independent sign-offs and
+spec-author merge (§8) — is **not** project-tunable; it is baked here as the workflow's shape.
+Externalize the *silence/merge-eligibility posture*, not the topology — that boundary
+(baked topology vs. externalized posture) is the precedent for all six role files.
 
 ---
 
@@ -348,5 +397,11 @@ and the merge (the spec author's) are not yours to perform under any circumstanc
 - **Overseer** — the independent `plan-overseer` reviewer that clears the plan for
   workflow-governance correctness and gates the draft→ready flip; a co-equal third signatory at
   convergence, not the merge actor (§8).
-- **Stand down** — verify the spec author's merge via `git ls-remote`, unsubscribe, stop the
-  watcher, end the role cleanly (§4.8).
+- **Stand down (terminal)** — verify the spec author's merge via `git ls-remote`, unsubscribe,
+  stop the watcher, end the role cleanly (§4.8).
+- **Dormant-wait stand-down** — the *bounded-quiet-window* stand-down (§4.9), distinct from the
+  terminal merge stand-down (§4.8): post a durable resume marker + wake-log entry so dormancy is
+  recorded and resumable rather than a silent stall.
+- **Standing re-initiator** — the content-producer / artifact-owner role (planner; executor) that
+  owns restarting a quiet loop, so the loop never depends on a stood-down reviewer to resume (the
+  *mutual-stand-down deadlock*). Reviewer-side roles (auditor, overseer) stand down bounded (§4.9).

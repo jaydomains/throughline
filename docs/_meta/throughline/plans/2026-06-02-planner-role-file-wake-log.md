@@ -46,3 +46,28 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
     (symmetric stand-down deadlocks; requires an asymmetric re-initiator / external trigger).
     Surfaced to the spec author for a ruling; not baked here. This is **not** a silently dropped
     coverage ID — it is a deferred, recorded open decision.
+
+- **2026-06-03 · round-2 fold: A-2r + dormancy resolution (this commit)** — closes the two items
+  both reviewers gate sign-off on.
+  last-seen HEAD: planner `592bfd9`; auditor `85a57d9`; overseer `6e28ab7`.
+  set-diff: `0 dropped / 0 added` — A-2r is a **residual on the already-covered A-2 ID** (not a
+  new coverage unit), and the dormant-wait resolution is the **previously-deferred open item now
+  folded** (not a numbered reviewer ID). No A/F coverage changed; nothing dropped.
+  round-trips: A-2/A-2r 2/5 (auditor round-2 + this fold); dormant-wait thread closed by
+  spec-author ruling (not a 5/5 escalation). All other A/F threads RESOLVED at `592bfd9` per the
+  reviewers' round-2/round-3 verification (auditor: A-1/A-3/A-4/A-5/A-6 resolved; overseer:
+  F1–F8 verified resolved).
+  dispositions:
+  - **A-2r folded** (auditor round-2 + overseer round-3b corroboration, option a): §7 silence
+    clause narrowed to externalize only the **silence/merge-eligibility posture**; the
+    convergence **topology** (three sign-offs + spec-author merge, §8) stays **baked**. The
+    baked-topology-vs-externalized-posture boundary is stated as six-role precedent.
+  - **Dormant-wait resolution folded** per spec-author ruling **1a**: no purely in-session
+    self-wake survives dormancy (§3 obligation 7); bounded **asymmetric** stand-down with the
+    planner as **standing re-initiator**, F6 loop-state reconstruction as a resume precondition,
+    push documented as **latency-only** (never relied on for dormancy); mutual-stand-down
+    deadlock named as the reason for asymmetry; six-role generalization (content-producer-side =
+    re-initiators, reviewer-side = bounded stand-down) (§3.4, §4.9, glossary).
+  - **Out-of-band push test** authorized (ruling 2a) — runs as a **separate follow-up PR**, not a
+    revision to this file; this file folds the conservative push-as-latency-only language now and
+    is amended only if the test refutes it. Planner convergence is **not** gated on the test.
