@@ -33,10 +33,10 @@ escalate substantive decisions to the `spec-author`. Convergence is three indepe
 at one SHA + green CI; the overseer then executes the merge mechanically, after a spec-author
 **override window** and (for enumerated scope-classes) spec-author ratification — §8.
 
-**Two things you may never do.** You do **not** flip the PR from draft to ready and you do
-**not** execute the merge — both are the **overseer's** actions (§8). And a third you must never
-do: **rubber-stamp.** Your sign-off is one of the three independent clearances the merge rests
-on; an unverified approval silently defeats the entire point of the three-party gate.
+**Three things you may never do.** You do **not** flip the PR from draft to ready; you do **not**
+execute the merge (both are the **overseer's** actions, §8); and you do **not** **rubber-stamp** —
+your sign-off is one of the three independent clearances the merge rests on, so an unverified
+approval silently defeats the entire point of the three-party gate.
 
 This file is self-contained on *how* you operate. Everything specific to *this project* — its
 paths, its anchor system, its blessed halt-class set, its spec and decision records (the truth
@@ -294,6 +294,13 @@ IDs must be rock-stable.
    revision, or conceded on a justified push-back — carries a one-line justification in the same
    commit. A finding that vanishes with no recorded resolution is the exact failure this
    discipline prevents.
+
+**The §4.2 pre-registered-positions commit is the gate's baseline.** Your first audit-branch
+commit records your positions, before any findings exist, so there is no prior finding set to diff
+against: record the baseline explicitly as `0 dropped / 0 added (baseline — positions
+pre-registered, no findings yet)` rather than treating obligation 3's "every commit" as undefined
+at the bootstrap. From the first findings commit (§4.4) onward, the finding-set-diff runs against
+the prior round as above.
 
 Your pre-registered positions (§4.2) seed this set: positions the draft fails become findings;
 positions it satisfies become Confirms. A revision must never make a finding **silently**

@@ -34,3 +34,29 @@ surface a resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   round-trips: none open.
   next: open draft PR; re-arm the watcher over the auditor + overseer ref space; the first
   revision commit re-engages the reviewers (in §4.9 bounded stand-down per planner.md).
+
+- **2026-06-03 · round-1 fold (this commit)** — both reviewers reviewed `4ca872d` fast. Auditor
+  ✅ signed off (`22dbebb`, PA-1…PA-8 satisfied; B-1 non-blocking); overseer ⏳ withholding on OV-2.
+  last-seen HEAD: planner `4ca872d`; auditor `22dbebb`; overseer `e8f4ec1`.
+  set-diff: `0 dropped / 3 added` — `[OV-2, B-1, OV-1]` (all three findings now have a recorded
+  disposition; none silently dropped).
+  round-trips: OV-2 1/5, B-1 1/5, OV-1 1/5.
+  dispositions:
+  - **OV-2 (overseer, Refine — blocking its marker) — FOLDED (§6).** Added the bootstrap-baseline
+    clause mirroring planner.md §6: the §4.2 pre-registered-positions commit is the gate's baseline
+    (`0/0 baseline — positions pre-registered, no findings yet`); the finding-set-diff runs from
+    the first findings commit onward. Closes the obligation-3 "every commit" bootstrap hole.
+  - **B-1 (auditor, Refine — non-blocking) — micro-nit FOLDED + main acknowledged.** Fixed the
+    "Two things you may never do" heading → "Three things" (it listed flip / merge / rubber-stamp).
+    On the main point: corrected the PR-body claim "byte-faithful" → topology-faithful but
+    *perspective-adapted*; **adopting the §8-topology-invariant checklist** (3 sigs · one SHA ·
+    green CI · overseer-executes-mechanically · override-window · named-external-trigger ·
+    ratification-classes (i)–(iv) · spec-author authority · author/auditor never-merge) as my
+    drift-check for cycles 3–6.
+  - **OV-1 (overseer, informational — non-blocking) — ACKNOWLEDGED + surfacing to spec author.**
+    Six-way §8 duplication/drift risk; optional CI conformance check that diffs the normalized §8
+    block across `.claude/roles/*.md`. Not a defect in this file; an inherent consequence of the
+    ratified self-contained-file precedent. Flagging to the spec author as a suite-level option.
+  next: re-engage reviewers at the new SHA (auditor's `4ca872d` marker now stale → re-verify §6 +
+  heading + re-confirm §8 didn't move; overseer folds OV-2 → signs off); then post planner
+  final-marker; converge → overseer auto-merges (normal class) after the override window.
