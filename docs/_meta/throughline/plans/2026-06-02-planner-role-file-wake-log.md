@@ -1,12 +1,14 @@
 # Planner role-file — wake-log
 
-> **STATUS: MERGE-AUTHORITY AMENDMENT — convergence RE-OPENED.** The prior 3-party convergence at
-> `ae770cb` is superseded: the role file changed (spec-author-commissioned amendment baking the
-> **overseer-executed merge**), so every `ae770cb` sign-off — including the planner final-marker —
-> is now **stale**. New amendment revision posted; auditor + overseer re-engaged for a fresh round
-> at the new SHA. Convergence = three new sign-offs at the **same new SHA** + green CI; then the
-> **overseer executes the merge** per the newly-baked rule (this amendment is the first live test
-> of the mechanism). Planner is the standing re-initiator.
+> **STATUS: MERGE-AUTHORITY AMENDMENT CONVERGED — planner final-marker @ `4f7b249` content.**
+> Three-party re-convergence at `4f7b249`: planner ✅ + plan-auditor ✅ (`3a05128`) + plan-overseer ✅
+> (`e978d49`, approval 4611760557). This planner final-marker is a **content-preserving wake-log-only
+> commit** — `.claude/roles/planner.md` is byte-identical to `4f7b249`, so the reviewers' content
+> sign-offs stay valid (both confirmed this). **Sole remaining gate:** per §8.3(iv) #119 is a
+> ratification-class change, so its merge needs **explicit spec-author ratification (OV-4)** before the
+> **overseer** executes it (ratification path — ratification is the external trigger; AF-1's auto-merge
+> self-wake issue does not apply). Awaiting spec-author ratification. Planner does not flip draft→ready
+> and does not merge.
 
 Planner session's durable loop-state memory for PR #119 (`.claude/roles/planner.md`, the first
 of six reusable role files). One line per plan-PR commit. Per `.claude/roles/planner.md` §5,
@@ -178,3 +180,20 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   last-seen HEAD: planner `db3a3f8`; auditor `33b9b4e`; overseer `eac949c`.
   set-diff: `0 dropped / 0 added` — refinement of the already-added AF-1 (names the mechanism); no new
   reviewer ID. Both reviewers now concur on AF-1 (auditor headline + overseer independent concurrence).
+
+- **2026-06-03 · PLANNER FINAL-MARKER (amended) @ `4f7b249` content (this commit)** — both reviewers
+  re-signed at `4f7b249` (auditor `3a05128` + 4611739706; overseer `e978d49` + 4611760557), so the
+  amendment is peer-cleared and I post my marker, completing **three-party re-convergence at `4f7b249`**.
+  **Content-preserving wake-log-only commit** — `.claude/roles/planner.md` is byte-identical to
+  `4f7b249` (this commit flips only the status token above + adds this entry), so the reviewers'
+  content-bound sign-offs stay valid (both confirmed this explicitly).
+  last-seen HEAD: planner `4f7b249`; auditor `2aa8f7e` (content-marker `3a05128` @ `4f7b249`);
+  overseer `e978d49`. main `2330be3` (NOT merged).
+  set-diff: `0 dropped / 0 added` — no plan-content change.
+  round-trips: all amendment threads resolved (AF-1, OV-2, OV-3 folded + verified; AF-2/OV-1 @ `80105b6`;
+  AP-2 withdrawn; OV-4 surfaced). None open.
+  **sole remaining gate: spec-author ratification (OV-4)** — #119 is §8.3(iv) ratification-class, so the
+  overseer executes its merge only after explicit spec-author ratification (the external trigger).
+  next: await spec-author ratification → overseer flips draft→ready, re-confirms gate, merges (project
+  method) → all three confirm via `git ls-remote` → terminal stand-down (§4.8). Planner re-initiates if
+  the loop goes quiet before then (§4.9).
