@@ -202,9 +202,10 @@ is stale and you re-verify and refresh it at the new SHA. Convergence requires a
 at the **same** SHA (§8).
 
 ### 4.8 Stand down — on merge
-Stay subscribed after your marker. The merge is executed by the **overseer** (mechanically, in
-the auto-merge classes) or, for an enumerated ratification scope-class, performed/authorized by
-the **spec author** (§8) — either way it is **not** yours. When the merge happens, **verify it via
+Stay subscribed after your marker. The merge is executed by the **overseer** — mechanically in
+the auto-merge classes, or, for an enumerated ratification scope-class, only **after** explicit
+spec-author ratification (§8); the spec author *ratifies/authorizes* but does not perform the
+merge, and either way it is **not** yours. When the merge happens, **verify it via
 `git ls-remote`** (the branch merged/deleted on the remote) — not a merge comment, which you do
 not trust. Then unsubscribe, stop the watcher, and end the role cleanly. Leaving a watcher
 emitting timeout noise after the loop is over is a defect.

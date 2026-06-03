@@ -123,3 +123,16 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   next: re-engage auditor + overseer (their #119 push subs + ref-moving revision commit); re-arm the
   watcher over both reviewers; as standing re-initiator, if a reviewer doesn't engage within §4.9's
   bound, surface to spec author (a workflow finding, not a ruling).
+
+- **2026-06-03 · amendment self-correction: §4.8 execution-vs-authority (this commit)** — Gitar CI
+  flagged a §4.8↔§8.3 contradiction I introduced in `6444f6f`: §4.8 said a ratification-class merge
+  was "performed/authorized by the spec author," while §8.3 + the glossary say the **overseer
+  executes** after spec-author *ratification*. Self-corrected §4.8 to the canonical model — **overseer
+  always executes; spec-author ratification is a precondition** for scope-classes (execution stays
+  uniformly with the overseer; authority/ratification is separate, per §8.1). This is fixing my own
+  error (autonomous, §7) — a would-be auditor **AP-4** ("no NEW internal contradiction") violation,
+  caught before the human-reviewer round so they anchor on the corrected SHA.
+  last-seen HEAD: planner `6444f6f`; auditor `97e45d2`; overseer `2dd51ef` (neither reviewer has
+  posted on `6444f6f` yet — Gitar was first).
+  set-diff: `0 dropped / 0 added` — single-sentence consistency fix; no topology change, no reviewer
+  ID coverage change. Verified file-wide: every merge-execution mention is now uniformly the overseer.
