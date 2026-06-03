@@ -405,14 +405,18 @@ convergence (markers go stale — §8 head).
 
 **Execution is not a self-firing timer — it needs an external trigger.** The window defines the
 *earliest* the overseer may execute, not a moment it auto-fires. Because no session self-wakes
-through extended quiet (§3 obligation 7, §4.9), the overseer cannot rely on waking *itself* at
-window-expiry to merge; window-expiry execution therefore depends on an **external trigger** — a
-project-supplied scheduled job, a re-dispatch, or any later activity that wakes the overseer —
-which then re-confirms the gate before merging. Fully hands-off auto-merge thus requires the
-project to supply that external/scheduled trigger; absent it the merge waits for the next external
-wake — **recorded and resumable via the wake-log, never a silent stall** (the same honest
-substrate-limit as §4.9). The override window bounds *when the spec author may still halt*; it does
-not promise a self-executing merge the substrate cannot deliver.
+through extended quiet (§3 obligation 7, §4.9), the overseer — a reviewer-side role that stands
+down (§4.9) — cannot rely on waking *itself* at window-expiry to merge. So §8.2 **names the wake
+mechanism** rather than leaving it implicit: the **planner**, as the standing re-initiator that
+stays subscribed through merge (§4.8, §4.9), is the party that **re-triggers the overseer to
+execute** once window-expiry is reached; the woken overseer then re-confirms the gate and merges.
+The planner is itself subject to the same no-self-wake limit, so that re-trigger ultimately rides
+an **external trigger** — a project-supplied scheduled job, a re-dispatch, or any later activity.
+Fully hands-off auto-merge therefore requires the project to supply that external/scheduled
+trigger; absent it the merge waits for the next external wake — **recorded and resumable via the
+wake-log, never a silent stall** (the same honest substrate-limit as §4.9). The override window
+bounds *when the spec author may still halt*; it does not promise a self-executing merge the
+substrate cannot deliver.
 
 **The overseer flips draft→ready, then merges.** A draft PR cannot be merged, so the draft→ready
 flip is the **first step of execution**, not a separate ceremony: the overseer flips draft→ready

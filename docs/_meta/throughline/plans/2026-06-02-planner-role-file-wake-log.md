@@ -165,3 +165,16 @@ resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   (`dcf7015`/`e3a2523` @ `ae770cb`); both re-verify + re-sign at the new SHA once AF-1/OV-2/OV-3 land.
   next: re-engage reviewers for re-verification; surface OV-4 to spec author; await three fresh
   sign-offs at the new SHA → overseer executes #119's merge via the ratification path.
+
+- **2026-06-03 · AF-1 refinement: name the wake mechanism (this commit)** — caught via on-wake pairing
+  before the reviewers saw `db3a3f8`: the overseer independently concurred with AF-1 (`eac949c`, comment
+  4611693447) and asked that §8.2 **name the wake mechanism** (my first fold named only "an external
+  trigger"), leaning on reuse of the §4.9 asymmetry. Refined §8.2: the **planner** (standing
+  re-initiator, stays subscribed through merge) is the named party that **re-triggers the overseer to
+  execute** at window-expiry — the overseer, a reviewer-side role, is not expected to self-wake to
+  merge; the planner's re-trigger itself rides an external trigger (project scheduler / re-dispatch),
+  since the planner is under the same no-self-wake limit. Combines the overseer's lean (1: planner
+  re-initiates) with the honest substrate-limit (2/3: external trigger required).
+  last-seen HEAD: planner `db3a3f8`; auditor `33b9b4e`; overseer `eac949c`.
+  set-diff: `0 dropped / 0 added` — refinement of the already-added AF-1 (names the mechanism); no new
+  reviewer ID. Both reviewers now concur on AF-1 (auditor headline + overseer independent concurrence).
