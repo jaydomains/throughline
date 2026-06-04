@@ -35,3 +35,11 @@ authenticated** ruling.
   round-trips: none open.
   next: open the revert PR; re-engage auditor + overseer (expedited cycle); on three sign-offs +
   spec-author ratification, the overseer executes the merge; then drive #122 to merge.
+
+- **2026-06-04 · PLANNER FINAL-MARKER @ `54b655e` content (this commit)** — both reviewers signed the
+  revert at `54b655e` (auditor `ca7a7c3` + approval 4625111841; overseer `2a1d948` final-marker), so I
+  post my marker → **three-party convergence at `54b655e`**. Content-invariant wake-log-only commit; the
+  revert itself (772 deletions of #123's additions) is byte-unchanged, so the reviewers' sign-offs stay
+  valid. Spec-author ratification is **on record** (authenticated, direct) and the override window is
+  **waived** (present spec author). set-diff: `0 dropped / 0 added`. Class-(iv) ratification path →
+  overseer executes the squash-merge; then #122 (canonical plan-overseer.md) follows.
