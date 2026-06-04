@@ -374,7 +374,10 @@ independent sign-offs have happened **at the same SHA**, with **green CI at that
 
 A sign-off is **bound to the SHA** it was posted at; any plan change after a sign-off makes that
 sign-off stale, and the signer re-verifies and refreshes at the new SHA. Convergence is reached
-only when all three current markers point at **one** SHA and CI is green there.
+only when all three current markers point at **one** SHA and CI is green there. (A
+*content-invariant* marker — e.g. a wake-log-only final-marker that leaves the role-file content
+byte-identical — does **not** re-stale the others; the binding is to the role-file **content** at
+the SHA.)
 
 ### 8.1 Who merges — execution vs. authority
 Once converged, the **overseer executes the merge.** This is **mechanical execution of an
@@ -398,10 +401,14 @@ After convergence and before the overseer executes, there is a defined **overrid
 in which the spec author may halt or override the merge. **Default: 24 hours** of wall-clock after
 the third (converging) sign-off lands at the convergence SHA; the exact duration is a project
 parameter in `REQUIRED_READING.md` (an autonomy-prioritizing project may shorten it; an
-oversight-heavy one may lengthen it). The overseer executes the merge **only after** the window
-elapses with no spec-author halt/override, and at execution time **re-confirms** green CI and that
-all three markers still point at the convergence SHA. Any plan change during the window resets
-convergence (markers go stale — §8 head).
+oversight-heavy one may lengthen it). **The window's purpose is spec-author *absence*:** a
+**present** spec author who explicitly ratifies or voices no objection **collapses the window to
+zero** (the overseer may then execute immediately); the full duration only bounds the wait when
+the spec author is *absent*. The overseer executes the merge **only after** the window has
+elapsed — or been collapsed to zero by a present spec author — with no spec-author halt/override,
+and at execution time **re-confirms** green CI and that all three markers still point at the
+convergence **SHA content**. Any plan change during the window resets convergence (markers go
+stale — §8 head).
 
 **Execution is not a self-firing timer — it needs an external trigger.** The window defines the
 *earliest* the overseer may execute, not a moment it auto-fires. Because no session self-wakes
@@ -484,7 +491,9 @@ window-expiry; an enumerated scope-class additionally after spec-author ratifica
 - **Override window** — the defined wall-clock window after convergence (default **24 h**,
   project-tunable via `REQUIRED_READING.md`) during which the spec author may halt/override before
   the overseer executes the merge. It bounds *when a halt is still possible*; it is **not** a
-  self-firing timer — window-expiry execution needs an external trigger, not a self-wake (§8.2).
+  self-firing timer — window-expiry execution needs an external trigger, not a self-wake (§8.2). A
+  **present** spec author who ratifies **collapses it to zero**; the full duration is for
+  spec-author *absence*.
 - **Ratification scope-class** — a category of change (anchor mint, spec amendment, scope
   decision, durable project-level precedent) that requires explicit spec-author ratification
   *before* merge rather than auto-merging on the three-sign-off gate; the project supplies the
