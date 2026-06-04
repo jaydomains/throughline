@@ -84,3 +84,42 @@ surface a resumed/compacted session rebuilds loop state from (§3.4 reconcile).
   the governance reviewer subagent posted its review twice ~2 min apart (review IDs 4422723818 and
   4422739862), near-identical, both sign-off — likely a posting-retry artifact of fresh dispatch,
   not a substantive issue.
+
+- **2026-06-04 · MERGE EXECUTION (this commit) — context-replay, NOT persistence.** This commit was
+  authored by a **fresh-dispatch** plan-overseer (subagent-variant) merge-executor instance under
+  **context-replay, NOT persistence** (no SendMessage/agent-continuation primitive exists in this
+  environment; merge state reconstructed from this wake-log + the posted PR reviews + durable
+  branch/PR surfaces, not from recalled memory — caught cleanly at the re-invocation boundary, no
+  faked continuity). The **overseer (subagent variant) EXECUTES the merge after spec-author
+  ratification** (§8.3(iv) durable-precedent path; ratification = the external trigger, so the
+  override window collapses to **zero** — this is *not* normal auto-merge on window-expiry, it is the
+  ratification path). This commit is **content-preserving**: it touches ONLY this wake-log and leaves
+  `.claude/roles/plan-overseer.md` **byte-identical to `4faa2c1`** (blob `f5c221a…`), so the three
+  content/governance sign-offs remain valid per the content-preserving-commit precedent.
+  gate at execution: **convergence SHA `4faa2c1`**; three independent sign-offs all at `4faa2c1` —
+  planner final-marker (R3, this branch's `4faa2c1` commit) + plan-auditor re-SIGN-OFF (review
+  `4424737562`) + plan-overseer re-SIGN-OFF (review `4424732630`); CI green (`gate` + `Gitar` both
+  completed/success at `4faa2c1`); `mergeable_state: clean`. Merge method: **squash**.
+  ordering: this **doc-only** commit is pushed first and re-triggers CI; the executor waits for
+  `gate` + `Gitar` green at the new tip, re-confirms the role file is still byte-identical to
+  `4faa2c1` and the PR mergeable, then flips **draft→ready** (the first step of execution) and squash-
+  merges.
+  significance: this is the **second autonomous-merge execution in the suite** (first:
+  `plan-auditor.md`), and the **first via the subagent variant** rather than the main-session, and via
+  the **ratification path** rather than normal auto-merge on window-expiry.
+  test findings (durable):
+    · **(1) Persistence — NEGATIVE.** No `SendMessage`/continuation primitive; every invocation was a
+      fresh dispatch + context-replay, caught at the first re-invocation boundary, with no faked
+      continuity.
+    · **(2) Quality — COMPARABLE under degraded mode.** Sibling-faithful output that cleared both
+      review lanes; cold re-reads *increased* reviewer rigor (re-verification over rubber-stamping);
+      predictable artifacts — ~29% length overage + near-edge redundancy, a worktree-isolation leak
+      into the orchestrator main tree, a duplicate review post, and a security-monitor false-positive
+      on an intra-cycle PR comment.
+    · **(3) Operational.** Fresh-dispatch + context-replay is a viable fallback when persistence is
+      unavailable — not as good as true persistence, not catastrophic; degradation is predictable.
+  still-queued follow-up: the **back-port PR** aligning `planner.md` + `plan-auditor.md` §8 with this
+  file remains **QUEUED** (tracked; not done in this commit).
+  isolation: executed entirely inside the isolated worktree
+  (`.claude/worktrees/agent-aaac041db006c10e1`); did NOT operate in the orchestrator main tree and did
+  NOT read `claude/plan-overseer-role-prompt` (parallel cycle — out of allowlist).
