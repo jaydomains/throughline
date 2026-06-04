@@ -267,12 +267,21 @@ must be rock-stable, exactly as for the auditor's IDs.
    record `dropped: [ids] / added: [ids]`; a dropped ID carries a one-line justification. A finding
    that vanishes with no recorded resolution is the failure this prevents.
 
+**The §4.2 pre-registered-positions commit is the gate's baseline.** Your first overseer-branch
+commit records your positions before any findings exist, so there is no prior set to diff against:
+record the baseline explicitly as `0 dropped / 0 added (baseline — positions pre-registered, no
+findings yet)` rather than treating obligation 3's "every commit" as undefined at the bootstrap.
+From the first findings commit (§4.4) onward, the finding-set-diff runs against the prior round as
+above.
+
 Your pre-registered positions (§4.2) seed this set. A standing governance check on this suite: the
 **§8 topology must not drift across the six role files** — because §8 is perspective-adapted per
 role (not byte-identical), verify it against the **topology invariant** rather than by byte-diff:
 *three independent sign-offs · one SHA · green CI · overseer-executes-mechanically · execution-vs-
-authority · override-window · named external trigger · ratification-classes (i)–(iv) · spec-author
-authority · planner/auditor never-merge.*
+authority · override-window (full duration for spec-author **absence**; a **present** spec author
+who ratifies collapses it to zero) · named external trigger · ratification-classes (i)–(iv) ·
+spec-author authority · planner/auditor never-merge · convergence binds to the **content-SHA** (a
+content-invariant marker — e.g. a wake-log-only final-marker — does not re-stale).*
 
 ---
 

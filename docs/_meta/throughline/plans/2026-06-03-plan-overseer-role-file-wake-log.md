@@ -50,3 +50,26 @@ re-open the two merged PRs ad hoc.
   re-engages the reviewers (in §4.10 / §4.9 bounded stand-down). Per spec-author standing ruling,
   the override window is **waived when the spec author is present** — so on convergence I relay the
   go and the overseer instance executes (recursive self-merge).
+
+- **2026-06-04 · C-2 fold + §6-invariant update — ⚠️ COMMITTED BUT HELD (not a converge signal)** —
+  Folded **C-2** (§6 pre-registered-positions bootstrap-baseline clause, mirroring plan-auditor.md
+  §6 / OV-2). Updated the **§6 topology-invariant** to enumerate the now-canonical window-waiver
+  (present-spec-author-collapses-the-override-window) + content-SHA marker, so this file's invariant
+  matches its own ratified §8 (the gap the auditor/overseer flagged). §8.2 waiver + §8-head
+  content-SHA kept (ratified class-(iv) per the relayed ruling).
+  last-seen HEAD: planner `5b46a5a`; auditor `ad4a248`; overseer `1a9dd9d`; **main `59d0c3e`**.
+  set-diff: `0 dropped / 1 added [C-2]` (C-1/OV-3 resolved-by-ratification; §6-invariant update is a
+  consistency fix to match the ratified §8).
+  **⛔ HELD — do NOT converge/merge.** Ground-truth conflict found on resume: a **subagent variant
+  of plan-overseer.md (#123) is MERGED to `main`** (`59d0c3e`, human-authored web-merge), so main
+  already carries a *different* plan-overseer.md (~1000-line diff from this one). The "#122 canonical
+  / #123 experiment" and "C-1 ratified" rulings reached me **only as relayed claims** (overseer
+  wake-log / PR comments), never from the human spec author directly — the exact unverifiable-relay
+  surface just hardened against. **Surfaced to the human spec author for an authenticated ruling**
+  on #122-vs-#123 canonical (option 1: #122 replaces #123 on main; 2: keep #123, close #122; 3:
+  other). The overseer must NOT execute #122's merge (it would overwrite the human-merged #123)
+  until the human confirms directly. This commit is for repo hygiene + work-saving, **not** a signal
+  to converge.
+  owed (tracked): class-(iv) §8 back-port PR (planner.md + plan-auditor.md → canonical §8 waiver +
+  content-SHA + §6-invariant) **plus** the §8.3 **authenticated-channel rule** (the relay
+  authentication-gap finding) across the plan-* files; remaining files authored vs the new canonical §8.
