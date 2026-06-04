@@ -82,3 +82,13 @@ re-open the two merged PRs ad hoc.
   If the overseer's poll is armed here, this ref-move wakes it; if its poll is dead (capped + not
   re-armed) it won't, and only a push channel will. #124 already has the auditor's sign-off; awaiting
   overseer + planner markers. set-diff: `0 dropped / 0 added` (no plan-content change).
+
+- **2026-06-04 · PLANNER FINAL-MARKER @ `7bfc66f` content — READY-PENDING-CANONICAL (this commit)** —
+  per spec-author ruling: I post my marker as a **content-invariant wake-log commit** (accepted
+  marker convention; validated by #124). `plan-overseer.md` is byte-unchanged, so the auditor's
+  fresh marker `ebc51a7` @ `7bfc66f` holds. This marks #122 **ready-pending-canonical-alignment,
+  NOT ready-to-merge.** Merge gate stays CLOSED until **PR A (§8 back-port)** and **PR B
+  (workflow-findings amendment)** land — otherwise plan-overseer.md would ship canonical under an
+  inconsistent §8 (the exact failure that occurred today). Convergence state: auditor ✅ `ebc51a7`;
+  overseer ⏳ (was holding for this ruling — now unblocked to sign as ready-pending); planner ✅
+  (this). set-diff: `0 dropped / 0 added`. Overseer does NOT execute #122's merge until A+B land.
