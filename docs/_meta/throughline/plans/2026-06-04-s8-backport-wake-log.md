@@ -29,3 +29,9 @@ didn't match. This closes that gap *before* #122 makes plan-overseer.md canonica
   round-trips: none open.
   next: open draft PR; re-engage auditor + overseer (expedited — canonical text already ratified);
   three-party convergence → spec-author ratifies (class-(iv)) → overseer executes.
+
+- **2026-06-04 · PLANNER FINAL-MARKER @ `7dc899e` content (this commit)** — auditor signed PR A
+  (`58e7885` @ `7dc899e`); I post my marker (content-invariant wake-log-only; the §8 back-port edits
+  are byte-unchanged, so the auditor's marker holds). Convergence: auditor ✅ + planner ✅; overseer ⏳.
+  set-diff: `0 dropped / 0 added`. On overseer sign-off → surface for spec-author class-(iv)
+  ratification → overseer executes (present spec author → window collapses).
