@@ -73,3 +73,12 @@ re-open the two merged PRs ad hoc.
   owed (tracked): class-(iv) §8 back-port PR (planner.md + plan-auditor.md → canonical §8 waiver +
   content-SHA + §6-invariant) **plus** the §8.3 **authenticated-channel rule** (the relay
   authentication-gap finding) across the plan-* files; remaining files authored vs the new canonical §8.
+
+- **2026-06-04 · ⚙️ wake-mechanism test — step 3 (content-invariant ref-move)** — NOT a substantive
+  #122 change: `.claude/roles/plan-overseer.md` is byte-unchanged. This wake-log line is a deliberate
+  ref-move to `claude/plan-overseer-role-prompt` (#122's branch) to test whether the **plan-overseer's
+  watcher poll is alive** and armed to this branch. Context: step 1 (issue comment) + step 2 (inline
+  review comment) woke the auditor (poll-off; webhook-delivered) but NOT the overseer within bound.
+  If the overseer's poll is armed here, this ref-move wakes it; if its poll is dead (capped + not
+  re-armed) it won't, and only a push channel will. #124 already has the auditor's sign-off; awaiting
+  overseer + planner markers. set-diff: `0 dropped / 0 added` (no plan-content change).
