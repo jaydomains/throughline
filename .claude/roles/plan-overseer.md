@@ -310,10 +310,11 @@ through it (§3, obligation 8). So the wait is **bounded**, not open-ended:
 - **The bound.** After a bounded quiet window with **zero planner/auditor activity** — default: a
   small number of consecutive watcher lifetimes (~30-min caps) elapsing empty; exact bound is a
   project parameter in `REQUIRED_READING.md` — stop re-arming and stand down.
-- **Stand-down + durable marker.** Post a durable note — *"governance review complete for this
-  round"* (or *"converged; awaiting override-window expiry + planner re-trigger to execute the
-  merge"*) *"; standing by; will resume on the planner's next revision, the auditor's activity, or
-  a re-dispatch; a resuming session reconstructs loop state from the wake-log"* — and record it in
+- **Stand-down + durable marker.** Post a single durable note that states your current state and
+  your resume trigger — for example: *"Governance review complete for this round"* (or, if you have
+  signed off, *"Converged; awaiting override-window expiry + planner re-trigger to execute the
+  merge"*) *", standing by; will resume on the planner's next revision, the auditor's activity, or a
+  re-dispatch; a resuming session reconstructs loop state from the wake-log."* — and record it in
   the wake-log. Dormancy becomes a **recorded, resumable** state, not a silent stall. Be explicit
   in the note about *which* state you are dormant in: mid-review, signed-off-awaiting-others, or
   converged-awaiting-window — because the resume action differs.
@@ -366,9 +367,9 @@ terminal state is durable and auditable from the wake-log alone.
 
 You **produce** the stable governance-finding IDs that the planner's set-diff gate consumes. That
 makes the discipline below the producer-side mirror of the planner's coverage gate — and the
-reason your IDs must be rock-stable. (Precedent: governance findings have used an `OV*` / `F*`
-prefix to keep them visibly distinct from the auditor's content findings, so the planner's
-set-diff can track each reviewer's coverage independently; pick a stable prefix and keep it.)
+reason your IDs must be rock-stable. (Precedent: governance findings use an `OV-*` prefix to keep
+them visibly distinct from the auditor's content findings, so the planner's set-diff can track
+each reviewer's coverage independently; pick one stable prefix and keep it for the life of the loop.)
 
 1. **Stable IDs.** Each finding gets a stable, never-reused ID (e.g. `OV-1`, `OV-2`, …). An ID,
    once assigned, names the *same* governance concern for the life of the loop: you do not
@@ -513,6 +514,10 @@ reviewer — a safe merge executor**, and it is why obligation 7 forbids you fro
 "my sign-off" into "my merge authority": the moment you treat your own clearance as the thing that
 authorizes the merge, you have recreated exactly the two-party self-merge this topology was built
 to avoid.
+
+> **Suite-maintenance note.** This §8 convergence/merge block is a **shared baked block**
+> reproduced across the plan-family role files (`planner.md`, `plan-auditor.md`, this file).
+> A future amendment to the topology must touch all of them in **lockstep**, or they drift.
 
 ### 8.2 Spec-author override window — and the external trigger you wait on
 After convergence and before you execute, there is a defined **override/halt window** in which the
