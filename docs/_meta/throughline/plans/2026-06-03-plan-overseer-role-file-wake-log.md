@@ -107,3 +107,24 @@ re-open the two merged PRs ad hoc.
   project tokens); 545 lines. set-diff: `0 dropped / 0 added` (back-port fold, not a finding response).
   next: re-engage auditor + overseer → re-converge → **overseer executes #122's merge** (standard
   topology — the recursive self-merge) → then executor.md / execution-auditor.md / execution-overseer.md.
+
+- **2026-06-05 · PLANNER FINAL-MARKER @ `2ae1139` content — THREE-PARTY CONVERGENCE (this commit)** —
+  Both reviewers re-signed at `2ae1139` content after the back-port fold+rebase: **plan-auditor
+  `2d7352f`** (fold re-verified against pre-registered position, executor-voice-adapted, no collateral,
+  prior ratified content intact, transportable) + **plan-overseer `6d4fc3d`** (governance re-verify via
+  raw git; all 8 + PB-1…PB-4 present & executor-voiced; rebase clean; CI green; `mergeable_state: clean`).
+  I independently verified ground truth via raw `git ls-remote` (not the comment claims): #122 tip
+  `2ae1139`; auditor branch `2d7352f`; overseer branch `6d4fc3d`; main `c36a6a6` (#122 not merged); CI
+  green at `2ae1139` (`gate`✅×2 + `Gitar`✅). I post my marker as a **content-invariant wake-log-only
+  commit** (canonical convention; validated on #124): `plan-overseer.md` is **byte-unchanged** (blob
+  `09f144d`, 545 lines), so the reviewers' markers stay bound to the same content and do **not** re-stale.
+  **Three-party convergence reached at `2ae1139` content:** planner (this) + auditor `2d7352f` + overseer
+  `6d4fc3d`. last-seen HEAD: planner `2ae1139`; auditor `2d7352f`; overseer `6d4fc3d`; main `c36a6a6`.
+  set-diff: `0 dropped / 0 added` (no plan-content change). round-trips: none open.
+  **Normal convergence class** (the §8 content was ratified earlier; this fold carries already-canonical
+  findings) → **standard topology: the plan-overseer executes #122's merge directly** — the recursive
+  self-merge (an instance of plan-overseer executing `plan-overseer.md`'s own merge). The present spec
+  author has ratified the autonomous chain (override window waived). I do **not** flip draft→ready and do
+  **not** merge. next: overseer re-confirms the gate from ground truth → flip draft→ready → squash-merge →
+  verify via `git ls-remote`. After #122 merges the discipline-infrastructure cycle is complete; then
+  executor.md → execution-auditor.md → execution-overseer.md against the complete canon.
