@@ -54,3 +54,17 @@ ships the review-refined canonical text rather than draft wording.
   reviewers = **plan-auditor + planner**, executor = **spec author** (direct, per the #118
   separation). Convergence = my author-marker + auditor + planner, all at `1ca318a` content →
   spec author executes. Staying actively subscribed (finding #8).
+- **2026-06-05 (SCOPE RULING → PB-1…PB-4 FOLD)** — Planner withheld sign-off citing 4 scoped
+  findings #126 dropped (PB-1…PB-4); auditor confirmed them textually absent but correctly held
+  *scope* as the spec author's class-(iii) call (dogfooding the authenticated-channel/inferred rules
+  — pending spec author). **Spec author ruled all four IN SCOPE** (the "eight findings complete"
+  confirmation settled it; my earlier fold was a **silent partial-fold** — 4 in full + only the
+  inferred-authority slice of PB-1 — exactly the failure PB-2 now codifies; the planner caught it).
+  **Owned, not deflected.** Folded into all three files: **PB-1** ruling-supersession in full
+  (later overrides earlier on the same question · timestamped · verify current ruling) §8.3;
+  **PB-2** substantive-action surfacing + omission-surfacing-as-distinct-event §7; **PB-3**
+  ratified-amendment blocks downstream authoring until back-ported §8.3; **PB-4** wake-channel
+  reliability ranking (inline-review > issue-comment > re-dispatch, measured this session) §3.
+  Content change → **re-stales the auditor `46db665` + planner reviews + my prior author marker**;
+  all re-verify at the new content. Spec author executes on three-party convergence (one-time
+  separation).
