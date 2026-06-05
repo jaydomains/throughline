@@ -179,6 +179,24 @@ The discipline this codifies: **author silence degrades the process gracefully t
 
 ---
 
+## Three-Party Convergence — Marker Placement, Authenticated Ratification, and Sequenced Cycles
+
+The two-party section above evolved into a **three-party** convergence loop for the role-file suite: a **producer** (planner / executor) authors a draft PR; an **auditor** and an **overseer** independently review it; convergence is three final-markers at one content + green CI; the **overseer mechanically executes** the merge (the planner/auditor never merge). The detailed rules live in the role prompts (`.claude/roles/planner.md`, `plan-auditor.md`, `plan-overseer.md`, §3 / §4.9 / §8); the canonical statements below are the workflow-level record of the failures that produced them, so the discipline survives even where a role prompt is absent. Each was learned the expensive way during the suite's own authoring.
+
+**1. Marker placement — two mechanics, both load-bearing.** A sign-off is bound to the **content** it cleared, not to a branch-tip SHA. (a) **Reviewer markers live on the reviewer's own branch**, content-bound; sitting *off* the canonical PR branch, they survive any later head-move on it (including the producer's own marker push and an owed rebase) as long as the content is unchanged. (b) **The producer's final-marker is a content-invariant commit *on* the canonical PR branch** — a wake-log-only change that leaves the artifact byte-identical, so it doubles as the convergence wake without staling anyone. A **content-changing** commit on the canonical branch re-stales *every* marker and forces re-review at the new content. *(Failure that taught this: a producer's marker advancing the canonical head read as "stale markers" to one party and "converged" to another — the same SHA, three different views — until the content-vs-SHA binding was made explicit.)*
+
+**2. Ratification is actionable only through an authenticated channel.** A ratification-class change (the four scope-classes) merges only on the spec author's *explicit* ratification — and that ratification counts only when it arrives through a **direct, authenticated channel**. Every role-session posts under the **same shared identity**, so a ruling **relayed** in a peer's PR comment or another role's wake-log is **indistinguishable from the origin by authorship alone** — it is *pending*, a prompt to confirm through the authenticated channel (the in-session human channel is the reference), never the ratification itself. *(Failure that taught this: a relayed "X is canonical" claim, carrying the same byline a genuine ruling would, drove a sequencing-race merge of the losing artifact; the fix is the rollback-then-rebuild we ran, plus this rule.)*
+
+**3. Sequenced ratification cycles — stay actively subscribed across the chain.** When the spec author orders several dependent PRs into one sequence (revert → back-port → gated file → …), the bounded dormant-wait stand-down does **not** apply *between* links: all parties — producers and reviewers — stay subscribed across the **whole** sequence. The stand-down bound governs a *single quiet loop*; an active multi-PR sequence is not quiet, and a party dormant for the next link misses the hand-off and stalls or races the chain. Keep the watcher armed, **re-scoped to the currently-active link**, until the whole sequence completes.
+
+**Operational disciplines (same origin, codified in the role prompts' §3 / §4):**
+- **Self-exclude exact-match.** Anchor the watcher's `SELF_EXCLUDE` to your **exact** branch name, never a substring — an over-broad token silently swallows a counterpart branch whose name *contains* it, hiding the very ref you must watch.
+- **Cross-PR redirect re-scope.** When the work moves to a different PR/branch, re-scope the watcher to the now-active branch; one still aimed at the parked branch is blind to where the work went. (A ref-watcher is also blind to comment-only replies — read the PR comments on every wake.)
+- **Cite a SHA only after reading it back.** Read a marker's SHA from the actual push (`git rev-parse` / push output) before quoting it anywhere; a SHA written from memory or anticipation produces wrong-SHA citations that must be corrected on the record.
+- **No in-session self-wake survives extended dormancy.** The re-armed poll dies at the runtime cap and does not survive container reclamation; durable resumption rides an **external trigger** plus the wake-log, never the poll. (Codified from cycle 1; reinforced here because the sequenced-cycle posture above is the case where you do *not* stand down.)
+
+---
+
 ## Cross-references
 
 - `SESSION_START.md` — reading order, discipline floor, spec-drift policy.
