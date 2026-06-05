@@ -92,3 +92,18 @@ re-open the two merged PRs ad hoc.
   inconsistent §8 (the exact failure that occurred today). Convergence state: auditor ✅ `ebc51a7`;
   overseer ⏳ (was holding for this ruling — now unblocked to sign as ready-pending); planner ✅
   (this). set-diff: `0 dropped / 0 added`. Overseer does NOT execute #122's merge until A+B land.
+
+- **2026-06-05 · BACK-PORT FOLD + REBASE — convergence RE-OPENED (this commit)** — PR A (#125) +
+  PR B (#126) merged → §8 + workflow-findings amendments are canonical on `main` (`c36a6a6`); the
+  back-port gate is satisfied and #122 is unblocked. **Folded the full workflow-findings set into
+  `plan-overseer.md`** (overseer-voiced, from the canonical `c36a6a6` text): §3 (cite-SHA-after-
+  reading, SELF_EXCLUDE exact-match, cross-PR re-scope, wake-channel reliability ranking), §4.10
+  (sequenced-cycle active-subscription), §7 (substantive-action + omission surfacing), §8-head
+  (marker-placement two mechanics), §8.3 (authenticated-channel, inferred-authority,
+  ruling-supersession, sequenced-amendment), + glossary. **Rebased #122 onto `c36a6a6`** (clean —
+  plan-overseer.md not on main). **Content change → re-opens convergence:** prior markers (auditor
+  `ebc51a7`, overseer `c73e8f0`, planner `1390a9a` @ `7bfc66f` content) are **stale by design**;
+  reviewers re-verify the expanded content + re-sign at the new content. Transportability clean (0
+  project tokens); 545 lines. set-diff: `0 dropped / 0 added` (back-port fold, not a finding response).
+  next: re-engage auditor + overseer → re-converge → **overseer executes #122's merge** (standard
+  topology — the recursive self-merge) → then executor.md / execution-auditor.md / execution-overseer.md.
