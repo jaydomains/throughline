@@ -67,4 +67,10 @@ ships the review-refined canonical text rather than draft wording.
   reliability ranking (inline-review > issue-comment > re-dispatch, measured this session) §3.
   Content change → **re-stales the auditor `46db665` + planner reviews + my prior author marker**;
   all re-verify at the new content. Spec author executes on three-party convergence (one-time
-  separation).
+  separation). Accurate cumulative diff vs `main 6fd18af`: `planner.md +93/-2`,
+  `plan-auditor.md +94/-3`, `AUTO_CONTINUE +21`. Fold content SHA `5b1a4ff`.
+- **2026-06-05 (AUTHOR FINAL-MARKER re-posted @ `5b1a4ff` content)** — As author I am satisfied with
+  the expanded codification (8 + PB-1…PB-4) at `5b1a4ff`. Content-invariant wake-log-only marker —
+  leaves the reviewed artifact byte-identical, does not re-stale the reviewers. Convergence now needs
+  auditor + planner re-sign at `5b1a4ff` content → spec author executes. Watcher re-armed; actively
+  subscribed (finding #8).
