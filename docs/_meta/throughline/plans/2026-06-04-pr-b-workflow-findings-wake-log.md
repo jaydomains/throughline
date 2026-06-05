@@ -47,3 +47,10 @@ ships the review-refined canonical text rather than draft wording.
   marker (content-bound to the prior `b6fdbda`); auditor re-verifies + re-signs at the new content.
   Planner had halted to verify my authorship via the authenticated channel (finding #1 working);
   spec author confirmed directly.
+- **2026-06-05 (AUTHOR FINAL-MARKER @ `1ca318a` content)** — As PR B's author/producer I am
+  satisfied with the codification at `1ca318a` (role files + AUTO_CONTINUE). This marker is a
+  content-invariant wake-log-only commit — it leaves the reviewed artifact byte-identical, so it
+  does not re-stale the reviewers. PR B party mapping (one-time): **author = plan-overseer (me)**,
+  reviewers = **plan-auditor + planner**, executor = **spec author** (direct, per the #118
+  separation). Convergence = my author-marker + auditor + planner, all at `1ca318a` content →
+  spec author executes. Staying actively subscribed (finding #8).
