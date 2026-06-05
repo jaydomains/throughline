@@ -52,6 +52,18 @@ set-diff (§6), and per-thread round-trips (`X/5`, §7).
   set-diff: `0 dropped / 0 added (baseline — no reviewer findings yet)` (§6 bootstrap).
   round-trips: none open.
   next: open draft PR; re-arm watcher over auditor + overseer ref space; first revision commit
-  re-engages the reviewers (in §4.10 / §4.9 bounded stand-down). Per spec-author standing ruling,
+  re-engages the reviewers (§4.9 bounded stand-down). Per spec-author standing ruling,
   the override window is **waived when the spec author is present**. After executor.md converges +
   merges → execution-auditor.md → execution-overseer.md complete the six-file suite.
+
+- **2026-06-05 · fold dangling-pointer fix (this commit)** — Gitar (automated review) flagged the
+  bootstrap entry's `next:` note citing a **non-existent §4.10** ("re-engages the reviewers (in
+  §4.10 / §4.9 …)"). Verified against ground truth: `executor.md` defines §4.1–§4.9 only (no §4.10,
+  matching `planner.md`'s numbering) and carries **no** §4.10 reference itself — the dangling pointer
+  was confined to this wake-log line, carried over from the `plan-overseer.md` wake-log where that
+  file's merge-execution step shifted §4 numbering. Fixed: dropped `§4.10 /`, now reads "(§4.9
+  bounded stand-down)". My own error → folded autonomously (§7). **Content-invariant w.r.t.
+  `executor.md`** (the reviewed artifact is byte-unchanged, blob unchanged) — no reviewer marker
+  exists yet, and this fix would not re-stale one if it did. last-seen HEAD: auditor `de93477`;
+  overseer `b730b0c`; main `7b23096`. set-diff: `0 dropped / 0 added` (no `executor.md` change;
+  Gitar is not a three-party reviewer — not in the set-diff ID space). round-trips: none open.
