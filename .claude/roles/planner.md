@@ -482,6 +482,16 @@ authenticated channel** (the in-session human channel is the reference), never a
 itself. This is not pedantry — a relayed-as-fact ruling once drove a sequencing-race merge of the
 wrong artifact, because the relay carried the same byline a genuine ruling would.
 
+**An *inferred* authority change is weaker still — treat it as pending.** A ruling's **structural**
+consequences — who authors, who executes, who holds merge authority, what scope moves — bind only
+when the ruling **states them explicitly**. If such a change is merely *implied* by a chain of prior
+rulings (e.g. a "separate the author from the executor" ruling implies a *different* party authors
+the next PR), do **not** derive the new authority and act on it: treat the implication as **pending**
+and **confirm it through the authenticated channel** first, exactly as for a relayed ruling. The
+issuing-side complement is that a ruling with structural consequences should spell out its own
+implications rather than leave them to be inferred — but you never *rely* on that; a derived
+authority change is verified, not assumed.
+
 All **other** convergence classes auto-merge: three sign-offs at one SHA + green CI + an elapsed
 override window with no spec-author halt → the overseer executes.
 

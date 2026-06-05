@@ -31,8 +31,19 @@ ships the review-refined canonical text rather than draft wording.
 
 ## Wake-log (chronological)
 - **2026-06-04** — Authored PR B off `main` `6fd18af` (post-PR-A). Branch
-  `claude/pr-b-workflow-findings`. planner.md +51, plan-auditor.md +55, AUTO_CONTINUE +18; eight
-  findings codified, perspective-adapted (producer voice in planner, reviewer voice in auditor,
-  workflow-level canonical statements in AUTO_CONTINUE). set-diff bootstrap: `0 dropped / 0 added`.
-  Class-(iv) (changes durable convergence/merge topology). Draft; not flipping draft→ready, not
-  merging — spec author executes on three-party convergence.
+  `claude/pr-b-workflow-findings`. Eight findings codified, perspective-adapted (producer voice in
+  planner, reviewer voice in auditor, workflow-level canonical statements in AUTO_CONTINUE).
+  set-diff bootstrap: `0 dropped / 0 added`. Class-(iv) (changes durable convergence/merge
+  topology). Draft; not flipping draft→ready, not merging — spec author executes on three-party
+  convergence.
+- **2026-06-05 (refinement round)** — Spec-author refinement folded into finding #1
+  (authenticated-channel): an **inferred** authority/authorship change (derived from a chain of
+  rulings, not stated) is **pending** until confirmed through the authenticated channel — plus the
+  issuing-side complement (rulings spell out their structural implications). Added to planner.md +
+  plan-auditor.md §8.3 + AUTO_CONTINUE. Also corrected this wake-log's recorded counts (Gitar
+  finding on #126, dogfooding finding #7 — cite figures after reading the diff, not the stat bar).
+  **Accurate diff vs `6fd18af`:** `planner.md +60/-1`, `plan-auditor.md +64/-2`,
+  `AUTO_CONTINUE_WORKFLOW.md +18`. This is a **content change** → re-stales the auditor's `48e7aed`
+  marker (content-bound to the prior `b6fdbda`); auditor re-verifies + re-signs at the new content.
+  Planner had halted to verify my authorship via the authenticated channel (finding #1 working);
+  spec author confirmed directly.

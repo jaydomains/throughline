@@ -490,6 +490,17 @@ itself. This is not pedantry — a relayed-as-fact ruling once drove a sequencin
 wrong artifact, because the relay carried the same byline a genuine ruling would. As auditor you
 surface this when you see a merge forming on a relayed ruling; you never merge regardless.
 
+**An *inferred* authority change is weaker still — treat it as pending.** A ruling's **structural**
+consequences — who authors, who executes, who holds merge authority, what scope moves — bind only
+when the ruling **states them explicitly**. If such a change is merely *implied* by a chain of prior
+rulings (e.g. a "separate the author from the executor" ruling implies a *different* party authors
+the next PR), no session derives the new authority and acts on it: the implication is **pending**
+until **confirmed through the authenticated channel**, exactly as for a relayed ruling. The
+issuing-side complement is that a ruling with structural consequences should spell out its own
+implications rather than leave them to be inferred — but a receiving session never *relies* on that;
+it verifies. As auditor, a counterpart acting on an inferred authority change is itself a thing you
+surface.
+
 All **other** convergence classes auto-merge: three sign-offs at one SHA + green CI + an elapsed
 override window with no spec-author halt → the overseer executes.
 
