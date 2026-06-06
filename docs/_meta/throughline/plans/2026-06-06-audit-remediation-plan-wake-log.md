@@ -46,3 +46,20 @@ set-diff result · per-thread round-trip counts.*
   ruling-provenance note (authenticated dispatch briefing, not #133). **No push-backs** — all
   eight agreed. Set-diff: `0 dropped / +8 added (A-1, A-2, A-3, OV-1, OV-2, OV-3, OV-4, OV-5)`;
   M-1…M-14 coverage unchanged. Round-trips: A-1/A-2/A-3/OV-1/OV-2/OV-3/OV-4/OV-5 each `1/5`.
+
+- **2026-06-06 · round 2 — OV-6 folded + planner final-marker.** Last-seen remote tips: `main`
+  `4980dfd` · auditor `claude/stoic-keller-jSY5K` `e3f4901` (**FINAL — approved by plan-auditor**
+  @ `f097b39`; A-1/A-2/A-3 all dropped/resolved) · overseer `claude/elegant-einstein-fsSgg`
+  `a43ed3f` (round-2: OV-1…5 RESOLVED+verified; **OV-6 (XS)** opened). On-wake pairing done:
+  fetched + diffed both reviewer branches + read PR reviews/comments. **OV-6 fold:** role-attribution
+  fix — §2 (OQ-2) and B1 said "**plan**-overseer will not merge B1," but B1 is an *execution* slice →
+  corrected to **execution-overseer** (§8 was already correct; the error was an inherited relay of the
+  overseer's own surface wording). Verified §8/§4 already consistent. **Posted planner final-marker:**
+  flipped status-line token to `final — approved by planner` in this commit (a content-bearing commit,
+  as OV-6 required a content change). Set-diff: `1 dropped (OV-6, resolved by the role-attribution fix)
+  / 0 added`; M-1…M-14 coverage unchanged. Round-trips: OV-6 `1/5`; all auditor + OV-1…5 threads
+  resolved. **Convergence note:** this content change re-stales the auditor's `f097b39` marker and the
+  overseer re-verifies OV-6 at this SHA; both will refresh at the new content-SHA. I remain subscribed
+  through both reviewers' refreshed markers + the spec-author override window until the **plan-overseer
+  executes the merge** (I do not flip draft→ready or merge). OQ-1/OQ-2 remain open to the spec-author,
+  non-blocking for plan-merge (the overseer ruled them resolved-at-execution).

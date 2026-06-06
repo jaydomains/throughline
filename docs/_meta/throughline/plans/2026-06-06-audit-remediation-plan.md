@@ -7,7 +7,7 @@ audit into a sequenced execution roadmap, executable by the execution chain
 **Author:** planner · **Reviewers:** plan-auditor (content), plan-overseer (governance) ·
 **Escalation:** spec-author.
 
-**Status:** draft — under three-party review (planner authoring)
+**Status:** final — approved by planner
 
 **Audit source:** `docs/_meta/throughline/audits/2026-06-06-end-to-end-summary.md`;
 per-finding evidence on PR #133 (`RECONCILED FINDINGS` comment).
@@ -134,7 +134,7 @@ Findings the planner scopes (no ruling): **M-2, M-3, M-6, M-9, M-10, M-12, M-14*
 > *chain-automation* (auto-continue ⇒ merge-commit)? **Non-halting** (role §8.3): the plan
 > converges on everything else; the plan's §6/§8 are made internally consistent by **not**
 > pre-judging the method (deferred to the execution-overseer's lane), and **B1 is authored
-> against this answer** — the plan-overseer will not merge B1 (class-iv) without the ruling
+> against this answer** — the execution-overseer will not merge B1 (class-iv) without the ruling
 > through the **authenticated channel**. The spec-author may settle it now or at B1's
 > execution-time ratification. Surfaced by the plan-overseer at PR #135 (comment 4640328474);
 > recorded here so it survives compaction.
@@ -289,7 +289,7 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
   two-parent merge; squash not used" invariant. **The dual-context §D rewrite must be authored
   against the OQ-2 ruling (§2)** — the execution-trio-reviewed-auto-continue-chain case the M-7
   ruling left unclassified; B1 cannot crisply codify §D until that class-(iv) point is ruled, and
-  the plan-overseer will not merge B1 (class-iv) without it through the authenticated channel.
+  the execution-overseer will not merge B1 (class-iv) without it through the authenticated channel.
   Codify the blessed extended halt classes into
   the "Three Halt Classes" section (renaming/expanding it). **The blessed set is `4–9` (six
   classes)** — confirmed against the Phase-E record (`plans/2026-05-30-phase-e-full-audit-close.md:5`
