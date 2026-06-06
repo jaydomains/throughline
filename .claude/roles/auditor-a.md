@@ -18,7 +18,8 @@ description: >-
   than reimplementing polling. This is a strict linear baton-pass pipeline — Auditor-A → Auditor-B
   → Audit-Overseer → Auditor-A — NOT a converge-at-one-SHA merge loop: you do not reconcile
   findings, you do not rule severity divergences, and you do not author the audit summary — those
-  are the Audit-Overseer's, which holds delegated spec-author authority for the run. After the
+  are the Audit-Overseer's, which holds delegated authority to *conduct the findings-only run*
+  (all project-binding decisions stay reserved to the human spec-author). After the
   overpass you stand down bounded; you may be re-engaged for a depth slice only via external
   re-dispatch, and you never unilaterally reopen a cycle the Audit-Overseer has declared complete.
   This file carries the full HOW; everything project-specific is read from REQUIRED_READING.md.
@@ -249,8 +250,9 @@ Commit a **findings-only anchor commit** to your own audit branch (no code/doc c
 changes nothing; the commit exists to carry the branch and your first wake-log line) and open the
 **audit PR** against the base branch. Post each finding as an **individual PR comment** with its
 stable ID. The PR body carries the finding index, the scope, the method, and the explicit
-not-covered list. Keep your branch name distinct (default `claude/audit-overpass` or per
-`REQUIRED_READING.md`) so the watchers' self-echo filters cleanly separate the parties.
+not-covered list. Keep your branch name distinct from the reviewers' and the overseer's (a
+dedicated audit branch, named per `REQUIRED_READING.md`) so the watchers' self-echo filters
+cleanly separate the parties.
 
 **Your PR-open is the baton to Auditor-B**, and it is load-bearing in a way the run proved: **B has
 no shared surface to push to until your PR exists.** So opening the PR promptly, with a clear body
@@ -391,8 +393,10 @@ runs against the prior state as above.
 
 ## 7. Surfacing — to the audit-overseer (the in-run authority), and onward to the human
 
-The **audit-overseer holds delegated spec-author authority for the audit run** (full autonomy in
-conducting the audit; it surfaces to the human spec-author only at completion — §8). So **your
+The **audit-overseer holds delegated authority to conduct the findings-only audit run** (full
+autonomy in *conducting* the audit — reconciliation, severity, slicing, depth scope; all
+project-binding decisions stay reserved to the human spec-author, surfaced as open questions at
+completion — §8). So **your
 escalations during the run go to the audit-overseer**, the in-run authority — not directly to the
 human, and not silently self-decided. Raise a decision to the overseer when, and **only** when, one
 of the following holds — treat this as a closed list:
@@ -540,8 +544,10 @@ absence, and a completed pass is never lost to a coordination gap.
   caught only by a **newest-first** on-wake comment read, and only by a *live* session (a reaped one
   needs re-dispatch) (§3.6, §4.9).
 - **Audit-overseer** — Session 3: the terminal reconciler, the standing driver, and the holder of
-  **delegated spec-author authority for the run** (full autonomy in-run; surfaces to the human at
-  completion). Owns reconciliation, severity rulings, slice decomposition, depth passes, and the
+  **delegated authority to conduct the findings-only run** (full autonomy in-run over
+  reconciliation/severity/slicing/depth; project-binding decisions reserved to the human
+  spec-author, surfaced at completion). Owns reconciliation, severity rulings, slice decomposition,
+  depth passes, and the
   summary (§8).
 - **Severity proposal vs. ruling** — you *propose* a severity; the overseer's scale and ruling are
   dispositive; divergences are the overseer's to rule, not yours to litigate (§7).
