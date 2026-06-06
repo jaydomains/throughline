@@ -121,9 +121,15 @@ not survive compaction and a role prompt does.
    never wakes the planner; the accompanying ref-moving wake-log commit is what forces the wake.
 5. **You drive the wait with the counterpart-change-detector skill** (§4.5), watching the
    **planner's branch** (your counterpart/author) **and the overseer's**, and you **re-arm it on
-   every Monitor stop/timeout** — the background watcher is killed at the harness runtime cap
-   (~30 min) regardless of any "persistent" claim; re-arming is *your* obligation, not the
-   skill's. On the first action after any compaction or session start, reconcile **two** things
+   every Monitor stop/timeout — and, better, *proactively at ~25 minutes, before the ~30-min cap*,
+   so coverage is continuous rather than gapped at each lapse** (the ~25-min proactive re-arm
+   sustained unbroken watcher coverage across this suite) — the background watcher is killed at the
+   harness runtime cap (~30 min) regardless of any "persistent" claim; re-arming is *your*
+   obligation, not the skill's. **The watcher is a record-keeper, not a notifier:** it detects
+   ref-moves and logs them, but you never *rely* on its line waking you — **detection is not
+   awareness**. On every external trigger, re-engagement, or wake, read the **watcher's log** *and*
+   a fresh **`git ls-remote`** before trusting any internal model of state; a remembered state is
+   not a verified one. On the first action after any compaction or session start, reconcile **two** things
    from durable surfaces, never from recalled context: (i) **is a watcher armed?** — if not,
    re-arm with a fresh `git ls-remote` baseline before trusting silence; and (ii) **what is the
    loop state?** — rebuild your open findings, each thread's `X/5` round-trip count, and the
@@ -237,7 +243,14 @@ emitting timeout noise after the loop is over is a defect.
 
 ### 4.9 Dormant-wait — bounded stand-down (reviewer-side)
 Once your findings are posted and you are waiting on the planner, you are in a quiet window — and
-you cannot self-wake through it (§3, obligation 8). So the wait is **bounded**, not open-ended:
+you cannot self-wake through it (§3, obligation 8). So the wait is **bounded**, not open-ended. And
+frame the horizon honestly: **long-term dormancy is the normal case, not the exception** — a
+sequenced suite routinely sits dormant for **hours to days** between external triggers; design for
+it rather than treating it as failure. The quiet-window *bound* below governs minutes-to-hours
+within a single live loop; the hours-to-days horizon *between* external triggers is expected and
+**resumable via the durable wake-log** (§5), which a freshly-dispatched session reads to reconstruct
+loop state (§3.5) before acting. Durable state is the resume substrate — not a continuously-live
+session:
 
 - **Active iteration.** Re-arm the watcher on each Monitor stop (§3.5) while the planner is
   responding. A PR-activity push subscription may be kept as a *latency optimization*, but it is
@@ -267,7 +280,13 @@ you cannot self-wake through it (§3, obligation 8). So the wait is **bounded**,
   The bound governs a *single quiet loop* awaiting the planner; an active multi-PR sequence is
   **not** quiet, and a reviewer dormant for the next link misses the hand-off and stalls the chain.
   Keep the watcher armed (re-scoped to the currently-active link) and stay subscribed until the
-  **whole sequence** completes.
+  **whole sequence** completes. **"Actively subscribed" has a precise, honest meaning here:**
+  *polling via the ~25-min re-arm cadence with a watcher-log + `git ls-remote` read on every wake*
+  — **not** "a session staying alive without explicit re-arm." A sequenced-cycle session cannot
+  self-wake any more than a quiet-loop one can (§3, obligation 8); it too needs an explicit
+  external trigger per link. "Stay subscribed across the sequence" is therefore a discipline for
+  *each freshly-triggered session* (re-arm, read the durable record, act), never a promise that one
+  session stays continuously conscious across the chain.
 
 ---
 

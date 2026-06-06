@@ -49,7 +49,10 @@ ref watcher used alone will silently miss every reply-only round.
 ## Mechanism — two arms
 
 Run `scripts/watch-counterpart.sh` under your harness's background-notification primitive so
-each line it prints becomes a wake. It queries the **remote directly** every `POLL_SECONDS`
+each line it prints becomes a wake — but treat that wake as **best-effort, not guaranteed** (see
+*Record-keeper, not notifier* under Known limitations): the line is durably **logged**, and the
+log plus a fresh `git ls-remote` are what you reconcile against on every wake, never a remembered
+state. It queries the **remote directly** every `POLL_SECONDS`
 (`git ls-remote` — never local fetch state or a cached API, both of which lag) and emits a
 line only on a delta from its in-memory baseline:
 
@@ -128,9 +131,19 @@ anchor system, or discipline rule.
 - **Background-runtime cap.** Harness background tasks are killed at a cap (commonly
   ~30 min) — **including** `persistent`-mode monitors, despite any "no timeout" claim in the
   primitive's own docs (confirmed: a `persistent:true` monitor was capped at 30 min three
-  times running). On the stop/timeout notification, **re-arm immediately** with a fresh
-  baseline; assume a finite lifetime, not "set and forget." See the operating guide on
-  surviving this across context compaction.
+  times running). **Re-arm *proactively at ~25 min, before the ~30-min cap* — not only on the
+  stop/timeout** — so coverage is continuous rather than gapped at each lapse (validated live: a
+  ~25-min proactive re-arm sustained unbroken coverage across a multi-cycle suite); and on any
+  stop/timeout you do hit, **re-arm immediately** with a fresh baseline. Assume a finite lifetime,
+  not "set and forget." See the operating guide on surviving this across context compaction.
+- **Record-keeper, not notifier — detection is not awareness.** The watcher *detects* ref-moves
+  and *records* them (its stdout/log line); it does **not** guarantee it *wakes* you — a
+  notification can be dropped, batched, lost to a reaped session, or never delivered while you are
+  dormant. So never read "no wake arrived" as "nothing changed," and never trust a remembered
+  model of state. On **every** external trigger, re-engagement, or wake — and before ending any
+  turn where you wait on the counterpart — read the **watcher's log** *and* a fresh
+  **`git ls-remote`**, then reconcile. The durable record (log + remote), not the wake event, is
+  the source of truth.
 - **Latency.** Up to `POLL_SECONDS` + harness scheduling. Not instant.
 - **Transient `ls-remote` failure.** The script guards empty results (skips, never clobbers
   the baseline) but has no retry/backoff — sustained remote failure = silent no-wake.

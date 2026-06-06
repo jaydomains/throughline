@@ -119,8 +119,14 @@ because a mid-conversation note does not survive compaction and a role prompt do
    including a no-change wake (`0 dropped / 0 added`). The ref-moving commit is what wakes the
    planner; a comment-only finding never does.
 5. **You drive the wait with the counterpart-change-detector skill** (§4.5), watching the
-   **planner's branch and the auditor's**, and **re-arm on every Monitor stop** (the watcher dies
-   at the ~30-min cap regardless of "persistent"). After compaction/session-start, reconcile:
+   **planner's branch and the auditor's**, and **re-arm on every Monitor stop — and, better,
+   *proactively at ~25 minutes, before the ~30-min cap*, for continuous rather than gapped
+   coverage** (the watcher dies at the ~30-min cap regardless of "persistent"; the ~25-min
+   proactive re-arm sustained unbroken coverage across this suite). **The watcher is a
+   record-keeper, not a notifier:** it detects ref-moves and logs them, but you never *rely* on its
+   line waking you — **detection is not awareness**; on every external trigger, re-engagement, or
+   wake, read the **watcher's log** *and* a fresh **`git ls-remote`** before trusting any internal
+   model of state. After compaction/session-start, reconcile:
    watcher armed? loop state (open `OV-` findings, per-thread `X/5`, last-seen HEAD, **and whether
    the loop is post-convergence awaiting your execution**) from the wake-log + PR threads. Two
    watcher-**scoping** disciplines the cycles surfaced: **(a)** anchor `SELF_EXCLUDE` to your
@@ -223,7 +229,13 @@ exercised authority to merge or halt instead of you, you still terminal-stand-do
 
 ### 4.10 Dormant-wait — bounded stand-down (reviewer-side)
 Between rounds, and while post-convergence awaiting the trigger to execute, you are in a quiet
-window — and you cannot self-wake through it (§3, obligation 8). So the wait is **bounded**:
+window — and you cannot self-wake through it (§3, obligation 8). So the wait is **bounded**. And
+frame the horizon honestly: **long-term dormancy is the normal case, not the exception** — a
+sequenced suite routinely sits dormant for **hours to days** between external triggers; design for
+it rather than treating it as failure. The quiet-window *bound* below governs minutes-to-hours
+within a single live loop; the hours-to-days horizon *between* external triggers is expected and
+**resumable via the durable wake-log** (§5), which a freshly-dispatched session reads to reconstruct
+loop state before acting. Durable state is the resume substrate — not a continuously-live session:
 
 - **Active iteration.** Re-arm the watcher on each Monitor stop while the planner is responding.
 - **The bound.** After a bounded quiet window with **zero planner activity** — default: a small
@@ -248,6 +260,13 @@ window — and you cannot self-wake through it (§3, obligation 8). So the wait 
   quiet, and a party dormant for the next link misses the hand-off and stalls the chain. Keep the
   watcher armed (re-scoped to the currently-active link) and stay subscribed until the **whole
   sequence** completes — and as the eventual executor, watch the event that unblocks the next link.
+  **"Actively subscribed" has a precise, honest meaning here:** *polling via the ~25-min re-arm
+  cadence with a watcher-log + `git ls-remote` read on every wake* — **not** "a session staying
+  alive without explicit re-arm." A sequenced-cycle session cannot self-wake any more than a
+  quiet-loop one can (§3, obligation 8); it too needs an explicit external trigger per link. "Stay
+  subscribed across the sequence" is therefore a discipline for *each freshly-triggered session*
+  (re-arm, read the durable record, act), never a promise that one session stays continuously
+  conscious across the chain.
 
 ---
 
