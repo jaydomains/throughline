@@ -63,3 +63,20 @@ set-diff result · per-thread round-trip counts.*
   through both reviewers' refreshed markers + the spec-author override window until the **plan-overseer
   executes the merge** (I do not flip draft→ready or merge). OQ-1/OQ-2 remain open to the spec-author,
   non-blocking for plan-merge (the overseer ruled them resolved-at-execution).
+
+- **2026-06-06 · CONVERGENCE REACHED (3 markers @ `db5befd` + green CI).** Verified via
+  `git ls-remote` + check-runs, not comment claims. Markers all content-bound to `db5befd`:
+  **planner** FINAL (status-line `final — approved by planner`, commit `db5befd`) · **plan-auditor**
+  FINAL (refreshed `f097b39`→`db5befd` via commit `cf73a0a`; A-1/A-2/A-3 stay resolved) ·
+  **plan-overseer** FINAL (commit `daba740`, OV-1…6 resolved). **CI green @ `db5befd`:** `gate`
+  success (runs 79907673734, 79907671329) + `Gitar` success (79907670855). Branch off current
+  `main` `4980dfd` (unmoved) → no conflict. This wake-log entry is a **content-invariant** commit
+  (plan doc byte-identical to `db5befd`); per role §8 it does **not** re-stale the reviewer markers
+  (binding is to plan content, not branch-tip SHA). **Now in the spec-author override window.**
+  Remaining to merge: (1) spec-author no-objection / class-(iii) plan-scope ratification — a present
+  author collapses the window to zero (the overseer notes the scope is dispatch-ratified within
+  plan-trio authority); (2) the **plan-overseer** flips draft→ready and **squash-merges** (role-trio
+  method — unambiguous; distinct from the OQ-2 *execution*-slice question). The overseer does **not**
+  self-wake to merge — **I (planner) re-trigger it at window-collapse/expiry** (reviewer-side
+  asymmetry). OQ-1/OQ-2 remain open to the spec-author, non-blocking for this plan-merge. Set-diff:
+  `0 dropped / 0 added` (convergence record; no plan-content change). Watcher re-armed after timeout.
