@@ -29,4 +29,5 @@ human class-(iv) ratification via authenticated channel.
 
 | # | last-seen remote HEAD (`git ls-remote`) | event | state |
 |---|---|---|---|
-| 1 | `main` @ `b5e0769` (file 1 merged) | Authored `auditor-b.md` + this wake-log on branch reset to main; opening draft PR #2; arming watcher. | auditor-b.md draft published — awaiting reviewer wake on PR-open. |
+| 1 | `main` @ `b5e0769` (file 1 merged) | Authored `auditor-b.md` + this wake-log on branch reset to main; opened draft **PR #137**; arming watcher. | auditor-b.md draft published — awaiting reviewer wake on PR-open. |
+| 2 | `c7f4ea3` (PR #137 head) | Gitar quality nit: wake-log cited informal "PR #2" → corrected to actual **#137** (wake-log is durable ground-truth; §3.1 cite-what-you-read-back). Wake-log-only fix; auditor-b.md content unchanged. | Awaiting reviewer sessions on PR #137. |
