@@ -29,3 +29,20 @@ set-diff result · per-thread round-trip counts.*
   against the draft yet** — both are independent pre-read baselines. Set-diff:
   `0 dropped / 0 added` (no reviewer findings yet; planner-initiated accuracy fix — M-4 locus
   §13→§9, line 548, verified under `## 9. AI role`). Round-trips: all threads `0/5`.
+
+- **2026-06-06 · round 1 — folded all 8 reviewer findings.** Last-seen remote tips: `main`
+  `4980dfd` · auditor `claude/stoic-keller-jSY5K` `cee691b` (review COMMENTED @ `4639f70`: A-1,
+  A-2, A-3 inline) · overseer `claude/elegant-einstein-fsSgg` `8fb8f9b` (OV-1..3 + supplement
+  OV-4, OV-5 + a class-(iv) spec-author surface). On-wake pairing done: fetched + diffed both
+  reviewer branches **and** read all PR #135 reviews + review-comments + issue-comments. Each
+  finding verified against ground truth before folding (role-file externalization for OV-1;
+  Phase-E halt-class source set + 4–9 for A-3; SPEC §11/§601/§51 for A-2). **Folds:** A-1/OV-4
+  merge-method — §6 made method-agnostic, §8 defers to execution-overseer's lane + references the
+  overseer's class-(iv) surface, **OQ-2 added to §2**, B1 tied to the OQ-2 ruling; A-2/OV-5 —
+  D1 resolved to *provide* a single-command setup (primary, no spec edit) + conditional class-(ii)
+  fallback, D1 added to §4 table; A-3 — B1 source breadth widened with per-class Phase-E
+  citations + don't-invent guard + "blessed set is 4–9 (six)" correction; OV-1 — §4 + B1 + B3
+  "no role-file back-port owed" note; OV-2 — §3.C reworded off uncodified halt-8; OV-3 — §1
+  ruling-provenance note (authenticated dispatch briefing, not #133). **No push-backs** — all
+  eight agreed. Set-diff: `0 dropped / +8 added (A-1, A-2, A-3, OV-1, OV-2, OV-3, OV-4, OV-5)`;
+  M-1…M-14 coverage unchanged. Round-trips: A-1/A-2/A-3/OV-1/OV-2/OV-3/OV-4/OV-5 each `1/5`.

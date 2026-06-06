@@ -71,6 +71,19 @@ against the **live tree on `main`** at authoring time, not inherited from the au
 
 ## 1. Settled spec-author rulings (do not re-litigate)
 
+> **Ruling provenance (OV-3 — for the execution-overseer's ratification gates).** The seven
+> rulings below were issued by the spec author through the **authenticated dispatch briefing
+> that initiated this planning session** — that is the authenticated channel for this plan, not
+> PR #133. PR #133 carries only the *Overseer's severity* rulings (M-7/M-8/M-4 grades); the
+> build / defer / codify / back-fill decisions are **not** in #133 and must not be sourced from
+> it. Per role §8.3 / AUTO_CONTINUE "authenticated ratification": a ruling **relayed** under the
+> shared role-session identity (including this plan's restatement of it) is **pending until
+> confirmed/current** through the authenticated channel. Therefore, at each ratification-class
+> merge gate (§4), the **execution-overseer re-confirms the governing ruling through the
+> authenticated channel** rather than relying on this plan's relayed restatement. The
+> planner-vs-spec-author partition (7 settled / the rest planner-scoped) is itself part of that
+> authenticated briefing.
+
 | Finding | Ruling (settled) |
 |---|---|
 | **M-1** (High) | Accelerate as next priority. Fastify-v5 migration, `@xenova/transformers→onnxruntime-web→protobufjs` chain review, `fast-uri` pin. Must land before any honest "production-ready" claim. |
@@ -89,7 +102,7 @@ Findings the planner scopes (no ruling): **M-2, M-3, M-6, M-9, M-10, M-12, M-14*
 
 ---
 
-## 2. Surfaced decision — awaiting spec-author ruling
+## 2. Surfaced decisions — awaiting spec-author ruling
 
 > **OQ-1 (M-6 — bootstrap sub-actions): build, defer-with-marker, or remove from SPEC §7.27?**
 > The rulings settled M-1/M-4/M-5/M-7/M-8/M-11/M-13 but did **not** settle M-6's three-way
@@ -106,6 +119,25 @@ Findings the planner scopes (no ruling): **M-2, M-3, M-6, M-9, M-10, M-12, M-14*
 > The plan carries M-6 as **slice D3** with that default; the slice is **held** (not
 > executed) until the ruling lands. The default is recorded, **not baked** — the executor
 > does not proceed on D3 until OQ-1 is answered through the authenticated channel.
+
+> **OQ-2 (M-7 / B1 — merge method for an execution-trio-reviewed auto-continue build-slice
+> chain): squash or merge-commit? *(surfaced by the plan-overseer — OV-4; class-(iv)
+> durable precedent.)*** The dual-context M-7 ruling (squash for role-trio review cycles;
+> merge-commit for the auto-continue build-slice chain) does **not** classify the case that is
+> **both at once** — the execution trio reviewing an auto-continue chain of build slices, which
+> is how this remediation (and any build cohort) runs. The records cannot resolve it:
+> `REQUIRED_READING §7` lists the **execution-trio** under *both* buckets, and the audit's M-7
+> finding observed every Phase-E build slice was **squash-merged**. The narrow question: for
+> build slices reviewed by the execution trio under auto-continue, **squash** (matching empirical
+> Phase-E practice + the §7 execution-trio listing) or **merge-commit** (matching the §7
+> build-chain clause) — and is the distinguishing axis *review-topology* (trio ⇒ squash) or
+> *chain-automation* (auto-continue ⇒ merge-commit)? **Non-halting** (role §8.3): the plan
+> converges on everything else; the plan's §6/§8 are made internally consistent by **not**
+> pre-judging the method (deferred to the execution-overseer's lane), and **B1 is authored
+> against this answer** — the plan-overseer will not merge B1 (class-iv) without the ruling
+> through the **authenticated channel**. The spec-author may settle it now or at B1's
+> execution-time ratification. Surfaced by the plan-overseer at PR #135 (comment 4640328474);
+> recorded here so it survives compaction.
 
 ---
 
@@ -135,9 +167,14 @@ may edit the same shared doc. Files touched by more than one finding:
 | `PLATFORM_STATUS.md` | every slice (post-work touch) + M-10 (full refresh) | normal per-slice sign-off touches are fine; **M-10 is the last slice** — never open it early as a standalone doc-PR while the chain runs. |
 
 **C. Test-flake cross-link:** `rag.test.ts` (a PLATFORM_STATUS-flagged flake, M-14) is the
-test most exercised by the **A2** embeddings swap. Treat any A2 failure as a real finding
-(root-cause / stabilize — the halt-8 flake-handling class being codified in **B1/M-8**),
-never re-run-until-green.
+test most exercised by the **A2** embeddings swap. Treat any A2 failure as a real finding —
+**root-cause / stabilize, never re-run-until-green** — under the **codified circuit-breaker
+halt class** and the general verify-before-green discipline (AUTO_CONTINUE "CI flake is a
+finding"). *(Note for sequencing: A2 runs before B1 codifies the extended halt classes, so this
+guidance rests on the **already-codified** floor, not on an extended class by number. The
+blessed flake-handling halt class is among those **B1** codifies; do not invoke it as live
+authority in A2, which precedes its codification — REQUIRED_READING §4 directs treating the
+three codified classes as authoritative until 4–9 are written in.)*
 
 ---
 
@@ -152,11 +189,25 @@ class still applies):
 |---|---|---|
 | **A2** | (i) anchor change | Embeddings-stack swap touches **C-D2** (its "optional first-launch download" description vs the hard-direct-dep reality; already narrowed by T-D60). |
 | **B1** | (iv) durable precedent | Merge-method doctrine + halt-class set are the governance floor all six role files delegate to. |
-| **B4** | (ii) spec amendment | SPEC.md §7.21/§13 edits. |
+| **B4** | (ii) spec amendment | SPEC.md §7.21 + §9 AI-feature-table edits. |
+| **D1** | (ii) — **conditional** | **Only if** the DoD §11 fallback (amend SPEC §11 to match manual reality) is taken. The primary D1 path — *provide* a single-command setup — needs **no** spec edit (it makes the existing SPEC §11/§3 claim true). See D1. |
 | **D3** | (ii)+(iii) | SPEC §7.27 amendment + the M-6 scope decision (OQ-1). |
 
 All other slices auto-merge on the standard gate. ROADMAP/CHECKLIST/PLATFORM_STATUS/README/
 ci.yml/REQUIRED_READING are **not** in the class-(ii) spec-record set (SPEC/CODE_SPEC/DECISIONS).
+
+> **Back-port conclusion — no role-file edit owed (OV-1).** The audit's M-7/M-8 "touches"
+> lists name the role files (M-7 → `plan-overseer.md`; M-8 → *all six* `.claude/roles/*`).
+> Verified against the live tree: the six role files **externalize** both governed parameters —
+> halt classes are referred to **"by category"** with an explicit prohibition on reproducing
+> the labels (`executor.md:374`; `execution-auditor.md` likewise), and merge-method is read as a
+> **"project parameter (REQUIRED_READING.md)"** (`executor.md:69`; `plan-overseer.md`), while the
+> merge-executor files' "squash-merge" wording (`plan-overseer.md:18`) is the **role-trio
+> context** and is **correct** under the dual-context ruling, not stale. **Conclusion: B1 + B3
+> land entirely in the project layer (AUTO_CONTINUE + REQUIRED_READING); no role-file back-port
+> is owed** — the externalized design propagates the fix automatically. Recorded here (and in B1)
+> so the executor neither wrongly edits the portable role files nor misses a genuinely-needed
+> edit. (role §8.3 back-port discipline + the baked-vs-externalized boundary.)
 
 ---
 
@@ -235,19 +286,42 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
 - **Scope:** rewrite `AUTO_CONTINUE_WORKFLOW.md §D` to document the **dual-context** merge
   method honestly (squash for role-trio review cycles; merge-commit for the auto-continue
   build-slice chain) per the M-7 ruling — replacing the self-disproving "every PR is a
-  two-parent merge; squash not used" invariant. Codify **halt-4 … halt-9** into the "Three
-  Halt Classes" section (renaming/expanding it), pulling definitions from the Phase E audit
-  wake-log (`docs/_meta/throughline/plans/phase-e-audit-wake-log.md` and the Phase-E
-  wake-logs). Confirm REQUIRED_READING §7 already reflects the dual-context method (ruling
-  says it does — **verify, do not re-edit** unless verification fails).
+  two-parent merge; squash not used" invariant. **The dual-context §D rewrite must be authored
+  against the OQ-2 ruling (§2)** — the execution-trio-reviewed-auto-continue-chain case the M-7
+  ruling left unclassified; B1 cannot crisply codify §D until that class-(iv) point is ruled, and
+  the plan-overseer will not merge B1 (class-iv) without it through the authenticated channel.
+  Codify the blessed extended halt classes into
+  the "Three Halt Classes" section (renaming/expanding it). **The blessed set is `4–9` (six
+  classes)** — confirmed against the Phase-E record (`plans/2026-05-30-phase-e-full-audit-close.md:5`
+  "halt-class 4–9 blessed"; the reconciled M-8's "4/5/8/9" was an **undercount**, corrected here).
+- **Source breadth (A-3 — load-bearing):** the definitions are **scattered across the Phase-E
+  artifact set**, *not* a single wake-log. Pull from the full set, with these verified anchors as
+  the starting map: **halt-4** = estimate breach (`audits/2026-05-31-phase-e-execution-audit-1.md:50,61`),
+  **halt-5** = unplanned anchor (`plans/2026-05-30-phase-e-full-audit-close.md:194,350`),
+  **halt-6** = fingerprint-staleness, **halt-8** = flake (`audits/2026-05-31-phase-e-execution-audit-1.md:51`),
+  **halt-9** = blessed decision-gate (`plans/2026-05-30-phase-e-full-audit-close.md:342,403`);
+  **halt-7** is the murkiest. Widen the executor's reading to
+  `plans/2026-05-30-phase-e-full-audit-close.md`, `plans/phase-e-audit-approval.md`, the
+  `plans/2026-05-31-phase-e-*` set, and the Phase-E audit/augmentation wake-logs.
+- **Don't-invent guard (A-3, REQUIRED_READING §4):** codify only the **blessed** classes —
+  invent **no** new authority-floor semantics. **If any of 4–9 lacks a traceable blessed
+  definition (halt-7 the likely candidate), the executor surfaces it (spec-drift / ambiguity
+  halt) rather than authoring one.** Confirm REQUIRED_READING §7 already reflects the
+  dual-context method (ruling says it does — **verify, do not re-edit** unless verification fails).
+- **No role-file back-port owed (OV-1):** B1 lands entirely in the project layer — the six role
+  files externalize halt-classes (by category) and merge-method (as a REQUIRED_READING
+  parameter), verified no stale enumeration (see §4 back-port note). Do **not** edit
+  `.claude/roles/*`.
 - **Findings:** M-7, M-8 (codification portion).
 - **Dependencies:** none; but **owns AUTO_CONTINUE_WORKFLOW.md** — B2 must follow it.
-- **LOC:** **M** (halt-4…9 definitions + §D rewrite).
-- **Deliverables:** rewritten §D; expanded halt-class section (3 → 9, with provenance cites
-  to the wake-log); REQUIRED_READING §4 "known gap" note updated to point at the now-codified
-  set **(this REQUIRED_READING edit moves to B3 to avoid the §4/§5 file collision — see B3)**.
-- **Verification:** gate green (doc-only, but CI must stay green); every codified halt class
-  traces to a wake-log source; no remaining "owed work" language for halt classes.
+- **LOC:** **M** (six halt-class definitions + §D rewrite).
+- **Deliverables:** rewritten §D; expanded halt-class section (3 → 9, with per-class provenance
+  cites to the Phase-E source artifacts); REQUIRED_READING §4 "known gap" note updated to point
+  at the now-codified set **(this REQUIRED_READING edit moves to B3 to avoid the §4/§5 file
+  collision — see B3)**.
+- **Verification:** gate green (doc-only, but CI must stay green); **every codified halt class
+  traces to a blessed Phase-E source** (and any that cannot is surfaced, not invented); no
+  remaining "owed work" language for halt classes.
 - **Ratification:** class (iv) — durable governance precedent (spec-author already ruled).
 
 #### B2 — CI-enforcement reconciliation
@@ -269,6 +343,9 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
   denial (M-9). Update §4's "known gap … halt-4…9 not codified … owed work" note to point
   at the now-codified set landed in B1 (M-8 pointer-update).
 - **Findings:** M-9, M-8 (REQUIRED_READING §4 pointer portion).
+- **No role-file back-port owed (OV-1):** the §4-pointer + §5-tree edits to REQUIRED_READING are
+  the **only** edits B3 makes; the six `.claude/roles/*` files externalize halt-classes/merge-method
+  and need **no** edit (see §4 back-port note).
 - **Dependencies:** **after B1** (the §4 pointer depends on B1's codification; and §4/§5
   share the file so this must be one slice, not two).
 - **LOC:** **XS–S**.
@@ -354,19 +431,29 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
   Reconcile `auto-start.md` so its `:12-13` claim ("start runs the compiled `dist/index.js`
   after `pnpm build`") becomes **true**, and make the `pnpm build`-first requirement explicit
   in the install steps (since `node dist/index.js` requires a prior build — the systemd unit
-  does not build). **DoD §11 single-command setup** (folded into M-2's cluster by the audit):
-  recommend documenting the honest manual reality (clone + `pnpm install` + `pnpm build` +
-  enable unit) and/or adding a small convenience setup script; this is the one M-2 sub-choice
-  worth the executor's explicit note in the handover.
+  does not build).
+- **DoD §11 single-command setup — resolved to a definite outcome (A-2):** the **primary path
+  is _provide_ a real single-command setup** (e.g. a `scripts/setup.sh` or a root `package.json`
+  script that runs `pnpm install && pnpm -r build` and prints/optionally-installs the OS unit),
+  which makes the existing SPEC claim — `SPEC.md:601` "installs and runs via documented
+  single-command setup" + `SPEC.md:51` "one command, scriptable on login" — **true with no spec
+  edit** (mirrors C1's "make the claim true" approach). This is the committed outcome; do **not**
+  ship "document the manual multi-step reality" alone, which would leave `SPEC.md:601` false and
+  recreate the claimed-but-unbuilt drift this cohort exists to close. **Conditional fallback:**
+  *only if* a genuine single-command setup proves infeasible at execution, fall back to a
+  **SPEC §11 amendment** to match the manual reality — that path is a **class-(ii) spec
+  amendment** (ratification flag added to D1 in §4 for the fallback case only).
 - **Findings:** M-2 (incl. the DoD §11 single-command-setup sub-item).
 - **Dependencies:** **after Group A** (shared `package.json`).
-- **LOC:** **S** (scripts + doc reconciliation; **M** if a convenience setup script is added).
+- **LOC:** **M** (scripts + the single-command setup script + doc reconciliation).
 - **Deliverables:** corrected `start` script; verified OS-unit docs; `auto-start.md` made
-  truthful with an explicit build-first step; a DoD §11 note (documented reality and/or
-  setup script).
+  truthful with an explicit build-first step; **a single-command setup script** (primary path)
+  *or* a flagged SPEC §11 amendment (fallback).
 - **Verification:** `pnpm build` then `node dist/index.js` boots and serves on
   `127.0.0.1:47823` under `NODE_ENV=production` (prod module resolution, not the `development`
-  condition); gate green; the auto-start doc no longer contradicts the script.
+  condition); the single-command setup runs clean from a fresh clone; gate green; the
+  auto-start doc no longer contradicts the script; SPEC §11's single-command claim is true
+  (primary path) or amended to match reality (fallback).
 
 #### D2 — IntelligenceView UUID picker
 - **Scope:** replace the raw-UUID text inputs on the retro / stakeholder / chat surfaces
@@ -408,9 +495,11 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
 
 ## 6. Recommended execution sequence
 
-The auto-continue norm is one executor working a linear chain; the order below respects every
-§3 dependency and collision. Where two executors could run in parallel, the only safe parallel
-front is across **non-colliding files** (noted).
+The execution chain works these slices **linearly — one executor, three-party review per slice**
+(executor / execution-auditor / execution-overseer); the order below respects every §3 dependency
+and collision. Where two executors could run in parallel, the only safe parallel front is across
+**non-colliding files** (noted). *(This says nothing about merge **method** — that is the
+execution-overseer's governance lane; see §8.)*
 
 ```
 1.  A1  fastify 4→5 + fast-uri          (priority; foundation)
@@ -471,10 +560,24 @@ Every reconciled finding is accounted for — none silently dropped (planner §6
 
 ## 8. Notes for the execution chain
 
-- **Merge method:** this remediation is executed by the **execution trio** (executor /
-  execution-auditor / execution-overseer) — a role-trio review cycle → **squash merge** per
-  the dual-context doctrine (REQUIRED_READING §7; the very doctrine B1 codifies). Do not
-  conflate with the merge-commit norm of an auto-continue build-slice chain.
+- **Merge method — the execution-overseer's governance lane; the planner does NOT bake it
+  (A-1).** There is a genuine, contestable categorization question the plan must **not** resolve
+  by fiat: under the dual-context doctrine (M-7 / REQUIRED_READING §7), **role-trio review loops
+  → squash** and the **auto-continue build-slice chain → merge-commit**. REQUIRED_READING §7's
+  literal enumeration lists the **execution-trio in the squash bucket** — yet these are
+  product/code **build** slices (fastify, embeddings, markdown-export, UUID picker) that
+  otherwise resemble the Phase-E build slices in the **merge-commit** bucket. The two readings
+  point opposite ways, and merge-method is the **execution-overseer's** lane. So: the
+  **execution-overseer sets the method** at execution time, applying the dual-context doctrine
+  **as it stands after B1 lands** (B1 is itself rewriting §D — a further reason the planner does
+  not pre-bake it); if the doctrine leaves it genuinely ambiguous, the execution-overseer
+  **surfaces to the spec-author**. The plan's only method-**agnostic** structural requirement is
+  the per-slice gate (three sign-offs + green CI + mergeable). **The plan-overseer has surfaced
+  the underlying boundary as a class-(iv) durable-precedent question to the spec-author (OV-4;
+  recorded as OQ-2, §2)** — does an execution-trio-reviewed auto-continue build-slice chain
+  merge by squash or merge-commit, and is the axis review-topology or chain-automation? The
+  determination is routed to **B1's codification + spec-author ratification**; the planner does
+  not pre-judge it.
 - **Gate-green-throughout:** every slice independently clears the three-layer gate
   (Gitar + CI + mergeable) at its own merge SHA. Group A slices additionally re-run
   `pnpm audit --prod` and record before/after counts in their handovers.
