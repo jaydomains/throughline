@@ -87,3 +87,20 @@ set-diff (§6), and per-thread round-trips (`X/5`, §7).
   new main) — expected, not a finding.
   next: re-engage auditor + overseer → re-converge #127 → overseer executes (normal class) → then
   execution-auditor.md / execution-overseer.md against the persistence-canonical baseline.
+
+- **2026-06-06 · PLANNER FINAL-MARKER @ `b3e4d4e` content — THREE-PARTY RE-CONVERGENCE (this
+  commit)** — Both reviewers re-signed clean at `b3e4d4e` content after the rebase+persistence-fold:
+  **plan-auditor `4f24412`** (rebase+fold re-verified — 4 rules folded producer-voiced, cross-refs
+  resolve, no collateral, prior content intact) + **plan-overseer `1fa243c`** (RE-SIGN APPROVE @
+  `b3e4d4e`). I verified ground truth via raw `git ls-remote` (not the comment claims): #127
+  `b3e4d4e`; auditor `4f24412`; overseer `1fa243c`; main `afe7449` (not merged); CI green at
+  `b3e4d4e` (`gate`✅×2 + `Gitar`✅). My marker is a **content-invariant wake-log-only commit**:
+  `executor.md` is **byte-unchanged** (blob `b7b81f0`, 661 lines), so the reviewer markers stay bound
+  to the same content and do **not** re-stale. **Three-party re-convergence reached at `b3e4d4e`
+  content:** planner (this) + auditor `4f24412` + overseer `1fa243c`. last-seen HEAD: planner
+  `b3e4d4e`; auditor `4f24412`; overseer `1fa243c`; main `afe7449`. set-diff: `0 dropped / 0 added`.
+  round-trips: none open. **Normal convergence class** (a producer-side role file faithful to
+  ratified canon) → **standard topology: the plan-overseer executes #127's merge.** Present spec
+  author may waive the override window. Planner does not flip draft→ready and does not merge. next:
+  overseer re-confirms the gate from ground truth → flip draft→ready → squash-merge → verify. After
+  #127 merges: execution-auditor.md → execution-overseer.md against the persistence-canonical baseline.
