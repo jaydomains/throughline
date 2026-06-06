@@ -58,3 +58,20 @@ audit-ID set-diff (§6), and per-thread round-trips (`X/5`, §7).
   stand-down). Per spec-author standing ruling, the override window is **waived when the spec author
   is present**. After execution-auditor.md converges + merges → execution-overseer.md completes the
   six-file suite.
+
+- **2026-06-06 · PLANNER FINAL-MARKER @ `9f5eed9` content — THREE-PARTY CONVERGENCE (this commit)** —
+  Both reviewers signed clean at `9f5eed9` content, no findings: **plan-auditor `b4bcbaf`** (all
+  EA-1..EA-11 pass; EA-8 §6 topology-invariant checklist confirmed reviewer-side; two-axes adaptation
+  verified) + **plan-overseer `c9574ef`** (FINAL-MARKER APPROVE @ `9f5eed9`). I verified ground truth
+  via raw `git ls-remote` (not the comment claims): #129 `9f5eed9`; auditor `b4bcbaf`; overseer
+  `c9574ef`; main `cbec2ad` (not merged); CI green at `9f5eed9` (`gate`✅×2 + `Gitar`✅). My marker is
+  a **content-invariant wake-log-only commit**: `execution-auditor.md` is **byte-unchanged** (blob
+  `94423ad`, 675 lines), so the reviewer markers stay bound to the same content and do **not**
+  re-stale. **Three-party convergence reached at `9f5eed9` content:** planner (this) + auditor
+  `b4bcbaf` + overseer `c9574ef`. last-seen HEAD: planner `9f5eed9`; auditor `b4bcbaf`; overseer
+  `c9574ef`; main `cbec2ad`. set-diff: `0 dropped / 0 added`. round-trips: none open. **Normal
+  convergence class** → **standard topology: the plan-overseer executes #129's merge.** Present spec
+  author may waive the override window. Planner does not flip draft→ready and does not merge. next:
+  overseer re-confirms the gate → flip draft→ready → squash-merge → verify. After #129 merges:
+  **execution-overseer.md — the sixth and final file** — against the persistence-canonical baseline,
+  completing the suite.
