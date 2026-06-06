@@ -37,10 +37,14 @@ against the **live tree on `main`** at authoring time, not inherited from the au
   `dist/` no run-path uses).
 - **M-3:** `packages/frontend/src/views/IntelligenceView.tsx:282` (`placeholder="session id"`)
   and `:391` (`placeholder="item id"`) — raw UUID text inputs; chat surface similar.
-- **M-4:** SPEC §7.21 (`SPEC.md:415-417`), §13 AI table (`SPEC.md:548`), T-D14
-  (`SPEC.md:654`), and the API-account table (`SPEC.md:710`) all reference mermaid;
-  the orphaned Settings model-override row is `SettingsView.tsx:47` (`'mermaid'`). No
-  implementation, no `*(deferred)*` marker.
+- **M-4:** SPEC §7.21 prose (`SPEC.md:415-417`), the **§9 "AI role"** AI-feature table row
+  (`SPEC.md:548`), T-D14 (`SPEC.md:654`), and the §15 API-account table (`SPEC.md:710`) all
+  reference mermaid; the orphaned Settings model-override row is `SettingsView.tsx:47`
+  (`'mermaid'`). No implementation, no `*(deferred)*` marker. **Locus correction:** the
+  settled ruling and audit summary say "§13's AI table," but the AI-feature table is in **§9**
+  (verified: line 548 sits under the `## 9. AI role` header at line 532; §13 is "Open
+  questions" and contains no AI table). Ruling intent preserved — only the section reference is
+  corrected so the executor edits the right place.
 - **M-5:** SPEC §7.20 (`SPEC.md:406-413`) calls the per-session markdown fast-path "the
   shipped v1 export surface" and rests the larger-export deferral on it; **0** session
   markdown copy/route implementations exist.
@@ -70,7 +74,7 @@ against the **live tree on `main`** at authoring time, not inherited from the au
 | Finding | Ruling (settled) |
 |---|---|
 | **M-1** (High) | Accelerate as next priority. Fastify-v5 migration, `@xenova/transformers→onnxruntime-web→protobufjs` chain review, `fast-uri` pin. Must land before any honest "production-ready" claim. |
-| **M-4** (Med) | Defer to later versions. Add `*(deferred)*` markers to SPEC §7.21 and §13's AI table; remove the orphaned Settings model-override row. |
+| **M-4** (Med) | Defer to later versions. Add `*(deferred)*` markers to SPEC §7.21 and the AI-feature table; remove the orphaned Settings model-override row. *(Ruling says "§13's AI table"; the AI-feature table is actually in §9 — line 548. Ruling intent preserved, locus corrected — see §0 and B4.)* |
 | **M-5** (Med) | Build the fast-path. Makes the §7.20 deferral justification honest. |
 | **M-7** (Med) | Dual-context canonical: **squash** for role-trio review cycles, **merge-commit** for the auto-continue build-slice chain. Rewrite AUTO_CONTINUE §D to document both. REQUIRED_READING §7 already reflects this. |
 | **M-8** (Med) | Codify halt-4 … halt-9 into AUTO_CONTINUE.md; pull definitions from the Phase E audit wake-log. |
@@ -274,13 +278,15 @@ LOC bands: **XS** <50 · **S** 50–150 · **M** 150–400 · **L** 400–800 ·
   no stale "owed work" claim.
 
 #### B4 — Mermaid deferral markers
-- **Scope:** add `*(deferred)*` markers to SPEC §7.21 (`:415-417`) and the §13 AI table row
-  (`:548`) per the M-4 ruling; remove the orphaned Settings model-override row
+- **Scope:** add `*(deferred)*` markers to SPEC §7.21 prose (`:415-417`) and the **§9
+  "AI role" AI-feature table row** (`:548`) per the M-4 ruling — **note the locus correction
+  in §0: the ruling/audit say "§13" but the AI-feature table is in §9 (line 548); §13 is "Open
+  questions" with no AI table.** Remove the orphaned Settings model-override row
   (`SettingsView.tsx:47` `'mermaid'`). Decide (executor's call within the ruling) whether the
-  T-D14 line (`:654`) and the API-account-table mermaid mention (`:710`) also need a marker
+  T-D14 line (`:654`) and the §15 API-account-table mermaid mention (`:710`) also need a marker
   for internal consistency — recommend a light `*(deferred)*` cross-note on T-D14 so the
-  decision index stays honest; leave the API-account table (it lists capability prerequisites,
-  not a shipped-claim).
+  decision index stays honest; leave the §15 API-account table (it lists capability
+  prerequisites, not a shipped-claim).
 - **Findings:** M-4.
 - **Dependencies:** **serialize with D3** (both edit `SPEC.md`).
 - **LOC:** **S** (SPEC markers + one frontend row removal + any SettingsView test update).
