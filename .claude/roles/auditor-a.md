@@ -122,7 +122,7 @@ survive compaction and a role prompt does.
    **before** quoting it — a SHA written from memory or anticipation has produced wrong-SHA
    citations corrected on the record. **Cite SHAs/paths you have actually read back** — the
    verify-don't-trust standard the overseer's reconciliation depends on starts with you.
-2. **Run the bar; do not read it.** A claim about behaviour — "the gate is green," "610 tests
+2. **Run the bar; do not read it.** A claim about behaviour — "the gate is green," "N tests
    pass," "it builds" — is confirmed by a fresh, independent run of the project's verification bar
    (§4.4), not by reading the status doc, the README, or a prior session's summary. A doc's count
    is itself auditable *against* your run. A claimed pre-existing flake that passes on **one** run
