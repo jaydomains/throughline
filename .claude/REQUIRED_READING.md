@@ -134,8 +134,8 @@ artifacts).
 | Current project state | `docs/_meta/throughline/PLATFORM_STATUS.md` (the living doc; read it on startup, §1). |
 | Most recent handover | newest file in `docs/_meta/throughline/handovers/` — read before anything else per SESSION_START. |
 | Audit reports | `docs/_meta/throughline/audits/`. |
-| Wait/wake skill | `.claude/skills/counterpart-change-detector/` (`SKILL.md` + `reference/operating-guide.md`). All six roles depend on it for self-waking on a counterpart's branch/comment activity — do not reimplement polling. |
-| The role files | `.claude/roles/` — `planner.md`, `plan-auditor.md`, `plan-overseer.md`, `executor.md`, `execution-auditor.md`, `execution-overseer.md`. |
+| Wait/wake skill | `.claude/skills/counterpart-change-detector/` (`SKILL.md` + `reference/operating-guide.md`). All nine roles depend on it for self-waking on a counterpart's branch/comment activity — do not reimplement polling. |
+| The role files | `.claude/roles/` — **plan trio:** `planner.md`, `plan-auditor.md`, `plan-overseer.md`; **execution trio:** `executor.md`, `execution-auditor.md`, `execution-overseer.md`; **audit trio (parallel-discovery):** `auditor-a.md`, `auditor-b.md`, `audit-overseer.md`. |
 
 ---
 
@@ -214,3 +214,52 @@ baked into the role files. Only the *posture* above is project policy.
 The bar a change must clear before merge: the **three-layer green gate** — Gitar review +
 CI + GitHub mergeable, simultaneously green at one SHA (`AUTO_CONTINUE_WORKFLOW.md`) —
 plus the pre-work / post-work doc gates in `AUTHORING_DISCIPLINE.md`.
+
+The auditors **run this verification bar independently** as part of their pass (`auditor-a.md` /
+`auditor-b.md` §4.5: "run the bar; do not read it"), and the audit-overseer re-confirms it under
+verify-don't-trust — but in the **audit pattern** the bar is an *evidence source for findings*, not
+a merge gate (the audit changes no code; see "Audit-trio addressing" below).
+
+### Audit-trio addressing (parallel-discovery audit)
+The audit trio (`auditor-a.md`, `auditor-b.md`, `audit-overseer.md`) runs a **findings-only,
+no-remediation** audit as a **strict linear baton-pass pipeline** — Auditor-A → Auditor-B →
+Audit-Overseer → Auditor-A — **not** the three-sign-off converge-at-one-SHA merge topology of the
+plan/execution trios. The parameters the audit role files delegate here:
+
+- **Finding-ID prefixes.** Overpass: `A-<k>` (Auditor-A), `B-<k>` (Auditor-B). Depth slices:
+  `A-S<n>-<k>` / `B-S<n>-<k>`. Reconciled: `M-<k>` (Overseer), with slice depth `M-S<n>-<k>`. IDs are
+  stable for the life of the audit; the Overseer maps every `A-*`/`B-*` to an `M-*` (drops nothing),
+  tagged `[A]` / `[B]` / `[A+B]`.
+- **Audit-branch convention.** Overpass on a findings-only branch (default `claude/audit-overpass`);
+  slices on `claude/audit-slice-<n>-<short-name>`. (Conventions, not hardcodes — distinct branch
+  names so the watchers' self-echo filters separate the parties; pick collision-free names.)
+- **Slice `WAKE` token.** The Overseer's slice go-signal to Auditor-A is a comment whose **first line
+  is** `WAKE: <slice-id>` **plus** a ref-moving signal. It is **best-effort re-engagement**: the
+  Overseer **owns the slice surface** and **conducts slices solo by default**, never blocking on
+  auditor pickup (a reaped auditor is reachable only by external re-dispatch).
+- **Audit deliverables & landing.** Findings live as PR comments on the shared audit PR, which is
+  **closed-not-merged** (findings-only branch). The durable deliverable is the **audit summary** at
+  `docs/_meta/throughline/audits/YYYY-MM-DD-<scope>.md` (§5), authored by the Overseer and **landed
+  via human spec-author ratification — not a single-party self-merge.**
+- **Audit-overseer authority posture.** The Audit-Overseer holds **delegated authority to *conduct*
+  the findings-only run** (full in-run autonomy over reconciliation, severity, slicing, depth) and
+  **surfaces to the human spec-author only at completion.** It is **not** spec-author authority:
+  every project-binding implication (a ratification scope-class below) becomes an **open question for
+  the human**, never self-ratified. The human is the ultimate authority.
+- **Severity scale.** The Audit-Overseer **defines and records** the scale per audit and rules
+  divergences (conservative-by-default; top severity reserved for the gravest class). Precedent scale
+  (2026-06-06 run, illustrative): *High* = blocks deployment / security / product-contract broken ·
+  *Medium* = drift/contradiction corrupting the mental model or operational doctrine; spec-vs-code
+  drift on a claimed surface; fixable deployability friction · *Low* = accuracy/cosmetic in non-living
+  docs, niche paths with working alternatives · *Info* = positive baseline.
+- **Dormant-wait bound.** Same as the reviewer bound above — **3 consecutive watcher lifetimes
+  (~90 min)** of zero counterpart activity before standing down. Applies to the auditors (who
+  baton-pass and stand down bounded) and to the Overseer between slice dispatches / while awaiting
+  human ratification of the summary.
+- **Standing driver — inverted from the plan/execution precedent.** In the audit pipeline the
+  **Audit-Overseer (terminal reconciler) is the standing driver**; the discovery producers
+  (Auditor-A, Auditor-B) baton-pass and stand down bounded. This inversion is a ratified class-(iv)
+  precedent for the audit family (auditor role files §8).
+- **Ratification scope-classes (i)–(iv)** above apply unchanged: a finding implying an anchor mint,
+  spec amendment, scope decision, or durable precedent is the human's to ratify, surfaced as an open
+  question — the Overseer does not self-ratify it.
