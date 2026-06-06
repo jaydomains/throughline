@@ -67,3 +67,23 @@ set-diff (§6), and per-thread round-trips (`X/5`, §7).
   exists yet, and this fix would not re-stale one if it did. last-seen HEAD: auditor `de93477`;
   overseer `b730b0c`; main `7b23096`. set-diff: `0 dropped / 0 added` (no `executor.md` change;
   Gitar is not a three-party reviewer — not in the set-diff ID space). round-trips: none open.
+
+- **2026-06-06 · REBASE onto persistence-amended main + FOLD the four rules — convergence RE-OPENED
+  (this commit)** — #128 (persistence amendment, class-(iv)) merged to `main` (`afe7449`, merged
+  directly by the spec author = authenticated ratification). #127 was **paused** pending this; now
+  unblocked. **Rebased `claude/executor-role-prompt` onto `afe7449`** (clean — executor.md/its
+  wake-log aren't on main, no collision with #128's five files). **Folded the four persistence
+  sub-rules into `executor.md`** (producer-side → same fold points as `planner.md`): §3 obligation 4
+  (a: ~25-min proactive re-arm cadence; b: watcher-is-record-keeper-not-notifier / detection≠
+  awareness), §4.9 intro (c: long-term dormancy is the normal case, hours-to-days), §4.9
+  sequenced-cycle clause (d: honest "active-subscription" scoping). Per-rule presence verified in
+  executor.md (no silent partial-fold); transportability grep clean (0 project tokens). 642 → 661
+  lines (+19, matching planner.md's persistence delta 600→619).
+  **Content change → re-opens convergence:** the prior #127 markers (auditor `be361b2`, overseer
+  `a2f04e2` @ `c54c722` content) are **stale by design**; reviewers re-verify the persistence-folded
+  executor.md + re-sign at the new content. last-seen HEAD: main `afe7449`; auditor `85e7c78`;
+  overseer `44d7fe4`. set-diff: `0 dropped / 0 added` (persistence fold per ratified amendment, not
+  a finding response). round-trips: none open. Force-push required (rebase rewrote the branch onto
+  new main) — expected, not a finding.
+  next: re-engage auditor + overseer → re-converge #127 → overseer executes (normal class) → then
+  execution-auditor.md / execution-overseer.md against the persistence-canonical baseline.

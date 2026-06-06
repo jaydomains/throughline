@@ -118,10 +118,16 @@ does not survive compaction and a role prompt does.
 3. **Every commit to the change PR carries exactly one new wake-log line, in the same commit**
    (§5) — including a wake that produced no change-content edit (record `0 dropped / 0 added`).
 4. **You drive the wait with the counterpart-change-detector skill** (§4.4), and you **re-arm
-   it on every Monitor stop/timeout.** The skill's background watcher is killed at the
-   harness runtime cap (~30 min) regardless of any "persistent" claim; re-arming after each
-   cap is *your* explicit obligation, not the skill's — assume a finite watcher lifetime, not
-   set-and-forget. On the first action after any compaction or session start, reconcile **two**
+   it on every Monitor stop/timeout — and, better, *proactively at ~25 minutes, before the
+   ~30-min cap*, so coverage is continuous rather than gapped at each lapse** (the ~25-min
+   proactive re-arm sustained unbroken watcher coverage across this suite). The skill's
+   background watcher is killed at the harness runtime cap (~30 min) regardless of any
+   "persistent" claim; re-arming is *your* explicit obligation, not the skill's — assume a
+   finite watcher lifetime, not set-and-forget. **The watcher is a record-keeper, not a
+   notifier:** it detects ref-moves and logs them, but you never *rely* on its line waking
+   you — **detection is not awareness**. On every external trigger, re-engagement, or wake,
+   read the **watcher's log** *and* a fresh **`git ls-remote`** before trusting any internal
+   model of state; a remembered state is not a verified one. On the first action after any compaction or session start, reconcile **two**
    things from durable surfaces, never from recalled context: (i) **is a watcher armed?** — if
    not, re-arm with a fresh `git ls-remote` baseline before trusting silence; and (ii) **what is
    the loop state?** — rebuild the open threads, each thread's `X/5` round-trip count, and the
@@ -249,7 +255,13 @@ emitting timeout noise after the loop is over is a defect.
 
 ### 4.9 Dormant-wait — bounded stand-down and re-initiation
 Extended quiet is not active iteration, and you cannot self-wake through it (§3, obligation 7).
-So the wait has a **bounded** shape, not an open-ended one:
+So the wait has a **bounded** shape, not an open-ended one. And frame the horizon honestly:
+**long-term dormancy is the normal case, not the exception** — a sequenced suite routinely sits
+dormant for **hours to days** between external triggers; design for it rather than treating it as
+failure. The quiet-window *bound* below governs minutes-to-hours within a single live loop; the
+hours-to-days horizon *between* external triggers is expected and **resumable via the durable
+wake-log** (§5), which a freshly-dispatched session reads to reconstruct loop state (§3.4) before
+acting. Durable state is the resume substrate — not a continuously-live session.
 
 - **Active iteration.** Re-arm the watcher on each Monitor stop/timeout (§3.4) and keep iterating
   as long as a reviewer is responding. A PR-activity push subscription may be added as a
@@ -287,7 +299,14 @@ So the wait has a **bounded** shape, not an open-ended one:
   counterpart; an active multi-PR sequence is **not** quiet, and a party that stands down between
   links misses the next hand-off — re-creating the dormancy gap the sequence exists to close, and
   stalling or racing the chain. Keep the watcher armed (re-scoped to the currently-active link) and
-  stay subscribed until the **whole sequence** completes, not each link.
+  stay subscribed until the **whole sequence** completes, not each link. **"Actively subscribed"
+  has a precise, honest meaning here:** *polling via the ~25-min re-arm cadence with a watcher-log
+  + `git ls-remote` read on every wake* — **not** "a session staying alive without explicit
+  re-arm." A sequenced-cycle session cannot self-wake any more than a quiet-loop one can (§3
+  obligation 7); it too needs an explicit external trigger per link. "Stay subscribed across the
+  sequence" is therefore a discipline for *each freshly-triggered session* (re-arm, read the
+  durable record, act), never a promise that one session stays continuously conscious across the
+  chain.
 
 ---
 
