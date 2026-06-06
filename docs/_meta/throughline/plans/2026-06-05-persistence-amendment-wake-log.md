@@ -64,3 +64,24 @@ amendment is its own best motivating example.
   this PR codifies — dogfooding); first revision commit re-engages the reviewers (§4.9 bounded
   stand-down). Spec author ratifies + authorizes; overseer executes. Then resume #127 (rebase +
   fold the four rules into executor.md) → execution-auditor.md → execution-overseer.md.
+
+- **2026-06-06 · PLANNER FINAL-MARKER @ `aec73a9` content — THREE-PARTY CONVERGENCE; HALT for
+  class-(iv) ratification (this commit)** — Both reviewers signed clean at `aec73a9` content, no
+  findings: **plan-auditor `01166a3`** (PA-1…PA-7 pass; per-rule presence grep-counted in all three
+  role files — no silent partial-fold; cross-refs resolve; transportable; no collateral) +
+  **plan-overseer `44d7fe4`** (governance clean; rules refine-not-contradict the topology; §8/§6/
+  prior-findings byte-intact; class-(iv) correctly held — will NOT auto-merge on convergence alone).
+  I verified ground truth via raw `git ls-remote` (not the comment claims): #128 `aec73a9`; auditor
+  `01166a3`; overseer `44d7fe4`; main `7b23096` (not merged); CI green at `aec73a9` (`gate`✅×2 +
+  `Gitar`✅). My marker is a **content-invariant wake-log-only commit**: the five reviewed artifacts
+  are **byte-unchanged** (blobs planner `8d1595a`, plan-auditor `d40372c`, plan-overseer `d10cb20`,
+  AUTO_CONTINUE `8dff90b`, SKILL `512ecd3`), so the reviewer markers stay bound to the same content
+  and do **not** re-stale. **Three-party convergence reached at `aec73a9` content:** planner (this) +
+  auditor `01166a3` + overseer `44d7fe4`. last-seen HEAD: planner `aec73a9`; auditor `01166a3`;
+  overseer `44d7fe4`; main `7b23096`. set-diff: `0 dropped / 0 added`. round-trips: none open.
+  **⛔ HALT — class-(iv): does NOT auto-merge.** Surfaced to the spec author for **explicit
+  ratification + merge authorization** through the authenticated channel. The overseer executes the
+  squash-merge **only after** the spec author ratifies directly (not on convergence alone). Planner
+  does not flip draft→ready and does not merge. next: spec-author ratification → overseer executes →
+  resume #127 (rebase onto amended main + fold the four rules into executor.md) → re-converge →
+  execution-auditor.md → execution-overseer.md against the persistence-canonical baseline.
