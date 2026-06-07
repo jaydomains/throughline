@@ -598,3 +598,22 @@ execution state when relevant.
   estimate-breach on build size. **Action: surfacing OQ-1 to human NOW** (D3 imminent). Posture
   itself needs no separate confirm for my normal-slice merges (unchanged from brief). Re-arming
   watcher for D3. Last-seen: main `dbb7a13` · auditor `fb6db04` · overseer (this commit).
+
+- **2026-06-07T1z:zzZ — D3 OPENED (`claude/d3-bootstrap-subactions` @ `d7e7251`); OQ-1 still
+  UNCONFIRMED to me → merge HELD.** Executor auto-started D3 per the relayed posture; auditor →
+  `af3e7df`. **OQ-1 (A/B/C/D) has NOT been confirmed through MY authenticated channel** (the human's
+  "rewake" is re-engagement, not a ruling). **D3 pre-read positions (anti-anchoring §4.2):**
+  - **EO/D3-P1 (ratification — THE gate):** D3 is **class-(iii) scope (OQ-1) + class-(ii) SPEC §7.27
+    amendment**, and OQ-1=build was relayed (not settled). **I do NOT merge D3 until the human
+    confirms OQ-1 directly to me** (§8.3 / rag-stab precedent). Whatever disposition D3 implemented
+    (build/defer/remove), the merge is held on that confirmation.
+  - **EO/D3-P2 (disposition fidelity):** verify D3's built disposition matches the eventual confirmed
+    ruling. If build: per-field merge UI + archive surface (SPEC §7.27 actions). If defer: §7.27
+    `*(deferred)*` markers. If remove: delete the two actions.
+  - **EO/D3-P3 (halt-4 estimate-breach):** if build, the size (per-field merge UI + archive) may be
+    L+ → auditor assesses halt-4; if it breaches its band, halt-and-re-slice, don't land oversized.
+  - **EO/D3-P4 (scope + serialize-with-B4):** B4 (SPEC.md) already merged, so no live SPEC collision.
+    Base must be current main `dbb7a13`. No reach into other slices.
+  - **EO/D3-P5 (merge):** squash. **EO/D3-P6 (gate):** green.
+  Finding-set-diff: **0 dropped / 0 added** (D3 positions pre-registered). Now reading D3 PR + diff.
+  Last-seen: main `dbb7a13` · D3 exec `d7e7251` · auditor `af3e7df` · overseer `fd791b3`→(this).
