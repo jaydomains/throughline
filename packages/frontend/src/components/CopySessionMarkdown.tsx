@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Item, Session } from '@throughline/shared';
 import { sessionToMarkdown } from '../lib/sessionMarkdown.js';
 
@@ -13,6 +13,12 @@ export function CopySessionMarkdown({
   items: Item[];
 }) {
   const [state, setState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear the pending reset on unmount so a late setState can't fire after teardown.
+  useEffect(() => () => {
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+  }, []);
 
   async function copy() {
     const md = sessionToMarkdown(
@@ -25,6 +31,10 @@ export function CopySessionMarkdown({
     } catch {
       setState('error');
     }
+    // Return the label to idle after a moment so a stale "Copied!" doesn't linger
+    // (e.g. when the user switches sessions and comes back).
+    if (resetTimer.current) clearTimeout(resetTimer.current);
+    resetTimer.current = setTimeout(() => setState('idle'), 2000);
   }
 
   return (
