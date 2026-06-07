@@ -141,3 +141,23 @@ execution state when relevant.
   Execution gate remaining: executor + auditor final-markers at `2b1f4fda` content. Merge =
   squash. Watcher armed. Last-seen: main `36be75a` · auditor `2520cfb` · A2 executor `2b1f4fda`
   · overseer `787a297`→(this commit).
+
+- **2026-06-07T09:2xZ** — **A2 (PR #141) MERGED — execution complete.** Monitor had timed out;
+  on-wake pairing (fresh ls-remote + PR comments) found all 3 markers landed: executor ✓
+  (final-marker in the `2b1f4fda` push) · execution-auditor ✓ @ `2b1f4fda` (marker `0067af4`;
+  **zero findings, independent clean-worktree install + own `pnpm audit` → protobufjs Critical+4
+  High+4 Moderate cleared, real @huggingface embedder loaded & ran on CPU, 20/20 tests no flake,
+  --frozen-lockfile ok**; confirms CN-1, no §7e, no auditor surface) · overseer ✓ @ `2b1f4fda`.
+  Gate re-confirmed from ground truth: 3 markers @ one content `2b1f4fda` · CI green (gate ✓×2 ·
+  Gitar ✓) · `mergeable_state: clean` · base main `36be75a` unchanged · ratification class-(i)/(ii)
+  **pre-settled by authenticated M-1 (collapsed ~0, no human surface)** · override window collapsed
+  (standing dispatch-brief authorization + present spec-author) · method **squash** (OQ-2).
+  **Executed: flip draft→ready → squash-merge.** Merge call `7632f1a merged:true`; **verified via
+  `git ls-remote`**: main `36be75a`→`7632f1a`, single squash commit, A2 executor branch **deleted**,
+  `@huggingface/transformers ^3.8.1` + C-D2 amendment on main. Merge-confirmation posted (PR #141).
+  Finding-set-diff: **0 dropped / 0 added** (A2 EO-8…EO-12 closed at merge). **A2 done.**
+  **Group A 2/3 — deploy-blocking Critical + all 7 High cleared.** Loop state: **awaiting A3**
+  (residual advisory sweep — react-router moderate + honest dep-posture; **normal slice**, not a
+  ratification class per plan §4 → execute directly on convergence; serial on package.json after
+  A2). Re-arming watcher (timed out) for A3. Last-seen: main `7632f1a` · auditor `0067af4` ·
+  overseer `6134384`→(this commit).
