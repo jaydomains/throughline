@@ -295,3 +295,24 @@ execution state when relevant.
   remaining: executor + auditor final-markers @ `874cb8c` content. Merge = squash; I execute
   directly on convergence. Watcher armed. Last-seen: main `7d0a252` · D1 executor `874cb8c` ·
   auditor `8e8a99b` · overseer `46a5869`→(this commit).
+
+- **2026-06-07T10:2zZ** — **D1 (PR #143) MERGED.** Monitor had timed out; on-wake pairing found
+  auditor D1 final-marker @ `874cb8c` (`2c3db4b`; **zero findings**; setup.sh fresh-clone + prod
+  boot independently verified). 3 markers @ one content `874cb8c` (executor ✓ · auditor ✓ ·
+  overseer ✓). Gate re-confirmed from ground truth: CI green (gate ✓×2 · Gitar ✓) · mergeable
+  clean · base main `7d0a252` unchanged · D1 NOT a ratification class (primary path, no SPEC edit)
+  · override window collapsed · method squash. **Executed: flip draft→ready → squash-merge.** Merge
+  `fb25642 merged:true`; **verified via `git ls-remote`**: main `7d0a252`→`fb25642`, D1 branch
+  **deleted**, `start: node dist/index.js` + executable `scripts/setup.sh` on main. Merge-confirm
+  posted (PR #143). **M-2 closed.** Finding-set-diff: **0 dropped / 0 added** (D1 EO-17…22 closed).
+  Cohort: A1✅ A2✅ A3✅ D1✅. **Loop state: awaiting B1** (governance-doctrine codification —
+  M-7+M-8; **class-(iv) durable precedent**). **B1 governance watch (heavy):** (a) §D rewrite must
+  match the **authenticated OQ-2 ruling** (review-topology axis: trio-reviewed⇒squash; non-trio
+  auto-continue⇒merge-commit) — the spec-author already gave explicit §D guidance in the OQ-2
+  ruling, so the precedent is **pre-ratified**; (b) **halt classes 4–9 must each trace to a blessed
+  Phase-E source — NO invention** (halt-7 the murky one); if any is invented/untraceable, executor
+  should have surfaced it → I **hold + surface to human** (unauthorized class-(iv) mint); (c) **no
+  role-file edits** (OV-1, no back-port owed); (d) REQUIRED_READING §4 pointer is **B3's**, not B1.
+  If all clean → class-(iv) covered by authenticated OQ-2 + settled M-8 → execute directly; else
+  surface. Re-arming watcher for B1. Last-seen: main `fb25642` · auditor `2c3db4b` · overseer
+  `dd9ab5a`→(this commit).
