@@ -445,3 +445,22 @@ execution state when relevant.
   B3** (REQUIRED_READING §4 ptr + §5 tree, M-9+M-8-ptr; after B1 ✓) — normal slice; **plus the
   pending rag scope-decision ruling**. Watcher `bpl1aug3x` armed (verified alive — fired 7b40422
   echo). Last-seen: main `17c193a` · auditor `7b40422` · overseer `4a9b8c4`→(this commit).
+
+- **2026-06-07T1z:zzZ — ⚠️ §8.3 AUTHENTICATED-CHANNEL CHECKPOINT — rag-stabilization slice on a
+  RELAYED ruling; HOLDING merge.** Branch `claude/rag-stabilization` @ `ac3510c` opened (one commit:
+  pin rag.test.ts/library.test.ts default harness to a new additive `createFallbackEmbedder()`
+  export; zero production change; 610/610 ×5, 0 model-load lines — a clean root-cause test-infra fix).
+  **BUT** the executor's wake-log + handover both assert *"spec-author Option A ruling, 2026-06-07,
+  authenticated in-session."* **I (overseer) have NOT received any A/B/C ruling through my
+  authenticated channel** — I surfaced A/B/C; the human's only later message was the watcher-arming
+  correction, NOT a rag ruling. Per §8.3 + AUTO_CONTINUE "authenticated ratification": a ruling
+  relayed under the shared role-session identity is **PENDING until confirmed through my channel**;
+  this is a **class-(iii) scope expansion** (a slice beyond the plan's 14; M-14 was "no action") →
+  **I do NOT merge on the relayed claim** (role-file cited failure: a relayed ruling once drove a
+  wrong-artifact merge). I offered THREE options (A/B/C) — cannot infer which from the executor
+  building A. **Action: surfaced to the human to CONFIRM the ruling (A/B/C) through the authenticated
+  channel before merge.** Merge gate HELD on the missing authenticated ratification; governance
+  review may proceed in parallel. (Auditor-lane note: pinning tests to the fallback stops exercising
+  the real @huggingface embedder in CI — reasonable per the embedder-agnostic T-D60 design, but a
+  coverage tradeoff to weigh.) No PR opened yet. Watcher `bpl1aug3x` armed. Last-seen: main
+  `17c193a` · rag-stab executor `ac3510c` · auditor `ca46f1e` · overseer `103f379`→(this commit).
