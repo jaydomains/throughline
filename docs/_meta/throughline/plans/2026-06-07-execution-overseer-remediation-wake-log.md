@@ -790,3 +790,15 @@ execution state when relevant.
   re-verify + mark @ `185ff31`. Convergence re-forms @ `185ff31`. HOLDING merge until 3 markers +
   green CI there. Last-seen: main `4873325` · B5 exec `185ff31` · auditor `e4109e9` · overseer
   `eb91341`→(this commit).
+
+- **2026-06-07T20:1xZ — B5 (PR #152) MERGED (after EA-2 fix-round re-converge).** Convergence
+  re-formed @ `185ff31`: executor ✓ (re-affirmed; EA-2 + E17a/E22/E23 proactively fixed) · auditor
+  ✓ (`f6cead0`; EA-2 resolved, corrections git-verified) · overseer ✓ (re-bound @ 185ff31). CI green
+  (gate ✓×2 · Gitar ✓) · mergeable clean · base main `4873325` · normal slice · squash. **Did NOT
+  merge on the auditor's held EA-2** — waited for fix + re-converge (three-party gate accuracy catch).
+  **Executed: flip→squash-merge.** Merge `91f56b6 merged:true`; **verified via ls-remote**: main
+  `4873325`→`91f56b6`, B5 branch **deleted**. **M-11 closed.** Finding-set-diff: **0 dropped / 0
+  added** (B5 EO-60…62 closed; auditor EA-2 resolved). **Cohort merged (13):** +B5. Closed: M-1/M-2/
+  M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-11/M-13; M-14 stab. **Loop state: awaiting B6** (README, M-12) → then
+  **M-10** (PLATFORM_STATUS full refresh — FINAL slice). Both normal-class. Re-arming watcher for B6.
+  Last-seen: main `91f56b6` · auditor `f6cead0` · overseer (this commit).
