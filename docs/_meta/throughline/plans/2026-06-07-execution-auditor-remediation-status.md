@@ -19,6 +19,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **MERGED** — squash → `main` `ed4e6bb` after authenticated OQ-1=defer; M-6 closed |
 | C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` | **MERGED** — squash → `main` `c3c1db4`; M-5 closed |
 | D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **MERGED** — squash → `main` `4873325`; M-3 closed |
+| B5 — ROADMAP/CHECKLIST back-fill (M-11) | #152 | `185ff31` (was `420a577`) | **final — approved by execution-auditor** (EA-2 fixed + E17a/E22/E23 corrected, all cites git-verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -419,3 +420,26 @@ M-3 IntelligenceView UUID picker (frontend UX build). All D2-P1…P7 + CP-1…8 
 
 Convergence (role §8) at `d528366`: executor ✓ · execution-overseer ✓ (EO-57…59) · **execution-auditor ✓**.
 Normal slice → overseer auto-merges (squash, OQ-2).
+
+---
+
+## B5 (PR #152) — final — approved by execution-auditor @ `185ff31` (EA-2 resolved)
+
+M-11 ROADMAP/CHECKLIST back-fill. **EA-2 raised, resolved, re-verified.** All B5-P1…P5 Confirm.
+
+- **EA-2 (Refine/Low) — DROPPED (resolved).** Original (`420a577`) mis-cited planner as `#118/#119`;
+  #118 is the counterpart-change-detector skill's follow-up. Fixed at `185ff31`: planner → `#119`,
+  skill → `#117 (+ #118 follow-up)` (both ROADMAP + CHECKLIST). Verified against `git log`.
+- **Executor fix-round corrected MORE than EA-2 (verified accurate):** E17a `#104→#109` + re-described
+  ("deferred-major Option 1"); **E22 `#105` + E23 `#106` added** (they were *missing* from the
+  original Phase-E list). I cross-checked all against `git log`: E17a#109, E22#105, E23#106, E17#104,
+  E24#113, E25#107, E26#108, E18#115, E19#110, E20a#111, E20b#114, E21#112 — all match. **Full E1–E26
+  now present + accurately cited.**
+- **Honest self-note:** my first pass caught EA-2 but my Phase-E sub-list completeness check (B5-P4)
+  was non-exhaustive — I missed E22/E23 absent + E17a mis-cited; the executor self-caught them in the
+  fix-round; I verified the corrections. Multi-pass converged correct.
+- **Scope:** ROADMAP.md + CHECKLIST.md + docs; no PLATFORM_STATUS/SPEC → not a ratification class.
+  Gate green at `185ff31` (`gate` ✓×2 + `Gitar` ✓).
+
+Convergence (role §8) at `185ff31`: executor ✓ · execution-overseer (re-binds post fix-round) ·
+**execution-auditor ✓**. Normal slice → overseer auto-merges (squash, OQ-2).

@@ -474,3 +474,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   on my sign-off). Posted EA-2 as a PR comment. Last-seen: `main`@`4873325`, B5@`420a577`,
   overseer@`c511379`, self@`19be9e2`. Finding-set-diff: **`0 dropped / 1 added (EA-2)`**. Round-trips:
   EA-2 **1/5** (raised; awaiting executor). Otherwise B5 is accurate + complete + scope-clean.
+
+- **2026-06-07 — B5 EA-2 RESOLVED + final-marker (PR #152 @ `185ff31`).** Executor fix-round
+  `420a577→185ff31`: fixed EA-2 (planner→#119, #118→skill follow-up, both files) AND corrected more
+  (E17a #104→#109 re-described; **added missing E22 #105 + E23 #106**). Cross-checked the full E1–E26
+  list against `git log` — all cites match; complete. **Honest note:** my first pass missed E22/E23
+  absent + E17a mis-cite (B5-P4 non-exhaustive); executor self-caught in fix-round; I verified. CI
+  green at `185ff31`. **Finding-set-diff: `1 dropped (EA-2 resolved) / 0 added`.** EA-2 thread 2/2
+  resolved. Posted final-marker (this commit) + approval on #152. Last-seen: `main`@`4873325`,
+  B5@`185ff31`, overseer@`eb91341`(re-binds), self@`e4109e9`. Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,
+  M-9,M-11(pending merge),M-13,M-14. Next: B6 (M-12 README), then M-10 (LAST). Watcher armed.
