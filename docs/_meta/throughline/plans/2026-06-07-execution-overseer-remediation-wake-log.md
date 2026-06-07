@@ -476,3 +476,21 @@ execution state when relevant.
   the class-(iii) scope expansion. Convergence content otherwise lining up: executor content-marker
   + auditor content-marker @ `ac3510c`; my governance review pending (will proceed in parallel).
   Last-seen: main `17c193a` · rag-stab `ac3510c` · auditor `42849fc` · overseer `2a70189`→(this).
+
+- **2026-06-07T15:0xZ — rag-stabilization (PR #146) MERGED — ratification authenticated, then executed.**
+  Spec author confirmed **Option A directly to me in-session ("Confirm A")** → class-(iii) scope
+  expansion **ratified** through MY authenticated channel (the relays from executor+auditor were
+  corroborating, never sufficient). Governance review: **EO-34 ratification-authenticated · EO-35
+  scope additive/zero-production-change (server.ts untouched; T-D60 injection coverage preserved) ·
+  EO-36 coverage tradeoff accepted-per-ruling · EO-37 gate green** (610×5, 0 model-loads). 3
+  content-markers @ `ac3510c` (executor ✓ · auditor ✓ · overseer ✓) · CI green (gate ✓×2 · Gitar ✓)
+  · mergeable clean · base main `17c193a` · override window collapsed (present spec-author) · squash.
+  **Executed: flip draft→ready → squash-merge.** Merge `8657adf merged:true`; **verified via
+  ls-remote**: main `17c193a`→`8657adf`, branch **deleted**, `createFallbackEmbedder` on main.
+  Merge-confirm posted (PR #146). **M-14 flake stabilized** (root-caused per halt-6). Finding-set-diff:
+  **0 dropped / 4 added → closed (EO-34…37)**. Cohort merged: A1✅A2✅A3✅D1✅B1✅B2✅rag-stab✅
+  (M-1/M-2/M-7/M-8/M-13 closed; M-14 stabilized). **Loop state: awaiting B3** (REQUIRED_READING §4
+  ptr + §5 tree, M-9+M-8-ptr; after B1 ✓; base must be `8657adf`) — normal slice. **§8.3 lesson
+  reinforced:** held a relayed-ruling scope-expansion until authenticated direct-confirm — the merge-
+  executor discipline working. Re-arming single watcher for B3. Last-seen: main `8657adf` · auditor
+  `42849fc` · overseer (this commit).
