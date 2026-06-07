@@ -21,6 +21,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **MERGED** — squash → `main` `4873325`; M-3 closed |
 | B5 — ROADMAP/CHECKLIST back-fill (M-11) | #152 | `185ff31` | **MERGED** — squash → `main` `91f56b6` after EA-2 re-converge; M-11 closed |
 | B6 — README accuracy (M-12) | #153 | `ed7551a` | **MERGED** — squash → `main` `60e8f20`; M-12 closed |
+| M-10 — PLATFORM_STATUS full refresh (FINALE) | #154 | `ce90ca6` | **final — approved by execution-auditor** (all 14 PR#s + finding-map + posture cross-checked vs ground truth) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -463,3 +464,28 @@ M-12 README accuracy. All B6-P1…P6 Confirm. **Zero findings.**
 
 Convergence (role §8) at `ed7551a`: executor ✓ · execution-overseer ✓ (EO-63…66) · **execution-auditor ✓**.
 Normal slice → overseer auto-merges (squash, OQ-2). **Next & last: M-10 (PLATFORM_STATUS full refresh).**
+
+---
+
+## M-10 (PR #154) — final — approved by execution-auditor @ `ce90ca6` — COHORT FINALE
+
+PLATFORM_STATUS full refresh; the last slice; closes the chain. All M10-P1…P9 Confirm. **Zero findings.**
+
+- **Every claim cross-checked against ground truth (M10-P4/P8):** all 14 cited PR#s match `git log`
+  (A1#140 … D2#151, B5#152, B6#153, rag-stab#146, M-10#154); finding→slice map all correct
+  (M-1→A1/A2/A3 … M-14→#146); 14/14 accounted, none silently dropped.
+- **Dependency posture (M10-P2):** 15→0, "not mere version bumps" — matches my own A2/A3 `pnpm audit`.
+- **Locked Decisions:** C-D2 amended (A2) + B1 class-(iv) doctrine with the **correct halt 4–9
+  definitions** (match canonical line 202 I verified at B1). Phase E anchors roll to production-ready.
+- **No overclaim (M10-P5):** "feature-complete · dependency-hardened · single-user local deploy —
+  not the top production-ready tier" — consistent with B6; the per-phase "production-ready" taxonomy
+  is a distinct legitimate axis. Snapshot 2026-06-07; Recent History #150–#154; chain-closed; OQ-1
+  build → future ROADMAP cohort.
+- **Flake accounting:** rag.test.ts stabilized (#146); directives.test.tsx honestly noted watched.
+  *(The D3 unidentified backend single-failure I investigated did not reproduce — below documented-flake
+  threshold; M-10 omitting it is correct.)*
+- **Scope (M10-P6/P7):** PLATFORM_STATUS.md only; IS the last slice; not a ratification class. Gate
+  green at `ce90ca6` (`gate` ✓×2 + `Gitar` ✓).
+
+Convergence (role §8) at `ce90ca6`: executor ✓ · execution-overseer ✓ (EO-67…70) · **execution-auditor ✓**.
+Normal slice → overseer auto-merges (squash) → **audit-remediation chain CLOSES (14/14)** → terminal stand-down.

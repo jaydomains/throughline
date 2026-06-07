@@ -516,3 +516,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   (e) claims match now-true state (no overclaim, mirrors B6); (f) optionally notes the unreproduced
   D3 backend single-failure + rag-stab closure of M-14. Watcher armed; pre-register M-10 positions
   before its diff.
+
+- **2026-06-07 — M-10 review + final-marker (PR #154 @ `ce90ca6`) — COHORT FINALE.** Capstone review:
+  cross-checked the full refresh against ground truth — **all 14 PR#s match `git log`** (A1#140…M-10#154),
+  finding→slice map correct, 14/14 accounted; dep-posture 15→0 matches my A2/A3 audits; Locked Decisions
+  (C-D2 amended + B1 doctrine, halt 4–9 defs match line 202); no overclaim (consistent w/ B6, per-phase
+  taxonomy distinct); flake accounting accurate (rag #146 stabilized, directives watched; my unreproduced
+  D3 backend blip below threshold). Scope PLATFORM_STATUS-only; IS last slice. CI green at `ce90ca6`;
+  overseer EO-67..70 + marker. **Zero findings.** Posted final-marker (this commit) + approval on #154.
+  Last-seen: `main`@`60e8f20`, M-10@`ce90ca6`, overseer@`d49e81f`, self@`5ce7d01`. Finding-set-diff:
+  `0/0`. **ALL 14 FINDINGS CLOSED: M-1…M-14.** On overseer merge → chain closes → I verify via
+  `git ls-remote` + terminal stand-down (§4.8: stop watcher, unsubscribe, end role).
