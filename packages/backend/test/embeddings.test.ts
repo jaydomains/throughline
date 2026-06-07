@@ -23,9 +23,9 @@ describe('E1 — text embedder discloses its kind honestly (T-D60)', () => {
     const [v] = await embedder.embed(['wire the widget pipeline']);
     expect(v).toBeDefined();
     // The whole point of T-D60: the kind is the truth the wire surfaces. It is never an
-    // undisclosed third state. (`@xenova/transformers` is an optionalDependency; this env
-    // has it absent, so the disclosed capability-absent fallback runs — but the assertion
-    // holds for either backend.)
+    // undisclosed third state. (`@huggingface/transformers` is an optionalDependency; this
+    // env runs the disclosed capability-absent fallback when the package or its model
+    // download is unavailable — but the assertion holds for either backend.)
     expect(['transformers', 'fallback']).toContain(embedder.kind);
     expect(embedder.dim).toBeGreaterThan(0);
     expect(v!.length).toBe(embedder.dim);
