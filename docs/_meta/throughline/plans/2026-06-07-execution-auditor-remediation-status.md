@@ -7,7 +7,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 
 | Slice | PR | Convergence SHA | Status |
 |---|---|---|---|
-| A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **final — approved by execution-auditor** |
+| A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **MERGED** — squash → `main` `36be75a`; approved by execution-auditor |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
