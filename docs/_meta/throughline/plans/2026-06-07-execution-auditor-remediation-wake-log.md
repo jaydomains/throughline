@@ -103,3 +103,17 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `0 dropped / 0 added (A2 reviewed — all Confirms)`. Round-trips: A2 thread 0/5. Ratification
   (class-i/ii) is overseer's lane, covered by settled M-1 (collapse ~zero). Staying subscribed for
   the merge + next link (A3).
+
+- **2026-06-07 — A2 MERGED (PR #141).** Watcher fired: overseer `6134384→af938e7` = "A2 merged
+  (squash @ 7632f1a), verified; Group A 2/3; awaiting A3." On-wake pairing + `pull_request_read`:
+  PR #141 **merged** (`merged:true`, 09:24:11), head `2b1f4fda`. Merge **verified on remote** (§4.8):
+  `main`@`7632f1a` = squash `"A2: … (#141)"`; A2 content (`@huggingface/transformers ^3.8.1`) on
+  `main`; A2 branch `claude/a2-embeddings-protobufjs` **deleted** from remote. Convergence honored
+  (executor ✓ + overseer ✓ + auditor ✓ @ `2b1f4fda` + green CI; ratification pre-settled M-1).
+  **Group A = 2/3; the deploy-blocking Critical + all 7 High are resolved.** Last-seen remote HEADs
+  (`git ls-remote`): `main`@`7632f1a`, overseer@`af938e7`, self@`0067af4`. Finding-set-diff:
+  `0 dropped / 0 added (A2 closed — zero findings end-to-end)`. Round-trips: A2 thread 0/5.
+  **Next:** A3 (residual advisory sweep — react-router `<6.30.4` moderate + honest dep-posture
+  statement folding in the onnxruntime GPU footprint I confirmed at A2; feeds M-10). Watcher stays
+  armed (broad arm on `claude/` catches A3's branch; targeted on overseer branch). Will pre-register
+  A3 positions before reading its diff.
