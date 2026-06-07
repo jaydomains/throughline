@@ -504,3 +504,15 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   merge),M-13,M-14 (13/14). **Next & LAST: M-10** PLATFORM_STATUS full refresh (CN-9 — must be last;
   scrutinize: captures ALL of A/B/C/D + role-file cohort; status claims match now-true state; the
   unreproduced D3 backend single-failure may be noted). Watcher armed.
+
+- **2026-06-07 — B6 MERGED; M-12 closed. Only M-10 remains.** Watcher: overseer `3ec55cc` (marker
+  @ed7551a) → `bce652a` "B6 merged (squash @ 60e8f20); M-12 closed; only M-10 (finale) remains."
+  Merge **verified on remote** (§4.8): `main`@`60e8f20` = squash `"B6: … (#153)"`; branch deleted.
+  Last-seen: `main`@`60e8f20`, overseer@`bce652a`, self@`ec35b10`. Finding-set-diff: `0/0`.
+  **14 slices merged.** Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-11,M-12,M-13,M-14 (13/14).
+  **NEXT & FINAL: M-10** PLATFORM_STATUS full refresh (CN-9). Scrutiny plan: (a) it IS the last
+  slice; (b) folds ALL of A/B/C/D + role-file cohort + the dep-posture (A3) + now-built M-5/M-3 +
+  deploy (D1); (c) status/Snapshot date current; (d) Recent-Slice-History captures #117–#153;
+  (e) claims match now-true state (no overclaim, mirrors B6); (f) optionally notes the unreproduced
+  D3 backend single-failure + rag-stab closure of M-14. Watcher armed; pre-register M-10 positions
+  before its diff.

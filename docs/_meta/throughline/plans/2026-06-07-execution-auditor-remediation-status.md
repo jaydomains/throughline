@@ -20,7 +20,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` | **MERGED** — squash → `main` `c3c1db4`; M-5 closed |
 | D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **MERGED** — squash → `main` `4873325`; M-3 closed |
 | B5 — ROADMAP/CHECKLIST back-fill (M-11) | #152 | `185ff31` | **MERGED** — squash → `main` `91f56b6` after EA-2 re-converge; M-11 closed |
-| B6 — README accuracy (M-12) | #153 | `ed7551a` | **final — approved by execution-auditor** (counts 610/214 live; overclaim removed; claims map to verified state) |
+| B6 — README accuracy (M-12) | #153 | `ed7551a` | **MERGED** — squash → `main` `60e8f20`; M-12 closed |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
