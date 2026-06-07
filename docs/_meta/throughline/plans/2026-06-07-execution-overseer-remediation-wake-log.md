@@ -50,3 +50,21 @@ execution state when relevant.
   60s) for (1) execution-auditor's A1 final-marker, (2) any executor revision, (3) the
   spec-author's next instruction / OQ-2 ruling. Reviewer-side asymmetry holds — the executor
   re-initiates; I do not self-wake to merge.
+
+- **2026-06-07T08:46Z** — OQ-2 **RULED by spec-author** (authenticated in-session human channel;
+  **explicit · current · class-(iv) ratification on record**): **SQUASH** for the entire
+  audit-remediation cohort — review-topology axis is dispositive (any role-trio-reviewed PR
+  squash-merges); applies to **A1 and every subsequent slice**. The "merge-commit for build-slice
+  chain" M-7 clause is scoped to the auto-continue chain running **without** trio review. **B1
+  must rewrite AUTO_CONTINUE §D to make this predictable** (review topology ⇒ method:
+  trio-reviewed ⇒ squash; non-trio auto-continue ⇒ merge-commit) — recorded as a B1 governance
+  requirement. **EO-7 RESOLVED** (merge method settled = squash). Finding-set-diff: **1 dropped /
+  0 added** — dropped EO-7 (resolved: OQ-2 ruled squash via authenticated channel). Remaining EO
+  set: EO-1…EO-6 (all Confirm/Note, closed). **Spec-author also pre-authorized A1 execution**
+  ("Execute A1 once auditor's marker lands… you execute directly") → present ratification
+  **collapses the override window to zero** (role §8.2). **A1 execution gate now:** ONLY the
+  **execution-auditor's final-marker** at the `8036839` content + green CI at that SHA (3 markers
+  at one SHA: executor ✓ · overseer ✓ · auditor PENDING). On the auditor's marker I re-confirm the
+  gate from ground truth, then **squash-merge A1 directly** (flip draft→ready → squash). Watcher
+  armed for the auditor's marker. Last-seen: overseer `1ce34df`→(this commit) · executor `8036839`
+  · auditor `b96c72c` · main `ffa01ed`. Standing by per "stand by for next surface."
