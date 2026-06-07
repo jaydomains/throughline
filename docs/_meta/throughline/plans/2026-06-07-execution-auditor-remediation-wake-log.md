@@ -436,3 +436,10 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   Closed: M-1,M-2,M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14 (10/14). Next: D2 (M-3 UUID picker — frontend
   build; hands-on verify the picker + UUID resolution), then B5 (M-11), B6 (M-12), M-10 (last, CN-9).
   Watcher armed. Will pre-register D2 positions before its diff.
+
+- **2026-06-07 — D2 intake + positions (PR #151 @ `d528366`).** Watcher: new ref `claude/d2-uuid-picker`
+  = M-3 IntelligenceView UUID picker (pure frontend: EntityPicker.tsx + IntelligenceView swaps + tests,
+  204→214; no spec edit, §7.18 silent). Overseer pre-read + EO-57..59 (normal slice). Pre-registered
+  D2-P1…P7 before reading content. Fresh ls-remote: `main`@`c3c1db4`, D2@`d528366`, overseer@`fe960f7`,
+  self@`1bfb519`. Finding-set-diff: `0/0`. Next: read EntityPicker + IntelligenceView swaps + run tests
+  (verify selection→same-UUID→same API call), confirm no raw-UUID inputs remain.

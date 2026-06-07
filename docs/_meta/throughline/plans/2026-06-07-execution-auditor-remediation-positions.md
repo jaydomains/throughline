@@ -416,6 +416,31 @@ slice; normal-class.
 - **C1-P7 — output correctness (hands-on).** Read the serializer + its test assertions; confirm the
   markdown is well-formed and genuinely paste-ready (headers, grouping, no broken refs). Gate green.
 
+## B11. Slice D2 positions (PR #151 `claude/d2-uuid-picker` @ `d528366` — IntelligenceView UUID picker, M-3)
+
+**Pre-registered 2026-06-07, before reading the D2 diff content** (derived from plan §5 D2). Frontend
+UX build; normal-class.
+
+- **D2-P1 — EntityPicker component.** Reusable dropdown over `{id,label}[]`: value=UUID, label=
+  name/title, `onChange(id)`. Verify value-is-id (not label).
+- **D2-P2 — three call-sites converted.** retro→session picker, stakeholder→item picker, chat
+  (context=session)→session picker. Verify the downstream calls (`sessionRetro`/`getStakeholderView`/
+  `getChatHistory`/`sendChat`) receive the selected UUID exactly as the manual entry did.
+- **D2-P3 — no raw-UUID inputs remain.** `grep placeholder="session id"/"item id"` on these surfaces
+  → none.
+- **D2-P4 — picker resolves to the SAME ids/API calls (correctness crux).** Selecting a session/item
+  must drive the identical downstream call the manual UUID did — verify via the updated
+  intelligenceView test (seeds sessions/items, selects, asserts identical ids → identical API calls).
+- **D2-P5 — dump_zone chat correctly NOT converted.** Its `context_id` is a free-form non-entity
+  context (not a session/item), outside "over sessions/items" — keeping a text input is correct, not
+  a missed conversion. Verify the reasoning holds.
+- **D2-P6 — tests + no regression.** `entityPicker.test.tsx` + updated `intelligenceView.test.tsx`;
+  610 backend unchanged, frontend 204→214. **I run them** to confirm they pass and assert
+  selection→id resolution (not vacuous).
+- **D2-P7 — scope + not ratification.** Frontend only (EntityPicker, IntelligenceView, tests); no
+  SPEC (§7.18 silent → UX fix, no amendment), no backend, no other slices; based on `main` `c3c1db4`.
+  Gate green.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
