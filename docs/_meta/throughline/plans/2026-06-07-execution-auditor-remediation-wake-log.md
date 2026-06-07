@@ -484,3 +484,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   resolved. Posted final-marker (this commit) + approval on #152. Last-seen: `main`@`4873325`,
   B5@`185ff31`, overseer@`eb91341`(re-binds), self@`e4109e9`. Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,
   M-9,M-11(pending merge),M-13,M-14. Next: B6 (M-12 README), then M-10 (LAST). Watcher armed.
+
+- **2026-06-07 — B5 MERGED; M-11 closed (EA-2 cycle complete).** Watcher: overseer `5d2f92c`
+  (re-converge, re-bind pending CI) → `d549f29` "B5 merged (squash @ 91f56b6) after EA-2 re-converge;
+  M-11 closed; awaiting B6." Merge **verified on remote** (§4.8): `main`@`91f56b6` = squash
+  `"B5: … (#152)"`; branch deleted. EA-2 (my first independently-originated held finding) resolved +
+  the executor's additional E17a/E22/E23 corrections landed, all git-verified. Last-seen:
+  `main`@`91f56b6`, overseer@`d549f29`, self@`f6cead0`. Finding-set-diff: `0/0 (B5 closed)`.
+  **13 slices merged.** Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-11,M-13,M-14 (12/14). Next:
+  **B6** (M-12 README — counts 500/182→610/214 + soften "production-ready" overclaim; gated on Group A
+  which is done), then **M-10 LAST** (PLATFORM_STATUS full refresh, CN-9). Watcher armed.
