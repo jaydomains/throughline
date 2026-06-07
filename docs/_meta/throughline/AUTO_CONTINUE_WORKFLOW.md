@@ -41,7 +41,14 @@ Two-of-three is not enough. Green-then-red is not green. The gate evaluates stat
 
    Each fix-round increments the slice's fix-round counter in chain state. The same finding/failure surfacing for a third fix-round trips the **circuit breaker** (see Halt Classes).
 
-**D. Auto-merge on simultaneous green.** When all three layers are green at the same poll, the runner merges the PR to the base branch using a **merge commit** (Throughline's repo norm — every prior PR on `main` lands as a two-parent merge commit; see `git log main --merges --first-parent`). Squash and rebase strategies are not used. The handover commit is the final commit of the slice and lands before merge.
+**D. Merge on simultaneous green — dual-context method.** When all three layers are green at the same poll, the merge-executor merges the PR to the base branch. The **merge method is dual-context** (M-7; the parameter itself lives in `REQUIRED_READING.md §7`, which this section is the canonical prose for):
+
+   - **Bare auto-continue chain-runner** — a single executor whose work is gated by Gitar + CI with *no* role-trio review → **merge commit**.
+   - **Role-trio review cycle** — a producer (planner / executor) plus an independent auditor and overseer, the overseer executing the merge on three sign-offs at one content → **squash merge**. This holds **including when the trio is reviewing an auto-continue build-slice chain** (OQ-2, spec-author-ruled **squash** in the 2026-06 audit-remediation cohort): the distinguishing axis is **review-topology, not chain-automation** — a three-independent-sign-off trio squash-merges; the bare runner merge-commits.
+
+   Rebase is not used in either context. The handover commit is the final commit of the slice and lands before merge.
+
+   *(This replaces the former invariant "every PR on `main` lands as a two-parent merge commit; squash and rebase are not used," which M-7 found empirically false — the Phase-E build chain and the role-file trio chains were squash-merged. The two contexts are deliberately different and must not be conflated.)*
 
 **E. Auto-advance to the next slice.** On merge:
    - The chain state file's `currentIndex` increments.
@@ -59,15 +66,33 @@ The canonical chain rhythm is **one PR per slice**. A non-draft PR opens as soon
 
 ---
 
-## The Three Halt Classes
+## Halt Classes
 
-These are the **only** legitimate reasons a chain stops. Anything else is a bug in the runner.
+These are the **only** legitimate reasons a chain stops. Anything else is a bug in the runner. Classes **1–3** are the long-standing codified set. Classes **4–9** are the **Phase-E blessed extensions** — spec-author-blessed **2026-05-30** as sanctioned operating practice (`plans/2026-05-30-phase-e-full-audit-close.md:202`), and absorbed into this canonical doc here per that plan's own deferral ("halt-class extensions 4–9 absorbed into `AUTO_CONTINUE_WORKFLOW.md` by the cohort hardener"; M-8). Each extension below traces to that blessed definition; no class is codified that lacks one.
+
+**The codified three:**
 
 1. **Spec drift.** Work-in-progress on the slice touches behaviour the spec does not sanction. Halt immediately, surface to the spec author. The fix is either a SPEC update or a code rollback — never patching the code silently to absorb the drift.
 
 2. **Circuit breaker.** Three fix-rounds for the same finding/failure on the same slice. Halt, surface, do not push a fourth fix-round. Three rounds without convergence indicates the slice is mis-sized, mis-specified, or mis-understood — none of which a fourth blind commit will fix.
 
 3. **Explicit user pause.** The kill switch (any-of signal) is detected at a slice boundary. Halt, record the pause reason if available, await user resumption.
+
+**The Phase-E blessed extensions (4–9)** — all from `plans/2026-05-30-phase-e-full-audit-close.md:202` (blessed 2026-05-30):
+
+4. **Estimate breach.** A slice's actual diff exceeds its LOC band by more than 50% → halt, re-slice. (Fired live in Phase E at E3 and E17a — `audits/2026-05-31-phase-e-execution-audit-1.md:91`.)
+
+5. **Unplanned anchor.** A slice needs a T-D / C-D anchor beyond those its plan sanctioned → halt, surface — never silently mint. (Fired at E20a.)
+
+6. **Test regression.** A slice reds a previously-green test it did not intend to touch → halt. This is the halt-class form of the *CI-flake-is-a-finding* rule (Supporting Rules): a reddened/flaky test is root-caused or quarantined with an explicit anchor, never re-run-until-green.
+
+7. **Doc-PR collision.** `main` carries an open PR touching a rolling shared doc at a slice boundary → halt. The full mechanics live in *Concurrent Doc-PR Collision* below; this is its halt-class label.
+
+8. **Out-of-audit silent-failure.** A silent-failure pattern outside the slice's own audit scope surfaces mid-slice → flag it for the *next* audit cycle; do **not** expand the current slice to absorb it.
+
+9. **Blessed decision-gate.** A *planned* mid-chain halt where the chain stops for an explicit spec-author ruling (Phase E's E17 product-decision gate was the canonical instance); any "build" rulings append new slices. It is priced into the plan, distinct from an ad-hoc stop.
+
+> **Codification provenance (M-7/M-8 — B1).** Extensions 4–9 were proposed by the Phase-E planning track and **blessed by the spec author before chain-open** (2026-05-30), but their codification into this doc was deferred to the chain-close hardener to avoid editing the workflow doc while a chain ran against it (the recursive doc-PR-collision problem — class 7 itself). This slice (audit-remediation B1) lands that deferred codification. The labels here follow the **canonical blessed source** (`full-audit-close.md:202`); they supersede any imprecise interim restatement of the set.
 
 Reviewer-stall is **not** a halt class. A long-running Gitar review is normal; the runner waits indefinitely. If "indefinitely" is the wrong answer for a specific chain, the user pauses explicitly via the kill switch.
 
