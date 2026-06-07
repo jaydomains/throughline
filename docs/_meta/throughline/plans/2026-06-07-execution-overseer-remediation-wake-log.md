@@ -862,3 +862,12 @@ execution state when relevant.
     terminal stand-down. Verify M-10 represents the cohort accurately as landed.
   Finding-set-diff: **0 dropped / 0 added** (M-10 positions pre-registered). Now reading M-10 PR + diff.
   Last-seen: main `60e8f20` · auditor `9f6c88a` · M-10 exec `ce90ca6`.
+
+- **2026-06-07T20:2xZ** — M-10 (PR #154) GOVERNANCE REVIEW posted (comment 4644012729). Scope:
+  PLATFORM_STATUS.md + docs; NO spec edit → normal slice; base main `60e8f20`. **EO-67 normal/no-spec
+  ✓ · EO-68 comprehensive (all 14 findings/slices, dep 15→0, role-file cohort, built/deferred) ✓ ·
+  EO-69 accuracy/consistency — honest-status line MATCHES B6 (feature-complete, NOT top tier); per-
+  phase "production-ready" = build-state taxonomy (distinct/legit); no overclaim ✓ · EO-70 gate
+  pending CI.** Finding-set-diff: **0 dropped / 4 added (EO-67…70)**. Marker HELD pending green CI @
+  `ce90ca6`. **FINAL slice → on merge, cohort COMPLETE → terminal stand-down.** Last-seen: main
+  `60e8f20` · auditor `9f6c88a` · M-10 exec `ce90ca6` · overseer `432c105`→(this commit).
