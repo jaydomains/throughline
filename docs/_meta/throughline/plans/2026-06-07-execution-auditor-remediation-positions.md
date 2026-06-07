@@ -468,3 +468,18 @@ Pre-registered 2026-06-07 before reading diff content. Doc-only; normal-class.
   #117–#138, this remediation cohort).
 - **B5-P5 — scope:** ROADMAP.md + CHECKLIST.md + docs only; NOT PLATFORM_STATUS (M-10's), not SPEC;
   not a ratification class. Gate green; doc-only.
+
+## B13. Slice B6 positions (PR #153 `claude/b6-readme-accuracy` @ `ed7551a` — README accuracy, M-12)
+
+Pre-registered 2026-06-07 before reading diff content. Doc-only; normal-class; gated on Group A (done).
+
+- **B6-P1 — counts corrected to the live gate:** 500/182 → **610/214** (I've independently verified
+  610 backend + 214 frontend across A1–D2). No stale 500/182 remains.
+- **B6-P2 — overclaim removed:** "production-ready end-to-end" → an honest claim. Per M-12 ruling
+  (honest only once Group A + D1 landed — both merged).
+- **B6-P3 — new claim is ACCURATE (not a new overclaim):** "dependency-hardened" maps to the audit
+  15→0 I verified (A1–A3); "single-user local deploy" maps to D1 (node dist serves SPA, I verified).
+  Must NOT claim the top production-ready taxonomy tier. Verify the claim matches the now-true state.
+- **B6-P4 — no residual:** grep → no 500/182, no unqualified "production-ready end-to-end".
+- **B6-P5 — scope:** README.md + docs only; no SPEC/PLATFORM_STATUS (M-10's); not a ratification class.
+- **B6-P6 — gate green; README:22 taxonomy line intact** (consistency).
