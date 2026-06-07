@@ -236,3 +236,15 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   closed)`. **Next: B2** (CI-enforcement reconciliation, M-13 — after B1, shares AUTO_CONTINUE; gate
   is required on main, remove "advisory" language) then **B3** (REQUIRED_READING — §5 tree + the §4
   halt-pointer B1 flagged; after B1). Watcher armed; will pre-register B2 positions before its diff.
+
+- **2026-06-07 — WATCHER SILENT-DEATH caught via durable reconciliation; B2 intake + positions
+  (PR #145 @ `830bbf3`).** Spec-author (human) flagged I might not be armed. Reconciled from durable
+  state: watcher `b5k59tj32` had **silently died** — B2 was pushed ~14:36 with **no wake delivered**
+  (the "detection≠awareness" failure). Caught B2 via `git ls-remote` on the turn, not the monitor.
+  Re-armed `biub32c9f` (targeted on the active `claude/b2-ci-enforcement` + broad `claude/`).
+  **Pre-registered B2-P1…P7 before reading the diff content.** Fresh ls-remote: `main`@`9501018`,
+  B2@`830bbf3`, overseer@`8d3dc9f`, self@`e173d98`. B2 (M-13, doc/yaml-only, not ratification).
+  **Note B2-P7:** executor surfaces the M-14 `rag.test.ts` flake as recurring (~1-in-4 across B1/B2,
+  A2-aggravated) + scope decision — a discovered finding exceeding plan scope I will independently
+  assess + corroborate to the spec-author. Finding-set-diff: `0 dropped / 0 added (B2 baseline)`.
+  Next: read B2 diff + comments + CI, verify, then marker/findings.

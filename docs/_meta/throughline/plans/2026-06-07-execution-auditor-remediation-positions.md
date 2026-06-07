@@ -278,6 +278,37 @@ blessed 4–9 definitions before adjudicating the executor's against it.
 - **B1-P8 — class-(iv) ratification flagged.** PR marks B1 class-(iv); does not auto-merge without
   spec-author ratification of the doctrine + OQ-2 authenticity (overseer's lane). Verify the flag.
 
+## B6. Slice B2 positions (PR #145 `claude/b2-ci-enforcement` @ `830bbf3` — CI-enforcement reconciliation, M-13)
+
+**Pre-registered 2026-06-07, before reading the B2 diff content** (derived from plan §5 B2 + settled
+M-13). *Anti-anchoring:* seen the PR body via the list, not the code.
+
+- **B2-P1 — ci.yml "advisory" hedge removed.** The `ci.yml` header/enforcement note no longer says
+  "advisory … until the repo-admin action lands"; it states `gate` is the enforcing required check on
+  `main`. **Comment-only** — the workflow jobs/steps (behaviour) unchanged. Verify the yaml *logic* is
+  untouched.
+- **B2-P2 — AUTO_CONTINUE `:24` hedge removed.** The CI gate-layer clause's "advisory" hedge is gone;
+  states `gate` is required on `main`. Verify B2 edits only that clause and does **not** disturb B1's
+  §D / halt-class content (B2 follows B1 on this shared file; must be based on post-B1 `main` `9501018`).
+- **B2-P3 — PLATFORM_STATUS untouched.** `:37` already says "DONE / enforcing"; B2 must **leave it**
+  (M-10's domain + collision rule). Verify no PLATFORM_STATUS edit.
+- **B2-P4 — three docs read consistently.** ci.yml + AUTO_CONTINUE + PLATFORM_STATUS all say CI is
+  the enforcing required check; **no stray "advisory"** survives re the gate (the dependency
+  "accepted-advisory register" is unrelated and may remain).
+- **B2-P5 — not a ratification class.** ci.yml / AUTO_CONTINUE / PLATFORM_STATUS are not
+  SPEC/CODE_SPEC/DECISIONS. Verify no SPEC edit.
+- **B2-P6 — gate green; scope contained; no B1 revert.** Touches only ci.yml + AUTO_CONTINUE:24 +
+  handover/wake-log; based on `9501018`; B1's content intact.
+- **B2-P7 — rag.test.ts recurring-flake surface (discovered finding, my §7 lane too).** The executor
+  reports the M-14 `rag.test.ts` flake has **recurred across B1 and B2 (~1-in-4, A2-aggravated)** and
+  is surfacing it to the spec-author as a finding + scope decision (dedicated stabilization slice vs
+  keep Phase-F-deferred). This **exceeds the plan's scope** (M-14 was "no action") → a legitimate
+  spec-author **scope decision** I should **independently assess and corroborate** (my dispatch:
+  surface discovered findings that exceed plan scope). B2 itself (doc/yaml-only) can neither cause nor
+  fix it → not a B2 blocker. Honest self-check: my A2 sign-off ran rag.test.ts 16/16 once; a 1-in-4
+  flake would not reliably show single-run, and M-14 pre-flagged it — but if A2's heavier stack
+  aggravated it, that is the cohort-level item now being surfaced.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
