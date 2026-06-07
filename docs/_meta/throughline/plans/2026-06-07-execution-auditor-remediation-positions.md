@@ -233,6 +233,51 @@ CN-6). *Anti-anchoring:* seen the PR body via the list, not the code.
   the diff edits SPEC §11, it took the class-(ii) fallback and the ratification flag applies — I'd
   surface the class mismatch. Confirm the diff contains no SPEC/CODE_SPEC/DECISIONS edit.
 
+## B5. Slice B1 positions (PR #144 `claude/b1-governance-doctrine` @ `4ebf3d4` — governance doctrine, M-7+M-8, class-(iv))
+
+**Pre-registered 2026-06-07, before reading the B1 diff content** (derived from plan §5 B1 +
+CN-3/CN-4/CN-5). *Anti-anchoring:* I have seen the PR body (which previews the executor's halt
+mapping); I will **independently read the canonical Phase-E source** and form my own view of the
+blessed 4–9 definitions before adjudicating the executor's against it.
+
+- **B1-P1 — §D dual-context rewrite.** The self-disproving invariant ("every PR is a two-parent
+  merge commit; squash not used") is replaced with the dual-context method: **bare auto-continue
+  chain-runner → merge-commit**; **role-trio review cycle → squash**, *including the
+  execution-trio-reviewed auto-continue build chain* (OQ-2 ruled squash; axis = review-topology, not
+  chain-automation). Cross-refs REQUIRED_READING §7.
+- **B1-P2 — halt classes 4–9 codified, each with blessed provenance.** Six extensions, each cited to
+  a blessed Phase-E source. Per CN-3, **codify only blessed classes; any of 4–9 without a traceable
+  blessed definition must be SURFACED, not invented.**
+- **B1-P3 — THE CRUX: definitions match the canonical blessed source, not invented.** The executor's
+  6/7/8 differ from the plan's starting-map (plan: 6=fingerprint-staleness, 7=murky, 8=flake;
+  executor: 6=test regression, 7=doc-PR collision, 8=out-of-audit silent-failure). I will **read the
+  canonical source (`plans/2026-05-30-phase-e-full-audit-close.md` ~line 202 + the sources the plan
+  §0/§5 cited) myself** and determine ground truth:
+  - If the executor's definitions match the canonical blessed source and the plan's starting-map was
+    imprecise → acceptable **plan-vs-reality** correction (like A2's C-D2 fix), provided it is
+    transparently flagged (it is). I flag it; not a finding **iff** source-verified.
+  - If any definition is **not** found in a blessed source (invented/misattributed) → **finding +
+    surface** (§7e / class-(iv) governance floor): inventing authority-floor semantics is the exact
+    failure CN-3 guards against. A *single* blessed source line "202" defining all six cleanly would
+    be unusual given the plan said they were "scattered" — I verify line 202 actually defines each.
+- **B1-P4 — no role-file back-port (CN-4/OV-1).** `.claude/roles/*` untouched (they externalize
+  halt-classes by category + merge-method as a REQUIRED_READING parameter). Verify the diff edits
+  AUTO_CONTINUE only.
+- **B1-P5 — B1 owns AUTO_CONTINUE only; REQUIRED_READING untouched.** The §4 pointer + the §"known
+  gap … owed work" note in REQUIRED_READING are **B3's** to update (§4/§5 collision). B1 leaving a
+  *transient* stale REQUIRED_READING §4 pointer is acceptable **iff** flagged for B3 (it is). Verify
+  B1 does not touch REQUIRED_READING and does not prematurely claim the §4 note is updated.
+- **B1-P6 — OQ-2 reflected (CN-5).** §D states execution-trio-reviewed auto-continue chain → squash.
+  Authentication of the OQ-2 ruling + the class-(iv) ratification is the **overseer's lane** (it
+  confirms through the authenticated channel at merge); M-7/M-8 are settled in my dispatch. I verify
+  the §D *content* says squash; I do not re-litigate OQ-2.
+- **B1-P7 — gate green; genuinely doc-only.** B1 touches no code, so it cannot cause/fix a code
+  flake. Verify the diff is AUTO_CONTINUE + handover + wake-log only. The `rag.test.ts` flake (M-14,
+  pre-existing, Phase-F-deferred) is **not** B1-caused; honest disposition = pre-existing, not a B1
+  blocker (consistent with it being doc-only). Confirm no code file in the diff.
+- **B1-P8 — class-(iv) ratification flagged.** PR marks B1 class-(iv); does not auto-merge without
+  spec-author ratification of the doctrine + OQ-2 authenticity (overseer's lane). Verify the flag.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).

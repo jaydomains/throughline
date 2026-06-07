@@ -196,3 +196,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   set is 4–9; codify only blessed, surface any without traceable Phase-E provenance — esp. halt-7),
   CN-4 (no role-file back-port owed — project-layer only), CN-5 (OQ-2 ruled squash) apply. Watcher
   armed; will pre-register B1 positions before reading its diff.
+
+- **2026-06-07 — B1 intake + positions pre-registered (PR #144 @ `4ebf3d4`, class-(iv)).** Watcher
+  fired: new ref `claude/b1-governance-doctrine` @ `4ebf3d4` = PR #144 (B1, draft; edits
+  AUTO_CONTINUE_WORKFLOW.md only + handover/wake-log). On-wake pairing: read PR body + fresh
+  `git ls-remote` (`main`@`fb25642`, B1@`4ebf3d4`, overseer@`0416ff3`, self@`db63716`). **Pre-registered
+  B1-P1…P8 BEFORE reading the diff content.** Crux (B1-P3): executor's halt 6/7/8 definitions DIFFER
+  from the plan's starting-map — must read canonical Phase-E source myself and adjudicate
+  (invented-vs-blessed). Finding-set-diff: `0 dropped / 0 added (B1 baseline)`. Round-trips: none.
+  Next: read canonical source (`plans/2026-05-30-phase-e-full-audit-close.md` ~L202 + plan §0/§5
+  cites) + the B1 diff, adjudicate halt definitions, verify §D dual-context + no role-file back-port
+  + doc-only, then post findings or marker.
