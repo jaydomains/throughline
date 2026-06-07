@@ -464,3 +464,15 @@ execution state when relevant.
   the real @huggingface embedder in CI — reasonable per the embedder-agnostic T-D60 design, but a
   coverage tradeoff to weigh.) No PR opened yet. Watcher `bpl1aug3x` armed. Last-seen: main
   `17c193a` · rag-stab executor `ac3510c` · auditor `ca46f1e` · overseer `103f379`→(this commit).
+
+- **2026-06-07T1z:zzZ — rag-stab: second relay of Option A (auditor), still HOLDING.** Auditor
+  `42849fc` posted its rag-stab **content** final-marker @ `ac3510c` (fix verified 610×3 / 0
+  model-loads) and states *"Option-A authenticated to me via AskUserQuestion; overseer needs own
+  auth."* So the human ruled **A** in the **auditor's** channel (genuine for the auditor) — now a
+  **second relay** to me (executor + auditor both report A). The auditor itself flags I need my own
+  auth — correct. Per §8.3, concurring relays under the shared identity still do **not** authorize
+  MY merge; my reference is the in-session human channel (this conversation), where I have asked and
+  **await the human's direct confirm**. **Merge still HELD** on my own authenticated ratification of
+  the class-(iii) scope expansion. Convergence content otherwise lining up: executor content-marker
+  + auditor content-marker @ `ac3510c`; my governance review pending (will proceed in parallel).
+  Last-seen: main `17c193a` · rag-stab `ac3510c` · auditor `42849fc` · overseer `2a70189`→(this).
