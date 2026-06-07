@@ -117,3 +117,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   statement folding in the onnxruntime GPU footprint I confirmed at A2; feeds M-10). Watcher stays
   armed (broad arm on `claude/` catches A3's branch; targeted on overseer branch). Will pre-register
   A3 positions before reading its diff.
+
+- **2026-06-07 — A3 intake + positions pre-registered (branch `claude/a3-residual-sweep`
+  @ `d5a897f`).** Watcher fired: new ref `claude/a3-residual-sweep` @ `d5a897f` (no PR yet). On-wake
+  pairing: fetched branch + read diff **stat only** (backend package.json 1 line, frontend
+  package.json 8 lines, pnpm-lock −1151 net, handover, wake-log; **no PLATFORM_STATUS edit** —
+  correct, M-10's file). Fresh `git ls-remote`: `main`@`7632f1a`, A3@`d5a897f`, overseer@`af938e7`,
+  self@`b455300`. **Pre-registered A3 positions A3-P1…P7 BEFORE reading the diff content**
+  (anti-anchoring; only saw the stat). Finding-set-diff:
+  `0 dropped / 0 added (A3 baseline — positions pre-registered, no findings yet)`. Round-trips: none.
+  Next: read A3 diff + independently verify (react-router ≥6.30.4, fresh pnpm audit, vite-major
+  frontend build+tests, no A1/A2 revert), then post findings or marker once the PR/markers land.

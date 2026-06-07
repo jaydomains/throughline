@@ -167,6 +167,39 @@ plan/spec, not the executor's framing. Branch `claude/a2-embeddings-protobufjs` 
   failing the install/gate), and (b) no new advisory enters the prod tree. A swap that clears
   protobufjs but breaks install or smuggles a new exposure is a finding.
 
+## B3. Slice A3 positions (branch `claude/a3-residual-sweep` @ `d5a897f` — residual sweep + posture)
+
+**Pre-registered 2026-06-07, before reading the A3 diff** (derived from plan §5 Group A → A3).
+*Anti-anchoring:* I have seen only the diff **stat** (file list + line counts), not the diff content
+or the handover/PR body. Measured against the plan, not the executor's framing. From my own A2
+verification, the residual prod advisory on `main`@`7632f1a` was **1 moderate — react-router
+`<6.30.4`**.
+
+- **A3-P1 — react-router moderate cleared.** `react-router`/`react-router-dom` bumped to **≥6.30.4**;
+  `pnpm audit --prod` shows the react-router advisory gone.
+- **A3-P2 — final audit posture honest.** `pnpm audit --prod` is **clean**, OR any residual is an
+  **explicitly-recorded accepted set** with reachability rationale (`127.0.0.1` bind, single-user).
+  Verify the actual audit result independently — not the handover's claim.
+- **A3-P3 — dependency-posture statement recorded (feeds M-10).** The handover carries
+  before/after audit counts + the accepted-residual list with rationale, and **corrects the
+  "mere version bumps" mischaracterization** of the E17a-deferred set. This is the text M-10 folds —
+  verify it is accurate and self-contained.
+- **A3-P4 — no regression; vite-major risk (correctness crux).** Gate green; 610 backend / 204
+  frontend preserved. The lockfile churn + frontend `package.json` edit suggests a **vite 5→6 major
+  bump** (and/or esbuild) — a major build-tool bump can break the frontend build, change output, or
+  break tests. **Independently build the frontend + run its tests** where feasible; a green typecheck
+  alone does not prove a vite-major bump is safe.
+- **A3-P5 — scope containment + no A1/A2 revert.** A3 touches only the dependency-sweep + posture
+  docs; **not** D1 (`start`), **not** SPEC, and **must not** open PLATFORM_STATUS (M-10's file, §3.B
+  collision). `package.json` must still carry `fastify ^5.8.3` (A1) + `@huggingface/transformers
+  ^3.8.1` (A2) — no regression of the prior links. Identify what the **backend** `package.json`
+  1-line change is and confirm it is in-scope (a residual bump/override, not a stray edit).
+- **A3-P6 — no NEW advisories.** The vite-6 / react-router bumps introduce no new prod advisory
+  (verify via a fresh `pnpm audit --prod` on the resolved tree).
+- **A3-P7 — Group A closeout.** A3 is the M-1 closeout; after it, the dependency posture is honest
+  and the "production-ready" precondition (for M-12/B6) is met. Confirm the handover frames A3 as
+  the Group-A completion and feeds M-10/M-12, without overreaching into those slices.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
