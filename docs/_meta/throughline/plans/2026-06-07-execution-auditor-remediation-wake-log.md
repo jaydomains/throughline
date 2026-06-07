@@ -417,3 +417,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   commit) + approval on #150. Last-seen: `main`@`ed4e6bb`, C1@`626dde8`, overseer@`1ebccda`,
   self@`f174cae`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-4,M-5(pending merge),M-6,M-7,M-8,M-9,M-13,M-14.
   Next (posture): executor auto-starts D2 (M-3 UUID picker). Watcher armed.
+
+- **2026-06-07 — C1 marker refresh `626dde8 → 5d4dcc8` (§4.7; Gitar-nit fold).** Executor folded the
+  optional Gitar nit (copy-button feedback resets to idle after 2s; useRef timer cleared on unmount +
+  before re-set — act-safe). Content-changing → re-stales markers. Re-verified the changed section
+  (CopySessionMarkdown.tsx) in a worktree: copy test 2/2 ×2 + full frontend **212/212**, **no act
+  warnings**; serializer (core deliverable) **unchanged**; CI green at `5d4dcc8` (`gate`✓×2 +
+  `Gitar`✓). Fold is clean. Refreshed my marker to `5d4dcc8`. Last-seen: `main`@`ed4e6bb`,
+  C1@`5d4dcc8`, overseer@`1ebccda`(will re-bind), self@`59a41fa`. Finding-set-diff: `0/0 (fold
+  re-verified, no content-deliverable change)`. Round-trips: Gitar-Q1 folded (overseer↔Gitar lane);
+  my C1 thread 0/5.

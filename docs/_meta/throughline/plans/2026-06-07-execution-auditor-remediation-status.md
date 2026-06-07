@@ -17,7 +17,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
 | B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
 | D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **MERGED** — squash → `main` `ed4e6bb` after authenticated OQ-1=defer; M-6 closed |
-| C1 — per-session markdown export build (M-5) | #150 | `626dde8` | **final — approved by execution-auditor** (build verified: serializer + 8 tests; §7.20 now true) |
+| C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` (was `626dde8`) | **final — approved by execution-auditor** (build verified; Gitar-nit fold re-verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -368,7 +368,7 @@ OQ-1=defer) · **execution-auditor ✓ (content)**. Merge squash (OQ-2).
 
 ---
 
-## C1 (PR #150) — final — approved by execution-auditor @ `626dde8`
+## C1 (PR #150) — final — approved by execution-auditor @ `5d4dcc8` (refreshed from `626dde8`)
 
 M-5 per-session markdown export **build** (pure frontend). All C1-P1…P7 + CP-1…8 Confirm. **Zero
 findings of my origination.**
