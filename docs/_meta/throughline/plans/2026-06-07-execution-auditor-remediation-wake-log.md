@@ -147,3 +147,16 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   Finding-set-diff: `0 dropped / 0 added (A3 — all Confirms; EO-13 is overseer-originated, verified
   resolved)`. Round-trips: A3 (my lane) 0/5; EO-13 (overseer↔executor) resolved r1. Group A complete
   (15→0). Staying subscribed for the A3 merge + Group B (B1 governance — class-iv, OQ-2 already ruled).
+
+- **2026-06-07 — A3 MERGED; GROUP A COMPLETE.** Watcher fired: overseer `86e682d→a90747a` = "A3
+  merged (squash @ 7d0a252); GROUP A COMPLETE (audit 15->0); awaiting D1." Merge **verified on
+  remote** (§4.8): `main`@`7d0a252` = squash `"A3: … (#142)"`; A3 branch `claude/a3-residual-sweep`
+  **deleted** from remote. Convergence honored at `4e70186` (executor ✓ + overseer ✓ + auditor ✓ +
+  green CI; EO-13 resolved & verified by both reviewers). **Group A (A1+A2+A3) done — deploy-blocking
+  M-1 exposure fully resolved, audited tree 15→0** (independently confirmed via my own `pnpm audit`).
+  Last-seen remote HEADs (`git ls-remote`): `main`@`7d0a252`, overseer@`a90747a`, self@`25d4cb6`.
+  Finding-set-diff: `0 dropped / 0 added (A3 closed)`. **Next link: D1** (deployment wiring — `start`
+  → built artifact + single-command setup; plan §6 puts D1 after A3, shares `package.json`).
+  CN-6 carry-forward applies (primary path = provide real single-command setup making SPEC §11/§601
+  true; "document manual reality" alone is unacceptable; SPEC §11 amendment is the class-(ii)
+  fallback only). Watcher armed; will pre-register D1 positions before reading its diff.

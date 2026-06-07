@@ -9,7 +9,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 |---|---|---|---|
 | A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **MERGED** — squash → `main` `36be75a`; approved by execution-auditor |
 | A2 — embeddings stack / protobufjs Critical (M-1) | #141 | `2b1f4fda` | **MERGED** — squash → `main` `7632f1a`; approved by execution-auditor (class-(i)/(ii)) |
-| A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **final — approved by execution-auditor** (EO-13 flake fix verified) |
+| A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **MERGED** — squash → `main` `7d0a252`; approved (EO-13 flake fix verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
