@@ -460,3 +460,17 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   **12 slices merged.** Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14 (11/14). Next: B5
   (M-11 ROADMAP/CHECKLIST back-fill), then B6 (M-12 README), M-10 (LAST — PLATFORM_STATUS full
   refresh; CN-9 = never open early). Watcher armed. Will pre-register B5 positions before its diff.
+
+- **2026-06-07 — B5 review → FINDING EA-2 raised; marker HELD (PR #152 @ `420a577`).** Verified
+  back-fill citations against `git log main`. Most resolve (Phase E #88–#115/#116, cohort #140–#151,
+  plan-overseer #122, #123-reverted-by-#124, audit-trio #136–#138). **EA-2 (Refine/Low, fidelity):**
+  ROADMAP + CHECKLIST(line 52) cite planner.md as **#118/#119**, but `git log` shows **#118 = the
+  counterpart-change-detector skill's follow-up** (2330be3 "Merge pull request #118 from
+  …claude/audit-detector-skill-oQF32"; content e3c3104 "Follow-up fixes to counterpart-change-detector
+  skill") — the **planner is #119**. #118 belongs on the skill line (currently #117 only), not the
+  planner. Independently caught — overseer (EO-60..62) + Gitar both approved without catching it;
+  EO-61 explicitly delegated "every cite resolves" to me (the depth check did its job). CI green at
+  `420a577` (executor ✓ + overseer ✓), but **I hold my marker on EA-2** (the gate correctly blocks
+  on my sign-off). Posted EA-2 as a PR comment. Last-seen: `main`@`4873325`, B5@`420a577`,
+  overseer@`c511379`, self@`19be9e2`. Finding-set-diff: **`0 dropped / 1 added (EA-2)`**. Round-trips:
+  EA-2 **1/5** (raised; awaiting executor). Otherwise B5 is accurate + complete + scope-clean.
