@@ -244,3 +244,30 @@ execution state when relevant.
   spec-author**; the primary path (provide single-command setup, no spec edit) is a normal slice.
   Re-arming watcher for D1. Last-seen: main `7d0a252` · auditor `25d4cb6` · overseer
   `86e682d`→(this commit).
+
+- **2026-06-07T10:0xZ** — D1 executor branch `claude/d1-deploy-wiring` @ `874cb8c` detected.
+  **D1 pre-read governance positions (BEFORE reading the diff — anti-anchoring §4.2):**
+  - **EO/D1-P1 (ratification — CONDITIONAL, KEY WATCH):** D1 = M-2, **planner-scoped, NO settled
+    spec-author ruling**. Class-(ii) **only if** the SPEC §11 fallback (amend `SPEC.md` §11) is
+    taken. **Decision rule:** if the diff edits `SPEC.md` (fallback) → class-(ii) spec amendment
+    with no settled ruling → **I SURFACE to spec-author for ratification before merge**. If it
+    takes the **primary path** (provide a real single-command setup, no SPEC edit) → **normal
+    slice, execute directly.** I determine the path by whether `SPEC.md` is touched.
+  - **EO/D1-P2 (scope):** D1 touches `start` script (`packages/backend/package.json`),
+    `docs/install/auto-start.md`, + a new single-command setup script. Base must be current `main`
+    @ `7d0a252` (after Group A; shared package.json). No reach into other slices' files (no SPEC
+    unless fallback; no CODE_SPEC; no AUTO_CONTINUE; no PLATFORM_STATUS — that's M-10).
+  - **EO/D1-P3 (substantive bar):** `pnpm build` then `node dist/index.js` must boot on
+    `127.0.0.1:47823` under **NODE_ENV=production** (prod module resolution, not the `development`
+    condition); single-command setup runs clean from a **fresh clone**. Auditor verifies the boot.
+  - **EO/D1-P4 (honesty / no silent partial):** primary path must make SPEC §11/§3's single-command
+    claim **TRUE** (provide the setup) — NOT ship "document the manual reality" alone, which would
+    leave SPEC §11 false and recreate the claimed-but-unbuilt drift this cohort closes. Fallback
+    (SPEC amend) only if genuine single-command setup is infeasible — and that's the surfaced
+    class-(ii) path.
+  - **EO/D1-P5 (footprint — EO-12 carry-forward):** the single-command setup + deploy path should
+    handle the A2 native `onnxruntime-node`/`sharp` optionalDependency postinstall gracefully
+    (pnpm continues if it fails; lazy + T-D60 fallback). Watch the setup doesn't hard-fail on it.
+  - **EO/D1-P6 (merge):** squash (OQ-2).
+  Finding-set-diff: **0 dropped / 0 added** (D1 positions pre-registered, no findings yet). Now
+  reading D1 PR + diff. Last-seen: main `7d0a252` · auditor `8e8a99b` · D1 executor `874cb8c`.
