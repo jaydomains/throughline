@@ -248,3 +248,16 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   A2-aggravated) + scope decision — a discovered finding exceeding plan scope I will independently
   assess + corroborate to the spec-author. Finding-set-diff: `0 dropped / 0 added (B2 baseline)`.
   Next: read B2 diff + comments + CI, verify, then marker/findings.
+
+- **2026-06-07 — B2 review + final-marker (PR #145 @ `830bbf3`).** Read diff + comments (executor
+  marker, Gitar ✓) + CI. Verified: ci.yml hedge removed (comment-only, jobs untouched); AUTO_CONTINUE
+  item-2 hedge removed (B1 content intact); PLATFORM_STATUS:37 already "DONE" (untouched) → all three
+  consistent; no SPEC/PLATFORM_STATUS edit; based on `9501018`. **M-13 empirically corroborated** by
+  my own cohort observation (mergeable_state blocked→clean gated on `gate`). CI green at `830bbf3`
+  (`gate`✓×2 + `Gitar`✓). **Zero findings of my origination.** **B2-P7 surface:** corroborated the
+  executor's spec-author surface of the recurring rag.test.ts M-14 flake (~1-in-4, A2-aggravated,
+  B1+B2) as a discovered finding exceeding plan scope → scope decision (stabilization slice vs
+  Phase-F-deferred); not a B2 blocker (doc-only). Posted final-marker (this status commit) + approval
+  on #145. Last-seen remote HEADs: `main`@`9501018`, B2@`830bbf3`, overseer@`789bf68`, self@`26899fa`.
+  Finding-set-diff: `0 dropped / 0 added`. Round-trips: B2 0/5. Watcher `biub32c9f` armed (targeted
+  B2 + broad). Staying subscribed for B2 merge + B3.

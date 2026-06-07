@@ -12,6 +12,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **MERGED** — squash → `main` `7d0a252`; approved (EO-13 flake fix verified) |
 | D1 — deployment wiring (M-2) | #143 | `874cb8c` | **MERGED** — squash → `main` `fb25642`; M-2 closed; approved (setup+boot verified) |
 | B1 — governance doctrine: merge-method + halt 4–9 (M-7,M-8) | #144 | `2369d96` (was `4ebf3d4`) | **MERGED** — squash → `main` `9501018`; class-(iv); halt defs source-verified |
+| B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **final — approved by execution-auditor** (3 docs consistent; M-13 empirically corroborated) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -214,3 +215,30 @@ executor-fixed, and I verified it.
 
 Convergence (role §8) at `2369d96`: executor ✓ · execution-overseer (binds on its class-(iv)
 ratification confirm + green CI) · **execution-auditor ✓** (this marker). Merge squash (OQ-2).
+
+---
+
+## B2 (PR #145) — final — approved by execution-auditor @ `830bbf3`
+
+CI-enforcement reconciliation (M-13). Doc/yaml-only. All B2-P1…P7 + CP-1…8 Confirm. **Zero findings
+of my origination.**
+
+- **B2-P1/P2 — hedges removed:** `ci.yml` enforcement note (comment-only; workflow jobs untouched) +
+  `AUTO_CONTINUE` item-2 clause both now state `gate` is the enforcing required check on `main`
+  (`mergeable_state` blocked→clean). B1's §D/halt content intact (only the item-2 clause changed).
+- **B2-P3/P4 — three docs consistent:** `PLATFORM_STATUS:37` already says "required-check — DONE";
+  left untouched (M-10's domain). All three now read identically. No stray gate "advisory" survives
+  (the dependency "accepted-advisory register" is unrelated).
+- **M-13 empirically corroborated (my own observation):** across this cohort I directly saw
+  `mergeable_state: blocked` on #144 while `gate` was in_progress → `clean` after — which only occurs
+  if `gate` is a *required* check on `main`. The ruling + docs now match reality I verified.
+- **B2-P5/P6 — not a ratification class** (no SPEC/CODE_SPEC/DECISIONS); scope contained; based on
+  post-B1 `main` `9501018`. Gate green at `830bbf3` (`gate` ✓×2 + `Gitar` ✓).
+- **B2-P7 — rag.test.ts recurring-flake: corroborated surface (not a B2 blocker).** The M-14 flake
+  is recurring (~1-in-4, A2-aggravated, across B1+B2). B2 is doc/yaml-only → cannot cause/fix it. I
+  concur with the executor's surface to the spec-author: this **exceeds the plan's scope** (M-14 was
+  "no action / positive baseline") and warrants a **scope decision** — dedicated rag-stabilization
+  slice vs keep Phase-F-deferred. Surfaced to the human spec-author (authenticated channel).
+
+Convergence (role §8) at `830bbf3`: executor ✓ · execution-overseer (its lane) · **execution-auditor ✓**.
+Merge squash (OQ-2); execution is the overseer's.
