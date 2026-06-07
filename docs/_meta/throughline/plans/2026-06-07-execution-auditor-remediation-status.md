@@ -1,4 +1,4 @@
-# Execution-Auditor — Status (Audit-Remediation Cohort)
+# Execution-Auditor — Status (Audit-Remediation Cohort) — **COHORT COMPLETE (M-1…M-14); terminal stand-down**
 
 Per-slice final-marker status tokens. The marker is **content-bound** to the SHA's
 code/artifacts (role §8): a content-invariant commit elsewhere does not re-stale it; a
@@ -21,7 +21,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **MERGED** — squash → `main` `4873325`; M-3 closed |
 | B5 — ROADMAP/CHECKLIST back-fill (M-11) | #152 | `185ff31` | **MERGED** — squash → `main` `91f56b6` after EA-2 re-converge; M-11 closed |
 | B6 — README accuracy (M-12) | #153 | `ed7551a` | **MERGED** — squash → `main` `60e8f20`; M-12 closed |
-| M-10 — PLATFORM_STATUS full refresh (FINALE) | #154 | `ce90ca6` | **final — approved by execution-auditor** (all 14 PR#s + finding-map + posture cross-checked vs ground truth) |
+| M-10 — PLATFORM_STATUS full refresh (FINALE) | #154 | `ce90ca6` | **MERGED** — squash → `main` `42699ca`; **COHORT COMPLETE (M-1…M-14)** |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /

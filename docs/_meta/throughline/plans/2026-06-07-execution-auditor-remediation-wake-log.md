@@ -527,3 +527,17 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   Last-seen: `main`@`60e8f20`, M-10@`ce90ca6`, overseer@`d49e81f`, self@`5ce7d01`. Finding-set-diff:
   `0/0`. **ALL 14 FINDINGS CLOSED: M-1…M-14.** On overseer merge → chain closes → I verify via
   `git ls-remote` + terminal stand-down (§4.8: stop watcher, unsubscribe, end role).
+
+- **2026-06-07 — M-10 MERGED; COHORT COMPLETE; TERMINAL STAND-DOWN (§4.8/§8.4).** Watcher: overseer
+  `eb3490a`(marker) → `044530e` "M-10 merged (squash @ 42699ca) — COHORT COMPLETE (M-1..M-14) —
+  terminal stand-down." Merge **verified on remote** (§4.8, not the comment): `main`@`42699ca` =
+  squash `"M-10: … cohort COMPLETE (#154)"`; M-10 branch `claude/m10-platform-status` **deleted**.
+  Convergence honored at `ce90ca6` (3 markers + green CI). **ALL 14 FINDINGS RESOLVED: M-1…M-14**
+  across 15 merged PRs (#140–#154 incl. #146 rag-stab). Final tally — every slice signed off with
+  hands-on verification (installs/audits/boots/multi-run flake checks/canonical-source + git-log
+  cross-checks); findings I caught through the loop: **EA-1** (B1 line-13, corroborated Gitar),
+  **EA-2** (B5 #118 mis-cite, independently originated — held the gate, fix-round surfaced 2 more
+  Phase-E errors); plus corroborated the overseer's EO-13 (A3 vitest flake) and the rag-flake +
+  D3 estimate-breach surfaces; navigated 3 §8.3 authenticated-channel cycles (OQ-2, rag-stab Option-A,
+  D3 OQ-1 build→defer recency). Finding-set-diff: `0/0 (cohort closed)`. **Terminal stand-down:**
+  stopping the watcher; ending the role. self@`59a8ad3` (+ this final commit).
