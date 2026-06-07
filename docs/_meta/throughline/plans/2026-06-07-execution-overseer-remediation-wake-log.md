@@ -781,3 +781,12 @@ execution state when relevant.
   → content-changing → re-stales my + executor markers → re-verify + re-bind at the fixed SHA; auditor
   re-marks. **HOLDING.** Last-seen: main `4873325` · B5 exec `420a577` · auditor `e4109e9` · overseer
   `c511379`→(this commit).
+
+- **2026-06-07T20:0yZ — B5 EA-2 FIX `185ff31`; re-converging.** Executor pushed `185ff31` ("correct
+  PR cites"): #118 reassigned to the skill follow-up, planner.md → #119 (matches auditor EA-2).
+  Scope still ROADMAP+CHECKLIST only (no spec edit); content-changing → re-stales my + executor
+  `420a577` markers. Fix verified governance-clean. CI @ `185ff31`: Gitar ✓, gate 1 ✓, gate 2
+  in_progress. **Re-binding my marker @ `185ff31` once CI fully green.** Auditor (held EA-2) to
+  re-verify + mark @ `185ff31`. Convergence re-forms @ `185ff31`. HOLDING merge until 3 markers +
+  green CI there. Last-seen: main `4873325` · B5 exec `185ff31` · auditor `e4109e9` · overseer
+  `eb91341`→(this commit).
