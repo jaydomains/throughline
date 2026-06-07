@@ -668,3 +668,12 @@ execution state when relevant.
     watch-item (likely frontend-only slice, but confirm both gate runs green / no new flake).
   Finding-set-diff: **0 dropped / 0 added** (C1 positions pre-registered). Now reading C1 PR + diff.
   Last-seen: main `ed4e6bb` · auditor `be15f8e` · C1 exec `626dde8`.
+
+- **2026-06-07T19:2xZ** — C1 (PR #150) GOVERNANCE REVIEW posted (comment 4643760094). Scope:
+  **frontend-only** (sessionMarkdown.ts serializer + CopySessionMarkdown.tsx + SessionView mount +
+  styles + 2 tests) + docs; **NO spec-record edit** → normal slice (§7.20 made true by building, D1
+  pattern); base main `ed4e6bb`; independent. **EO-54 normal/no-spec-edit ✓ · EO-55 §7.20-made-true
+  (serializer + UI + 8 tests, no silent partial) ✓ · EO-56 gate pending CI.** Finding-set-diff:
+  **0 dropped / 3 added (EO-54…56)**. Marker HELD pending green CI @ `626dde8`. Execute directly on
+  convergence; squash. Last-seen: main `ed4e6bb` · auditor `be15f8e` · C1 exec `626dde8` · overseer
+  `8fe0a3d`→(this commit).
