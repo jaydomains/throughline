@@ -308,3 +308,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   plans/` (6). Pre-registered B3-P1…P7 before reading diff content. Fresh ls-remote: `main`@`8657adf`,
   B3@`615d034`, overseer@`0b3b2b3`, self@`7c4b9c6`. Finding-set-diff: `0 dropped / 0 added (B3
   baseline)`. Next: read diff + verify §5 vs live `ls` + §4 pointer vs post-B1 AUTO_CONTINUE, then marker.
+
+- **2026-06-07 — B3 review + final-marker (PR #147 @ `615d034`).** Read diff + comments (executor
+  marker, Gitar ✓) + CI. **§5 verified vs my own `ls`**: 6 live subdirs (plans/audits/handovers/
+  mockups/experiments/archive) all accounted for, no reconciliations/ — exact match; false denial
+  removed (M-9). **§4 halt-pointer** flipped to "Halt Classes" (resolves to real AUTO_CONTINUE:69),
+  three→nine, "owed work" gap → "Now codified (B1/M-8)" + line-202 provenance — closes the B1-flagged
+  loop (M-8). CN-4: REQUIRED_READING only, no role files. CI green at `615d034` (`gate`✓×2 + `Gitar`✓);
+  no flake (rag-stab holding). **Zero findings.** Posted final-marker (this status commit) + approval
+  on #147. Last-seen remote HEADs: `main`@`8657adf`, B3@`615d034`, overseer@`0fcedc8`, self@`91d54a9`.
+  Finding-set-diff: `0 dropped / 0 added`. Round-trips: B3 0/5. Closed: M-1,M-2,M-7,M-8,M-9,M-13,M-14.
+  Next: B4 (mermaid markers, class-ii; CN-8 §9 locus) — serialize w/ D3 on SPEC.md. Staying subscribed.

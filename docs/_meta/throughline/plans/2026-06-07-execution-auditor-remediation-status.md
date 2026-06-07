@@ -14,6 +14,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B1 — governance doctrine: merge-method + halt 4–9 (M-7,M-8) | #144 | `2369d96` (was `4ebf3d4`) | **MERGED** — squash → `main` `9501018`; class-(iv); halt defs source-verified |
 | B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **MERGED** — squash → `main` `17c193a`; M-13 closed; 3 docs consistent |
 | RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A) | #146 | `ac3510c` | **MERGED** — squash → `main` `8657adf` after authenticated confirm; M-14 stabilized |
+| B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **final — approved by execution-auditor** (§5 matches live `ls`; §4 pointer resolves) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -280,3 +281,25 @@ Spec-author-inserted stabilization slice (M-14, A2-aggravated rag.test.ts flake)
 Convergence (role §8) at `ac3510c`: executor ✓ · execution-overseer (HOLDING on its own authenticated
 confirmation of the insertion ruling — correct) · **execution-auditor ✓ (content)**. Merge squash
 (OQ-2); execution gated on the overseer's authenticated ratification, its lane.
+
+---
+
+## B3 (PR #147) — final — approved by execution-auditor @ `615d034`
+
+REQUIRED_READING reconciliation (M-9 §5 tree + M-8 §4 halt-pointer). Doc-only. All B3-P1…P7 +
+CP-1…8 Confirm. **Zero findings.**
+
+- **§5 tree (M-9) — verified vs live `ls`:** the false "no `experiments/` … only `mockups/`" denial
+  removed; corrected text + the §5 path-table together account for **all 6 live subdirs** (`plans/
+  audits/ handovers/ mockups/ experiments/ archive/`) and correctly state **no `reconciliations/`**.
+  Exact match to my own `ls docs/_meta/throughline/`.
+- **§4 halt-pointer (M-8, B1-deferred) — closes the B1-flagged loop:** section-pointer "The Three
+  Halt Classes" → "Halt Classes" (resolves to the real post-B1 section, AUTO_CONTINUE:69); "three
+  codified" → "nine codified" with 4–9 listed; the "owed work" gap blockquote → "Now codified
+  (B1/M-8)" with line-202 provenance. No stale "owed work" / "treat only the three" claim remains.
+- **Scope (CN-4):** REQUIRED_READING only; `.claude/roles/*` untouched (externalized design intact);
+  no SPEC/CODE_SPEC/DECISIONS/AUTO_CONTINUE. Based on post-B1 `main` `8657adf`.
+- **Gate:** green at `615d034` (`gate` ✓×2 + `Gitar` ✓); 610/204, no flake (rag-stabilization holding).
+
+Convergence (role §8) at `615d034`: executor ✓ · execution-overseer (its lane) · **execution-auditor ✓**.
+Merge squash (OQ-2); not a ratification class.
