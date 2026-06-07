@@ -223,3 +223,24 @@ execution state when relevant.
   `4e70186`) · CI green. Execution gate remaining: auditor marker @ `4e70186` content. Merge =
   squash; Group A closes with A3. Last-seen: main `7632f1a` · A3 executor `4e70186` · auditor
   `1cb90d1` · overseer `ebc9005`→(this commit).
+
+- **2026-06-07T09:5xZ** — **A3 (PR #142) MERGED — GROUP A COMPLETE.** Auditor posted A3
+  final-marker @ `4e70186` (`25d4cb6`; **zero findings**; independently verified EO-13 fix —
+  gatesView 10/10 + full suite ×2; independent `pnpm audit` prod+full = **0 vulnerabilities**;
+  610/204 on vitest 4, builds on vite 8; backend retains fastify 5.8.3 + huggingface 3.8.1).
+  Notably the auditor **credited the overseer's two-run gate** for catching the flake its own
+  single-run review (the lucky 204/204 at `d5a897f`) missed — three-party gate worked as designed.
+  Gate re-confirmed from ground truth: 3 markers @ one content `4e70186` · CI green (gate ✓×2 ·
+  Gitar ✓) · `mergeable_state: clean` · base main `7632f1a` unchanged · A3 not a ratification class
+  · override window collapsed (standing authorization) · method **squash**. **Executed: flip
+  draft→ready → squash-merge.** Merge `7d0a252 merged:true`; **verified via `git ls-remote`**: main
+  `7632f1a`→`7d0a252`, A3 branch **deleted**, react-router 6.30.4 / vite 8 / vitest 4 on main.
+  Merge-confirmation posted (PR #142). Finding-set-diff: **0 dropped / 0 added** (A3 EO set closed
+  at merge). **GROUP A COMPLETE (A1+A2+A3): M-1 fully closed — deploy-blocking Critical + 7 High +
+  residual tail all resolved; audit tree 15 → 0.** Loop state: **awaiting D1** (deployment wiring —
+  point `start` at built artifact + provide single-command setup; after Group A, shared
+  package.json). **D1 watch:** conditional class-(ii) — *only if* the SPEC §11 fallback (amend
+  SPEC §11) is taken (M-2 is planner-scoped, **no settled ruling**), in which case I'd **surface to
+  spec-author**; the primary path (provide single-command setup, no spec edit) is a normal slice.
+  Re-arming watcher for D1. Last-seen: main `7d0a252` · auditor `25d4cb6` · overseer
+  `86e682d`→(this commit).
