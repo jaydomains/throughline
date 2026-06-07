@@ -720,3 +720,12 @@ execution state when relevant.
   - **EO/D2-P5 (merge):** squash. **EO/D2-P6 (gate):** green.
   Finding-set-diff: **0 dropped / 0 added** (D2 positions pre-registered). Now reading D2 PR + diff.
   Last-seen: main `c3c1db4` · auditor `1bfb519` · D2 exec `d528366`.
+
+- **2026-06-07T19:4xZ** — D2 (PR #151) GOVERNANCE REVIEW posted (comment 4643807244). Scope:
+  frontend-only (EntityPicker.tsx + IntelligenceView.tsx + 2 tests) + docs; **NO spec edit** → normal
+  slice (UX fix; SPEC §7.18 silent on mechanism); base main `c3c1db4`; independent. **EO-57 normal/
+  no-spec ✓ · EO-58 completeness — all 3 entity surfaces (retro session/stakeholder item/chat-session)
+  converted, dump_zone correctly kept text (non-entity context, justified) → not a silent partial ✓ ·
+  EO-59 gate pending CI.** Finding-set-diff: **0 dropped / 3 added (EO-57…59)**. Marker HELD pending
+  green CI @ `d528366`. Execute directly on convergence; squash. Last-seen: main `c3c1db4` · auditor
+  `1bfb519` · D2 exec `d528366` · overseer `14e4689`→(this commit).
