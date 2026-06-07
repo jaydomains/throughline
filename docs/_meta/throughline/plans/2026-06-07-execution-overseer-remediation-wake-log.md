@@ -205,3 +205,21 @@ execution state when relevant.
   surface (normal within-trio flake finding, not class-iv/scope-expansion/halt). Merge = squash.
   Last-seen: main `7632f1a` · auditor `1cb90d1` (A3 pre-reg) · A3 executor `d5a897f` · overseer
   `ec20213`→(this commit).
+
+- **2026-06-07T09:5xZ** — A3 EO-13 **RESOLVED** + **final-marker BOUND** @ `4e70186`. Executor
+  pushed fix-round `4e70186` ("stabilize gatesView test race under vitest 4"): root-cause fix
+  `getByTestId`→`await findByTestId('gate-status-structure-check')` (retries async `listGateFirings`
+  node), **assertions unchanged**; +wake-log. On-wake pairing: diffed the fix (correct, minimal,
+  in-scope), read executor's EO-13 reply (comment 4642114485 — independently root-caused; 4/4
+  consecutive green + ×2 full suite; scanned anti-pattern, only instance; pre-existing race not a
+  GatesView regression; re-affirmed marker @ `4e70186`). **Verified BOTH `gate` runs green @
+  `4e70186`** (push+PR) + Gitar ✓ → flake stabilized (not lucky-pass). **EO-13 dropped (resolved);
+  circuit-breaker closed 1/5.** Re-verified A3 positions at new content: **EO-14 scope ✓ · EO-15
+  gate reliably green ✓ · EO-16 PLATFORM_STATUS untouched (§3.B) + tree→zero, no accepted-residual
+  ✓.** Posted final-marker (comment 4642119107): **Status: final — approved by execution-overseer @
+  `4e70186`** (content-bound). A3 = normal slice (not ratification) → execute directly, no human
+  surface. Finding-set-diff: **1 dropped (EO-13) / 3 added (EO-14,15,16)**. **Convergence:** executor
+  ✓ (@`4e70186`) · overseer ✓ · **execution-auditor PENDING** (must verify fix + audit-to-zero @
+  `4e70186`) · CI green. Execution gate remaining: auditor marker @ `4e70186` content. Merge =
+  squash; Group A closes with A3. Last-seen: main `7632f1a` · A3 executor `4e70186` · auditor
+  `1cb90d1` · overseer `ebc9005`→(this commit).
