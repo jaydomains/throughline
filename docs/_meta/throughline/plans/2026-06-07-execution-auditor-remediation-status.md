@@ -17,6 +17,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
 | B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
 | D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **MERGED** — squash → `main` `ed4e6bb` after authenticated OQ-1=defer; M-6 closed |
+| C1 — per-session markdown export build (M-5) | #150 | `626dde8` | **final — approved by execution-auditor** (build verified: serializer + 8 tests; §7.20 now true) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -364,3 +365,31 @@ recency+auth boundary recorded. All D3-P1…P7 + CP-1…8 Confirm. **Zero findin
 
 Convergence (role §8) at `d7e7251`: executor ✓ · execution-overseer (its lane; needs own auth of
 OQ-1=defer) · **execution-auditor ✓ (content)**. Merge squash (OQ-2).
+
+---
+
+## C1 (PR #150) — final — approved by execution-auditor @ `626dde8`
+
+M-5 per-session markdown export **build** (pure frontend). All C1-P1…P7 + CP-1…8 Confirm. **Zero
+findings of my origination.**
+
+- **Serializer (C1-P1/P7) — read + verified:** `sessionToMarkdown(session, items)` is pure/
+  deterministic; `# name` (fallback "Untitled session"), pluralized count, context, empty-session
+  handling, type-grouping with title-cased headers, per-item status/description(multi-line)/blocker_text/
+  **blocker id→title resolution (T-D8, falls back to id)**/tags/branch. Well-formed, paste-ready.
+- **Tests (C1-P4) — ran them:** new `sessionMarkdown.test.ts` (6) + `copySessionMarkdown.test.tsx`
+  (2) = **8/8**; full frontend **212/212** (204 + 8); backend 610 unchanged — no regression. The
+  interaction test exercises click→`clipboard.writeText`(serialized md)→"Copied!" + the failure path.
+- **§7.20 made true, no spec edit (C1-P3):** `grep sessionToMarkdown` finds the implementation →
+  the "shipped v1 export surface" claim is now honest **without** a SPEC amendment (D1-pattern). No
+  SPEC/CODE_SPEC/backend edit → **not a ratification class**.
+- **Scope (C1-P5/P6):** frontend only (serializer, button, SessionView, styles, 2 tests) + docs;
+  pure-frontend off already-loaded session+items (correct — no backend round-trip needed). Gate green
+  at `626dde8` (`gate` ✓×2 + `Gitar` ✓).
+- **Gitar optional nit (non-blocking, not my finding):** the copy button feedback doesn't auto-reset
+  to idle — but it **mirrors the existing `PromptFillModal` pattern** (codebase-consistent) and the
+  feature works correctly. Optional polish (timed reset); per role §6 not a finding. Executor may fold
+  it or leave it per convention; doesn't gate convergence (Gitar "Approved").
+
+Convergence (role §8) at `626dde8`: executor ✓ · execution-overseer ✓ (EO-54…56) · **execution-auditor ✓**.
+Normal slice → overseer auto-merges (squash, OQ-2).

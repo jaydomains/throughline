@@ -406,3 +406,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   also pre-read (8fe0a3d). Pre-registered C1-P1…P7 before reading content. Fresh ls-remote:
   `main`@`ed4e6bb`, C1@`626dde8`, overseer@`8fe0a3d`, self@`be15f8e`. Finding-set-diff: `0/0`.
   Next: read serializer + run new tests (hands-on build verify) + confirm §7.20 claim true / no spec edit.
+
+- **2026-06-07 — C1 review + final-marker (PR #150 @ `626dde8`).** Read serializer
+  (`sessionToMarkdown` — pure, well-formed, T-D8 blocker id→title resolution, empty/plural/grouping
+  edge cases); **ran tests** in worktree: 8/8 new + 212/212 frontend, backend 610 unchanged. §7.20
+  made true by building (no spec edit) → not ratification class; pure-frontend off loaded data (no
+  backend). CI green at `626dde8`; overseer EO-54..56 + marker (normal slice). **Gitar optional nit**
+  (copy feedback doesn't auto-reset) — mirrors existing PromptFillModal pattern, low-impact optional,
+  per role §6 NOT my finding; non-blocking. **Zero findings of my origination.** Posted marker (this
+  commit) + approval on #150. Last-seen: `main`@`ed4e6bb`, C1@`626dde8`, overseer@`1ebccda`,
+  self@`f174cae`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-4,M-5(pending merge),M-6,M-7,M-8,M-9,M-13,M-14.
+  Next (posture): executor auto-starts D2 (M-3 UUID picker). Watcher armed.
