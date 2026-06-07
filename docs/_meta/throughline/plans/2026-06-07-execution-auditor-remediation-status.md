@@ -15,7 +15,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **MERGED** — squash → `main` `17c193a`; M-13 closed; 3 docs consistent |
 | RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A) | #146 | `ac3510c` | **MERGED** — squash → `main` `8657adf` after authenticated confirm; M-14 stabilized |
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
-| B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **final — approved by execution-auditor** (class-(ii); §9 locus; M-4 completeness verified) |
+| B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /

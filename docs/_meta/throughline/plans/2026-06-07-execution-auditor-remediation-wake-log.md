@@ -352,3 +352,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `main`@`02871df`, B4@`e701358`, overseer@`310f27d`, self@`7865381`. Finding-set-diff: `0/0`.
   Closed: M-1,M-2,M-4,M-7,M-8,M-9,M-13,M-14. Next: per posture, executor auto-starts D3 (build,
   class-iii — special gating). Staying subscribed.
+
+- **2026-06-07 — B4 MERGED; M-4 closed.** Watcher: overseer `b7e3594` (EO-43..49) → `fd75057`
+  (marker @e701358) → `fd791b3` "B4 merged (squash @ dbb7a13); M-4 closed; relayed OQ-1=build for D3
+  needs direct confirm; surfacing." Merge **verified on remote** (§4.8): `main`@`dbb7a13` = squash
+  `"B4: … (#148)"`; branch deleted. Convergence honored at `e701358`. Last-seen: `main`@`dbb7a13`,
+  overseer@`fd791b3`, self@`fb6db04`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-4,M-7,M-8,M-9,M-13,M-14
+  (8/14). **Next: D3** (bootstrap merge_fields+archive — OQ-1=BUILD; class-(iii) scope expansion +
+  relayed ruling). Plan scoped D3-build as OUT-OF-COHORT → I will (a) confirm OQ-1=build with the
+  human via my authenticated channel for my sign-off, (b) assess estimate-breach/halt-4 on the build
+  size, (c) note the overseer needs its OWN direct auth before merge (rag-stab §8.3 pattern; overseer
+  already surfacing). Watcher armed. Will pre-register D3 positions before its diff.
