@@ -9,6 +9,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 |---|---|---|---|
 | A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **MERGED** — squash → `main` `36be75a`; approved by execution-auditor |
 | A2 — embeddings stack / protobufjs Critical (M-1) | #141 | `2b1f4fda` | **MERGED** — squash → `main` `7632f1a`; approved by execution-auditor (class-(i)/(ii)) |
+| A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **final — approved by execution-auditor** (EO-13 flake fix verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -95,3 +96,46 @@ authenticated; the ratification disposition itself is the overseer's to execute.
 Convergence (role §8): executor ✓ @ `2b1f4fda` · execution-overseer ✓ (binding on green CI, now
 green) · **execution-auditor ✓ @ `2b1f4fda`** (this marker). Merge method squash (OQ-2 ruled);
 execution is the overseer's.
+
+---
+
+## A3 (PR #142) — final — approved by execution-auditor @ `4e70186`
+
+Both axes verified against the actual code **and an independent install + audit + multi-run test +
+build**. All A3-P1…P7 + cohort CP-1…8 are Confirms; **zero findings of my origination**. I
+independently **corroborate and verify-as-resolved** the overseer's EO-13 (the vitest-4 flake).
+
+- **Fidelity-to-plan:** implements A3's §5 scope (residual sweep + posture statement feeding M-10).
+  **Version-magnitude drift (flagged, verified clean — not a finding):** plan named "vite 5→6";
+  executor went to current-stable vite 8 / vitest 4 / @vitejs/plugin-react 6. vitest **4.1.0 is the
+  advisory floor** (a dev-tree Vitest-UI Critical), so vitest had to go to 4.x regardless; vite 8 vs
+  the 6.4.2 minimum is executor discretion within the plan's "clean bump" mandate (plan explicitly
+  anticipated "could be larger"). Transparently flagged; I verified it clean (610/204 + build +
+  audit 0) — consistent with how A1/A2 version choices were handled. "I'd have pinned the minimum
+  floor" is not a finding (role §6).
+- **Correctness (independently verified):**
+  - **react-router 6.30.4** resolved (A3-P1); `pnpm audit --prod` **and** full `pnpm audit` both
+    **0 vulnerabilities** at `d5a897f` (carries forward — `4e70186` only changed a test file +
+    wake-log) (A3-P2/P6).
+  - **No regression:** backend **610/610** + frontend **204/204** on vitest 4; frontend **builds on
+    vite 8** (via `pnpm -r build`, shared-first) (A3-P4).
+  - **EO-13 (overseer's flake finding) — independently verified RESOLVED.** `gatesView.test.tsx`
+    raced the async `listGateFirings` node under vitest 4's scheduling (bare `getByTestId` after
+    `waitFor(container)`). Fix at `4e70186`: `findByTestId` (retries the async node) — a proper
+    root-cause fix, assertions **unchanged** (not a weakening, not re-run-until-green, plan §3.C).
+    **My determinism check: gatesView 10/10 green + full frontend suite 204/204 ×2** — the flake is
+    genuinely gone, not a lucky pass. *(Honest note: my single suite run at `d5a897f` got the lucky
+    pass; the overseer's two-run gate caught the split. The three-party gate worked — I verified the
+    fix rigorously in my correctness lane.)*
+  - **Scope/retention (A3-P5):** touches only dep manifests + lockfile + A3 docs; no
+    PLATFORM_STATUS (M-10's), no SPEC, no `start` (D1); backend retains `fastify ^5.8.3` (A1) +
+    `@huggingface/transformers ^3.8.1` (A2).
+- **Gate:** three-layer green at `4e70186` — `gate` ✓×2 + `Gitar` ✓; `mergeable_state: clean`.
+  Reliably green (my multi-run determinism evidence beyond the single CI run).
+- **Group A closeout:** with A1+A2+A3 the audited tree goes **15 → 0**; the deploy-blocking
+  exposure (M-1) is fully resolved. Posture statement (corrects "mere version bumps") recorded in
+  the handover for M-10; A3 is not a ratification class.
+
+Convergence (role §8) at `4e70186`: executor ✓ · execution-overseer (binds on its EO-13-resolved
+re-verify) · **execution-auditor ✓** (this marker). Merge squash (OQ-2); execution is the overseer's.
+EO-13 thread (overseer↔executor): resolved round 1; my corroboration adds no open thread.

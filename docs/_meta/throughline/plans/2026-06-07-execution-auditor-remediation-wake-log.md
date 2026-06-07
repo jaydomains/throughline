@@ -128,3 +128,22 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `0 dropped / 0 added (A3 baseline — positions pre-registered, no findings yet)`. Round-trips: none.
   Next: read A3 diff + independently verify (react-router ≥6.30.4, fresh pnpm audit, vite-major
   frontend build+tests, no A1/A2 revert), then post findings or marker once the PR/markers land.
+
+- **2026-06-07 — A3 review across the EO-13 fix-round + final-marker (PR #142 @ `4e70186`).**
+  Reviewed at `d5a897f` first (independent worktree: react-router 6.30.4; `pnpm audit --prod` &
+  full both 0; backend 610; frontend 204; frontend build via `pnpm -r build`). **Self-correction:**
+  my isolated `pnpm build` (frontend-only) failed on `Rolldown couldn't resolve @throughline/shared`
+  — same monorepo-ordering cause as A1; `pnpm -r build` (shared-first) passes. Then head moved
+  `d5a897f→4e70186`: **overseer EO-13 (BLOCKING)** caught a `gatesView.test.tsx` flake under vitest 4
+  (two `gate` runs at d5a897f split FAILURE/SUCCESS). My single d5a897f suite run got the lucky pass;
+  the overseer's two-run gate caught the split — three-party gate worked. Executor fixed at `4e70186`
+  (`findByTestId` retries the async node; assertions unchanged — root-cause, not re-run). **I
+  independently verified the fix:** gatesView **10/10** + full frontend suite **204/204 ×2**
+  (deterministic). CI green at `4e70186` (`gate`✓×2 + `Gitar`✓; mergeable clean). All A3-P1…P7 +
+  CP-1…8 Confirms; the vite-8-vs-named-6 magnitude is flagged-clean drift (vitest 4.1.0 is the
+  advisory floor), not a finding. **Zero findings of my origination; EO-13 corroborated & verified
+  resolved.** Posted final-marker (this status commit) + approval on #142. Last-seen remote HEADs
+  (`git ls-remote`): `main`@`7632f1a`, A3@`4e70186`, overseer@`ebc9005`, self@`1cb90d1`.
+  Finding-set-diff: `0 dropped / 0 added (A3 — all Confirms; EO-13 is overseer-originated, verified
+  resolved)`. Round-trips: A3 (my lane) 0/5; EO-13 (overseer↔executor) resolved r1. Group A complete
+  (15→0). Staying subscribed for the A3 merge + Group B (B1 governance — class-iv, OQ-2 already ruled).
