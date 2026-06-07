@@ -161,3 +161,27 @@ execution state when relevant.
   ratification class per plan §4 → execute directly on convergence; serial on package.json after
   A2). Re-arming watcher (timed out) for A3. Last-seen: main `7632f1a` · auditor `0067af4` ·
   overseer `6134384`→(this commit).
+
+- **2026-06-07T09:xxZ** — A3 executor branch `claude/a3-residual-sweep` @ `d5a897f` detected.
+  **A3 pre-read governance positions (BEFORE reading the diff — anti-anchoring §4.2):**
+  - **EO/A3-P1 (scope):** A3 = residual advisory sweep after A1+A2 — address remaining Moderate
+    advisories (react-router; E17a-deferred vite/esbuild) where a clean bump exists, lockfile, +
+    record an honest dep-posture statement. Base must be current `main` @ `7632f1a` (serial on
+    package.json after A2). Must not touch other slices' files.
+  - **EO/A3-P2 (PLATFORM_STATUS collision — KEY WATCH):** plan §5 A3 *intent* is to correct the
+    "mere version bumps" mischaracterization, but the **deliverable + collision rule** say A3
+    records the corrected posture text **in its handover, ready for M-10 to fold into
+    PLATFORM_STATUS** — **M-10 is the LAST slice and owns the PLATFORM_STATUS full refresh; never
+    open it early (plan §3.B / §6)**. So A3 should **NOT directly edit `PLATFORM_STATUS.md`**. If it
+    does, that's a sequencing/collision finding (Push-back). The posture text belongs in the A3
+    handover.
+  - **EO/A3-P3 (honest residual):** any accepted residual must carry an explicit reachability
+    rationale (127.0.0.1 bind, single-user, lazy path) — not silently dropped. `pnpm audit --prod`
+    clean OR an explicitly-recorded accepted-residual set.
+  - **EO/A3-P4 (ratification / merge):** A3 is a **normal slice** (plan §4 — auto-merges on the
+    standard gate; not a ratification class). Merge method **squash** (OQ-2). Execute directly on
+    convergence.
+  - **EO/A3-P5 (gate + flake):** three-layer gate green; if A3 bumps vite (frontend build), watch
+    for breakage; any flake is a finding, not a re-run.
+  Finding-set-diff: **0 dropped / 0 added** (A3 positions pre-registered, no findings yet). Now
+  reading A3 PR + diff. Last-seen: main `7632f1a` · auditor `b455300` · A3 executor `d5a897f`.
