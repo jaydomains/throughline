@@ -7,7 +7,7 @@ import type { SembleService } from '../src/semble/service.js';
 import { createProjectsService } from '../src/projects/service.js';
 import { createItemsService } from '../src/items/service.js';
 import { createLibraryService } from '../src/library/service.js';
-import { createTextEmbedder, type TextEmbedder } from '../src/intelligence/embeddings.js';
+import { createFallbackEmbedder, type TextEmbedder } from '../src/intelligence/embeddings.js';
 import { ProjectNotFoundError } from '@throughline/shared';
 import { createRagService, routeQuery } from '../src/intelligence/rag.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
@@ -93,7 +93,10 @@ async function setup(
         summarised: false,
       }),
     anthropic,
-    embedder: embedder ?? createTextEmbedder(),
+    // Pin the default to the deterministic fallback (T-D60) so the suite is reproducible
+    // regardless of whether the optional real model loads under full-suite concurrency.
+    // Tests exercising a specific embedder still inject their own (throwing/queryFailing).
+    embedder: embedder ?? createFallbackEmbedder(),
   });
   const project = projects.create({ name: 'p1', repo_path: '/tmp/p1' });
   return { backend, projects, items, library, rag, project, cleanup: () => backend.cleanup() };
