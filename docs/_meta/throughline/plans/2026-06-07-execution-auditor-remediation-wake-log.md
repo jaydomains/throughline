@@ -225,3 +225,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   self@`4e30a54`. Finding-set-diff: `0 dropped / 0 added`. Round-trips: B1 (my lane) 0/5; EA-1
   (Gitar↔executor) resolved. Ratification class-(iv) = overseer's lane (M-7/M-8 settled; OQ-2 squash).
   Watcher timed out — re-arm next. Staying subscribed for B1 merge + B2/B3.
+
+- **2026-06-07 — B1 MERGED; M-7+M-8 closed.** Watcher fired: overseer `1bcbb47`/`8d3dc9f` = B1 review
+  (EO-23..27, halt-provenance independently verified — converges with my line-202 check) + marker
+  rebind @ `2369d96` + "B1 merged (squash @ 9501018); awaiting B2." Merge **verified on remote**
+  (§4.8): `main`@`9501018` = squash `"B1: … (#144)"`; B1 content (halt 4–9 + dual-context §D) present
+  on `main`; B1 branch deleted. Convergence honored at `2369d96` (executor ✓ + overseer ✓ + auditor ✓
+  + green CI; class-(iv) ratification confirmed by overseer, M-7/M-8 settled). Last-seen remote HEADs:
+  `main`@`9501018`, overseer@`8d3dc9f`, self@`97dc768`. Finding-set-diff: `0 dropped / 0 added (B1
+  closed)`. **Next: B2** (CI-enforcement reconciliation, M-13 — after B1, shares AUTO_CONTINUE; gate
+  is required on main, remove "advisory" language) then **B3** (REQUIRED_READING — §5 tree + the §4
+  halt-pointer B1 flagged; after B1). Watcher armed; will pre-register B2 positions before its diff.
