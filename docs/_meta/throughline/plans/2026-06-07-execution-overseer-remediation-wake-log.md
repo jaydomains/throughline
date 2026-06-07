@@ -85,3 +85,31 @@ execution state when relevant.
   cycle / standing-driver posture: **NOT** bounded-stand-down between slices — staying actively
   subscribed; re-arming watcher (`claude/` scope) for the next executor slice + auditor. Last-seen:
   overseer `cbf43fd`→(this commit) · main `36be75a` · auditor `2bf23a5` · executor branch gone.
+
+- **2026-06-07T08:5xZ** — A2 executor branch `claude/a2-embeddings-protobufjs` @ `2b1f4fda`
+  detected (REF wake). **A2 pre-read governance positions (recorded BEFORE reading the diff —
+  anti-anchoring §4.2):**
+  - **EO/A2-P1 (ratification class-(i) — C-D2):** A2 amends C-D2 (anchor). This is a §8.3(i)
+    ratification class → does **NOT** auto-merge. M-1 is settled (my dispatch brief), so
+    ratification should **collapse to ~0**, BUT only after I (a) confirm M-1 is **current** via the
+    authenticated channel and (b) verify the **C-D2 amendment matches the settled intent** — the
+    amendment must reflect the new embeddings stack **and** the already-true hard-dep reality
+    (currently mis-described as "optional first-launch download"; already narrowed by T-D60). A bad
+    C-D2 edit ≠ ruled; I hold if it overreaches the anchor's intent.
+  - **EO/A2-P2 (EO-6 carry-forward):** the `@xenova/transformers` `optionalDependencies` nuance
+    must be reconciled in the C-D2 text (the "optional" key bears on the "optional first-launch
+    download" wording). Verify the amendment addresses it, not papers over it.
+  - **EO/A2-P3 (scope):** A2 = embeddings-stack swap only (`@xenova/transformers@2` →
+    `@huggingface/transformers@3` per plan, or whatever actually clears the advisory) + lockfile +
+    `embeddings.ts` API adaptation + C-D2 body. Must **not** touch other slices' files. Base must
+    be current `main` @ `36be75a` (A1 landed; serial on `package.json`).
+  - **EO/A2-P4 (advisory clearance, the substantive bar):** the **Critical protobufjs** (+4 High)
+    must actually be **cleared in the resolved tree** — override-alone can't lift it (onnx-proto@4
+    pins protobufjs ^6.8.8), so a real stack swap is required. Verify `pnpm audit --prod` before/
+    after; the Critical must be gone, not merely re-pinned.
+  - **EO/A2-P5 (flake — P-FLAKE):** A2 exercises `rag.test.ts` (flagged flake). Any CI failure is a
+    **finding to root-cause/stabilize, never re-run-until-green** — rests on the already-codified
+    circuit-breaker floor (A2 precedes B1's extended-halt codification).
+  - **EO/A2-P6 (merge method):** **squash** (OQ-2 ruled, class-iv on record) — applies to A2.
+  Finding-set-diff: **0 dropped / 0 added** (A2 positions pre-registered, no findings yet). Now
+  reading the A2 PR + diff. Last-seen: main `36be75a` · auditor `2bf23a5` · A2 executor `2b1f4fda`.
