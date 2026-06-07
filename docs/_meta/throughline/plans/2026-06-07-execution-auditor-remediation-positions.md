@@ -392,6 +392,30 @@ CN-7 + the §8.3 recency rule). Seen the PR body (notes OQ-1 reversed build→de
 - **D3-P7 — scope + gate.** SPEC.md §7.27 + docs only; serialize-with-B4 on SPEC.md satisfied (B4
   merged); gate green at head; 610/204.
 
+## B10. Slice C1 positions (PR #150 `claude/c1-markdown-export` @ `626dde8` — per-session markdown export build, M-5)
+
+**Pre-registered 2026-06-07, before reading the C1 diff content** (derived from plan §5 C1). Build
+slice; normal-class.
+
+- **C1-P1 — serializer builds well-formed markdown.** `sessionToMarkdown(session, items)` produces
+  paste-ready markdown (session name/context + items, formatted for paste-back into Claude Code).
+  Verify the logic + edge cases (empty session, blocker id→title resolution, tags, status).
+- **C1-P2 — "Copy as markdown" affordance.** A per-session button using
+  `navigator.clipboard.writeText`, with copied/error feedback. Mounted on the session view.
+- **C1-P3 — §7.20 claim now TRUE, no spec edit.** The implementation exists → the "shipped v1
+  export surface" claim becomes honest **without** a SPEC amendment (the "make the claim true"
+  approach). Verify NO SPEC/CODE_SPEC edit → not a ratification class.
+- **C1-P4 — tests + no regression.** Serializer unit tests + a copy interaction test; 204→212
+  frontend (8 new), 610 backend unchanged. **I run the new tests** to confirm they pass and actually
+  exercise the serializer/clipboard path (not vacuous).
+- **C1-P5 — pure-frontend is correct.** Plan allowed a thin backend route only if the frontend
+  payload is insufficient; the frontend already holds session+items, so pure-frontend is the right
+  call — verify the data it serializes is actually available client-side.
+- **C1-P6 — scope contained.** Frontend only (serializer, button, SessionView, styles, tests); no
+  backend, no SPEC, no other slices' files; based on `main` `ed4e6bb`.
+- **C1-P7 — output correctness (hands-on).** Read the serializer + its test assertions; confirm the
+  markdown is well-formed and genuinely paste-ready (headers, grouping, no broken refs). Gate green.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).

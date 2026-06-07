@@ -399,3 +399,10 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   per-session markdown export — a real BUILD slice; hands-on verify the serializer + copy affordance
   + tests). Then D2 (M-3), B5 (M-11), B6 (M-12), M-10 (last, CN-9). Watcher armed. Will pre-register
   C1 positions before its diff.
+
+- **2026-06-07 — C1 intake + positions (PR #150 @ `626dde8`).** Watcher: new ref
+  `claude/c1-markdown-export` = M-5 per-session markdown export BUILD (pure frontend: sessionMarkdown.ts
+  serializer + CopySessionMarkdown.tsx + SessionView + 8 new tests, 204→212; no spec edit). Overseer
+  also pre-read (8fe0a3d). Pre-registered C1-P1…P7 before reading content. Fresh ls-remote:
+  `main`@`ed4e6bb`, C1@`626dde8`, overseer@`8fe0a3d`, self@`be15f8e`. Finding-set-diff: `0/0`.
+  Next: read serializer + run new tests (hands-on build verify) + confirm §7.20 claim true / no spec edit.
