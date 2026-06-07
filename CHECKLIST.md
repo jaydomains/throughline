@@ -646,12 +646,14 @@ Closed audits 1–5 findings; plan `plans/2026-05-30-phase-e-full-audit-close.md
 - [x] **E14** — Audit-trail wiring (SF7-01/02/03/05) · #101
 - [x] **E15** — Frontend races & error surfacing (S8-01..04, SF6-09) · #102
 - [x] **E16** — Audit-3 spec-contradiction bugs (F6-01, F1-03, SF3-04) · #103
-- [x] **E17a** — Dependency in-range bump remediation (protobufjs/vite/esbuild) · #104
+- [x] **E17a** — Dependency remediation recorded as deferred-major (Option 1) · #109
 - [x] **E17** — Product-decision gate (spec-author ruling encoded; appended E19–E26) · #104
 - [x] **E19** — Per-entry library semantic search (F7-03) · #110
 - [x] **E20a** — Session-start full inputs + project_spec type; **T-D10** amendment · #111
 - [x] **E20b** — Project-spec LLM-assist revision · #114
 - [x] **E21** — Dump-zone primary-unit re-route (F5-04) · #112
+- [x] **E22** — Audit-log filters: time range, actor, trigger type (F7-04) · #105
+- [x] **E23** — Methodology-parsing visibility (SF2-07, SF2-08) · #106
 - [x] **E24** — Residual frontend swallows + SF-ID accountability (SF6-10/11) · #113
 - [x] **E25** — Cluster-B residual bugs (F6-02, F1-02) · #107
 - [x] **E26** — Minors cleanup + doc fixes (F1-04, F8-01, I8) · #108
@@ -661,8 +663,8 @@ Closed audits 1–5 findings; plan `plans/2026-05-30-phase-e-full-audit-close.md
 
 Transportable role-prompt governance model + audit trio + `REQUIRED_READING.md` project-parameter layer. Wake-logs in `plans/2026-06-0*-*-role-file-*`.
 
-- [x] **counterpart-change-detector skill** — transportable async-loop watcher · #117
-- [x] **planner.md** (+ overseer-executes-merge amendment) · #118/#119
+- [x] **counterpart-change-detector skill** — transportable async-loop watcher · #117 (skill follow-up · #118)
+- [x] **planner.md** (+ overseer-executes-merge amendment) · #119
 - [x] **plan-auditor.md** · #121
 - [x] **plan-overseer.md** · #122 *(subagent variant #123 rolled back by #124)*
 - [x] **§8 back-port** (planner + plan-auditor, class-iv) · #125
