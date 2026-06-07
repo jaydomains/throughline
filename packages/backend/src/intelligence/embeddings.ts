@@ -1,10 +1,15 @@
 import { createHash } from 'node:crypto';
 
 // C-D2 — local embeddings for the text RAG substrate (T-D25, T-D31). C-D2 mandates
-// Transformers.js (`@xenova/transformers`, an all-MiniLM-L6-v2 ONNX). It is wired behind
-// a *lazy dynamic import* and declared an optionalDependency: when the package and its
-// first-launch model download are present the real embedder runs; otherwise a
-// deterministic offline embedder takes over. This matches the codebase's capability-gating
+// Transformers.js (`@huggingface/transformers`, an all-MiniLM-L6-v2 ONNX). It is wired
+// behind a *lazy dynamic import* and declared an optionalDependency: when the package and
+// its first-launch model download are present the real embedder runs; otherwise a
+// deterministic offline embedder takes over. (A2 / M-1, 2026-06-07: the package was renamed
+// from the deprecated `@xenova/transformers@2` to its maintained successor
+// `@huggingface/transformers@3`, whose newer onnxruntime resolves `protobufjs@>=7.5.8` and
+// clears the Critical RCE + High/Moderate advisories the old onnx-proto@4 chain pinned. The
+// lazy-import + optionalDependency shape and the all-MiniLM-L6-v2/384-dim contract are
+// unchanged.) This matches the codebase's capability-gating
 // discipline (Semble absent, Anthropic key absent) and keeps the substrate fully offline
 // and the build/tests green without a network round-trip. The fallback is a hashed
 // token-gram vector — lexical-overlap cosine, good enough for keyword-class retrieval
@@ -107,7 +112,7 @@ export function createTextEmbedder(): TextEmbedder {
     pending = (async () => {
       try {
         // Indirect specifier so the bundler/tsc doesn't hard-require an absent optional dep.
-        const spec = '@xenova/transformers';
+        const spec = '@huggingface/transformers';
         const mod = (await import(/* @vite-ignore */ spec)) as {
           pipeline: (
             task: string,

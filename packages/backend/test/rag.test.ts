@@ -182,7 +182,7 @@ describe('Phase 14 — text substrate (C-D2)', () => {
       const first = await s.rag.reindex(s.project.id);
       expect(first.reembedded).toBe(1);
       // Embedder-agnostic: the deterministic offline embedder ('fallback') runs
-      // when @xenova/transformers is absent; the real ONNX embedder
+      // when @huggingface/transformers is absent; the real ONNX embedder
       // ('transformers') runs when the optional dep resolves. Phase 16 (DoD)
       // closed the Phase-14/15 open question — assert the incremental-reindex
       // contract, not which embedder backend this environment happened to load.
