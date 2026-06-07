@@ -634,3 +634,19 @@ execution state when relevant.
   §8.3; supersedes the earlier relayed build). Surfaced to human. Normal-class slices (C1/D2/B5/B6/
   M-10) still auto-merge. Auditor active (`130ca22`). Last-seen: main `dbb7a13` · D3 exec `d7e7251`
   · auditor `130ca22` · overseer `96b9663`→(this commit).
+
+- **2026-06-07T19:1xZ — D3 (PR #149) MERGED — OQ-1=defer authenticated, all ratification gates clear.**
+  Human confirmed **OQ-1=defer-with-marker directly** (this channel; explicit/current; supersedes
+  relayed build). 3 markers @ `d7e7251` (executor ✓ · auditor ✓ [content; one-time non-rag backend
+  test failure now **unreproduced 6× clean**] · overseer ✓). CI green (gate ✓×2 · Gitar ✓) · mergeable
+  clean · base main `dbb7a13` · override window collapsed (present ratification) · squash. **Executed:
+  flip→squash-merge.** Merge `ed4e6bb merged:true`; **verified via ls-remote**: main `dbb7a13`→
+  `ed4e6bb`, D3 branch **deleted**, SPEC §7.27 `*(deferred)*` markers present. **M-6 closed.**
+  Finding-set-diff: **0 dropped / 4 added → closed (EO-50…53)**. **Cohort merged (10):** A1·A2·A3·D1·
+  B1·B2·rag-stab·B3·B4·D3. **Closed: M-1/M-2/M-4/M-6/M-7/M-8/M-9/M-13; M-14 stabilized.** **All
+  ratification-gated slices DONE** (A2 i · B1 iv · B4 ii · D3 ii+iii · rag-stab iii); **OQ-1 + OQ-2
+  both resolved.** **Loop state: awaiting C1** (markdown export, M-5) → then D2·B5·B6·M-10, all
+  **normal-class auto-merge** per the posture — no further human surfaces expected (barring halt-class
+  / new finding). Watch-item: the one-time non-rag backend test failure appears transient (6× clean);
+  monitor on remaining slices. Re-arming single watcher for C1. Last-seen: main `ed4e6bb` · auditor
+  `130ca22` · overseer (this commit).
