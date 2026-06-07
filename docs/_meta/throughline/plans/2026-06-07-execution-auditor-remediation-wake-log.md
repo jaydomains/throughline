@@ -319,3 +319,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   on #147. Last-seen remote HEADs: `main`@`8657adf`, B3@`615d034`, overseer@`0fcedc8`, self@`91d54a9`.
   Finding-set-diff: `0 dropped / 0 added`. Round-trips: B3 0/5. Closed: M-1,M-2,M-7,M-8,M-9,M-13,M-14.
   Next: B4 (mermaid markers, class-ii; CN-8 §9 locus) — serialize w/ D3 on SPEC.md. Staying subscribed.
+
+- **2026-06-07 — B3 MERGED; M-9 + M-8 fully closed.** Watcher: overseer `9762a87` (B3 review
+  EO-38..42, §5 verified vs ground truth — converges with mine) → `5be7543` (marker @615d034) →
+  `63b286a` "B3 merged (squash @ 02871df); awaiting B4." Merge **verified on remote** (§4.8):
+  `main`@`02871df` = squash `"B3: … (#147)"`; B3 branch deleted. Convergence honored at `615d034`
+  (3 markers + green CI). Last-seen: `main`@`02871df`, overseer@`63b286a`, self@`38303d2`.
+  Finding-set-diff: `0 dropped / 0 added (B3 closed)`. Closed: M-1,M-2,M-7,M-8,M-9,M-13,M-14.
+  **Next: B4** (mermaid deferral markers, M-4, class-(ii) spec amendment) — CN-8 applies: markers on
+  SPEC §7.21 + §9 AI-table (NOT §13), remove orphaned SettingsView.tsx 'mermaid' row; serialize w/ D3
+  on SPEC.md. Watcher armed; will pre-register B4 positions before its diff.
