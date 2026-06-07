@@ -871,3 +871,7 @@ execution state when relevant.
   pending CI.** Finding-set-diff: **0 dropped / 4 added (EO-67…70)**. Marker HELD pending green CI @
   `ce90ca6`. **FINAL slice → on merge, cohort COMPLETE → terminal stand-down.** Last-seen: main
   `60e8f20` · auditor `9f6c88a` · M-10 exec `ce90ca6` · overseer `432c105`→(this commit).
+
+- **2026-06-07T20:2yZ** — M-10 CI GREEN @ `ce90ca6` → **final-marker BOUND** (comment 4644013642).
+  Convergence: overseer ✓ · executor (pending confirm) · auditor (`5ce7d01`, pending) · CI green.
+  Execute directly on convergence; squash → CLOSES THE CHAIN.
