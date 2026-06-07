@@ -417,3 +417,18 @@ execution state when relevant.
   - **EO/B2-P5 (merge):** squash (OQ-2). **EO/B2-P6 (gate):** green; yaml/doc-only.
   Finding-set-diff: **0 dropped / 0 added** (B2 positions pre-registered, no findings yet). Now
   reading B2 PR + diff. Last-seen: main `9501018` · auditor `e173d98` · B2 executor `830bbf3`.
+
+- **2026-06-07T1z:zzZ** — B2 (PR #145) GOVERNANCE REVIEW + final-marker @ `830bbf3` (comment
+  4643014199). Scope clean: ci.yml (comment-only) + AUTO_CONTINUE:24 (gate-layer hedge removed);
+  **PLATFORM_STATUS untouched** (M-10's, §3.B); B1's §D/halt codification not clobbered. **EO-28
+  scope ✓ · EO-29 M-13 consistency ✓ (all three say gate IS enforcing; no advisory survives) ·
+  EO-30 no-clobber-B1 ✓ · EO-31 normal slice ✓ · EO-32 gate green @ `830bbf3` (both runs, no split)
+  · EO-33 = rag.test.ts scope-decision SURFACED to spec-author (separate event).** Finding-set-diff:
+  **0 dropped / 6 added (EO-28…EO-33)**. **Status: final — approved by execution-overseer @
+  `830bbf3`.** B2 = normal slice, execute directly on convergence; merge squash. **Convergence:**
+  overseer ✓ · executor (marker pending) · auditor (pending) · CI green. **SCOPE-DECISION SURFACE
+  (class-iii) to human:** M-14 `rag.test.ts` flake recurring ~1-in-4 across B1/B2, A2-aggravated →
+  dedicated rag-stabilization slice vs keep Phase-F-deferred. The executor surfaced it; trio can't
+  resolve; per dispatch-brief surface conditions ("scope-expansion the executor+auditor surfaced
+  but can't resolve") I escalate. Does NOT block B2. Last-seen: main `9501018` · B2 executor
+  `830bbf3` · auditor `e173d98`→`26899fa` · overseer `789bf68`→(this commit).
