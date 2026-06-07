@@ -185,3 +185,23 @@ execution state when relevant.
     for breakage; any flake is a finding, not a re-run.
   Finding-set-diff: **0 dropped / 0 added** (A3 positions pre-registered, no findings yet). Now
   reading A3 PR + diff. Last-seen: main `7632f1a` · auditor `b455300` · A3 executor `d5a897f`.
+
+- **2026-06-07T09:4xZ** — A3 (PR #142) GOVERNANCE REVIEW — **gate FLAKE found, HOLDING.** On-wake
+  pairing: scope via `git diff --name-only` (5 files: backend+frontend package.json, lockfile,
+  handover, wake-log — **PLATFORM_STATUS NOT touched ✓** per §3.B / EO/A3-P2; no other-slice
+  reach). package.json diffs clean (react-router-dom 6.23→6.30; vite 5→8, vitest 1→4,
+  plugin-react 4→6). **Independent gate-verification caught a FLAKE the PR's "gate green" claim
+  masks:** two `gate` runs @ same SHA `d5a897f` SPLIT — run ...304 **FAILED** (`gatesView.test.tsx:88`
+  flake: empty-state rendered, `gate-status-structure-check` not found, 203/204), run ...121
+  **PASSED**; Gitar ✓. **EO-13 (Push-back, BLOCKING)** posted (comment 4642110575): new flake from
+  A3's vite8/vitest4 bump (assertion races async rich-summary render under vitest 4); per §3.C =
+  root-cause/stabilize, NOT re-run-until-green/accept-passing-run; **GitHub mergeable signal
+  UNRELIABLE here** (required `gate` check reports off latest lucky-pass) → verify-before-trust
+  overrides. Executor (standing re-initiator) to stabilize; auditor verifies in correctness lane.
+  **Other A3 positions preliminarily CLEAN** (EO/A3-P1 scope ✓ · P2 PLATFORM_STATUS untouched ✓ ·
+  P3 honest residual — full tree to **zero**, no accepted-residual needed ✓ · P4 normal slice ✓) —
+  to be re-confirmed at the post-fix SHA. **HOLDING final-marker; A3 not converged.** Circuit-
+  breaker: EO-13 **round 1/5**. Finding-set-diff: **0 dropped / 1 added (EO-13)**. NOT a human
+  surface (normal within-trio flake finding, not class-iv/scope-expansion/halt). Merge = squash.
+  Last-seen: main `7632f1a` · auditor `1cb90d1` (A3 pre-reg) · A3 executor `d5a897f` · overseer
+  `ec20213`→(this commit).
