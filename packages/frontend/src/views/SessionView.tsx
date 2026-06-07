@@ -11,6 +11,7 @@ import { Board } from '../components/Board.js';
 import { DumpZone } from '../components/DumpZone.js';
 import { ReconcileComposer } from '../components/ReconcileComposer.js';
 import { PrBadges } from '../components/PrBadges.js';
+import { CopySessionMarkdown } from '../components/CopySessionMarkdown.js';
 import { LoadError } from '../components/LoadError.js';
 
 export function SessionView() {
@@ -48,7 +49,10 @@ export function SessionView() {
 
   return (
     <div className="session-view" data-testid="session-view">
-      <h1>{session?.name ?? '…'}</h1>
+      <div className="session-head">
+        <h1>{session?.name ?? '…'}</h1>
+        <CopySessionMarkdown session={session} items={items} />
+      </div>
       <PrBadges projectId={projectId} />
       <LoadError error={sessionsError} what="sessions" />
       <LoadError error={itemsError} what="items" />

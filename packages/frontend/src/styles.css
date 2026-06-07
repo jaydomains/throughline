@@ -558,6 +558,8 @@ a:hover { text-decoration: underline; }
 }
 
 .sessions-index h1, .session-view h1, .tree-view h1 { font-size: 18px; margin: 0 0 12px; }
+.session-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.session-head h1 { margin: 0; }
 .session-create { display: flex; gap: 8px; margin-bottom: 12px; }
 .session-create input { flex: 1; background: var(--bg-soft); color: var(--fg); border: 1px solid var(--border); border-radius: 4px; padding: 6px 8px; font: inherit; }
 .session-list { list-style: none; padding: 0; margin: 0; }
