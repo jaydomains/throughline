@@ -12,6 +12,7 @@
     "dev": "pnpm --filter @throughline/backend dev",
     "dev:web": "pnpm --filter @throughline/frontend dev",
     "build": "pnpm --filter @throughline/shared build && pnpm --filter @throughline/frontend build && pnpm --filter @throughline/backend build",
+    "start": "pnpm --filter @throughline/backend start",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
