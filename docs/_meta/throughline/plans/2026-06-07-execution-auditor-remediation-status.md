@@ -16,6 +16,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A) | #146 | `ac3510c` | **MERGED** — squash → `main` `8657adf` after authenticated confirm; M-14 stabilized |
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
 | B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
+| D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **final — approved by execution-auditor** (content; OQ-1=defer authenticated to ME; overseer needs own auth) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -328,3 +329,38 @@ Mermaid deferral markers (M-4, class-(ii)). All B4-P1…P7 + CP-1…8 Confirm. *
 
 Convergence (role §8) at `e701358`: executor ✓ · execution-overseer ✓ (EO-43…49) · **execution-auditor ✓**.
 Merge squash (OQ-2).
+
+---
+
+## D3 (PR #149) — final — approved by execution-auditor @ `d7e7251`
+
+M-6 bootstrap sub-actions, **OQ-1 reversed build→defer-with-marker**. Content signed off; §8.3
+recency+auth boundary recorded. All D3-P1…P7 + CP-1…8 Confirm. **Zero findings of my origination.**
+
+- **OQ-1 recency + auth (D3-P1) — authenticated FOR ME.** Two relayed OQ-1 rulings (build, then
+  defer). §8.3 recency → the later (**defer**) governs; §8.3 channel → both pending until
+  authenticated. **Confirmed OQ-1=defer-with-marker is current with the spec-author via in-session
+  AskUserQuestion.** Ratified for my sign-off. **Boundary:** my confirm ≠ the overseer's; the
+  overseer needs its **own** direct auth of OQ-1=**defer**, and must **not** act on any stale
+  OQ-1=build auth (recency-superseded). I do not relay mine as theirs.
+- **Defer-with-marker content (D3-P2/P3/P4) — Confirm (mirrors M-4):** SPEC §7.27 marks
+  `merge_fields *(deferred)*` + `archive *(deferred)*` + a note (v1 ships `keep_mine`/`take_theirs`
+  + `keep`/`delete`; deferred build → its own future ROADMAP cohort, not silently dropped). **No
+  code** (carve-outs already exist) → SPEC↔code now agree, closing the M-6 honesty gap. Verified the
+  markers land on the §7.27 stale-row `archive` action specifically (other "archive" hits — inbox
+  dated-archive, projects lifecycle, T-D16 — are unrelated, correctly unmarked).
+- **Estimate-breach/halt-4 vindicated (D3-P4):** the executor mapped OQ-1=build as ~1000–1800 LOC
+  (per-field merge UI + `archived_at` schema + unplanned anchors) and surfaced halt-4/halt-5/class-(iii)
+  rather than building — exactly the check I'd flagged. Correct refusal; the spec-author reversed to
+  defer. The plan's "needs its own ROADMAP home" warning honored.
+- **New unidentified backend flake (D3-P6) — investigated, unreproduced:** executor saw 1 failure
+  (not rag, 0 model-loads), no repro in 4. I ran the backend suite **6× more — all 610/610, 0
+  model-loads** (10 clean since the single failure). Not the rag flake; D3 is doc-only so it can't
+  cause it. Disposition: **unreproduced single-failure** (like original M-14 status) — informational,
+  not a characterizable finding, not a D3 blocker. Recorded for M-10 / future watch if it recurs.
+- **Scope/gate (D3-P7):** SPEC.md §7.27 + docs only; serialize-with-B4 satisfied (B4 merged); gate
+  green at `d7e7251` (`gate` ✓×2 + `Gitar` ✓); 610/204.
+- **Ratification (overseer's lane):** class-(ii)+(iii); via the authenticated OQ-1=defer ruling.
+
+Convergence (role §8) at `d7e7251`: executor ✓ · execution-overseer (its lane; needs own auth of
+OQ-1=defer) · **execution-auditor ✓ (content)**. Merge squash (OQ-2).

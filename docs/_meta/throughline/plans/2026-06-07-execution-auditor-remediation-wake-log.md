@@ -375,3 +375,16 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   unidentified backend flake (not rag, 0 model-loads, 1 fail / no repro in 4) — I'll investigate.
   Fresh ls-remote: `main`@`dbb7a13`, D3@`d7e7251`, overseer@`fd791b3`, self@`4c75e91`.
   Finding-set-diff: `0/0 (D3 baseline)`. Next: read SPEC diff + investigate flake + confirm OQ-1=defer.
+
+- **2026-06-07 — D3 review + content final-marker (PR #149 @ `d7e7251`; OQ-1=defer).** Content
+  verified: SPEC §7.27 `merge_fields`/`archive` *(deferred)* markers + note, NO code, mirrors M-4,
+  closes M-6 honesty gap; markers on the right §7.27 archive action (other archive hits unrelated).
+  **OQ-1 recency+auth:** confirmed OQ-1=defer-with-marker is CURRENT (supersedes build) with the
+  spec-author via AskUserQuestion → authenticated FOR MY sign-off; overseer needs OWN auth of DEFER
+  (stale build-auth superseded). **Flake (D3-P6):** ran backend suite 6× more — all 610/610, 0
+  model-loads (10 clean since the 1 failure); unreproduced single-failure, informational, not a
+  blocker. Estimate-breach/halt-4 on OQ-1=build correctly surfaced by executor (vindicates my flagged
+  check). CI green at `d7e7251`. **Zero findings of my origination.** Posted content marker (this
+  commit) + approval on #149. Last-seen: `main`@`dbb7a13`, D3@`d7e7251`, overseer@`fd791b3`, self@
+  `af3e7df`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-4,M-6,M-7,M-8,M-9,M-13,M-14 (M-6 pending merge).
+  Next (per posture): C1 (M-5 markdown export build), D2 (M-3), B5 (M-11), B6 (M-12), M-10 (last).
