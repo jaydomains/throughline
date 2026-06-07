@@ -68,3 +68,20 @@ execution state when relevant.
   gate from ground truth, then **squash-merge A1 directly** (flip draft→ready → squash). Watcher
   armed for the auditor's marker. Last-seen: overseer `1ce34df`→(this commit) · executor `8036839`
   · auditor `b96c72c` · main `ffa01ed`. Standing by per "stand by for next surface."
+
+- **2026-06-07T08:50Z** — **A1 (PR #140) MERGED — execution complete.** Convergence reached:
+  3 markers at one change-content (executor `c2de0eb` / auditor `c4e4055`→`2bf23a5` refreshed to
+  `c2de0eb` / overseer `1ce34df`), all content-bound to byte-identical code (`010a4027`=`8036839`
+  =`c2de0eb` on `packages/`+lockfile). CI green @ `c2de0eb` (gate ✓ · Gitar ✓); `mergeable_state:
+  clean`. OQ-2 ruled **squash** (class-iv ratified, authenticated); override window collapsed
+  (present spec-author authorization). **Executed: flip draft→ready → squash-merge.** Merge call
+  returned `36be75a merged:true`; **verified from `git ls-remote`**: `main` `ffa01ed`→`36be75a`,
+  single squash commit on `main`, executor branch `claude/cool-cannon-J9BR5` **deleted**,
+  `fastify ^5.8.3` on `main`. Merge-confirmation posted as its own event (PR #140 comment
+  4641992282). Finding-set-diff: **0 dropped / 0 added** (A1 EO set closed at merge). **A1 done.**
+  Carry-forward to A2: `@xenova` optionalDependencies vs C-D2 (EO-6). **Loop state: awaiting A2**
+  (embeddings-stack swap; class-(i) C-D2 anchor change — M-1 settled, ratification collapses if I
+  confirm current via authenticated channel + verify the C-D2 amendment matches intent). Sequenced-
+  cycle / standing-driver posture: **NOT** bounded-stand-down between slices — staying actively
+  subscribed; re-arming watcher (`claude/` scope) for the next executor slice + auditor. Last-seen:
+  overseer `cbf43fd`→(this commit) · main `36be75a` · auditor `2bf23a5` · executor branch gone.
