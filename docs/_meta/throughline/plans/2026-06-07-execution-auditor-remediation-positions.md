@@ -309,6 +309,28 @@ M-13). *Anti-anchoring:* seen the PR body via the list, not the code.
   flake would not reliably show single-run, and M-14 pre-flagged it — but if A2's heavier stack
   aggravated it, that is the cohort-level item now being surfaced.
 
+## B7. Slice B3 positions (PR #147 `claude/b3-required-reading` @ `615d034` — REQUIRED_READING reconciliation, M-9 + M-8 pointer)
+
+**Pre-registered 2026-06-07, before reading the B3 diff content** (derived from plan §5 B3 +
+CN-4). Live tree (verified): `archive/ audits/ experiments/ handovers/ mockups/ plans/` (6 subdirs).
+
+- **B3-P1 — §5 tree corrected to match live tree exactly (M-9).** The false "there are **no**
+  `experiments/` … only `mockups/`" denial removed; §5 now names all six subdirs. I verify the new
+  §5 wording against a fresh `ls docs/_meta/throughline/` — exact match, nothing omitted/extra.
+- **B3-P2 — §4 halt-pointer flipped (M-8, B1-deferred part).** The "halt-4…9 not codified / owed
+  work / treat only the three as authoritative" note now points at the **codified** set in
+  AUTO_CONTINUE (landed by B1); section-name pointer updated to "Halt Classes"; "three codified" →
+  "nine codified". No stale "owed work" halt claim remains. Verify the §4 pointer resolves to the
+  real post-B1 section name.
+- **B3-P3 — §7 (merge-method) untouched/correct.** B1 confirmed §7 already reflects the dual-context
+  method; B3 should not disturb it. Verify B3 edits only §4 + §5 (+ any directly-dependent text).
+- **B3-P4 — no role-file back-port (CN-4/OV-1).** `.claude/roles/*` untouched.
+- **B3-P5 — scope contained.** REQUIRED_READING.md only (+ handover/wake-log); based on post-B1
+  `main` `8657adf`; doesn't disturb other sections.
+- **B3-P6 — gate green; doc-only.** No code; 610/204 preserved; rag-stabilization holding (no flake).
+- **B3-P7 — closes the B1-flagged loop.** B1 explicitly deferred the §4 pointer + section-name to B3;
+  verify B3 actually closes it (no residual stale "The Three Halt Classes" reference in §4).
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
