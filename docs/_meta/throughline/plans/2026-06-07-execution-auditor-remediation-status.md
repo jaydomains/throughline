@@ -17,7 +17,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
 | B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
 | D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **MERGED** — squash → `main` `ed4e6bb` after authenticated OQ-1=defer; M-6 closed |
-| C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` (was `626dde8`) | **final — approved by execution-auditor** (build verified; Gitar-nit fold re-verified) |
+| C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` | **MERGED** — squash → `main` `c3c1db4`; M-5 closed |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /

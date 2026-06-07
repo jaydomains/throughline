@@ -427,3 +427,12 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   C1@`5d4dcc8`, overseer@`1ebccda`(will re-bind), self@`59a41fa`. Finding-set-diff: `0/0 (fold
   re-verified, no content-deliverable change)`. Round-trips: Gitar-Q1 folded (overseer↔Gitar lane);
   my C1 thread 0/5.
+
+- **2026-06-07 — C1 MERGED; M-5 closed.** Watcher: overseer `68ae192` (re-stale recognized, re-bind)
+  → `92920fe` "C1 merged (squash @ c3c1db4, after fix-round re-stale); M-5 closed; awaiting D2."
+  Merge **verified on remote** (§4.8): `main`@`c3c1db4` = squash `"C1: … (#150)"`; branch deleted.
+  Convergence honored at `5d4dcc8` (3 markers re-bound + green CI). Last-seen: `main`@`c3c1db4`,
+  overseer@`92920fe`, self@`30c227b`. Finding-set-diff: `0/0 (C1 closed)`. **11 slices merged.**
+  Closed: M-1,M-2,M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14 (10/14). Next: D2 (M-3 UUID picker — frontend
+  build; hands-on verify the picker + UUID resolution), then B5 (M-11), B6 (M-12), M-10 (last, CN-9).
+  Watcher armed. Will pre-register D2 positions before its diff.
