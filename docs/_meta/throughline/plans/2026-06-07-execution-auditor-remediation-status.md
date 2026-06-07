@@ -13,7 +13,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | D1 — deployment wiring (M-2) | #143 | `874cb8c` | **MERGED** — squash → `main` `fb25642`; M-2 closed; approved (setup+boot verified) |
 | B1 — governance doctrine: merge-method + halt 4–9 (M-7,M-8) | #144 | `2369d96` (was `4ebf3d4`) | **MERGED** — squash → `main` `9501018`; class-(iv); halt defs source-verified |
 | B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **MERGED** — squash → `main` `17c193a`; M-13 closed; 3 docs consistent |
-| RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A ruled) | #146 | `ac3510c` | **final — approved by execution-auditor** (content; ruling authenticated to ME; overseer needs own auth) |
+| RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A) | #146 | `ac3510c` | **MERGED** — squash → `main` `8657adf` after authenticated confirm; M-14 stabilized |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /

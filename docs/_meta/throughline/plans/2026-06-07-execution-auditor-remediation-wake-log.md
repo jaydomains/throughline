@@ -289,3 +289,15 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `main`@`17c193a`, rag-stab@`ac3510c`, overseer@`2a70189`, self@`ca46f1e`. Finding-set-diff:
   `0 dropped / 0 added`. Round-trips: 0/5. Staying subscribed for the overseer's authenticated-merge
   resolution + B3.
+
+- **2026-06-07 — RAG-STAB MERGED; M-14 stabilized; §8.3 cycle closed cleanly.** Watcher fired:
+  overseer `39aadca` (rejected my relay as a 2nd relay — held) → `0b3b2b3` "rag-stabilization merged
+  (squash @ 8657adf) after **authenticated Option-A confirm**." Merge **verified on remote** (§4.8):
+  `main`@`8657adf` = squash `"rag-stabilization … (#146)"`; branch deleted. Full discipline arc:
+  executor surfaced flake → I corroborated/surfaced to spec-author → human ruled Option A → fix built
+  → BOTH reviewers caught the §8.3 relay + held → human authenticated to me (my sign-off) AND to the
+  overseer's channel (merge) → merged. My content sign-off honored; merge gate authenticated properly.
+  Last-seen remote HEADs: `main`@`8657adf`, overseer@`0b3b2b3`, self@`42849fc`. Finding-set-diff:
+  `0 dropped / 0 added (rag-stab closed)`. Closed: M-1, M-2, M-7, M-8, M-13, M-14. **Next: B3**
+  (REQUIRED_READING §5 tree M-9 + §4 halt-pointer M-8 — now unblocked, B1 codification landed). CN-4
+  applies. Watcher armed; reconcile via ls-remote each wake (silent-death is systemic).
