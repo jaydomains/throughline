@@ -271,3 +271,18 @@ execution state when relevant.
   - **EO/D1-P6 (merge):** squash (OQ-2).
   Finding-set-diff: **0 dropped / 0 added** (D1 positions pre-registered, no findings yet). Now
   reading D1 PR + diff. Last-seen: main `7d0a252` · auditor `8e8a99b` · D1 executor `874cb8c`.
+
+- **2026-06-07T10:2xZ** — D1 (PR #143) GOVERNANCE REVIEW posted (comment 4642202603). On-wake
+  pairing: scope via `git diff --name-only` (6 files: backend+root package.json, scripts/setup.sh
+  [new], docs/install/auto-start.md, handover, wake-log). **KEY: no `SPEC.md`/`CODE_SPEC.md`/
+  `DECISIONS.md` edit → PRIMARY path → NORMAL slice, NOT a ratification class → no spec-author
+  surface** (EO/D1-P1 resolved). Read setup.sh (real install+build single-command setup) +
+  auto-start.md diff (reconciled, now-true). **EO-17 Confirm** primary-path/normal · **EO-18
+  Confirm** scope-clean (PLATFORM_STATUS untouched; based on main 7d0a252) · **EO-19 Confirm**
+  start→`node dist/index.js` + auto-start.md made truthful (M-2 core) · **EO-20 Confirm** setup.sh
+  makes SPEC §11/§3 true (honest "provide" path, no silent partial) · **EO-21 Confirm** footprint
+  handled (optionalDependency) · **EO-22** gate pending CI. Finding-set-diff: **0 dropped / 6 added
+  (EO-17…EO-22)**. **Final-marker HELD pending green CI @ `874cb8c`** (1 gate run green, 1 gate +
+  Gitar in_progress at review time). D1 = normal slice → execute directly on convergence, merge
+  squash. Last-seen: main `7d0a252` · auditor `8e8a99b` · D1 executor `874cb8c` · overseer
+  `a90747a`→(this commit).
