@@ -11,6 +11,9 @@ import type {
 } from '@throughline/shared';
 import { api } from '../api.js';
 import { LoadError } from '../components/LoadError.js';
+import { EntityPicker } from '../components/EntityPicker.js';
+import { useSessions } from '../hooks/useSessions.js';
+import { useItems } from '../hooks/useItems.js';
 
 // Phase 14 — intelligence surface (T-D22, T-D25, C-D2; SPEC §7.18, §9). RAG query box
 // (heuristic router unless pinned), an end-of-session retro action, and a periodic-review
@@ -47,6 +50,13 @@ export function IntelligenceView() {
   const [chatCtxId, setChatCtxId] = useState('');
   const [chatMsg, setChatMsg] = useState('');
   const [chatLog, setChatLog] = useState<ChatMessage[]>([]);
+
+  // M-3 — picker options over the project's sessions/items (human-readable labels → UUIDs),
+  // replacing the former raw-UUID text inputs on the retro / stakeholder / chat surfaces.
+  const { sessions } = useSessions(projectId);
+  const { items } = useItems({ projectId });
+  const sessionOptions = sessions.map((s) => ({ id: s.id, label: s.name }));
+  const itemOptions = items.map((i) => ({ id: i.id, label: i.title }));
 
   useEffect(() => {
     if (!projectId) return;
@@ -277,11 +287,12 @@ export function IntelligenceView() {
       <h2>End-of-session retro</h2>
       <p className="muted">User-initiated. Summarises the session window, saves a library note.</p>
       <div className="retro-form">
-        <input
-          data-testid="retro-session"
-          placeholder="session id"
+        <EntityPicker
+          testId="retro-session"
           value={retroSession}
-          onChange={(e) => setRetroSession(e.target.value)}
+          onChange={setRetroSession}
+          options={sessionOptions}
+          placeholder="Select a session…"
         />
         <label>
           <input
@@ -386,11 +397,12 @@ export function IntelligenceView() {
       <h2>Stakeholder view</h2>
       <p className="muted">Plain-language re-render of one item (cached; refreshes on edit).</p>
       <div className="stakeholder">
-        <input
-          data-testid="stake-item"
-          placeholder="item id"
+        <EntityPicker
+          testId="stake-item"
           value={stakeItem}
-          onChange={(e) => setStakeItem(e.target.value)}
+          onChange={setStakeItem}
+          options={itemOptions}
+          placeholder="Select an item…"
         />
         <button type="button" data-testid="stake-run" disabled={busy} onClick={loadStakeholder}>
           Render
@@ -417,17 +429,30 @@ export function IntelligenceView() {
           <select
             data-testid="chat-ctx-type"
             value={chatCtxType}
-            onChange={(e) => setChatCtxType(e.target.value as ChatContextType)}
+            onChange={(e) => {
+              setChatCtxType(e.target.value as ChatContextType);
+              setChatCtxId('');
+            }}
           >
             <option value="session">session (per-list)</option>
             <option value="dump_zone">dump_zone</option>
           </select>
-          <input
-            data-testid="chat-ctx-id"
-            placeholder={chatCtxType === 'session' ? 'session id' : 'context id'}
-            value={chatCtxId}
-            onChange={(e) => setChatCtxId(e.target.value)}
-          />
+          {chatCtxType === 'session' ? (
+            <EntityPicker
+              testId="chat-ctx-id"
+              value={chatCtxId}
+              onChange={setChatCtxId}
+              options={sessionOptions}
+              placeholder="Select a session…"
+            />
+          ) : (
+            <input
+              data-testid="chat-ctx-id"
+              placeholder="context id"
+              value={chatCtxId}
+              onChange={(e) => setChatCtxId(e.target.value)}
+            />
+          )}
           <button type="button" data-testid="chat-load" disabled={busy} onClick={loadChat}>
             Load history
           </button>

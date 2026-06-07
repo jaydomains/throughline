@@ -8,7 +8,15 @@ vi.mock('../src/api.js', async () => {
 });
 
 import { IntelligenceView } from '../src/views/IntelligenceView.js';
-import { mockApi, resetMockApi } from './fixtures/mockApi.js';
+import { mockApi, resetMockApi, seedSession, seedItem } from './fixtures/mockApi.js';
+
+// Wait until an entity picker (a <select>) has loaded its async options (more than the
+// placeholder), so a selection can resolve to a seeded id.
+async function pickerReady(testId: string) {
+  await waitFor(() =>
+    expect((screen.getByTestId(testId) as HTMLSelectElement).options.length).toBeGreaterThan(1),
+  );
+}
 
 function renderView() {
   return render(
@@ -21,7 +29,13 @@ function renderView() {
 }
 
 describe('Phase 14 — Intelligence (RAG) surface', () => {
-  beforeEach(() => resetMockApi());
+  beforeEach(() => {
+    resetMockApi();
+    // M-3 — seed sessions/items so the retro/stakeholder/chat pickers have options to select.
+    seedSession({ id: 'sess-9', project_id: 'p1', name: 'Sprint 9' });
+    seedSession({ id: 'sess-3', project_id: 'p1', name: 'Sprint 3' });
+    seedItem({ id: 'item-7', project_id: 'p1', title: 'Item Seven' });
+  });
 
   it('E24/SF6-10: a failed periodic-review fetch surfaces a load error, not a silent empty panel', async () => {
     mockApi.getPeriodicReview.mockRejectedValueOnce(new Error('review boom'));
@@ -87,6 +101,7 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
 
   it('generates an end-of-session retro with attach + append flags', async () => {
     renderView();
+    await pickerReady('retro-session');
     fireEvent.change(screen.getByTestId('retro-session'), { target: { value: 'sess-9' } });
     fireEvent.click(screen.getByTestId('retro-attach'));
     fireEvent.click(screen.getByTestId('retro-append'));
@@ -120,6 +135,7 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
 
   it('renders a stakeholder view for an item id', async () => {
     renderView();
+    await pickerReady('stake-item');
     fireEvent.change(screen.getByTestId('stake-item'), { target: { value: 'item-7' } });
     fireEvent.click(screen.getByTestId('stake-run'));
     await waitFor(() => expect(screen.getByTestId('stake-result')).toBeTruthy());
@@ -129,6 +145,7 @@ describe('Phase 14 — Intelligence (RAG) surface', () => {
 
   it('sends a per-list chat turn and appends the exchange to the log', async () => {
     renderView();
+    await pickerReady('chat-ctx-id');
     fireEvent.change(screen.getByTestId('chat-ctx-id'), { target: { value: 'sess-3' } });
     fireEvent.change(screen.getByTestId('chat-input'), {
       target: { value: 'what should I do next' },
