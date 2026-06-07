@@ -185,3 +185,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `0 dropped / 0 added (D1 — all Confirms)`. Round-trips: D1 0/5. Convergence: 3 markers @ `874cb8c`
   + green CI; normal slice. Staying subscribed for D1 merge + Group B (B1 governance — class-iv,
   OQ-2 ruled squash; CN-3/CN-4/CN-5 apply).
+
+- **2026-06-07 — D1 MERGED; M-2 closed.** Watcher fired: overseer `dd9ab5a→0416ff3` = "D1 merged
+  (squash @ fb25642); M-2 closed; awaiting B1 (class-iv governance doctrine)." Merge **verified on
+  remote** (§4.8): `main`@`fb25642` = squash `"D1: … (#143)"`; D1 branch `claude/d1-deploy-wiring`
+  **deleted**. Convergence honored at `874cb8c` (3 markers + green CI; normal slice). Last-seen
+  remote HEADs: `main`@`fb25642`, overseer@`0416ff3`, self@`2c3db4b`. Finding-set-diff:
+  `0 dropped / 0 added (D1 closed)`. **Next: B1** (governance-doctrine codification — AUTO_CONTINUE
+  §D dual-context merge-method + halt classes 4–9; **class-(iv)** durable precedent). CN-3 (blessed
+  set is 4–9; codify only blessed, surface any without traceable Phase-E provenance — esp. halt-7),
+  CN-4 (no role-file back-port owed — project-layer only), CN-5 (OQ-2 ruled squash) apply. Watcher
+  armed; will pre-register B1 positions before reading its diff.
