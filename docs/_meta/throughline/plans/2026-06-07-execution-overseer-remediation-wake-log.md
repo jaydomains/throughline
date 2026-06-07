@@ -650,3 +650,21 @@ execution state when relevant.
   / new finding). Watch-item: the one-time non-rag backend test failure appears transient (6× clean);
   monitor on remaining slices. Re-arming single watcher for C1. Last-seen: main `ed4e6bb` · auditor
   `130ca22` · overseer (this commit).
+
+- **2026-06-07T19:xxZ** — C1 executor branch `claude/c1-markdown-export` @ `626dde8` detected.
+  **C1 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/C1-P1 (ratification — normal IF no spec edit):** C1 BUILDS the markdown-export feature to
+    make SPEC §7.20's "shipped v1 export surface" claim TRUE **without** a spec edit (the D1-primary-
+    path pattern). **KEY:** if C1 does NOT touch SPEC/CODE_SPEC/DECISIONS → normal slice, execute
+    directly. If it edits a spec record → class-(ii), assess. Verify.
+  - **EO/C1-P2 (substantive bar, M-5):** must actually build a working session→markdown serializer +
+    "Copy as markdown" affordance; §7.20 claim becomes genuinely true (grep finds the impl). Auditor
+    owns does-it-work; my lane: the claim-made-true is real.
+  - **EO/C1-P3 (scope):** frontend serializer + UI + tests (+ optional thin backend route). Base =
+    current `main` @ `ed4e6bb`. Independent (no collision); no reach into other slices.
+  - **EO/C1-P4 (no silent partial / honesty):** must make §7.20 genuinely true — well-formed,
+    paste-ready markdown — not a stub that leaves the claim false (the cardinal-sin this closes).
+  - **EO/C1-P5 (merge):** squash. **EO/C1-P6 (gate):** green; watch the one-time backend-flake
+    watch-item (likely frontend-only slice, but confirm both gate runs green / no new flake).
+  Finding-set-diff: **0 dropped / 0 added** (C1 positions pre-registered). Now reading C1 PR + diff.
+  Last-seen: main `ed4e6bb` · auditor `be15f8e` · C1 exec `626dde8`.
