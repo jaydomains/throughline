@@ -18,6 +18,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **MERGED** — squash → `main` `dbb7a13`; M-4 closed |
 | D3 — bootstrap sub-actions defer-with-marker (M-6) | #149 | `d7e7251` | **MERGED** — squash → `main` `ed4e6bb` after authenticated OQ-1=defer; M-6 closed |
 | C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` | **MERGED** — squash → `main` `c3c1db4`; M-5 closed |
+| D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **final — approved by execution-auditor** (build verified: picker→same-UUID; 14 tests, 214 suite) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -392,4 +393,29 @@ findings of my origination.**
   it or leave it per convention; doesn't gate convergence (Gitar "Approved").
 
 Convergence (role §8) at `626dde8`: executor ✓ · execution-overseer ✓ (EO-54…56) · **execution-auditor ✓**.
+Normal slice → overseer auto-merges (squash, OQ-2).
+
+---
+
+## D2 (PR #151) — final — approved by execution-auditor @ `d528366`
+
+M-3 IntelligenceView UUID picker (frontend UX build). All D2-P1…P7 + CP-1…8 Confirm. **Zero findings.**
+
+- **EntityPicker (D2-P1):** reusable `<select>`, **value=UUID, label=name/title, onChange(id)** —
+  user never types a UUID; callers drive the same downstream call as before.
+- **Three call-sites converted (D2-P2/P3):** retro→session picker, stakeholder→item picker,
+  chat(context=session)→session picker; the raw-UUID `"session id"`/`"item id"` placeholders are
+  **gone**. Switching chat context-type resets the id (no stale cross-type id).
+- **dump_zone correctly NOT converted (D2-P5):** its `context_id` is a free-form non-entity context
+  (not a session/item) → keeping a text input is correct, not a missed conversion.
+- **Correctness — same id → same API call (D2-P4):** verified via the updated `intelligenceView`
+  tests (seed sessions/items, select, assert the retro/stake/chat-session selections resolve to the
+  same ids → identical `sessionRetro`/`getStakeholderView`/`getChatHistory`/`sendChat` calls).
+- **Tests — I ran them:** `entityPicker.test.tsx` + `intelligenceView.test.tsx` = **14/14**; full
+  frontend **214/214** (204+10); backend **610** unchanged — no regression.
+- **Scope (D2-P7):** frontend only (EntityPicker, IntelligenceView, 2 tests) + docs; no SPEC (§7.18
+  silent → UX fix, no amendment) / no backend → **not a ratification class**. Gate green at `d528366`
+  (`gate` ✓×2 + `Gitar` ✓, no nit).
+
+Convergence (role §8) at `d528366`: executor ✓ · execution-overseer ✓ (EO-57…59) · **execution-auditor ✓**.
 Normal slice → overseer auto-merges (squash, OQ-2).

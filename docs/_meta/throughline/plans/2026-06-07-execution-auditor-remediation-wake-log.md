@@ -443,3 +443,12 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   D2-P1…P7 before reading content. Fresh ls-remote: `main`@`c3c1db4`, D2@`d528366`, overseer@`fe960f7`,
   self@`1bfb519`. Finding-set-diff: `0/0`. Next: read EntityPicker + IntelligenceView swaps + run tests
   (verify selection→same-UUID→same API call), confirm no raw-UUID inputs remain.
+
+- **2026-06-07 — D2 review + final-marker (PR #151 @ `d528366`).** Read EntityPicker (value=id) +
+  IntelligenceView swaps (retro/stake/chat-session → pickers; dump_zone kept free-form text; raw-UUID
+  placeholders gone). **Ran tests** in worktree: entityPicker+intelligenceView 14/14, full frontend
+  214/214, backend 610 unchanged; tests assert selection→same-id→same API call (D2-P4). No SPEC/backend
+  → not ratification. CI green at `d528366`. **Zero findings.** Posted marker (this commit) + approval
+  on #151. Last-seen: `main`@`c3c1db4`, D2@`d528366`, overseer@`fe960f7`, self@`71773f3`.
+  Finding-set-diff: `0/0`. Closed: M-1,M-2,M-3(pending merge),M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14.
+  Next (posture): B5 (M-11 ROADMAP/CHECKLIST), then B6 (M-12), M-10 (last). Watcher armed.
