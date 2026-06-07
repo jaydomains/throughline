@@ -96,6 +96,14 @@ const fallbackEmbedder: TextEmbedder = {
   embed: async (texts) => fallbackEmbed(texts),
 };
 
+// The deterministic capability-absent embedder (hashed token-gram, T-D60), exposed for
+// test injection. Tests pin to this so the suite is reproducible regardless of whether the
+// optional real Transformers.js model loads — production wiring (server.ts) still uses
+// `createTextEmbedder()` and is unaffected. Additive export only; no behaviour change.
+export function createFallbackEmbedder(): TextEmbedder {
+  return fallbackEmbedder;
+}
+
 // Resolved lazily and memoised: the first embed() attempt tries Transformers.js; on an
 // *import/resolution* failure (package not installed, model download blocked) it pins the
 // fallback so a subsequent call doesn't re-pay the failed import — the disclosed

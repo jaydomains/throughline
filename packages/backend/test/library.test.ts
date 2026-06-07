@@ -13,7 +13,7 @@ import {
   createLibraryService,
 } from '../src/library/service.js';
 import { createTextIndex, type TextIndex } from '../src/intelligence/text-index.js';
-import { createTextEmbedder } from '../src/intelligence/embeddings.js';
+import { createFallbackEmbedder } from '../src/intelligence/embeddings.js';
 import { makeBackend, makeTmpConfig } from './helpers.js';
 
 const FREEFORM_BUNDLE_PATH = join(__dirname, '..', '..', '..', 'methodologies', 'freeform', 'bundle.md');
@@ -50,7 +50,7 @@ async function setupWired() {
     projects,
     items,
     library,
-    embedder: createTextEmbedder(),
+    embedder: createFallbackEmbedder(),
   });
   const project = projects.create({ name: 'demo', repo_path: '/tmp/demo-wired' });
   return { backend, projects, items, library, project };
