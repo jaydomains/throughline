@@ -337,3 +337,18 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   self@`edad1f1`. Finding-set-diff: `0 dropped / 0 added (B4 baseline)`. Next: read diff + grep all
   mermaid in SPEC/CODE_SPEC (M-4 completeness bar) + verify §9 locus (CN-8) + SettingsView removal +
   CODE_SPEC §14 extension scope, then marker.
+
+- **2026-06-07 — B4 review + final-marker (PR #148 @ `e701358`).** Verified all mermaid mentions in
+  SPEC+CODE_SPEC: every one `*(deferred)*` except §15 prereq list (correctly left); §9 locus confirmed
+  (line 550, NOT §13 — CN-8); SettingsView 'mermaid' removed (grep none); CODE_SPEC §14 marker is
+  in-intent completeness (SettingsView↔§14 coupling), transparently flagged. D3 not open (serialize
+  ok). CI green at `e701358`. Overseer EO-43..49 all confirms (converges w/ mine). **Zero findings.**
+  **AUTO-CONTINUE POSTURE (relayed by executor, spec-author):** no human green-light between slices;
+  overseer auto-merges NORMAL-class on convergence; STILL gated = halt-class, class-(iii)/(iv) ratif,
+  authenticated-channel confirms (relayed rulings need direct human auth — rag-stab §8.3 pattern),
+  scope ambiguity, out-of-scope findings. **D3 (OQ-1=build) flagged class-(iii) + relayed ruling →
+  needs human's DIRECT authenticated confirm before merge** (I'll handle like rag-stab). Posture
+  doesn't change my per-slice rigor. Posted B4 marker (this commit) + approval on #148. Last-seen:
+  `main`@`02871df`, B4@`e701358`, overseer@`310f27d`, self@`7865381`. Finding-set-diff: `0/0`.
+  Closed: M-1,M-2,M-4,M-7,M-8,M-9,M-13,M-14. Next: per posture, executor auto-starts D3 (build,
+  class-iii — special gating). Staying subscribed.

@@ -15,6 +15,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **MERGED** — squash → `main` `17c193a`; M-13 closed; 3 docs consistent |
 | RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A) | #146 | `ac3510c` | **MERGED** — squash → `main` `8657adf` after authenticated confirm; M-14 stabilized |
 | B3 — REQUIRED_READING: §5 tree (M-9) + §4 halt-pointer (M-8) | #147 | `615d034` | **MERGED** — squash → `main` `02871df`; M-9 closed, M-8 fully closed |
+| B4 — mermaid deferral markers (M-4) | #148 | `e701358` | **final — approved by execution-auditor** (class-(ii); §9 locus; M-4 completeness verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -303,3 +304,27 @@ CP-1…8 Confirm. **Zero findings.**
 
 Convergence (role §8) at `615d034`: executor ✓ · execution-overseer (its lane) · **execution-auditor ✓**.
 Merge squash (OQ-2); not a ratification class.
+
+---
+
+## B4 (PR #148) — final — approved by execution-auditor @ `e701358`
+
+Mermaid deferral markers (M-4, class-(ii)). All B4-P1…P7 + CP-1…8 Confirm. **Zero findings.**
+
+- **§9 locus (CN-8) ✓:** the AI-feature-table `*(deferred)*` marker is at **§9** (line 550, under
+  `## 9. AI role`), NOT §13. §7.21 heading+prose marked; T-D14 decision-index cross-noted deferred.
+- **M-4 completeness bar ✓ (grepped all of SPEC + CODE_SPEC):** every mermaid hit is `*(deferred)*`
+  — §7.21, §9 table, T-D14, CODE_SPEC §14 — **except** §15's API-account *prerequisite* list
+  (correctly left; a capability list, not a shipped-feature claim, per plan).
+- **Orphaned knob removed ✓:** `'mermaid'` dropped from `SettingsView.tsx` `FEATURE_OVERRIDES`
+  (`grep mermaid SettingsView.tsx` → none); the M-4-ruled removal.
+- **CODE_SPEC §14 extension ✓ (in-intent, not scope-creep):** marking §14's mermaid default deferred
+  is required for SettingsView↔§14 consistency (FEATURE_OVERRIDES cites §14) — faithful completeness
+  within M-4's "mark all implementation-implying claims," transparently flagged, covered by the
+  class-(ii) flag (parallels A2's C-D2). Defer-not-delete-not-build: §7.21 prose preserved.
+- **Scope/serialization ✓:** SPEC.md + CODE_SPEC.md + SettingsView.tsx + docs; D3 (SPEC.md peer) is
+  HELD (OQ-1) and not open → no collision. Gate green at `e701358` (`gate` ✓×2 + `Gitar` ✓); 610/204.
+- **Ratification (overseer's lane):** class-(ii); M-4 settled in dispatch → collapses ~0.
+
+Convergence (role §8) at `e701358`: executor ✓ · execution-overseer ✓ (EO-43…49) · **execution-auditor ✓**.
+Merge squash (OQ-2).
