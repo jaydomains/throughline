@@ -6,11 +6,12 @@ name: CI
 # 2026-05-28 cohort-level heavy hardener pass over Phases 19–22 added this
 # workflow.
 #
-# Enforcement note: this workflow runs on every push and pull_request, but
-# it gates merges only if the spec author sets it as a required status
-# check in branch protection (Settings → Branches). Until that repo-admin
-# action lands the workflow is advisory; the chain runner's local pre-PR
-# pass remains the load-bearing check.
+# Enforcement note: this workflow runs on every push and pull_request and is
+# the enforcing gate — `gate` is a required status check on `main` in branch
+# protection, so a PR cannot merge until it passes (mergeable_state stays
+# `blocked` until `gate` + Gitar are green, then `clean`). The chain runner's
+# local `pnpm -r typecheck/test/lint/build` pass is the fast pre-PR check; CI
+# is the load-bearing gate at merge.
 
 on:
   pull_request:
