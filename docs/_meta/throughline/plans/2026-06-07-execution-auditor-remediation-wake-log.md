@@ -87,3 +87,19 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `0 dropped / 0 added (A2 baseline — positions pre-registered, no findings yet)`. Round-trips: none
   open. Next: read the A2 diff + independently verify (lockfile protobufjs floor, pnpm audit delta,
   gate, embeddings path), then post findings or marker.
+
+- **2026-06-07 — A2 review + final-marker (PR #141 @ `2b1f4fda`).** On-wake pairing: read A2 diff +
+  all 3 PR comments (executor marker, Gitar ✓, overseer EO-8…EO-12) + review threads (none). CI at
+  head: `gate` ✓ + `Gitar` ✓. **Independent verification in a clean worktree** (`--frozen-lockfile`
+  install succeeds incl. the onnxruntime-node GPU postinstall; `protobufjs@7.6.2` resolved;
+  `@xenova`/`onnx-proto@4` gone; `pnpm audit --prod` = 1 moderate react-router → A3, Critical+8 protobufjs
+  cleared, no new advisory; `embeddings.test.ts`+`rag.test.ts` 20/20 with the **real** HF embedder
+  running CPU fp32 → A2-P6 confirmed end-to-end). C-D2 amendment accurate (optionalDependency, not
+  "hard direct dep" → resolves CN-1; plan-vs-reality handled transparently, not a finding). Rebase
+  on A1 confirmed (`fastify ^5.8.3` retained). **Zero findings — all A2-P1…P9 + CP-1…8 Confirms.**
+  Posted final-marker (this status commit) + approval on #141. Last-seen remote HEADs (`git
+  ls-remote`): `main`@`36be75a`, A2 `claude/a2-embeddings-protobufjs`@`2b1f4fda`, overseer
+  `claude/blissful-brown-POKvS`@`6134384` (its A2 final-marker, post-green-CI). Finding-set-diff:
+  `0 dropped / 0 added (A2 reviewed — all Confirms)`. Round-trips: A2 thread 0/5. Ratification
+  (class-i/ii) is overseer's lane, covered by settled M-1 (collapse ~zero). Staying subscribed for
+  the merge + next link (A3).
