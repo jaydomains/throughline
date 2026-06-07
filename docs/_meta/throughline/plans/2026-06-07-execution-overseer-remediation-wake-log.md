@@ -875,3 +875,22 @@ execution state when relevant.
 - **2026-06-07T20:2yZ** — M-10 CI GREEN @ `ce90ca6` → **final-marker BOUND** (comment 4644013642).
   Convergence: overseer ✓ · executor (pending confirm) · auditor (`5ce7d01`, pending) · CI green.
   Execute directly on convergence; squash → CLOSES THE CHAIN.
+
+- **2026-06-07T20:3xZ — 🏁 M-10 (PR #154) MERGED — COHORT COMPLETE — TERMINAL STAND-DOWN.** 3 markers
+  @ `ce90ca6` (executor ✓ [comment 4644009985] · auditor ✓ [`59a8ad3`; all 14 PR#s + finding-map
+  cross-checked, cohort 14/14] · overseer ✓) · CI green (gate ✓×2 · Gitar ✓) · mergeable clean · base
+  main `60e8f20` · normal slice · squash. **Executed: flip→squash-merge.** Merge `42699ca merged:true`;
+  **verified via `git ls-remote`**: main `60e8f20`→`42699ca`, M-10 branch **deleted**, PLATFORM_STATUS
+  = Phase F COMPLETE. Finding-set-diff: **0 dropped / 0 added** (M-10 EO-67…70 closed).
+  ===================================================================================================
+  **AUDIT-REMEDIATION COHORT COMPLETE.** 15 slices merged: A1·A2·A3 (M-1) · D1 (M-2) · B1 (M-7+M-8,
+  class-iv) · B2 (M-13) · rag-stabilization (M-14) · B3 (M-9) · B4 (M-4) · D3 (M-6) · C1 (M-5) ·
+  D2 (M-3) · B5 (M-11) · B6 (M-12) · M-10 (M-10). **All M-1…M-14 resolved** (closed/built/deferred-
+  with-a-home/stabilized). Deferred-with-a-home (not loose ends): OQ-1 bootstrap build → own future
+  ROADMAP cohort; `directives.test.tsx` flake → Phase-F watched. **Governance record:** OQ-2 (squash,
+  class-iv) + OQ-1 (defer, class-iii) ratified via authenticated channel; 5 ratification-class slices
+  governed (A2 i, B1 iv, B4 ii, D3 ii+iii, rag-stab iii); 3 §8.3 holds-until-direct-confirm honored
+  (rag-stab, D3-build→defer); accuracy/flake catches by the trio (EO-13 gatesView, EA-2 #118 cite).
+  Every merge: squash, verified from ground truth, executed only on 3-markers-at-one-content + green
+  CI. **TERMINAL STAND-DOWN (role §4.9/§8.4):** merge verified via ls-remote; stopping watcher;
+  ending the role. Last-seen: main `42699ca` · auditor `59a8ad3` · overseer `eb3490a`→(this commit).
