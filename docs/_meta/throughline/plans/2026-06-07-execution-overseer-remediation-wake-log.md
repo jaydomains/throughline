@@ -494,3 +494,23 @@ execution state when relevant.
   reinforced:** held a relayed-ruling scope-expansion until authenticated direct-confirm — the merge-
   executor discipline working. Re-arming single watcher for B3. Last-seen: main `8657adf` · auditor
   `42849fc` · overseer (this commit).
+
+- **2026-06-07T15:xxZ** — B3 executor branch `claude/b3-required-reading` @ `615d034` detected.
+  **B3 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/B3-P1 (scope):** edits `REQUIRED_READING.md` only (§4 halt-pointer + §5 tree) + B3 docs.
+    Base = current `main` @ `8657adf` (after B1). **No role-file edits (OV-1).** No reach into other
+    slices. Must NOT touch §7 governance parameters (merge-method/override/ratification) — that'd be
+    class-(iv); B3's scope is §4+§5 only.
+  - **EO/B3-P2 (§5 tree accuracy, M-9 — LOAD-BEARING, verify vs ground truth):** the corrected §5
+    must match the ACTUAL live `docs/_meta/throughline/` tree — I will independently `ls` it and
+    compare, NOT trust the plan's prose (plan §8 explicitly: "the M-9 §5 wording must be matched to a
+    fresh ls"). Removes the false "there are no experiments/…" denial; lists the real subdirs.
+  - **EO/B3-P3 (§4 pointer flip, M-8):** §4's "known gap … halt-4–9 not codified … owed work" note
+    must flip to "now codified in AUTO_CONTINUE (B1)" — depends on B1 (landed ✓). No stale "owed
+    work" claim survives; points at the real B1 codification.
+  - **EO/B3-P4 (ratification):** REQUIRED_READING is NOT in the class-(ii) spec-record set; §4/§5 are
+    factual reconciliation, not anchor/doctrine/precedent → **normal slice, execute directly** (verify
+    §7 untouched).
+  - **EO/B3-P5 (merge):** squash. **EO/B3-P6 (gate):** green; doc-only.
+  Finding-set-diff: **0 dropped / 0 added** (B3 positions pre-registered). Now reading B3 PR + diff +
+  independently ls-ing the live tree. Last-seen: main `8657adf` · auditor `7c4b9c6` · B3 exec `615d034`.
