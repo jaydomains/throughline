@@ -525,3 +525,8 @@ execution state when relevant.
   **0 dropped / 5 added (EO-38…EO-42)**. **Marker HELD pending green CI @ `615d034`.** Normal slice →
   execute directly on convergence; squash. Last-seen: main `8657adf` · auditor `7c4b9c6` · B3 exec
   `615d034` · overseer `0fcedc8`→(this commit).
+
+- **2026-06-07T15:2yZ** — B3 CI GREEN @ `615d034` (gate ✓×2 · Gitar ✓) → **final-marker BOUND
+  (Status: final — approved by execution-overseer @ `615d034`)** (comment 4643096454). Convergence:
+  overseer ✓ · executor (marker pending) · auditor (pending) · CI green. Normal slice → execute
+  directly on convergence; squash.
