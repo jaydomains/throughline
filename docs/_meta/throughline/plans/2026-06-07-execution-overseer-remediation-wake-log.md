@@ -580,3 +580,21 @@ execution state when relevant.
 - **2026-06-07T15:3yZ** — B4 CI GREEN @ `e701358` → **final-marker BOUND** (comment 4643128971).
   Convergence: overseer ✓ · executor (marker pending) · auditor (pending) · CI green. Execute
   directly on convergence; squash.
+
+- **2026-06-07T15:3zZ — B4 (PR #148) MERGED.** 3 markers @ `e701358` (executor ✓ · auditor ✓ [M-4
+  completeness + §9 locus verified] · overseer ✓) · CI green (gate ✓×2 · Gitar ✓) · base main
+  `02871df` · normal-class (settled M-4) · squash. **Executed: flip→squash-merge.** Merge `dbb7a13
+  merged:true`; **verified via ls-remote**: main `02871df`→`dbb7a13`, B4 branch **deleted**, SPEC
+  §7.21 = `*(deferred)*`. **M-4 closed.** Finding-set-diff: **0 dropped / 0 added** (EO-43…49 closed).
+  Cohort merged (9): A1·A2·A3·D1·B1·B2·rag-stab·B3·B4. Closed: M-1/M-2/M-4/M-7/M-8/M-9/M-13; M-14 stab.
+  **⚠️ RELAYED auto-continue posture + OQ-1=build (executor comment 4643123636):** spec author (via
+  executor, authenticated to executor) set: executor auto-starts next slice (B4→**D3**→C1→D2→B5→B6→
+  M-10); overseer auto-merges **normal-class** on convergence (= my existing dispatch-brief authority,
+  no new auth needed); STILL gated: halt-class, class-(iii)/(iv), relayed-ruling authentications.
+  **D3 = OQ-1 ruled BUILD** — but plan scoped D3's build **OUT-of-cohort** (its own ROADMAP home) →
+  **class-(iii) scope expansion** AND a **new ruling relayed via the chain** → per §8.3 + the relay's
+  own note + rag-stab precedent, **I must get the human's DIRECT authenticated confirm of OQ-1=build
+  + the scope expansion before merging D3.** Auditor (fb6db04) corroborates + will assess halt-4
+  estimate-breach on build size. **Action: surfacing OQ-1 to human NOW** (D3 imminent). Posture
+  itself needs no separate confirm for my normal-slice merges (unchanged from brief). Re-arming
+  watcher for D3. Last-seen: main `dbb7a13` · auditor `fb6db04` · overseer (this commit).
