@@ -432,3 +432,16 @@ execution state when relevant.
   resolve; per dispatch-brief surface conditions ("scope-expansion the executor+auditor surfaced
   but can't resolve") I escalate. Does NOT block B2. Last-seen: main `9501018` · B2 executor
   `830bbf3` · auditor `e173d98`→`26899fa` · overseer `789bf68`→(this commit).
+
+- **2026-06-07T1z:zzZ — B2 (PR #145) MERGED.** All 3 markers @ `830bbf3`: executor ✓ (4642975339)
+  · auditor ✓ (`7b40422`; M-13 empirically corroborated — saw mergeable_state blocked→clean on
+  #144; rag-flake surface corroborated; zero findings) · overseer ✓. Gate re-confirmed: CI green
+  (gate ✓×2 · Gitar ✓) · mergeable clean · base main `9501018` unchanged · normal slice · squash.
+  **Executed: flip draft→ready → squash-merge.** Merge `17c193a merged:true`; **verified via
+  ls-remote**: main `9501018`→`17c193a`, B2 branch **deleted**. **M-13 closed.** Finding-set-diff:
+  **0 dropped / 0 added** (B2 EO-28…33 closed). Cohort: A1✅A2✅A3✅D1✅B1✅B2✅ (M-1/M-2/M-7/M-8/M-13
+  closed). **rag.test.ts scope-decision: NOW SURFACED to human** (both executor + auditor
+  corroborated it exceeds plan scope — M-14 was "no action"; class-(iii)). Loop state: **awaiting
+  B3** (REQUIRED_READING §4 ptr + §5 tree, M-9+M-8-ptr; after B1 ✓) — normal slice; **plus the
+  pending rag scope-decision ruling**. Watcher `bpl1aug3x` armed (verified alive — fired 7b40422
+  echo). Last-seen: main `17c193a` · auditor `7b40422` · overseer `4a9b8c4`→(this commit).
