@@ -483,3 +483,26 @@ Pre-registered 2026-06-07 before reading diff content. Doc-only; normal-class; g
 - **B6-P4 — no residual:** grep → no 500/182, no unqualified "production-ready end-to-end".
 - **B6-P5 — scope:** README.md + docs only; no SPEC/PLATFORM_STATUS (M-10's); not a ratification class.
 - **B6-P6 — gate green; README:22 taxonomy line intact** (consistency).
+
+## B14. Slice M-10 positions (PR #154 `claude/m10-platform-status` @ `ce90ca6` — PLATFORM_STATUS full refresh, FINALE)
+
+Pre-registered 2026-06-07 before reading diff content. Doc-only; normal-class; CN-9 = must be LAST.
+
+- **M10-P1 — Snapshot current:** Phase F COMPLETE; all 14 (M-1…M-14) closed/built/deferred-with-home;
+  Snapshot no longer 2026-06-01/Phase E.
+- **M10-P2 — dependency posture (the M-10 correction):** `pnpm audit --prod` **15→0**, explicitly
+  NOT "mere version bumps" (matches the audit→0 I verified at A2/A3).
+- **M10-P3 — Recent Slice History current:** captures the cohort (#140–#154) + role-file suite
+  (#117–#138); no longer ends at #103.
+- **M10-P4 — CLAIMS MAP TO GROUND TRUTH (crux, EA-2 lesson):** every Snapshot/history claim backed by
+  a real merged PR on `main` or an on-disk handover. **Cross-check the cited PR#s (#140–#153 + #146)
+  + the finding→slice mapping against `git log` + my verified knowledge** — a comprehensive summary is
+  exactly where a cite/mapping error (like EA-2) can recur.
+- **M10-P5 — no overclaim:** readiness line honest (mirrors B6 — feature-complete + dependency-hardened
+  + single-user local deploy, NOT top production-ready tier).
+- **M10-P6 — it IS the last slice (CN-9):** M-10 closes the chain; no further slice; OQ-1 deferred
+  build → future ROADMAP cohort. Verify the framing + that nothing else is queued in-cohort.
+- **M10-P7 — scope:** PLATFORM_STATUS.md only + docs; no SPEC → not a ratification class.
+- **M10-P8 — set-diff completeness:** all 14 findings accounted, none silently dropped; M-14
+  (rag-flake) stabilized (#146); M-6 deferred-with-home; M-10 itself. Accurate disposition per finding.
+- **M10-P9 — gate green; doc-only; no regression.**
