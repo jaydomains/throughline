@@ -10,7 +10,7 @@
 
 Throughline development runs as **slice chains**. A slice = one PR. A chain = an ordered sequence of slices delivering one phase or one coherent multi-phase workstream.
 
-**Auto-continuation** means the chain advances slice-to-slice without per-slice user approval. The user approves the chain shape at plan-mode; the chain then runs to completion, halting only on three named conditions.
+**Auto-continuation** means the chain advances slice-to-slice without per-slice user approval. The user approves the chain shape at plan-mode; the chain then runs to completion, halting only on the named halt conditions (see **Halt Classes**).
 
 The rhythm has been running live since the Phase 18 / doc-authoring cycle but was not codified. This file codifies it.
 
