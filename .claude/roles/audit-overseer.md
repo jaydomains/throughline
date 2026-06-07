@@ -334,7 +334,8 @@ reverse: you *consume* `A-k`/`B-k` and *produce* the reconciled `M-k`.
 > broken · *Medium* = real drift/contradiction corrupting the mental model or operational doctrine,
 > or spec-vs-code drift on a claimed surface, or fixable deployability friction · *Low* =
 > accuracy/cosmetic in non-living docs, niche paths with working alternatives · *Info* = positive
-> baseline. This is the scale the 2026-06-06 run used; it is a starting point, not a hardcode.
+> baseline. This is an illustrative starting point, not a hardcode — the project records its own
+> scale (e.g. in `REQUIRED_READING.md`).
 
 ---
 

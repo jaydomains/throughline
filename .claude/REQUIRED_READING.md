@@ -230,9 +230,13 @@ plan/execution trios. The parameters the audit role files delegate here:
   `A-S<n>-<k>` / `B-S<n>-<k>`. Reconciled: `M-<k>` (Overseer), with slice depth `M-S<n>-<k>`. IDs are
   stable for the life of the audit; the Overseer maps every `A-*`/`B-*` to an `M-*` (drops nothing),
   tagged `[A]` / `[B]` / `[A+B]`.
-- **Audit-branch convention.** Overpass on a findings-only branch (default `claude/audit-overpass`);
-  slices on `claude/audit-slice-<n>-<short-name>`. (Conventions, not hardcodes — distinct branch
-  names so the watchers' self-echo filters separate the parties; pick collision-free names.)
+- **Audit-branch convention.** Overpass on a findings-only branch, **date-stamped to be
+  collision-free by construction** (default `claude/audit-overpass-YYYY-MM-DD`); slices on
+  `claude/audit-slice-<n>-<short-name>`. (Conventions, not hardcodes — distinct branch names so the
+  watchers' self-echo filters separate the parties; pick collision-free names.) *Note: the plain
+  `claude/audit-overpass` (and `claude/bold-cannon-S1V32`) are **stale leftovers from the PR #133
+  run still on the remote** — a fresh audit must not reuse `claude/audit-overpass`; date-stamping
+  avoids the collision.*
 - **Slice `WAKE` token.** The Overseer's slice go-signal to Auditor-A is a comment whose **first line
   is** `WAKE: <slice-id>` **plus** a ref-moving signal. It is **best-effort re-engagement**: the
   Overseer **owns the slice surface** and **conducts slices solo by default**, never blocking on
