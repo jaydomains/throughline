@@ -767,3 +767,7 @@ execution state when relevant.
   pending CI.** Finding-set-diff: **0 dropped / 3 added (EO-60…62)**. Marker HELD pending green CI @
   `420a577`. Execute directly on convergence; squash. Last-seen: main `4873325` · auditor `e73523b`→
   `19be9e2` · B5 exec `420a577` · overseer `6d26850`→(this commit).
+
+- **2026-06-07T19:5yZ** — B5 CI GREEN @ `420a577` → **final-marker BOUND** (comment 4643897352).
+  Convergence: overseer ✓ · executor (pending confirm) · auditor (`19be9e2` pre-reg, pending) · CI
+  green. Execute directly on convergence; squash.
