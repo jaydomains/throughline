@@ -617,3 +617,20 @@ execution state when relevant.
   - **EO/D3-P5 (merge):** squash. **EO/D3-P6 (gate):** green.
   Finding-set-diff: **0 dropped / 0 added** (D3 positions pre-registered). Now reading D3 PR + diff.
   Last-seen: main `dbb7a13` · D3 exec `d7e7251` · auditor `af3e7df` · overseer `fd791b3`→(this).
+
+- **2026-06-07T19:0xZ — D3 (PR #149) REVIEWED — OQ-1 REVERSED to defer-with-marker; merge HELD on
+  direct confirm.** Executor mapped OQ-1=build → found it L–XL (~1000–1800 LOC; merge_fields per-field
+  UI + archive `archived_at` schema), out-of-cohort → **surfaced halt-4/halt-5/class-(iii)** rather
+  than build → **spec author reversed OQ-1 to defer-with-marker** (relayed via executor). D3 PR #149
+  implements defer: `SPEC §7.27` `*(deferred)*` on merge_fields+archive + note (working alternatives
+  ship; build → own ROADMAP cohort); **no code change**; mirrors B4/M-4; closes M-6. Scope clean
+  (SPEC.md + docs only; base main `dbb7a13`). CI green @ `d7e7251` (gate ✓×2 · Gitar ✓). Posted
+  review (comment 4643726566): **EO-50 ratification HELD (OQ-1 reversed; needs DIRECT confirm of
+  defer — both build & defer were relayed; §8.3 act-on-current) · EO-51 content-clean defer/doc-only/
+  no-overreach/no-scope-expansion · EO-52 gate green + watch-item (one-time backend test fail, NOT
+  rag flake, didn't recur — possible 2nd intermittent test; doc-only D3 not the place) · EO-53
+  three-party-gate-win (scope-expansion-via-relay caught & corrected)**. Finding-set-diff: **0 dropped
+  / 4 added (EO-50…53)**. **MERGE HELD** on human's direct OQ-1=defer-with-marker confirmation (per
+  §8.3; supersedes the earlier relayed build). Surfaced to human. Normal-class slices (C1/D2/B5/B6/
+  M-10) still auto-merge. Auditor active (`130ca22`). Last-seen: main `dbb7a13` · D3 exec `d7e7251`
+  · auditor `130ca22` · overseer `96b9663`→(this commit).
