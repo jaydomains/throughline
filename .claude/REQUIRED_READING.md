@@ -89,24 +89,26 @@ canonical decisions):
 ## 4. Halt classes
 
 The **only** sanctioned reasons work stops. Canonical source:
-`docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` (§"The Three Halt Classes").
+`docs/_meta/throughline/AUTO_CONTINUE_WORKFLOW.md` (§"Halt Classes").
 Role files refer to these **by category**.
 
-The **three codified** halt classes:
+The **nine codified** halt classes — the three long-standing classes plus the Phase-E
+blessed extensions 4–9 (codified into the canonical doc by B1 / M-8):
 1. **Spec drift** — work touches behaviour the spec does not sanction → halt, surface to
    the spec author (fix is a SPEC update or a code rollback, never a silent patch).
 2. **Circuit breaker** — three fix-rounds on the same finding/failure on the same slice →
    halt, do not push a fourth.
 3. **Explicit user pause** — the kill switch is detected at a slice boundary → halt,
    record the reason, await resumption.
+4. **Estimate breach** · 5. **Unplanned anchor** · 6. **Test regression** ·
+   7. **Doc-PR collision** · 8. **Out-of-audit silent-failure** · 9. **Blessed decision-gate**
+   — defined with provenance in `AUTO_CONTINUE_WORKFLOW.md §"Halt Classes"`.
 
-> **Known gap (audit-relevant):** additional halt-class extensions ("halt-4…9") were
-> **blessed by the spec author during Phase E but have not been codified** into
-> `AUTO_CONTINUE_WORKFLOW.md`. They live, un-canonicalised, in the Phase E wake-logs
-> (e.g. `docs/_meta/throughline/plans/phase-e-audit-wake-log.md`). Until they are written
-> into the workflow doc, treat the **three above as the authoritative codified set** and
-> surface anything that looks like a blessed-but-uncodified extension rather than relying
-> on it. Closing this gap is owed work, not settled doctrine.
+> **Now codified (2026-06-07, B1 / M-8).** The Phase-E blessed extensions 4–9 — blessed by
+> the spec author 2026-05-30 but previously un-canonicalised — are now written into
+> `AUTO_CONTINUE_WORKFLOW.md §"Halt Classes"` with per-class provenance to
+> `plans/2026-05-30-phase-e-full-audit-close.md:202`. The former "owed work / treat only the
+> three as authoritative" gap is **closed**: all nine are the authoritative codified set.
 
 ---
 
@@ -121,9 +123,11 @@ All under `docs/_meta/throughline/` unless noted. Verified against the live tree
 | Audits | `audits/YYYY-MM-DD-<audit-scope>.md` (e.g. `2026-05-28-audit-3-functional-correctness.md`). |
 | Handovers | `handovers/<merge-date>-<slice-id>-<short-summary>.md`, authored from `docs/_meta/throughline/HANDOVER_TEMPLATE.md`. Written at every PR close; immutable once written (single confidentiality carve-out — see SESSION_START "Handover discipline"). Only the `throughline` area carries handovers. |
 
-There are **no** `experiments/`, `reconciliations/`, or `docs/_meta/<area>/handovers/`
-directories — do not assume them. The only other subdirectory is `mockups/` (UI design
-artifacts).
+The other subdirectories under `docs/_meta/throughline/` are `mockups/` (UI design
+artifacts), `experiments/` (e.g. `dormancy-push-test/`), and `archive/` (retired/consolidated
+artifacts, e.g. the branch-consolidation indexes) — `experiments/` and `archive/` were added
+by #131. There is **no** `reconciliations/` directory, and handovers live only under
+`docs/_meta/throughline/handovers/` (no per-`<area>` handovers).
 
 ---
 
