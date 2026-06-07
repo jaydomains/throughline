@@ -514,3 +514,14 @@ execution state when relevant.
   - **EO/B3-P5 (merge):** squash. **EO/B3-P6 (gate):** green; doc-only.
   Finding-set-diff: **0 dropped / 0 added** (B3 positions pre-registered). Now reading B3 PR + diff +
   independently ls-ing the live tree. Last-seen: main `8657adf` · auditor `7c4b9c6` · B3 exec `615d034`.
+
+- **2026-06-07T15:2xZ** — B3 (PR #147) GOVERNANCE REVIEW posted (comment 4643095516). Scope:
+  REQUIRED_READING §4+§5 + docs only (§7 params untouched; no role-files — OV-1); base main `8657adf`.
+  **EO-39 LOAD-BEARING (M-9) verified vs GROUND TRUTH:** `git ls-tree origin/main docs/_meta/throughline/`
+  = archive·audits·experiments·handovers·mockups·plans (6); B3 §5 names all six + only those +
+  reconciliations/-absent → **exact match**. **EO-40 (M-8 ptr):** §4 "Three"→"Halt Classes",
+  "three"→"nine codified" (4–9 listed), owed-work blockquote→"Now codified (B1/M-8)" w/ provenance →
+  no stale owed-work. **EO-38 scope ✓ · EO-41 normal slice ✓ · EO-42 gate pending CI.** Finding-set-diff:
+  **0 dropped / 5 added (EO-38…EO-42)**. **Marker HELD pending green CI @ `615d034`.** Normal slice →
+  execute directly on convergence; squash. Last-seen: main `8657adf` · auditor `7c4b9c6` · B3 exec
+  `615d034` · overseer `0fcedc8`→(this commit).
