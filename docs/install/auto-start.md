@@ -3,14 +3,31 @@
 Throughline's backend (T-D2) is intended to run as a long-lived process. ROADMAP Phase 1
 documents the auto-start mechanism per platform; nothing is enabled by default — you opt in.
 
-The backend command, for all platforms, is:
+## Setup first (build the artifact)
+
+`start` runs the **compiled** backend (`node dist/index.js`) and serves the **built** frontend
+SPA, so you must build once from a fresh clone before starting or enabling any auto-start unit:
 
 ```
-pnpm --filter @throughline/backend start
+./scripts/setup.sh
 ```
 
-(`pnpm dev` is the dev variant via `tsx watch`; `start` runs the compiled `dist/index.js` after
-`pnpm build`.)
+(the single-command setup — runs `pnpm install` then `pnpm -r build` for all packages; SPEC §11).
+Equivalently, run those two commands directly (e.g. on Windows): `pnpm install && pnpm -r build`.
+The OS units below run the same `start` command, so this build must have happened first — they do
+**not** build for you. Re-run the build after pulling changes.
+
+## The backend command
+
+For all platforms:
+
+```
+pnpm start
+```
+
+(equivalently `pnpm --filter @throughline/backend start`). This runs `node dist/index.js` —
+the compiled artifact under production module resolution. (`pnpm dev` is the dev variant via
+`tsx watch`, which runs the TypeScript source directly and does not require a build.)
 
 Environment variables the backend reads:
 
