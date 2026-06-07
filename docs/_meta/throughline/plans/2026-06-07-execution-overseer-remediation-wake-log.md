@@ -693,3 +693,16 @@ execution state when relevant.
   content. Plan: re-bind my marker @ `5d4dcc8` once CI green; auditor must re-mark @ `5d4dcc8`;
   executor re-affirm @ `5d4dcc8`. Flagging on PR. Last-seen: main `ed4e6bb` · C1 exec `5d4dcc8` ·
   auditor `59a41fa` (stale@626dde8) · overseer `1ebccda` (stale@626dde8)→(this commit).
+
+- **2026-06-07T19:3xZ — C1 (PR #150) MERGED (after fix-round re-stale handled).** Convergence
+  re-formed @ `5d4dcc8`: executor ✓ (authored Gitar-nit fix-round; handover Status intact; Gitar
+  re-approved) · auditor ✓ (`30c227b` re-bound 626dde8→5d4dcc8; 212/212, serializer unchanged) ·
+  overseer ✓ (re-bound @ 5d4dcc8). CI green (gate ✓×2 · Gitar ✓) · mergeable clean · base main
+  `ed4e6bb` · normal slice · squash. **Did NOT merge on the stale `626dde8` markers** — waited for
+  all 3 to re-form @ `5d4dcc8` (content-binding discipline, role §8). **Executed: flip→squash-merge.**
+  Merge `c3c1db4 merged:true`; **verified via ls-remote**: main `ed4e6bb`→`c3c1db4`, C1 branch
+  **deleted**, `sessionToMarkdown.ts` on main. **M-5 closed** (§7.20 claim now true). Finding-set-diff:
+  **0 dropped / 0 added** (C1 EO-54…56 closed). **Cohort merged (11):** A1·A2·A3·D1·B1·B2·rag-stab·
+  B3·B4·D3·C1. Closed: M-1/M-2/M-4/M-5/M-6/M-7/M-8/M-9/M-13; M-14 stab. **Loop state: awaiting D2**
+  (UUID picker, M-3) → B5·B6·M-10, all normal-class auto-merge. Re-arming single watcher for D2.
+  Last-seen: main `c3c1db4` · auditor `30c227b` · overseer (this commit).
