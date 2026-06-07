@@ -7,11 +7,19 @@ content-changing commit on the canonical branch does. This file lives on my audi
 
 | Slice | PR | Convergence SHA | Status |
 |---|---|---|---|
-| A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `8036839` | **final — approved by execution-auditor** |
+| A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **final — approved by execution-auditor** |
+
+> **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
+> **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
+> merge-gating, + executor wake-log). Re-verified the changed sections: code/deps/tests are
+> **byte-identical** to `8036839` (`git diff 8036839..c2de0eb -- packages/ '**/*.ts' '**/*.json'
+> pnpm-lock.yaml` is empty), so my fidelity + correctness verification (incl. the independent
+> boot) **carries forward unchanged**; the handover delta is benign and accurate. Marker
+> re-bound to `c2de0eb` so convergence is unambiguous at the current head.
 
 ---
 
-## A1 (PR #140) — final — approved by execution-auditor @ `8036839`
+## A1 (PR #140) — final — approved by execution-auditor @ `c2de0eb` (content from `8036839`, unchanged)
 
 Both axes verified against the actual changed code and an independent runtime run (not the PR
 body). All pre-registered positions (A1-P1…P8) and cohort positions (CP-1…8) are Confirms;

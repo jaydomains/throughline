@@ -37,3 +37,16 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   Convergence: 3 markers at `8036839` + green CI; merge is the overseer's, gated on override
   window + OQ-2 ruling (not my lane). Staying actively subscribed across the sequence; re-scoping
   watcher to the next executor slice when it appears.
+
+- **2026-06-07 — A1 marker refresh `8036839 → c2de0eb` (role §4.7).** Watcher fired:
+  `claude/cool-cannon-J9BR5` `8036839→c2de0eb`. On-wake pairing: diffed the new commit + read PR
+  (no new comments beyond my own; executor commit message = "accept overseer EO-7 — handover
+  refine"). Commit is **doc-only**: handover Open-Questions note (OQ-2/EO-7 as overseer-lane /
+  merge-gating) + executor wake-log. Re-verified changed sections: **code/deps/tests byte-identical**
+  to `8036839` (glob diff over `packages/`, `*.ts`, `*.json`, `pnpm-lock.yaml` empty) ⇒ fidelity +
+  correctness (incl. independent boot) carry forward unchanged; handover delta benign + accurate.
+  Refreshed my marker to `c2de0eb`. Last-seen remote HEADs (`git ls-remote`): `main`@`ffa01ed`,
+  `claude/cool-cannon-J9BR5`@`c2de0eb`, `claude/blissful-brown-POKvS`@`cbf43fd` (overseer wake-log).
+  Finding-set-diff: `0 dropped / 0 added (still zero findings; marker re-bound, no content change)`.
+  Round-trips: A1 thread 0/5 (no open threads). Note: overseer marker still cited @ `8036839` —
+  content-invariant per §8, valid; overseer re-confirms at head at execution time (§8.2).
