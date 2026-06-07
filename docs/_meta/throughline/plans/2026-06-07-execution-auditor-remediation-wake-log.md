@@ -77,3 +77,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
     replacement) and the **C-D2 class-(i) ratification**. Watcher stays armed (broad arm on
     `claude/` catches A2's new branch; targeted arm on overseer branch still valid; self-exclude
     unchanged). Will pre-register A2 positions before reading its diff.
+
+- **2026-06-07 — A2 intake + positions pre-registered (PR #141).** Watcher fired: new ref
+  `claude/a2-embeddings-protobufjs` @ `2b1f4fda` = PR #141 (A2, draft, **class-(i)** C-D2 amendment);
+  overseer also moved (`a35f7f6→ddb85bcc` = its own A2 pre-read positions). On-wake pairing: read PR
+  #141 body + fresh `git ls-remote` (`main`@`36be75a`, A2@`2b1f4fda`, overseer@`ddb85bcc`, self@
+  `9885398`). **Pre-registered my A2 positions A2-P1…P9 BEFORE reading the diff** (anti-anchoring;
+  saw the PR body via the PR list but not the code). Finding-set-diff:
+  `0 dropped / 0 added (A2 baseline — positions pre-registered, no findings yet)`. Round-trips: none
+  open. Next: read the A2 diff + independently verify (lockfile protobufjs floor, pnpm audit delta,
+  gate, embeddings path), then post findings or marker.

@@ -124,6 +124,49 @@ Pre-registered before the A1 diff exists. Plan ref: §5 Group A → A1.
 
 ---
 
+## B2. Slice A2 positions (PR #141 — embeddings-stack replacement / protobufjs Critical)
+
+**Pre-registered 2026-06-07, before reading the A2 diff** (derived from plan §5 Group A → A2 +
+C-D2 + T-D60 + my startup CN-1/CN-2). *Anti-anchoring note:* I have seen the PR #141 **body** via
+the open-PR list (unavoidable), but **not** the diff/code; these positions are measured against the
+plan/spec, not the executor's framing. Branch `claude/a2-embeddings-protobufjs` @ `2b1f4fda`.
+
+- **A2-P1 — protobufjs Critical cleared.** The resolved tree must carry **protobufjs ≥ 7.5.5**
+  (the fixed floor); the Critical RCE **and** the 4× High protobufjs advisories must show **cleared**
+  in `pnpm audit --prod`. Verify in the lockfile + audit, not the PR body.
+- **A2-P2 — stack REPLACED, not override-only (CN-2).** `@xenova/transformers` and `onnx-proto@4`
+  must be **gone** from the resolved tree; `@huggingface/transformers` present. A `pnpm.overrides`
+  lifting protobufjs under a retained `onnx-proto@4` would break it — an override-only "fix" is a
+  finding. Confirm the executor verified the resolved tree clears the advisory *before* committing.
+- **A2-P3 — embeddings.ts correctly adapted.** The dynamic import swapped to the new package; the
+  feature-extraction pipeline API, the model id, and the **384-dim** embedding contract preserved or
+  correctly adapted. Verify the actual code logic, not the "API unchanged" claim.
+- **A2-P4 — C-D2 amendment accurate AND class-(i).** A C-D2 amendment must be present in
+  `CODE_SPEC.md`, describe the **new** stack, and describe the dependency **as it actually is**.
+  **Plan-vs-reality (CN-1, role §7e):** the plan §5-A2 instructs amending C-D2 to "reflect the
+  already-true **hard-direct-dep** reality" — but the live declaration is an **`optionalDependency`**,
+  so the plan's framing is itself wrong. The *accurate* amendment (optionalDependency + lazy import +
+  T-D60 capability-absent fallback) is the correct outcome even though it departs from the plan's
+  literal "hard direct dep" wording; I treat an accurate amendment as a **plan-vs-reality** note, not
+  a fidelity failure — and an amendment that parrots the plan's wrong "hard direct dep" framing **is**
+  a correctness finding (it re-introduces the inaccuracy CN-1 flagged).
+- **A2-P5 — no regression; flake discipline.** Gate green; 610 backend / 204 frontend preserved
+  (M-14). `rag.test.ts` (the §3.C flagged flake, most exercised by this swap) passing — and if it
+  surfaces, **root-caused/stabilized, never re-run-until-green** (plan §3.C; codified circuit-breaker).
+- **A2-P6 — RAG/embeddings path actually works (correctness crux).** The real embedder resolves and
+  produces 384-dim vectors, **or** the honest T-D60 capability-absent mode engages — verify by
+  exercising the embeddings/RAG path (install + test run where feasible), not by trusting "tests pass."
+- **A2-P7 — audit before/after recorded** in the handover (claimed 10→1); the Critical+4High
+  protobufjs cleared; **no NEW advisories** introduced by the new chain (verify via a fresh audit).
+- **A2-P8 — scope containment + correct rebase.** A2 touches only the embeddings/protobufjs surface
+  + C-D2; not A3 (react-router/residual sweep), not D1 (`start` script). Must be rebased on A1
+  (`main`@`36be75a`, fastify v5) — confirm `package.json` carries the A1 fastify v5 floor, not a revert.
+- **A2-P9 — footprint correctness (new-dependency risk).** `@huggingface/transformers@3` reportedly
+  pulls native `onnxruntime-node` (postinstall downloads a CUDA build) + `sharp`. Verify: (a) a clean
+  `--frozen-lockfile` install **succeeds** (or degrades gracefully as an optionalDependency without
+  failing the install/gate), and (b) no new advisory enters the prod tree. A swap that clears
+  protobufjs but breaks install or smuggles a new exposure is a finding.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
