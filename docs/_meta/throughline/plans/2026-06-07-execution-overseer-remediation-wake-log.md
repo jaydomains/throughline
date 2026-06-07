@@ -38,3 +38,15 @@ execution state when relevant.
   **Execution gated on:** (1) auditor final-marker @ `8036839` content, (2) override window,
   (3) **OQ-2 merge-method ruling** (authenticated channel). Last-seen remote HEADs: overseer
   `7f668bd` · executor `8036839` · auditor `b96c72c` · main `ffa01ed`.
+
+- **2026-06-07T08:44Z** — OQ-2 SURFACED → spec-author **DEFERRED** ("do not proceed, wait for
+  next instruction"). Surfaced OQ-2 (merge-method, class-iv) via the authenticated in-session
+  human channel; spec-author dismissed without ruling and instructed to wait. **OQ-2 remains
+  unruled** → A1 execution stays **blocked** on the merge-method ruling (per EO-7 gate). No
+  re-ask; I hold per instruction. Finding-set-diff: **0 dropped / 0 added** (no change to the
+  EO set; EO-7 stays open, surfaced-pending). Loop state: **A1 NOT converged** (executor ✓ ·
+  overseer ✓ · execution-auditor marker PENDING · CI ✓); execution additionally gated on the
+  pending OQ-2 ruling + override window. Standing by: watcher armed (`claude/` scope, self-excl,
+  60s) for (1) execution-auditor's A1 final-marker, (2) any executor revision, (3) the
+  spec-author's next instruction / OQ-2 ruling. Reviewer-side asymmetry holds — the executor
+  re-initiates; I do not self-wake to merge.
