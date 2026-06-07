@@ -329,3 +329,11 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   **Next: B4** (mermaid deferral markers, M-4, class-(ii) spec amendment) — CN-8 applies: markers on
   SPEC §7.21 + §9 AI-table (NOT §13), remove orphaned SettingsView.tsx 'mermaid' row; serialize w/ D3
   on SPEC.md. Watcher armed; will pre-register B4 positions before its diff.
+
+- **2026-06-07 — B4 intake + positions pre-registered (PR #148 @ `e701358`, class-(ii)).** Watcher:
+  new ref `claude/b4-mermaid-markers`. Diff stat: SPEC.md + CODE_SPEC.md + SettingsView.tsx + docs
+  (note CODE_SPEC §14 completeness extension flagged by executor). Pre-registered B4-P1…P7 before
+  reading diff content. Fresh ls-remote: `main`@`02871df`, B4@`e701358`, overseer@`63b286a`,
+  self@`edad1f1`. Finding-set-diff: `0 dropped / 0 added (B4 baseline)`. Next: read diff + grep all
+  mermaid in SPEC/CODE_SPEC (M-4 completeness bar) + verify §9 locus (CN-8) + SettingsView removal +
+  CODE_SPEC §14 extension scope, then marker.

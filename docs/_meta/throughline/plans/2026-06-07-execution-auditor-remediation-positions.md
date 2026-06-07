@@ -331,6 +331,33 @@ CN-4). Live tree (verified): `archive/ audits/ experiments/ handovers/ mockups/ 
 - **B3-P7 — closes the B1-flagged loop.** B1 explicitly deferred the §4 pointer + section-name to B3;
   verify B3 actually closes it (no residual stale "The Three Halt Classes" reference in §4).
 
+## B8. Slice B4 positions (PR #148 `claude/b4-mermaid-markers` @ `e701358` — mermaid deferral markers, M-4, class-(ii))
+
+**Pre-registered 2026-06-07, before reading the B4 diff content** (derived from plan §5 B4 + CN-8 +
+M-4 ruling). Seen the PR body (notes a CODE_SPEC §14 completeness extension), not the diff.
+
+- **B4-P1 — §9 locus (CN-8), not §13.** `*(deferred)*` markers on SPEC §7.21 prose **and the §9
+  AI-feature-table row** (~line 548/550) — verify the executor edited **§9** (the actual AI table),
+  NOT §13 (Open questions, no AI table). The ruling/audit said "§13" but plan §0 corrected it to §9.
+- **B4-P2 — orphaned SettingsView knob removed.** `SettingsView.tsx` `'mermaid'` FEATURE_OVERRIDES
+  entry removed; `grep mermaid SettingsView.tsx` → nothing.
+- **B4-P3 — M-4 completeness bar: no implementation-implying mermaid claim left unmarked.** I grep
+  **all** of SPEC.md + CODE_SPEC.md for "mermaid" and verify each hit is either marked `*(deferred)*`
+  or is a genuine non-claim (e.g. the §15 API-account capability-prerequisite list, correctly left).
+  T-D14 (:654) decision-index should carry a deferral cross-note (executor's call, recommended).
+- **B4-P4 — CODE_SPEC §14 extension: within M-4 intent or scope-creep?** The executor marked
+  CODE_SPEC §14's mermaid per-feature-default `*(deferred)*` (beyond the plan's literal list).
+  Verify: it is a *mermaid-deferral* edit consistent with M-4's "no unmarked claim" intent (the
+  SettingsView knob ↔ CODE_SPEC §14 coupling makes leaving §14 inconsistent) → acceptable
+  completeness extension, transparently flagged (like A2/B1). If it changed anything *other* than
+  marking mermaid deferred, that's scope-creep to flag.
+- **B4-P5 — class-(ii) ratification.** SPEC + CODE_SPEC edits → class-(ii); M-4 settled in dispatch
+  → overseer confirms (collapses ~zero). Verify the flag; ratification disposition is the overseer's.
+- **B4-P6 — D3 serialization.** B4 + D3 both edit SPEC.md → must not be concurrently open. D3 is
+  HELD on OQ-1, so B4 runs alone. Verify no D3 branch concurrently open.
+- **B4-P7 — scope + gate.** SPEC.md + CODE_SPEC.md + SettingsView.tsx (+ docs); 610/204 preserved
+  (the FEATURE_OVERRIDES removal must not break a frontend test/type); gate green. No other slices' files.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).
