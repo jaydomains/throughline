@@ -681,3 +681,15 @@ execution state when relevant.
 - **2026-06-07T19:2yZ** — C1 CI GREEN @ `626dde8` → **final-marker BOUND** (comment 4643761273).
   Convergence: overseer ✓ · executor (marker pending confirm) · auditor (pending) · CI green.
   Execute directly on convergence; squash.
+
+- **2026-06-07T19:2zZ — C1 fix-round `5d4dcc8` RE-STALES markers; convergence re-forms @ `5d4dcc8`.**
+  Executor pushed `5d4dcc8` ("reset copy-button feedback to idle after 2s" — Gitar nit): adds a
+  resetTimer ref + useEffect cleanup + 2s idle-reset in CopySessionMarkdown.tsx (+12 lines).
+  **Content-changing** (not a pure marker) → **re-stales reviewer markers bound to `626dde8`**.
+  Auditor had marked @ `626dde8` (59a41fa, "Gitar nit non-blocking", M-5 build verified) — now STALE;
+  my marker @ `626dde8` — now STALE. Re-verified the fix: benign UX + good React hygiene, scope still
+  frontend-only, NO spec edit → EO-54…56 hold. CI @ `5d4dcc8`: Gitar ✓, gate ×2 in_progress.
+  **MUST NOT merge on the auditor's stale `626dde8` marker** — convergence requires all 3 @ `5d4dcc8`
+  content. Plan: re-bind my marker @ `5d4dcc8` once CI green; auditor must re-mark @ `5d4dcc8`;
+  executor re-affirm @ `5d4dcc8`. Flagging on PR. Last-seen: main `ed4e6bb` · C1 exec `5d4dcc8` ·
+  auditor `59a41fa` (stale@626dde8) · overseer `1ebccda` (stale@626dde8)→(this commit).
