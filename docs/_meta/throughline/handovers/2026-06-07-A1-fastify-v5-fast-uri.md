@@ -46,7 +46,9 @@ _none_
 
 ## Open Questions
 
-_none for A1._ (Cohort OQ-1/OQ-2 govern D3/B1, not A1.)
+- [ ] **OQ-2 (merge method, class-iv)** gates A1's **merge execution** (not its content) — per execution-overseer EO-7: A1 is the *first* merge of this execution-trio-reviewed auto-continue build-slice chain, so the squash-vs-merge-commit method must be ruled before the overseer executes. The overseer's lane; surfaced to the spec-author through the authenticated channel. A1's *content* remains not-a-ratification-class. Landing site: spec-author OQ-2 ruling → overseer merge.
+
+_(OQ-1 governs D3 only, not A1.)_
 
 ## Recently Resolved
 
