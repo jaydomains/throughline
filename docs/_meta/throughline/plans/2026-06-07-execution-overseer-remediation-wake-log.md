@@ -802,3 +802,20 @@ execution state when relevant.
   M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-11/M-13; M-14 stab. **Loop state: awaiting B6** (README, M-12) → then
   **M-10** (PLATFORM_STATUS full refresh — FINAL slice). Both normal-class. Re-arming watcher for B6.
   Last-seen: main `91f56b6` · auditor `f6cead0` · overseer (this commit).
+
+- **2026-06-07T20:xxZ** — B6 executor branch `claude/b6-readme-accuracy` @ `ed7551a` detected.
+  **B6 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/B6-P1 (ratification — normal):** README not in spec-record set; M-12 settled. Verify no
+    SPEC/CODE_SPEC/DECISIONS edit → normal slice, execute directly.
+  - **EO/B6-P2 (scope):** README.md + docs. Base = current `main` @ `91f56b6`. Own file; no reach
+    into other slices.
+  - **EO/B6-P3 (counts match LIVE gate — LOAD-BEARING, moving target):** plan said 500/182→**610/204**,
+    but C1 (+8) and D2 (+2) grew the frontend suite to **214** during the cohort. B6 must use the
+    **current live** counts (610 backend / **214** frontend), NOT the plan's stale 204. Verify against
+    the live gate, not the plan prose (plan §8 verify-before-write).
+  - **EO/B6-P4 (honest readiness — no overclaim):** remove/soften "feature-complete and production-
+    ready end-to-end" to match the **now-true** state (Group A + D1 landed → dependency-hardened,
+    single-user local deploy works). Claim must not outrun reality.
+  - **EO/B6-P5 (merge):** squash. **EO/B6-P6 (gate):** green.
+  Finding-set-diff: **0 dropped / 0 added** (B6 positions pre-registered). Now reading B6 PR + diff.
+  Last-seen: main `91f56b6` · auditor `9ffa2be` · B6 exec `ed7551a`.
