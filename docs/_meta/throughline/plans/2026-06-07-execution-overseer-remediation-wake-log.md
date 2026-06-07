@@ -316,3 +316,36 @@ execution state when relevant.
   If all clean → class-(iv) covered by authenticated OQ-2 + settled M-8 → execute directly; else
   surface. Re-arming watcher for B1. Last-seen: main `fb25642` · auditor `2c3db4b` · overseer
   `dd9ab5a`→(this commit).
+
+- **2026-06-07T1x:xxZ** — B1 executor branch `claude/b1-governance-doctrine` @ `4ebf3d4` detected.
+  **B1 pre-read governance positions (BEFORE reading the diff — anti-anchoring §4.2; HEAVIEST
+  slice, class-(iv) durable precedent):**
+  - **EO/B1-P1 (§D matches authenticated OQ-2 ruling):** AUTO_CONTINUE §D rewrite must say:
+    **review topology determines merge method — any role-trio-reviewed PR squash-merges; the
+    auto-continue chain running WITHOUT trio review uses merge-commit.** This is the spec-author's
+    explicit OQ-2 ruling (authenticated, on record). Must replace the self-disproving "every PR is
+    a two-parent merge; squash not used" invariant. Deviation from the ruling → hold + surface.
+  - **EO/B1-P2 (halt 4–9 trace to BLESSED sources — NO invention; the load-bearing check):**
+    codify six classes. Plan §5 B1 map: halt-4=estimate breach
+    (`audits/2026-05-31-phase-e-execution-audit-1.md:50,61`), halt-5=unplanned anchor
+    (`plans/2026-05-30-phase-e-full-audit-close.md:194,350`), halt-6=fingerprint-staleness,
+    halt-7=**murkiest** (likely-invention candidate), halt-8=flake (`…execution-audit-1.md:51`),
+    halt-9=blessed decision-gate (`…full-audit-close.md:342,403`). **Each codified class MUST cite
+    a traceable blessed Phase-E source.** If any (esp. halt-7) is invented/untraceable → that's an
+    **unauthorized class-(iv) mint** the executor should have surfaced, not authored → **I HOLD +
+    SURFACE to the human spec-author.** I independently spot-check the cited sources.
+  - **EO/B1-P3 (no role-file edits — OV-1):** B1 lands entirely in the project layer (AUTO_CONTINUE).
+    Must NOT edit `.claude/roles/*` (they externalize halt-classes by-category + merge-method as a
+    REQUIRED_READING param; no back-port owed). A role-file edit = scope finding.
+  - **EO/B1-P4 (REQUIRED_READING §4 pointer is B3's, not B1's):** B1 must NOT edit
+    `REQUIRED_READING.md` (the §4 "owed work" pointer flip is B3, to avoid the §4/§5 collision).
+    Verify REQUIRED_READING untouched. (Ruling says §7 already reflects dual-context — **verify,
+    do not re-edit** unless verification fails.)
+  - **EO/B1-P5 (scope):** AUTO_CONTINUE_WORKFLOW.md only (§D + halt-class section). Base = current
+    main `fb25642`. Doc-only → CI must still be green.
+  - **EO/B1-P6 (ratification disposition):** class-(iv). IF §D matches OQ-2 + all halt classes
+    trace to blessed sources + no role-file/REQUIRED_READING edit → class-(iv) **covered by the
+    authenticated OQ-2 ruling + settled M-8** → execute directly. ELSE → hold + surface.
+  - **EO/B1-P7 (merge):** squash (OQ-2).
+  Finding-set-diff: **0 dropped / 0 added** (B1 positions pre-registered, no findings yet). Now
+  reading B1 PR + diff. Last-seen: main `fb25642` · auditor `db63716` · B1 executor `4ebf3d4`.
