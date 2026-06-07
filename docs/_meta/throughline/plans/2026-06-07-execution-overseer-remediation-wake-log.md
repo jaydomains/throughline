@@ -392,3 +392,28 @@ execution state when relevant.
   NOT in the class-(ii) spec-record set → not a ratification class → execute directly); **after B1**
   (shared AUTO_CONTINUE — now landed). Re-arming watcher for B2. Last-seen: main `9501018` · auditor
   `97dc768` · overseer `1bcbb47`→(this commit).
+
+- **2026-06-07T1y:yyZ** — **⚠️ WATCHER-LAPSE (recorded honestly) + B2 detected.** A monitor
+  (`bonofprpj`) died (cap) and I did **not** re-arm promptly — coverage lapsed, and the **B2
+  executor branch `claude/b2-ci-enforcement` @ `830bbf3` opened during the unarmed gap.** Surfaced
+  by the **mandated on-wake `git ls-remote`** (skill: "detection is not awareness; the durable
+  record + remote is the source of truth, not the wake event") after a spec-author prompt, not by a
+  wake. Corrective: re-armed `bpl1aug3x`; tightening the **re-arm-on-every-stop / proactive-re-arm**
+  discipline. No convergence was missed (B2 only just opened). **B2 pre-read governance positions
+  (anti-anchoring §4.2, before reading diff):**
+  - **EO/B2-P1 (scope + PLATFORM_STATUS collision — KEY WATCH):** B2 = M-13. Edits `ci.yml` (remove
+    "advisory" header note `:9-13`) + `AUTO_CONTINUE_WORKFLOW.md` (remove the hedge `:24`). Must
+    **NOT edit `PLATFORM_STATUS.md`** — only *verify* `:37` already says "DONE" and leave it
+    (PLATFORM_STATUS full refresh is **M-10's**, last slice, §3.B collision). A PLATFORM_STATUS edit
+    = collision finding.
+  - **EO/B2-P2 (AUTO_CONTINUE after B1):** base = current `main` @ `9501018` (incl. B1). Verify the
+    `:24` advisory hedge still exists post-B1 (B1 touched §D/halt/premise, not the :24 hedge) and B2
+    removes it correctly; no clobber of B1's §D/halt codification.
+  - **EO/B2-P3 (M-13 core — consistency):** all three statements (ci.yml · AUTO_CONTINUE ·
+    PLATFORM_STATUS) end consistent — gate **IS** the enforcing required-check on `main`; **no
+    "advisory" survives**.
+  - **EO/B2-P4 (ratification):** **normal slice** — M-13 settled; ci.yml/AUTO_CONTINUE/PLATFORM_STATUS
+    not in the class-(ii) spec-record set → not a ratification class → execute directly.
+  - **EO/B2-P5 (merge):** squash (OQ-2). **EO/B2-P6 (gate):** green; yaml/doc-only.
+  Finding-set-diff: **0 dropped / 0 added** (B2 positions pre-registered, no findings yet). Now
+  reading B2 PR + diff. Last-seen: main `9501018` · auditor `e173d98` · B2 executor `830bbf3`.
