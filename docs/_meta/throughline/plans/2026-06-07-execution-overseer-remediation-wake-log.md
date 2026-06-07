@@ -827,3 +827,7 @@ execution state when relevant.
   Group A+D1 landed) ✓ · EO-66 gate pending CI.** Finding-set-diff: **0 dropped / 4 added (EO-63…66)**.
   Marker HELD pending green CI @ `ed7551a`. Execute directly on convergence; squash. Last-seen: main
   `91f56b6` · auditor `9ffa2be` · B6 exec `ed7551a` · overseer `086e0b2`→(this commit).
+
+- **2026-06-07T20:1zZ** — B6 CI GREEN @ `ed7551a` → **final-marker BOUND** (comment 4643985413).
+  Convergence: overseer ✓ · executor (pending confirm) · auditor (pending) · CI green. Execute
+  directly on convergence; squash. (B6 = penultimate; M-10 is the finale.)
