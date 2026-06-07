@@ -566,3 +566,13 @@ execution state when relevant.
   - **EO/B4-P6 (merge):** squash. **EO/B4-P7 (gate):** green.
   Finding-set-diff: **0 dropped / 0 added** (B4 positions pre-registered). Now reading B4 PR + diff
   (SPEC §7.21/§9/§13 + SettingsView). Last-seen: main `02871df` · auditor `edad1f1` · B4 exec `e701358`.
+
+- **2026-06-07T15:3xZ** — B4 (PR #148) GOVERNANCE REVIEW posted (comment 4643127230). Verified:
+  **EO-44 locus correct** (§7.21 + §9 AI-table + T-D14; NOT §13) · **EO-45 defer-not-delete** (prose
+  preserved, only marked) · **EO-46 SettingsView 'mermaid' removed** (grep none) · **EO-47 CODE_SPEC
+  §14 marker = in-M-4-intent completeness** (FEATURE_OVERRIDES cites §14; removing knob w/o marking
+  §14 = new inconsistency; covered by settled M-4, flagged — not a scope departure) · **EO-43
+  ratification class-(ii) collapses (M-4 settled)** · **EO-48 scope/serialize-w-D3 ok** (D3 not open)
+  · **EO-49 gate pending CI.** Finding-set-diff: **0 dropped / 7 added (EO-43…EO-49)**. **Marker HELD
+  pending green CI @ `e701358`.** Class-(ii) covered by settled M-4 → execute directly; squash.
+  Last-seen: main `02871df` · auditor `edad1f1` · B4 exec `e701358` · overseer `310f27d`→(this commit).
