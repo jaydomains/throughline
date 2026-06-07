@@ -619,3 +619,80 @@ Phase 22 doc prerequisites landed in Session 5 of the doc-authoring stream (T-D5
 
 - [x] **Slice 1 — Backend: `discipline_scan_state` lifecycle.** `packages/shared/src/discipline-scan.ts` (`DisciplineScanState`, `readDisciplineScan`, `shouldSuppressDisciplineSignals`, `DisciplineDriftRescanResult`); `packages/backend/src/projects/service.ts` (`updateSettings(id, partial)` merge helper); `packages/backend/src/bootstrap/service.ts:283` (`importBootstrap` sets `pre-scan` on first ingest, idempotent); `packages/backend/src/methodology/drift/routes.ts:36` (rescan endpoint try/finally drives `running → complete + last_run_at`; response shape extended to `DisciplineDriftRescanResult`); `packages/backend/src/intelligence/periodic-review.ts:96` (single shared gate condition `shouldSuppressDisciplineSignals` wired into both suppression sites — `listOpenDisciplineSignals` and bundle-declared hygiene categories); `DECISIONS.md` T-D57 Implications one-line correction (Phase 19 Slice 3 precedent); `packages/backend/test/discipline-scan-lifecycle.test.ts` (13 tests covering bootstrap-ingest first-write + idempotency + sibling-preservation + validation-failure no-residue, rescan transitions, try/finally crash-safety, 404 no-touch, non-bootstrap-must-still-surface load-bearing guard, pre-scan/running suppression, complete surfaces, two-site-shared-gate).
 - [x] **Slice 2 — Frontend: SettingsView `DisciplineScanBlock` (chain-close).** `packages/frontend/src/views/SettingsView.tsx` (`DisciplineScanBlock` exported component, sibling of `BootstrapBlock` inside `ProjectSection`); `data-state` and `data-prominence` attributes drive the rendering (`prominent` when state is `pre-scan`; `demoted` for `complete` / `running` / absent ≡ complete-implicit); calls `api.rescanDisciplineDrift` which now returns `DisciplineDriftRescanResult`; optimistic flip to `running` on click rolls back on error; `onScanned()` re-fetches the project record so the next render reads the persisted state. `packages/frontend/test/disciplineScanBlock.test.tsx` (8 tests across two describes: state-driven affordance shape — pre-scan prominent, complete demoted, non-bootstrap absent ≡ complete, running disabled "Scanning…"; rescan flow — happy path, optimistic running, error rollback + inline message, onScanned refresh). `packages/frontend/test/fixtures/mockApi.ts` mock updated to the new response shape. Tracking issue [#63](https://github.com/jaydomains/throughline/issues/63) closes on this slice's merge.
+
+---
+
+## Post-v1 cohorts (after Phase 22)
+
+Build-state for the cohorts that landed after the v1 cut (ROADMAP "Post-v1 cohorts"). Back-filled by M-11 (slice B5) and **kept current going forward**.
+
+## Phase E — Full audit-fix close (E1–E26)
+
+Closed audits 1–5 findings; plan `plans/2026-05-30-phase-e-full-audit-close.md`; execution audit #116; chain complete (closure verified `handovers/phase-e-closure-verification.md` + `phase-e-execution-log.md`). Anchors: **T-D60** (E1), **C-D25** (E6), **C-D26** (E5), **T-D10** amendment (E20a).
+
+- [x] **E1** — RAG embedder/query honesty (SF3-01/02, S4-03); mint **T-D60** + C-D2 amendment · #88
+- [x] **E2** — AI/capability degradation honesty (SF3-03, SF2-04, SF4-02/03) · #89
+- [x] **E3** — Semble degradation honesty (SF4-01) · #90
+- [x] **E4** — Notifier capability honesty (SF5-03) · #91
+- [x] **E5** — Background-job health model; mint **C-D26** (SF5-01/02/04) · #92
+- [x] **E6** — Bundle-health visibility; mint **C-D25** (SF2-02/06) · #93
+- [x] **E7** — Bootstrap worker/watcher robustness (S1-01/02, SF1-02, SF5-05/06) · #94
+- [x] **E8** — Shutdown lifecycle completion (S7-02, SF5-11) · #95
+- [x] **E9** — Loader robustness (S3-01/03, SF2-05, SF5-08) · #96
+- [x] **E10** — Background-loop correctness (S4-02, S5-05) · #97
+- [x] **E11** — Transaction atomicity (S5-04, S6-03/04) · #98
+- [x] **E12** — Error→HTTP-status mapping (S5-03, S6-01) · #99
+- [x] **E13** — Methodology-parsing robustness (S2-02, S3-02, SF2-03) · #100
+- [x] **E14** — Audit-trail wiring (SF7-01/02/03/05) · #101
+- [x] **E15** — Frontend races & error surfacing (S8-01..04, SF6-09) · #102
+- [x] **E16** — Audit-3 spec-contradiction bugs (F6-01, F1-03, SF3-04) · #103
+- [x] **E17a** — Dependency remediation recorded as deferred-major (Option 1) · #109
+- [x] **E17** — Product-decision gate (spec-author ruling encoded; appended E19–E26) · #104
+- [x] **E19** — Per-entry library semantic search (F7-03) · #110
+- [x] **E20a** — Session-start full inputs + project_spec type; **T-D10** amendment · #111
+- [x] **E20b** — Project-spec LLM-assist revision · #114
+- [x] **E21** — Dump-zone primary-unit re-route (F5-04) · #112
+- [x] **E22** — Audit-log filters: time range, actor, trigger type (F7-04) · #105
+- [x] **E23** — Methodology-parsing visibility (SF2-07, SF2-08) · #106
+- [x] **E24** — Residual frontend swallows + SF-ID accountability (SF6-10/11) · #113
+- [x] **E25** — Cluster-B residual bugs (F6-02, F1-02) · #107
+- [x] **E26** — Minors cleanup + doc fixes (F1-04, F8-01, I8) · #108
+- [x] **E18** — Closure-verification appendix + tests (chain close) · #115
+
+## Role-file governance suite (#117–#138)
+
+Transportable role-prompt governance model + audit trio + `REQUIRED_READING.md` project-parameter layer. Wake-logs in `plans/2026-06-0*-*-role-file-*`.
+
+- [x] **counterpart-change-detector skill** — transportable async-loop watcher · #117 (skill follow-up · #118)
+- [x] **planner.md** (+ overseer-executes-merge amendment) · #119
+- [x] **plan-auditor.md** · #121
+- [x] **plan-overseer.md** · #122 *(subagent variant #123 rolled back by #124)*
+- [x] **§8 back-port** (planner + plan-auditor, class-iv) · #125
+- [x] **workflow-findings codification** (halt-classes 4–9 + PB-1..4 into AUTO_CONTINUE, class-iv) · #126
+- [x] **executor.md** · #127
+- [x] **persistence amendment** (dormancy/watcher discipline, class-iv) · #128
+- [x] **execution-auditor.md** · #129
+- [x] **execution-overseer.md** · #130
+- [x] **artifact consolidation** · #131
+- [x] **REQUIRED_READING.md** (project parameters/addressing) · #132
+- [x] **audit trio** — auditor-a #136, auditor-b #137, audit-overseer #138
+
+## Phase F — Audit-remediation / quality-tail (M-1 … M-14)
+
+Remediate the 2026-06-06 end-to-end audit; plan `plans/2026-06-06-audit-remediation-plan.md` (#135). Per-slice handovers in `handovers/2026-06-07-*`.
+
+- [x] **A1** — fastify v4→v5 + fast-uri pin (M-1) · #140
+- [x] **A2** — embeddings-stack swap (`@xenova→@huggingface`), protobufjs Critical cleared; **C-D2** amendment (M-1) · #141
+- [x] **A3** — residual advisory sweep → 0 advisories (M-1) · #142
+- [x] **D1** — deploy wiring (`start`→`node dist/index.js`) + single-command setup (M-2) · #143
+- [x] **B1** — governance doctrine: dual-context merge-method + halt-classes 4–9 (M-7, M-8, class-iv) · #144
+- [x] **B2** — CI-enforcement reconciliation: gate is the required check (M-13) · #145
+- [x] **rag-stabilization** — pin rag tests to the deterministic fallback embedder (M-14 flake) · #146
+- [x] **B3** — REQUIRED_READING §5 tree + §4 halt-pointer (M-9, M-8 ptr) · #147
+- [x] **B4** — mermaid deferral markers + remove orphaned Settings row (M-4, class-ii) · #148
+- [x] **D3** — bootstrap `merge_fields`/`archive` defer-with-marker (M-6; OQ-1 ruled defer) · #149
+- [x] **C1** — per-session markdown export fast-path (M-5) · #150
+- [x] **D2** — IntelligenceView UUID picker (M-3) · #151
+- [ ] **B5** — ROADMAP/CHECKLIST back-fill (M-11) · *this slice*
+- [ ] **B6** — README accuracy: test counts + soften "production-ready" (M-12)
+- [ ] **M-10** — PLATFORM_STATUS full refresh (final slice)

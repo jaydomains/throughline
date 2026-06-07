@@ -460,6 +460,40 @@ The Phase 19–22 chain is linear — each phase depends on the prior phase's su
 
 ---
 
+## Post-v1 cohorts (after Phase 22)
+
+Phases 0–22 delivered v1 (DoD, Phase 16 / SPEC §11). The cohorts below land **after** the v1 cut — post-v1 hardening, governance, and quality-tail work. They were tracked in handovers, plans, and `PLATFORM_STATUS.md` but had no home here; M-11 back-fills them. **This section is kept current going forward** — every post-22 cohort gets a phase-level home here, with per-slice detail in `CHECKLIST.md`.
+
+### Phase E — Full audit-fix close (E1–E26)
+
+**Scope.** Close every still-open finding across committed audits 1–5 — silent-failure honesty (refuse-rather-than-fallback), system-state visibility, transaction atomicity, audit-trail completeness, methodology-parsing robustness, audit-3 spec-contradiction bugs — plus a mid-chain product-decision gate (E17) that appended build slices E19–E26.
+
+**Anchors minted.** **T-D60** (refuse-rather-than-fallback; E1) · **C-D25** (system-state visibility component; E6) · **C-D26** (background-job health model; E5); plus a **T-D10** amendment (project_spec library type; E20a).
+
+**Artifacts.** Plan `plans/2026-05-30-phase-e-full-audit-close.md`; execution audit `(#116)`; slices `(#88–#115)`; closure verified in `handovers/phase-e-closure-verification.md` + `handovers/phase-e-execution-log.md`.
+
+**Status.** Complete (26 slices merged). **2026-05-29 → 2026-06-01.**
+
+### Role-file governance suite (#117–#138)
+
+**Scope.** The transportable role-prompt governance model: the **plan trio** (planner / plan-auditor / plan-overseer), the **execution trio** (executor / execution-auditor / execution-overseer), and the **audit trio** (auditor-a / auditor-b / audit-overseer) — plus the `counterpart-change-detector` skill and the `REQUIRED_READING.md` project-parameter layer, which externalises the halt-class taxonomy and merge-method so the six role prompts stay project-portable. Includes class-(iv) back-ports that codified the Phase-E blessed halt classes 4–9 and the dual-context merge-method into `AUTO_CONTINUE_WORKFLOW.md`.
+
+**Artifacts.** `.claude/roles/*`; `.claude/skills/counterpart-change-detector/`; `.claude/REQUIRED_READING.md`. PRs: skill `(#117)` + skill follow-up `(#118)`; planner `(#119)`; plan-auditor `(#121)`; plan-overseer `(#122)` (subagent variant `#123` rolled back by `#124`); §8 back-port `(#125)`; workflow-findings codification `(#126)`; executor `(#127)`; persistence amendment `(#128)`; execution-auditor `(#129)`; execution-overseer `(#130)`; consolidation `(#131)`; REQUIRED_READING `(#132)`; audit trio `(#136–#138)`. Wake-logs in `plans/2026-06-0*-*-role-file-*`.
+
+**Status.** Complete. **2026-05 → 2026-06-06.**
+
+### Phase F — Audit-remediation / quality-tail (M-1 … M-14)
+
+**Scope.** Remediate the 14 reconciled findings of the 2026-06-06 end-to-end audit: dependency hardening (fastify v4→v5, embeddings-stack swap clearing the protobufjs Critical, residual sweep to zero advisories — M-1), deploy wiring + single-command setup (M-2), governance codification (merge-method + halt-classes M-7/M-8, CI-enforcement M-13, REQUIRED_READING tree/pointer M-9), feature builds (per-session markdown export M-5, UUID picker M-3), and documentation reconciliation (mermaid deferral M-4, bootstrap sub-action deferral M-6, this ROADMAP/CHECKLIST back-fill M-11, README M-12, PLATFORM_STATUS refresh M-10). M-14 (the green-gate baseline) is preserved as an audit record (no action).
+
+**Anchors touched.** **C-D2** amendment (embeddings stack rename to `@huggingface/transformers`; A2).
+
+**Artifacts.** Audit summary `audits/2026-06-06-end-to-end-summary.md`; plan `plans/2026-06-06-audit-remediation-plan.md` `(#135)`; slices `(#140–#151)` + remaining B6/M-10. Per-slice detail + PRs in `CHECKLIST.md`.
+
+**Status.** In progress — Group A (M-1) + D1/B1/B2/B3/B4/D3/C1/D2 + rag-stabilization merged; B5 (this slice), B6, M-10 outstanding. **2026-06-07 → ongoing.**
+
+---
+
 ## §13 adoption summary
 
 Recommended defaults from SPEC §13 adopted into the build at the phase level:
