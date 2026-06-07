@@ -358,6 +358,40 @@ M-4 ruling). Seen the PR body (notes a CODE_SPEC §14 completeness extension), n
 - **B4-P7 — scope + gate.** SPEC.md + CODE_SPEC.md + SettingsView.tsx (+ docs); 610/204 preserved
   (the FEATURE_OVERRIDES removal must not break a frontend test/type); gate green. No other slices' files.
 
+## B9. Slice D3 positions (PR #149 `claude/d3-bootstrap-subactions` @ `d7e7251` — M-6, OQ-1 REVERSED to defer-with-marker)
+
+**Pre-registered 2026-06-07, before reading the D3 diff content** (derived from plan §5 D3 +
+CN-7 + the §8.3 recency rule). Seen the PR body (notes OQ-1 reversed build→defer + a new flake).
+
+- **D3-P1 — OQ-1 recency + authentication (THE gate).** Two relayed OQ-1 rulings now exist:
+  earlier **build**, now **defer-with-marker** (reverses it). §8.3 recency: the **later (defer)
+  governs**; §8.3 channel: both are relayed via the executor → **pending until authenticated**. I
+  **confirm OQ-1=defer-with-marker is the current ruling with the human via my authenticated
+  channel** for my sign-off. The overseer needs its **own** direct auth of OQ-1=**defer** —
+  and critically, any earlier overseer auth of OQ-1=build is now **superseded** (it must
+  re-authenticate the current ruling, not act on the stale build auth).
+- **D3-P2 — defer-with-marker content (mirrors M-4/B4).** `*(deferred)*` markers on SPEC §7.27
+  `merge_fields` + `archive`, with a note that v1 ships the working alternatives
+  (`keep_mine`/`take_theirs`; `keep`/`delete`). Verify both are marked; `grep merge_fields/archive
+  SPEC.md` shows deferred.
+- **D3-P3 — no code change; SPEC↔code now agree (closes M-6 honesty gap).** The carve-outs already
+  exist (BootstrapReviewModal + backend validation rejects both). Verify the diff is SPEC.md + docs
+  only (NO code) — defer is the chosen disposition, not build, not delete.
+- **D3-P4 — estimate-breach/halt-4 vindicated (not a finding — a correct surface).** The executor
+  surfaced the OQ-1=build surface as L–XL (~1000–1800 LOC, merge-UI + `archived_at` schema +
+  unplanned anchors) and refused to build it in-cohort → halt-4/halt-5/class-(iii) correctly
+  invoked; the plan's "needs its own ROADMAP home" warning honored. Confirm the deferred build is
+  routed to a future ROADMAP cohort (not silently dropped).
+- **D3-P5 — class-(ii)+(iii) ratification.** SPEC amendment (ii) + scope decision (iii); both via the
+  authenticated OQ-1=defer ruling. Overseer's lane to confirm; I verify the flag + the auth boundary.
+- **D3-P6 — NEW unidentified backend flake (discovered finding, investigate).** Executor reports one
+  backend test failed **once** (not rag — 0 model-load lines), no repro in 4 runs. D3 is doc-only so
+  it can't cause it. I **independently run the backend suite several times** to try to characterize:
+  if it reproduces → a real new flake finding (halt-6/§3.C) to surface; if not → record as an
+  unreproduced single-failure (like original M-14 status). Not a D3 blocker either way (doc-only).
+- **D3-P7 — scope + gate.** SPEC.md §7.27 + docs only; serialize-with-B4 on SPEC.md satisfied (B4
+  merged); gate green at head; 610/204.
+
 ## D. What I do not adjudicate (surface to spec-author — role §7)
 
 - Plan/spec ambiguity I discover while auditing (§7a).

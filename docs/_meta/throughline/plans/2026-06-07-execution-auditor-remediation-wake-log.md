@@ -363,3 +363,15 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   human via my authenticated channel for my sign-off, (b) assess estimate-breach/halt-4 on the build
   size, (c) note the overseer needs its OWN direct auth before merge (rag-stab §8.3 pattern; overseer
   already surfacing). Watcher armed. Will pre-register D3 positions before its diff.
+
+- **2026-06-07 — D3 intake + positions (PR #149 @ `d7e7251`; OQ-1 REVERSED build→defer).** Watcher:
+  new ref `claude/d3-bootstrap-subactions`. **Executor surfaced OQ-1=build as L–XL (~1000–1800 LOC,
+  merge-UI + archived_at schema + unplanned anchors) → halt-4/halt-5/class-(iii); spec-author reversed
+  OQ-1 to defer-with-marker** (the plan's recommended default). D3 now = SPEC §7.27 *(deferred)* markers,
+  NO code (carve-outs already exist), mirrors M-4. Diff stat: SPEC.md(4) + docs; non-doc LOC = 0.
+  Pre-registered D3-P1…P7 before reading content. **§8.3 recency:** two relayed OQ-1 rulings
+  (build→defer); later governs; both pending until authenticated — I'll confirm OQ-1=defer with human;
+  overseer needs own auth of DEFER (any stale build-auth superseded). Also: executor flagged a NEW
+  unidentified backend flake (not rag, 0 model-loads, 1 fail / no repro in 4) — I'll investigate.
+  Fresh ls-remote: `main`@`dbb7a13`, D3@`d7e7251`, overseer@`fd791b3`, self@`4c75e91`.
+  Finding-set-diff: `0/0 (D3 baseline)`. Next: read SPEC diff + investigate flake + confirm OQ-1=defer.
