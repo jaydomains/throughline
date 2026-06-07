@@ -412,7 +412,9 @@ Chat history is persisted per context, retrievable later.
 
 Per-session markdown export available as a fast path: copy a session as markdown to clipboard, formatted for paste-back into Claude Code. *(This fast-path is the shipped v1 export surface.)*
 
-### 7.21 Mermaid generation
+### 7.21 Mermaid generation *(deferred)*
+
+*Deferred to a later version (audit M-4, 2026-06-07): spec-anchored (T-D14) but not built in v1. The text below describes the intended feature; it is not a shipped v1 surface.*
 
 Mermaid is an export format. Generate from any scope: a single session, items tagged X, a blocker chain, the project's primary-unit topology, a methodology gate state. AI-generated mermaid from pasted content when the user wants to diagram something Throughline doesn't natively know about. Export as `.mmd` text or rendered SVG.
 
@@ -545,7 +547,7 @@ The backend calls Anthropic for AI features. Every AI call is human-initiated or
 | Drift re-verify | User clicks re-verify | Sonnet | None |
 | AI tag suggestion | User adds untagged item | Haiku | None |
 | Stakeholder view rendering | User toggles | Sonnet (cached) | None |
-| Mermaid generation | User triggers export | Sonnet | None |
+| Mermaid generation *(deferred)* | User triggers export | Sonnet | None |
 | Verifier rule drafting | User locks in done item | Sonnet | None |
 | Companion review (judgement steps) | Methodology checklist runs | Sonnet | None |
 | Session-start prompt assembly | User opens slice/session | Haiku | None (output is a prompt to copy) |
@@ -651,7 +653,7 @@ Anchor format: `T-D{n}`. Full text in `docs/throughline/DECISIONS.md`.
 | T-D11 | Folder-opt-in for repo `.md` ingestion; snapshot by default with per-entry track-source toggle for re-ingest on change | 7.9 |
 | T-D12 | Three directive types in v1: pin, reminder, include-in-prompt. Others deferred. | 7.10 |
 | T-D13 | Code architecture visualisation dropped from Throughline; delegated to Semble (search) and Semgrep (rule verification) | 7.11, 7.15, 7.16 |
-| T-D14 | Mermaid is an export format only; primary visual interaction is the in-app interactive graph view | 7.21 |
+| T-D14 | Mermaid is an export format only; primary visual interaction is the in-app interactive graph view *(generation deferred — see §7.21; audit M-4)* | 7.21 |
 | T-D15 | Single spec covers all of v1; no spec split per feature area | (this spec) |
 | T-D16 | Claude Code push via watched filesystem inbox at a configurable directory; processed files archive to dated subdirectory, failed files archive with sibling error metadata | 7.6 |
 | T-D17 | Stakeholder view toggle exists from v1 | 7.18 |
