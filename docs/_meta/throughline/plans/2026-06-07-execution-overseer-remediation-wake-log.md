@@ -843,3 +843,22 @@ execution state when relevant.
   it's the comprehensive last slice — verify it captures the full merged state. On M-10 merge → cohort
   COMPLETE (all M-1…M-14) → terminal stand-down. Re-arming watcher for M-10. Last-seen: main `60e8f20`
   · auditor `ec35b10` · overseer (this commit).
+
+- **2026-06-07T20:xxZ** — M-10 executor branch `claude/m10-platform-status` @ `ce90ca6` detected
+  (FINAL slice). **M-10 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/M10-P1 (ratification — normal):** PLATFORM_STATUS not in spec-record set; M-10 settled (doc
+    refresh). Verify no SPEC/CODE_SPEC/DECISIONS edit → normal slice, execute directly.
+  - **EO/M10-P2 (scope):** PLATFORM_STATUS.md + docs. Base = current `main` @ `60e8f20` (LAST slice,
+    after all 14 prior — captures everything). No reach into other slices.
+  - **EO/M10-P3 (comprehensiveness — the M-10 core):** full refresh — Snapshot date current; Recent
+    Slice History through the audit-remediation cohort; the #117–#138 role-file cohort; A3 dep-posture
+    (audit 15→0, not "mere version bumps"); now-built M-5 (markdown export) / deferred M-4 (mermaid) /
+    M-2 (deploy) states. Must reflect `main` @ `60e8f20` + all 14 slices. Auditor owns depth.
+  - **EO/M10-P4 (accuracy/consistency — no stale, no overclaim):** consistent with the reconciled
+    state — dep-posture (15→0), deploy (D1), CI-required (B2/M-13), honest readiness (B6). This is the
+    doc the audit flagged "stale by a cohort"; it must now be current, no claim outrunning reality.
+  - **EO/M10-P5 (merge):** squash. **EO/M10-P6 (gate):** green.
+  - **EO/M10-P7 (cohort completion):** LAST slice → on merge, cohort COMPLETE (all M-1…M-14) →
+    terminal stand-down. Verify M-10 represents the cohort accurately as landed.
+  Finding-set-diff: **0 dropped / 0 added** (M-10 positions pre-registered). Now reading M-10 PR + diff.
+  Last-seen: main `60e8f20` · auditor `9f6c88a` · M-10 exec `ce90ca6`.
