@@ -706,3 +706,17 @@ execution state when relevant.
   B3·B4·D3·C1. Closed: M-1/M-2/M-4/M-5/M-6/M-7/M-8/M-9/M-13; M-14 stab. **Loop state: awaiting D2**
   (UUID picker, M-3) → B5·B6·M-10, all normal-class auto-merge. Re-arming single watcher for D2.
   Last-seen: main `c3c1db4` · auditor `30c227b` · overseer (this commit).
+
+- **2026-06-07T19:xxZ** — D2 executor branch `claude/d2-uuid-picker` @ `d528366` detected.
+  **D2 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/D2-P1 (ratification — normal):** UX fix; SPEC §7.18 silent on selection mechanism → no
+    spec change. **KEY:** verify NO SPEC/CODE_SPEC/DECISIONS edit → normal slice, execute directly.
+  - **EO/D2-P2 (scope):** frontend-only — picker component + IntelligenceView call-site swaps + tests.
+    Base = current `main` @ `c3c1db4`. Independent; no reach into other slices.
+  - **EO/D2-P3 (substantive, M-3):** raw-UUID inputs replaced with a picker resolving to UUID; no
+    raw-UUID entry remains; selection drives the same downstream call. Auditor owns does-it-work.
+  - **EO/D2-P4 (no silent partial):** **all THREE** call-sites converted (retro session-id `:282`,
+    stakeholder item-id `:391`, chat input) — not a subset. Verify completeness.
+  - **EO/D2-P5 (merge):** squash. **EO/D2-P6 (gate):** green.
+  Finding-set-diff: **0 dropped / 0 added** (D2 positions pre-registered). Now reading D2 PR + diff.
+  Last-seen: main `c3c1db4` · auditor `1bfb519` · D2 exec `d528366`.
