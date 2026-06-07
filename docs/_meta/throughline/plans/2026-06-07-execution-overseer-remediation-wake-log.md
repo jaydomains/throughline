@@ -286,3 +286,12 @@ execution state when relevant.
   Gitar in_progress at review time). D1 = normal slice → execute directly on convergence, merge
   squash. Last-seen: main `7d0a252` · auditor `8e8a99b` · D1 executor `874cb8c` · overseer
   `a90747a`→(this commit).
+
+- **2026-06-07T10:2yZ** — D1 CI **GREEN** @ `874cb8c` (gate ✓×2 · Gitar ✓) → EO-22 met →
+  **final-marker BOUND. Status: final — approved by execution-overseer @ `874cb8c`** (content-bound).
+  D1 governance-clean, normal slice (no ratification → no surface). Finding-set-diff: **0 dropped /
+  0 added** (EO-17…EO-22 unchanged; EO-22 condition satisfied). **Convergence:** overseer ✓ ·
+  **executor marker PENDING** · **execution-auditor marker PENDING** · CI green. Execution gate
+  remaining: executor + auditor final-markers @ `874cb8c` content. Merge = squash; I execute
+  directly on convergence. Watcher armed. Last-seen: main `7d0a252` · D1 executor `874cb8c` ·
+  auditor `8e8a99b` · overseer `46a5869`→(this commit).
