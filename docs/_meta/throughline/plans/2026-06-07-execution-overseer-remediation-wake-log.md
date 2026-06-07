@@ -729,3 +729,7 @@ execution state when relevant.
   EO-59 gate pending CI.** Finding-set-diff: **0 dropped / 3 added (EO-57…59)**. Marker HELD pending
   green CI @ `d528366`. Execute directly on convergence; squash. Last-seen: main `c3c1db4` · auditor
   `1bfb519` · D2 exec `d528366` · overseer `14e4689`→(this commit).
+
+- **2026-06-07T19:4yZ** — D2 CI GREEN @ `d528366` (gate ✓×2 · Gitar ✓) → **final-marker BOUND**
+  (comment 4643812652). Convergence: overseer ✓ · executor (marker pending confirm) · auditor
+  (`71773f3` pre-reg, review pending) · CI green. Execute directly on convergence; squash.
