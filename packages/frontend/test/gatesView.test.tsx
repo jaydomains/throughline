@@ -84,8 +84,9 @@ describe('Phase 8 — methodology-gates view', () => {
       ],
     });
     renderAt(richSummary, 'rich');
-    await waitFor(() => expect(screen.getByTestId('view-gates')).toBeInTheDocument());
-    expect(screen.getByTestId('gate-status-structure-check')).toHaveTextContent('pass');
+    // Wait for the async listGateFirings data to render (findBy retries), not just the
+    // container — getByTestId on the data node races the fetch under vitest 4's scheduling.
+    expect(await screen.findByTestId('gate-status-structure-check')).toHaveTextContent('pass');
     expect(screen.getByTestId('gate-status-banned-string-sweep')).toHaveTextContent('fail');
     expect(screen.getByText('"TODO" at line 3')).toBeInTheDocument();
     // Only the failing gate exposes an override affordance (T-D44).
