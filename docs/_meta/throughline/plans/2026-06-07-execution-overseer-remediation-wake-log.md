@@ -576,3 +576,7 @@ execution state when relevant.
   · **EO-49 gate pending CI.** Finding-set-diff: **0 dropped / 7 added (EO-43…EO-49)**. **Marker HELD
   pending green CI @ `e701358`.** Class-(ii) covered by settled M-4 → execute directly; squash.
   Last-seen: main `02871df` · auditor `edad1f1` · B4 exec `e701358` · overseer `310f27d`→(this commit).
+
+- **2026-06-07T15:3yZ** — B4 CI GREEN @ `e701358` → **final-marker BOUND** (comment 4643128971).
+  Convergence: overseer ✓ · executor (marker pending) · auditor (pending) · CI green. Execute
+  directly on convergence; squash.
