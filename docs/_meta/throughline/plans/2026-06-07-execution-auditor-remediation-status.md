@@ -11,6 +11,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | A2 — embeddings stack / protobufjs Critical (M-1) | #141 | `2b1f4fda` | **MERGED** — squash → `main` `7632f1a`; approved by execution-auditor (class-(i)/(ii)) |
 | A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **MERGED** — squash → `main` `7d0a252`; approved (EO-13 flake fix verified) |
 | D1 — deployment wiring (M-2) | #143 | `874cb8c` | **MERGED** — squash → `main` `fb25642`; M-2 closed; approved (setup+boot verified) |
+| B1 — governance doctrine: merge-method + halt 4–9 (M-7,M-8) | #144 | `2369d96` (was `4ebf3d4`) | **final — approved by execution-auditor** (class-(iv); halt defs source-verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -175,3 +176,41 @@ Both axes verified against the actual code **and an independent fresh-clone `set
 Convergence (role §8) at `874cb8c`: executor ✓ · execution-overseer ✓ · **execution-auditor ✓**
 (this marker). Normal slice (no ratification, no surface). Merge squash (OQ-2); execution is the
 overseer's.
+
+---
+
+## B1 (PR #144) — final — approved by execution-auditor @ `2369d96`
+
+Class-(iv) governance doctrine (AUTO_CONTINUE_WORKFLOW.md only). Both axes verified against the
+actual diff **and the canonical Phase-E blessed source**. All B1-P1…P8 + CP-1…8 Confirm. **Zero
+findings of my origination**; EA-1 (intra-file halt-count inconsistency) was Gitar-originated,
+executor-fixed, and I verified it.
+
+- **THE CRUX — halt-class definitions source-verified (B1-P2/P3).** I read the canonical blessed
+  source myself: `plans/2026-05-30-phase-e-full-audit-close.md:202` (SPEC-AUTHOR-BLESSED 2026-05-30)
+  defines all six cleanly. The executor's codification — **4** estimate breach · **5** unplanned
+  anchor · **6** test regression · **7** doc-PR collision · **8** out-of-audit silent-failure · **9**
+  blessed decision-gate — **matches line 202 exactly.** The **plan's** starting-map
+  (6=fingerprint-staleness, 7=murky, 8=flake) was the imprecise one; the executor correctly used the
+  canonical source and flagged the deviation (evidence-over-instruction, like A2's C-D2 — a
+  plan-vs-reality correction handled right, not a finding). My CN-3 halt-7 worry is resolved: halt-7
+  = "doc-PR collision," clearly blessed. No invented authority-floor semantics → no surface.
+- **§D dual-context rewrite (B1-P1/P6):** removes the self-disproving invariant; codifies
+  bare-runner→merge-commit, role-trio→squash *including the execution-trio-reviewed auto-continue
+  chain (OQ-2=squash; axis=review-topology)*; cross-refs REQUIRED_READING §7. Faithful.
+- **EA-1 (corroborated, not originated by me; verified resolved):** Gitar caught that Premise line 13
+  still said the chain halts "only on **three** named conditions" — contradicting the 3→9 expansion
+  in the file B1 owns. I independently confirmed it **and** scanned the whole file: line 13 was the
+  **only** stale halt-count (the other "three" hits are the legitimately-three-layer gate). Executor
+  fixed at `2369d96` → "the named halt conditions (see **Halt Classes**)". Verified correct.
+- **Scope (B1-P4/P5/P7):** AUTO_CONTINUE-only; **no `.claude/roles/*`** (CN-4/OV-1 — externalized
+  design intact), **no REQUIRED_READING** (the transient §4 pointer staleness is correctly flagged
+  for B3), no SPEC/CODE_SPEC/DECISIONS. Doc-only → introduces no code/flake; the `rag.test.ts` M-14
+  flake is pre-existing/Phase-F-deferred, unrelated to B1, and did not surface in the green gate.
+- **Gate:** green at `2369d96` — `gate` ✓×2 (both green this round) + `Gitar` ✓.
+- **Ratification (overseer's lane):** class-(iv); M-7/M-8 settled in my dispatch; OQ-2=squash +
+  doctrine ratification authenticity is the overseer's to confirm through the authenticated channel.
+  My content sign-off is independent of that gate.
+
+Convergence (role §8) at `2369d96`: executor ✓ · execution-overseer (binds on its class-(iv)
+ratification confirm + green CI) · **execution-auditor ✓** (this marker). Merge squash (OQ-2).

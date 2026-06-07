@@ -207,3 +207,21 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   Next: read canonical source (`plans/2026-05-30-phase-e-full-audit-close.md` ~L202 + plan §0/§5
   cites) + the B1 diff, adjudicate halt definitions, verify §D dual-context + no role-file back-port
   + doc-only, then post findings or marker.
+
+- **2026-06-07 — B1 review + final-marker (PR #144 @ `2369d96`, class-(iv)).** Read canonical source
+  myself: `full-audit-close.md:202` (blessed 2026-05-30) defines halt 4–9 cleanly. **Executor's
+  4–9 match line 202 EXACTLY**; the PLAN's starting-map (6=fingerprint, 7=murky, 8=flake) was the
+  imprecise one — executor correctly used the source + flagged it (plan-vs-reality, like A2 C-D2;
+  CN-3 halt-7 worry resolved = doc-PR collision). §D dual-context rewrite faithful (bare→merge-commit,
+  trio→squash incl. exec-trio auto-continue chain per OQ-2; cross-refs REQUIRED_READING §7).
+  **EA-1 (Gitar-originated, not mine):** Premise line 13 still said "three named conditions" —
+  contradicting 3→9; I independently confirmed + full-file-scanned (line 13 the ONLY stale count);
+  executor fixed at `2369d96` (head moved `4ebf3d4→2369d96`). Re-verified fix; core §D + halt content
+  unchanged. Scope clean: AUTO_CONTINUE only, no roles/REQUIRED_READING/SPEC (CN-4/OV-1 ✓; §4 pointer
+  is B3's, flagged). Doc-only ⇒ rag.test.ts M-14 flake unrelated/pre-existing, didn't surface. CI
+  green at `2369d96` (`gate`✓×2 + `Gitar`✓). **Zero findings of my origination; EA-1 corroborated &
+  verified resolved.** Posted final-marker (this status commit) + approval on #144. Last-seen remote
+  HEADs (`git ls-remote` pending re-arm): `main`@`fb25642`, B1@`2369d96`, overseer@`7c09033`,
+  self@`4e30a54`. Finding-set-diff: `0 dropped / 0 added`. Round-trips: B1 (my lane) 0/5; EA-1
+  (Gitar↔executor) resolved. Ratification class-(iv) = overseer's lane (M-7/M-8 settled; OQ-2 squash).
+  Watcher timed out — re-arm next. Staying subscribed for B1 merge + B2/B3.
