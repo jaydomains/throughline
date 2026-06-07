@@ -544,3 +544,25 @@ execution state when relevant.
   SettingsView mermaid row; class-(ii) ratification covered by settled M-4 → execute directly after
   verifying amendment matches settled intent. Re-arming single watcher for B4. Last-seen: main
   `02871df` · auditor `38303d2` · overseer (this commit).
+
+- **2026-06-07T15:xxZ** — B4 executor branch `claude/b4-mermaid-markers` @ `e701358` detected.
+  **B4 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/B4-P1 (ratification class-(ii) — SPEC amendment):** B4 edits `SPEC.md`. **M-4 SETTLED**
+    (dispatch brief + plan §1) → ratification **collapses to ~0**; class applies but pre-settled →
+    execute directly after verifying the amendment matches the settled M-4 intent.
+  - **EO/B4-P2 (locus correction — LOAD-BEARING):** markers must land at **SPEC §7.21 prose
+    (:415-417) + the §9 "AI role" AI-feature table row (:548)** — **NOT §13** (which is "Open
+    questions," no AI table; plan §0 locus correction). Verify §9 not §13.
+  - **EO/B4-P3 (SettingsView row removal):** remove the orphaned `'mermaid'` model-override row
+    (`SettingsView.tsx:47`); verify `grep mermaid SettingsView.tsx` → nothing + frontend tests/
+    typecheck adjusted.
+  - **EO/B4-P4 (scope + serialize-with-D3):** SPEC.md + SettingsView.tsx + frontend test only. Base
+    = current `main` @ `02871df`. **Serialize with D3 on SPEC.md** — D3 not open (HELD on OQ-1) so no
+    collision. No reach into other slices. T-D14 (:654) cross-note + §15 API-table = executor
+    discretion within the ruling (plan recommends a light T-D14 cross-note; leave §15).
+  - **EO/B4-P5 (no over-reach — DEFER not delete/build):** M-4 = **defer** (add `*(deferred)*`),
+    NOT remove the SPEC mermaid feature nor build it. Markers must preserve the feature as deferred;
+    the ONLY removal is the orphaned Settings UI row. Deleting SPEC mermaid sections = over-reach.
+  - **EO/B4-P6 (merge):** squash. **EO/B4-P7 (gate):** green.
+  Finding-set-diff: **0 dropped / 0 added** (B4 positions pre-registered). Now reading B4 PR + diff
+  (SPEC §7.21/§9/§13 + SettingsView). Last-seen: main `02871df` · auditor `edad1f1` · B4 exec `e701358`.
