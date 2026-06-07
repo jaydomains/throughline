@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyError, FastifyInstance } from 'fastify';
 import { DomainError, type ErrorResponse } from '@throughline/shared';
 
 // C-D23 — central Fastify error handler. Domain errors (T-D58) carry their canonical
@@ -12,7 +12,9 @@ import { DomainError, type ErrorResponse } from '@throughline/shared';
 // replies are unaffected. Non-domain thrown errors keep Fastify's semantics: an explicit
 // 4xx statusCode is preserved; anything else is a logged 500.
 export function registerErrorHandler(app: FastifyInstance): void {
-  app.setErrorHandler((err, req, reply) => {
+  // Fastify v5 changed setErrorHandler's default error type from FastifyError to unknown;
+  // pin it back to FastifyError (extends Error; carries the optional statusCode this reads).
+  app.setErrorHandler<FastifyError>((err, req, reply) => {
     if (err instanceof DomainError) {
       const body: ErrorResponse = { error: err.code, message: err.message, ...(err.details ?? {}) };
       return reply.code(err.statusCode).send(body);
