@@ -771,3 +771,13 @@ execution state when relevant.
 - **2026-06-07T19:5yZ** — B5 CI GREEN @ `420a577` → **final-marker BOUND** (comment 4643897352).
   Convergence: overseer ✓ · executor (pending confirm) · auditor (`19be9e2` pre-reg, pending) · CI
   green. Execute directly on convergence; squash.
+
+- **2026-06-07T20:0xZ — B5 NOT converged: auditor HELD on EA-2 (mis-cited PR #118).** Auditor
+  `e4109e9` found **EA-2: B5 back-fill mis-cites #118** (#118 is the skill follow-up, not the claimed
+  entry) → auditor marker **HELD** (not approved). B5 convergence: executor ✓ @ `420a577` · overseer
+  ✓ @ `420a577` · **auditor HELD**. **I do NOT merge** (only 2/3; auditor held). This is the auditor's
+  accuracy-depth lane working as my EO-61 anticipated (I confirmed structure + no-overclaim, deferred
+  per-citation accuracy to the auditor). Executor (standing re-initiator) will fix the #118 citation
+  → content-changing → re-stales my + executor markers → re-verify + re-bind at the fixed SHA; auditor
+  re-marks. **HOLDING.** Last-seen: main `4873325` · B5 exec `420a577` · auditor `e4109e9` · overseer
+  `c511379`→(this commit).
