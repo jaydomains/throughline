@@ -10,6 +10,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | A1 — fastify v4→v5 + fast-uri (M-1) | #140 | `c2de0eb` (was `8036839`) | **MERGED** — squash → `main` `36be75a`; approved by execution-auditor |
 | A2 — embeddings stack / protobufjs Critical (M-1) | #141 | `2b1f4fda` | **MERGED** — squash → `main` `7632f1a`; approved by execution-auditor (class-(i)/(ii)) |
 | A3 — residual sweep / Group A closeout (M-1) | #142 | `4e70186` (was `d5a897f`) | **MERGED** — squash → `main` `7d0a252`; approved (EO-13 flake fix verified) |
+| D1 — deployment wiring (M-2) | #143 | `874cb8c` | **final — approved by execution-auditor** (primary path; setup+boot verified) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -139,3 +140,38 @@ independently **corroborate and verify-as-resolved** the overseer's EO-13 (the v
 Convergence (role §8) at `4e70186`: executor ✓ · execution-overseer (binds on its EO-13-resolved
 re-verify) · **execution-auditor ✓** (this marker). Merge squash (OQ-2); execution is the overseer's.
 EO-13 thread (overseer↔executor): resolved round 1; my corroboration adds no open thread.
+
+---
+
+## D1 (PR #143) — final — approved by execution-auditor @ `874cb8c`
+
+Both axes verified against the actual code **and an independent fresh-clone `setup.sh` run + a
+`NODE_ENV=production` `node dist/index.js` boot/serve**. All D1-P1…P7 + cohort CP-1…8 are Confirms;
+**zero findings**.
+
+- **Fidelity-to-plan:** implements D1's §5 scope via the plan's **primary path** (provide the setup
+  so the existing claim is true) — run-path fix + `scripts/setup.sh` + `auto-start.md` reconciliation.
+  **Not a ratification class** (D1-P7): `git diff --name-only` shows **no SPEC/CODE_SPEC/DECISIONS
+  edit**, so the conditional class-(ii) fallback was *not* taken. CN-6 satisfied (provided real
+  setup, not "document the manual reality" alone). No PLATFORM_STATUS (M-10's); correctly serialized
+  after Group A on the shared `package.json`.
+- **Correctness (independently verified):**
+  - **Run path (D1-P1):** `start: tsx --conditions=development …` → **`node dist/index.js`**; `dev`
+    unchanged. Process confirmed at boot as `node dist/index.js` (compiled artifact, prod
+    resolution) — the M-2 core.
+  - **OS units inherit (D1-P2):** launchd `ProgramArguments`, systemd `ExecStart`, Task Scheduler
+    `Arguments` all invoke `pnpm … start`; no stale `tsx`/`--conditions=development` remains. The
+    audit's systemd `NODE_ENV=production`-vs-dev-resolver contradiction is resolved.
+  - **Single-command setup works (D1-P3):** ran `./scripts/setup.sh` from a fresh worktree — clean
+    (`pnpm install` + `pnpm -r build`, shared→frontend→backend, exit 0).
+  - **Boots & serves (D1-P5):** `pnpm start` under `NODE_ENV=production` → listening on
+    `127.0.0.1:47823`; `/health` `{"ok":true}`; **`/` serves the built SPA HTML** (`<!doctype html>`,
+    `type=text/html`) — the build-all + serve path confirmed; clean shutdown.
+  - **Doc reconciled (D1-P4):** `auto-start.md` `:12-13` false claim now true; build-first explicit.
+  - **Retention/scope (D1-P6):** backend retains `fastify ^5.8.3` / `@huggingface/transformers
+    ^3.8.1` / `vitest ^4.1.0`; only `start` changed. 6 files, deploy-wiring only.
+- **Gate:** three-layer green at `874cb8c` — `gate` ✓×2 + `Gitar` ✓ (via API); 610/204 preserved.
+
+Convergence (role §8) at `874cb8c`: executor ✓ · execution-overseer ✓ · **execution-auditor ✓**
+(this marker). Normal slice (no ratification, no surface). Merge squash (OQ-2); execution is the
+overseer's.

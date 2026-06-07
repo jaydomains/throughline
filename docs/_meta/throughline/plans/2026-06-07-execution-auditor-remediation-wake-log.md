@@ -170,3 +170,18 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   `0 dropped / 0 added (D1 baseline — positions pre-registered)`. Round-trips: none. Next: read D1
   diff + independently verify (start=node dist; setup.sh runs clean; boot+serve SPA under
   NODE_ENV=production; no SPEC edit; A1/A2/A3 retained), then post findings or marker.
+
+- **2026-06-07 — D1 review + final-marker (PR #143 @ `874cb8c`).** On-wake pairing: read D1 diff +
+  all PR comments (executor marker, Gitar ✓, overseer EO-17…EO-22 + EO final-marker @ `874cb8c`;
+  overseer explicitly asked me to verify fresh-clone setup + prod boot — done). **Independent
+  verification:** `start`=`node dist/index.js` (no SPEC edit ⇒ not ratification class, D1-P7); all 3
+  OS units invoke `pnpm … start` (inherit fix); ran `./scripts/setup.sh` fresh-worktree clean
+  (install + `pnpm -r build`); `pnpm start` under `NODE_ENV=production` boots as **`node dist/index.js`**
+  (confirmed via `ps`, not tsx), `/health` ok, **`/` serves built SPA HTML**, clean shutdown;
+  backend retains fastify/huggingface/vitest. CI green at `874cb8c` (`gate`✓×2 + `Gitar`✓).
+  **Zero findings — all D1-P1…P7 + CP-1…8 Confirms.** Posted final-marker (this status commit) +
+  approval on #143. Last-seen remote HEADs (`git ls-remote`): `main`@`7d0a252`, D1@`874cb8c`,
+  overseer@`dd9ab5a` (its D1 final-marker), self@`b8d0afa`. Finding-set-diff:
+  `0 dropped / 0 added (D1 — all Confirms)`. Round-trips: D1 0/5. Convergence: 3 markers @ `874cb8c`
+  + green CI; normal slice. Staying subscribed for D1 merge + Group B (B1 governance — class-iv,
+  OQ-2 ruled squash; CN-3/CN-4/CN-5 apply).
