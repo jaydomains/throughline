@@ -113,3 +113,20 @@ execution state when relevant.
   - **EO/A2-P6 (merge method):** **squash** (OQ-2 ruled, class-iv on record) — applies to A2.
   Finding-set-diff: **0 dropped / 0 added** (A2 positions pre-registered, no findings yet). Now
   reading the A2 PR + diff. Last-seen: main `36be75a` · auditor `2bf23a5` · A2 executor `2b1f4fda`.
+
+- **2026-06-07T09:1xZ** — A2 (PR #141) GOVERNANCE REVIEW posted (comment 4642051049). On-wake
+  pairing done: scope via `git diff --name-only` (8 files, all in-scope), read C-D2 amendment
+  (`CODE_SPEC.md`), `embeddings.ts` (import-spec + comment only), `package.json` (stays
+  optionalDependency), and both test diffs (**comment-only**, no flake-masking). **EO-8 Confirm**
+  scope-clean; **EO-9 Confirm** C-D2 amendment matches settled M-1, class-(i)/(ii) ratification
+  **collapsed to ~zero** via settled-authenticated M-1 (dispatch brief; current, not superseded);
+  **EO-10 Confirm** dep-declaration correction (optionalDependency, not the plan's "hard dep") =
+  expected within-trio resolution of pre-flagged EO-6/CN-1, transparently surfaced → **no human
+  surface required**; **EO-11 Confirm-pending-CI** advisory 10→1 (Critical/High → 0; auditor
+  re-verifies), rag.test 16/16; **EO-12 Note** heavier onnxruntime-node/sharp footprint → A3/D1.
+  Finding-set-diff: **0 dropped / 5 added (EO-8…EO-12)**. **Final-marker HELD pending green CI @
+  `2b1f4fda`** (CI in_progress at review time). **A2 ratification disposition: pre-settled (M-1)
+  → I execute directly once converged; NO fresh spec-author surface for A2** (not class-iv, not
+  scope-expansion, not halt-class — within trio authority per dispatch-brief surface conditions).
+  Merge method = squash (OQ-2). Last-seen: main `36be75a` · auditor `98853987` · A2 executor
+  `2b1f4fda` · overseer `ddb85bc`→(this commit).
