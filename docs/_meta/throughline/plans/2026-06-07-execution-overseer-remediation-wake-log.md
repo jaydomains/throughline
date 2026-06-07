@@ -349,3 +349,26 @@ execution state when relevant.
   - **EO/B1-P7 (merge):** squash (OQ-2).
   Finding-set-diff: **0 dropped / 0 added** (B1 positions pre-registered, no findings yet). Now
   reading B1 PR + diff. Last-seen: main `fb25642` · auditor `db63716` · B1 executor `4ebf3d4`.
+
+- **2026-06-07T11:3xZ** — B1 (PR #144) GOVERNANCE REVIEW + final-marker. **HEAVY load-bearing
+  verification done against GROUND TRUTH:** read `full-audit-close.md` "Halt classes for this chain"
+  directly — it blesses (SPEC-AUTHOR-BLESSED 2026-05-30) exactly 4=estimate-breach · 5=unplanned-
+  anchor · 6=test-regression · 7=doc-PR-collision · 8=out-of-audit-silent-failure · 9=decision-gate,
+  which **matches the executor's codification one-for-one → NONE invented** (the PLAN's map was the
+  imprecise one; plan called it a "starting map" + directed pulling from canonical source → faithful,
+  not a departure). §D rewrite matches authenticated OQ-2 (review-topology axis; trio⇒squash incl.
+  trio-reviewed auto-continue chain; bare runner⇒merge-commit). Scope: AUTO_CONTINUE only, **no
+  role-files (OV-1), no REQUIRED_READING (§4 ptr left for B3)**. Posted review (comment 4642385796):
+  **EO-23 §D✓ · EO-24 halt-provenance✓ (load-bearing) · EO-25 plan-correction-faithful✓ · EO-26
+  scope/OV-1/B3✓ · EO-27 gate green + rag.test M-14-preexisting-flake disposition (B1 doc-only,
+  both gate runs green, NOT EO-13-style)**. Finding-set-diff: **0 dropped / 5 added (EO-23…EO-27)**.
+  **Ratification class-(iv) COVERED** via authenticated channels (§D=OQ-2 in-session; halt 4–9 =
+  2026-05-30 bless verified in canonical source + settled M-8) → faithful codification of
+  already-ratified decisions, mints nothing new → **execute directly, NO fresh human surface.**
+  Executor then pushed fix-round **`2369d96`** ("Premise halt-count consistency" — Gitar Quality:
+  intro "three named conditions"→"the named halt conditions (see Halt Classes)"; **§D/halt substance
+  UNCHANGED**, verified). Content-changing (re-stales markers) but benign + in-scope → re-verified
+  clean @ `2369d96`; **CI green @ `2369d96`** (gate ✓×2 · Gitar ✓). **Marker re-bound: Status: final
+  — approved by execution-overseer @ `2369d96`.** Convergence: overseer ✓ · executor (re-affirm @
+  `2369d96` pending) · auditor (4e30a548 = B1 pre-reg, PENDING review) · CI green. Merge = squash.
+  Last-seen: main `fb25642` · B1 executor `2369d96` · auditor `4e30a54` · overseer `7c09033`→(this).
