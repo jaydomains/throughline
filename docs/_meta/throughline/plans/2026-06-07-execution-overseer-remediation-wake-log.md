@@ -677,3 +677,7 @@ execution state when relevant.
   **0 dropped / 3 added (EO-54…56)**. Marker HELD pending green CI @ `626dde8`. Execute directly on
   convergence; squash. Last-seen: main `ed4e6bb` · auditor `be15f8e` · C1 exec `626dde8` · overseer
   `8fe0a3d`→(this commit).
+
+- **2026-06-07T19:2yZ** — C1 CI GREEN @ `626dde8` → **final-marker BOUND** (comment 4643761273).
+  Convergence: overseer ✓ · executor (marker pending confirm) · auditor (pending) · CI green.
+  Execute directly on convergence; squash.
