@@ -759,3 +759,11 @@ execution state when relevant.
   - **EO/B5-P5 (merge):** squash. **EO/B5-P6 (gate):** green.
   Finding-set-diff: **0 dropped / 0 added** (B5 positions pre-registered). Now reading B5 PR + diff.
   Last-seen: main `4873325` · auditor `e73523b` · B5 exec `420a577`.
+
+- **2026-06-07T19:5xZ** — B5 (PR #152) GOVERNANCE REVIEW posted (comment 4643892964). Scope:
+  ROADMAP.md + CHECKLIST.md + docs; **NO spec edit** → normal slice (M-11 settled; not spec-record);
+  base main `4873325`. **EO-60 normal/no-spec ✓ · EO-61 back-fill accuracy + NO overclaim (B5/B6/M-10
+  listed `[ ]` pending; entries cite PR/handover/anchor; #122/#123 mapping corrected) ✓ · EO-62 gate
+  pending CI.** Finding-set-diff: **0 dropped / 3 added (EO-60…62)**. Marker HELD pending green CI @
+  `420a577`. Execute directly on convergence; squash. Last-seen: main `4873325` · auditor `e73523b`→
+  `19be9e2` · B5 exec `420a577` · overseer `6d26850`→(this commit).
