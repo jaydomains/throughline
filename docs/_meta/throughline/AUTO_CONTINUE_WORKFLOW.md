@@ -21,7 +21,7 @@ The rhythm has been running live since the Phase 18 / doc-authoring cycle but wa
 A slice is mergeable only when **all three layers are simultaneously green**:
 
 1. **Gitar review** — no open findings. Findings folded inline as additional commits on the same branch; no separate fix-round branches.
-2. **CI** — `pnpm -r typecheck`, `pnpm -r test`, `pnpm -r lint`, and `pnpm -r build` all passing. The chain runner runs these four commands locally before opening the PR non-draft, and `.github/workflows/ci.yml` re-runs them on every push so the gate stays meaningful even when the chain runner skips the local pass. The CI workflow becomes an enforcing gate (vs an advisory one) only when set as a required status check in branch protection; until that repo-settings action lands, the local pre-PR pass is the load-bearing check.
+2. **CI** — `pnpm -r typecheck`, `pnpm -r test`, `pnpm -r lint`, and `pnpm -r build` all passing. The chain runner runs these four commands locally before opening the PR non-draft, and `.github/workflows/ci.yml` re-runs them on every push. **CI is the enforcing gate:** `gate` is a required status check on `main` in branch protection, so a PR cannot merge until it passes (`mergeable_state` stays `blocked` until `gate` + Gitar are green, then `clean`). The chain runner's local pre-PR pass is the fast local check; CI is the load-bearing gate at merge.
 3. **GitHub mergeable** — no merge conflicts; branch is up to date with base; no kill-switch pause signal present (see Kill Switch); no protected-branch blocker.
 
 Two-of-three is not enough. Green-then-red is not green. The gate evaluates state at the moment of merge.
