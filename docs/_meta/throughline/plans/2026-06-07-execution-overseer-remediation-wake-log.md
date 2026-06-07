@@ -742,3 +742,20 @@ execution state when relevant.
   **Cohort merged (12):** +D2. Closed: M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-13; M-14 stab. **Loop
   state: awaiting B5** (ROADMAP/CHECKLIST back-fill, M-11) → B6 → M-10 (last). All normal-class.
   Re-arming single watcher for B5. Last-seen: main `4873325` · auditor `7188636` · overseer (this).
+
+- **2026-06-07T19:xxZ** — B5 executor branch `claude/b5-roadmap-checklist` @ `420a577` detected.
+  **B5 pre-read governance positions (BEFORE reading diff — anti-anchoring §4.2):**
+  - **EO/B5-P1 (ratification — normal):** ROADMAP.md/CHECKLIST.md NOT in the class-(ii) spec-record
+    set; M-11 settled (drift, not convention — back-fill). Verify no SPEC/CODE_SPEC/DECISIONS edit →
+    normal slice, execute directly.
+  - **EO/B5-P2 (scope):** ROADMAP.md + CHECKLIST.md + docs. Base = current `main` @ `4873325`. Own
+    files; no collision; no reach into other slices.
+  - **EO/B5-P3 (substantive, M-11):** back-fill the homeless cohorts — Phase E (E1–E26), audit-fix
+    A–D, role-file suite (#117–132), this remediation cohort / Phase-F; every entry points at a real
+    artefact (PR/handover/anchor); no cohort between Phase 22 and today missing. Auditor owns depth.
+  - **EO/B5-P4 (accuracy — no overclaim):** this cohort is IN-FLIGHT (B6, M-10 still pending) — the
+    back-fill must represent it accurately (don't mark in-flight slices "done"/the cohort complete
+    prematurely). Watch for premature completion claims.
+  - **EO/B5-P5 (merge):** squash. **EO/B5-P6 (gate):** green.
+  Finding-set-diff: **0 dropped / 0 added** (B5 positions pre-registered). Now reading B5 PR + diff.
+  Last-seen: main `4873325` · auditor `e73523b` · B5 exec `420a577`.
