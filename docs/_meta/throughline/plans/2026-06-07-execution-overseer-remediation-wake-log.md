@@ -831,3 +831,15 @@ execution state when relevant.
 - **2026-06-07T20:1zZ** — B6 CI GREEN @ `ed7551a` → **final-marker BOUND** (comment 4643985413).
   Convergence: overseer ✓ · executor (pending confirm) · auditor (pending) · CI green. Execute
   directly on convergence; squash. (B6 = penultimate; M-10 is the finale.)
+
+- **2026-06-07T20:1zZ — B6 (PR #153) MERGED.** 3 markers @ `ed7551a` (executor ✓ · auditor ✓
+  [counts 610/214 live + honest readiness verified] · overseer ✓) · CI green (gate ✓×2 · Gitar ✓) ·
+  mergeable clean · base main `91f56b6` · normal slice · squash. **Executed: flip→squash-merge.**
+  Merge `60e8f20 merged:true`; **verified via ls-remote**: main `91f56b6`→`60e8f20`, B6 branch
+  **deleted**. **M-12 closed.** Finding-set-diff: **0 dropped / 0 added** (B6 EO-63…66 closed).
+  **Cohort merged (14):** +B6. Closed: M-1/M-2/M-3/M-4/M-5/M-6/M-8/M-9/M-7/M-11/M-12/M-13; M-14 stab.
+  **ONLY M-10 REMAINS** (PLATFORM_STATUS full refresh — the FINALE; folds in all of A/B/C/D + role-file
+  cohort + A3 dep-posture + now-built M-4/M-5). Normal slice (PLATFORM_STATUS not a spec record), but
+  it's the comprehensive last slice — verify it captures the full merged state. On M-10 merge → cohort
+  COMPLETE (all M-1…M-14) → terminal stand-down. Re-arming watcher for M-10. Last-seen: main `60e8f20`
+  · auditor `ec35b10` · overseer (this commit).
