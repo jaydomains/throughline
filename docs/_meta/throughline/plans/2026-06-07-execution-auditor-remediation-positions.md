@@ -453,3 +453,18 @@ UX build; normal-class.
 Settled rulings I do **not** re-litigate (per dispatch): M-1 priority, M-4 deferred, M-5 build,
 M-7 dual-context merge-method, M-8 codify halt 4–9, M-11 back-fill ROADMAP/CHECKLIST, M-13 gate
 required on main.
+
+## B12. Slice B5 positions (PR #152 `claude/b5-roadmap-checklist` @ `420a577` — ROADMAP/CHECKLIST back-fill, M-11)
+
+Pre-registered 2026-06-07 before reading diff content. Doc-only; normal-class.
+
+- **B5-P1 — ROADMAP extended past Phase 22:** Phase E, role-file governance suite, Phase F/this
+  remediation cohort; states the keep-current convention.
+- **B5-P2 — CHECKLIST build-state sections** for the same cohorts, per-slice.
+- **B5-P3 — CITATION ACCURACY (crux):** every back-filled entry points at a REAL artefact —
+  spot-check the cited PR numbers + anchors against `git log main` (e.g. plan-overseer=#122,
+  #123=reverted subagent variant, #124=revert; this cohort #140–#151). A wrong citation is a finding.
+- **B5-P4 — completeness:** no cohort between Phase 22 and today missing (Phase E, role-file
+  #117–#138, this remediation cohort).
+- **B5-P5 — scope:** ROADMAP.md + CHECKLIST.md + docs only; NOT PLATFORM_STATUS (M-10's), not SPEC;
+  not a ratification class. Gate green; doc-only.
