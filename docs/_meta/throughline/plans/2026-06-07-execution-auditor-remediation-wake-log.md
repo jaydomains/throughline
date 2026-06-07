@@ -494,3 +494,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   **13 slices merged.** Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-11,M-13,M-14 (12/14). Next:
   **B6** (M-12 README — counts 500/182→610/214 + soften "production-ready" overclaim; gated on Group A
   which is done), then **M-10 LAST** (PLATFORM_STATUS full refresh, CN-9). Watcher armed.
+
+- **2026-06-07 — B6 review + final-marker (PR #153 @ `ed7551a`).** README counts 500/182→610/214
+  (live; matches mine + supersedes plan's stale 204 — EO-64 converges); overclaim removed → honest
+  claim mapping to verified state (audit 15→0, D1 SPA-serve, M-13). README-only, no SPEC/PLATFORM_STATUS
+  → not ratification. CI green at `ed7551a`; overseer EO-63..66 + marker. **Zero findings.** Posted
+  marker (this commit) + approval on #153. Last-seen: `main`@`91f56b6`, B6@`ed7551a`, overseer@`086e0b2`,
+  self@`0d98e97`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-11,M-12(pending
+  merge),M-13,M-14 (13/14). **Next & LAST: M-10** PLATFORM_STATUS full refresh (CN-9 — must be last;
+  scrutinize: captures ALL of A/B/C/D + role-file cohort; status claims match now-true state; the
+  unreproduced D3 backend single-failure may be noted). Watcher armed.

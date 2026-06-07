@@ -20,6 +20,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | C1 — per-session markdown export build (M-5) | #150 | `5d4dcc8` | **MERGED** — squash → `main` `c3c1db4`; M-5 closed |
 | D2 — IntelligenceView UUID picker (M-3) | #151 | `d528366` | **MERGED** — squash → `main` `4873325`; M-3 closed |
 | B5 — ROADMAP/CHECKLIST back-fill (M-11) | #152 | `185ff31` | **MERGED** — squash → `main` `91f56b6` after EA-2 re-converge; M-11 closed |
+| B6 — README accuracy (M-12) | #153 | `ed7551a` | **final — approved by execution-auditor** (counts 610/214 live; overclaim removed; claims map to verified state) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -443,3 +444,22 @@ M-11 ROADMAP/CHECKLIST back-fill. **EA-2 raised, resolved, re-verified.** All B5
 
 Convergence (role §8) at `185ff31`: executor ✓ · execution-overseer (re-binds post fix-round) ·
 **execution-auditor ✓**. Normal slice → overseer auto-merges (squash, OQ-2).
+
+---
+
+## B6 (PR #153) — final — approved by execution-auditor @ `ed7551a`
+
+M-12 README accuracy. All B6-P1…P6 Confirm. **Zero findings.**
+
+- **Counts (B6-P1):** 500/182 → **610/214** — matches my independent counts; correctly the *live*
+  count (C1 +8, D2 +2 = 214), superseding even the plan's stale 610/204. No stale 500/182 remains.
+- **Overclaim removed + honest (B6-P2/P3):** "production-ready end-to-end" → "feature-complete;
+  **dependency-hardened** (zero advisories in prod tree); **single-user local deploy** (`node
+  dist/index.js` + `scripts/setup.sh`)" — every claim maps to a state I independently verified (audit
+  15→0 at A2/A3; D1 SPA-serve under prod; M-13 required check). Explicitly qualifies "feature-complete
+  ≠ top production-ready tier" → no overclaim. Pointer to the 2026-06-06 audit summary.
+- **Scope (B6-P5/P6):** README.md + docs only; no SPEC/PLATFORM_STATUS → not a ratification class;
+  README:22 taxonomy intact. Gate green at `ed7551a` (`gate` ✓×2 + `Gitar` ✓).
+
+Convergence (role §8) at `ed7551a`: executor ✓ · execution-overseer ✓ (EO-63…66) · **execution-auditor ✓**.
+Normal slice → overseer auto-merges (squash, OQ-2). **Next & last: M-10 (PLATFORM_STATUS full refresh).**
