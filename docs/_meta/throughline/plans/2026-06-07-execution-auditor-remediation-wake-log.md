@@ -160,3 +160,13 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   CN-6 carry-forward applies (primary path = provide real single-command setup making SPEC §11/§601
   true; "document manual reality" alone is unacceptable; SPEC §11 amendment is the class-(ii)
   fallback only). Watcher armed; will pre-register D1 positions before reading its diff.
+
+- **2026-06-07 — D1 intake + positions pre-registered (PR #143 @ `874cb8c`).** Watcher fired: new
+  ref `claude/d1-deploy-wiring` @ `874cb8c` = PR #143 (D1, draft; executor took plan PRIMARY path =
+  provide setup, **no SPEC edit ⇒ not a ratification class**); overseer also moved
+  (`a90747a→a47c52c` = its D1 pre-read positions). On-wake pairing: read PR #143 body + fresh
+  `git ls-remote` (`main`@`7d0a252`, D1@`874cb8c`, overseer@`a47c52c`, self@`8e8a99b`).
+  **Pre-registered D1 positions D1-P1…P7 BEFORE reading the diff.** Finding-set-diff:
+  `0 dropped / 0 added (D1 baseline — positions pre-registered)`. Round-trips: none. Next: read D1
+  diff + independently verify (start=node dist; setup.sh runs clean; boot+serve SPA under
+  NODE_ENV=production; no SPEC edit; A1/A2/A3 retained), then post findings or marker.
