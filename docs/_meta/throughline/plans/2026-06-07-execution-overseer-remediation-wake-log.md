@@ -530,3 +530,17 @@ execution state when relevant.
   (Status: final — approved by execution-overseer @ `615d034`)** (comment 4643096454). Convergence:
   overseer ✓ · executor (marker pending) · auditor (pending) · CI green. Normal slice → execute
   directly on convergence; squash.
+
+- **2026-06-07T15:2zZ — B3 (PR #147) MERGED.** 3 markers @ `615d034` (executor ✓ · auditor ✓
+  [§5 matches live ls, §4 ptr closed, M-9 done] · overseer ✓) · CI green (gate ✓×2 · Gitar ✓) ·
+  mergeable clean · base main `8657adf` · normal slice · squash. **Executed: flip draft→ready →
+  squash-merge.** Merge `02871df merged:true`; **verified via ls-remote**: main `8657adf`→`02871df`,
+  B3 branch **deleted**, REQUIRED_READING §4 = "nine codified". **M-9 closed; M-8 fully closed**
+  (B1 codify → B3 re-point). Finding-set-diff: **0 dropped / 0 added** (B3 EO-38…42 closed). Cohort
+  merged (8): A1✅A2✅A3✅D1✅B1✅B2✅rag-stab✅B3✅. Closed: M-1/M-2/M-7/M-8/M-9/M-13; M-14 stabilized.
+  **Loop state: awaiting B4** (mermaid deferral markers, M-4 — **class-(ii) spec amendment, M-4
+  SETTLED** → ratification collapses; serialize w/ D3 on SPEC.md). **B4 watch:** verify markers land
+  at the **corrected locus** (SPEC §7.21 + §9 AI-table, NOT §13 — plan §0 locus correction) + remove
+  SettingsView mermaid row; class-(ii) ratification covered by settled M-4 → execute directly after
+  verifying amendment matches settled intent. Re-arming single watcher for B4. Last-seen: main
+  `02871df` · auditor `38303d2` · overseer (this commit).
