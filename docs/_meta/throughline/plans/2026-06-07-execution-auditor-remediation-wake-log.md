@@ -273,3 +273,19 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   correction M-9 + §4 halt-pointer update M-8 — the pointer B1 flagged; after B1). CN-4 (no role-file
   back-port) applies. Watcher `biub32c9f` armed (note: re-arm proactively / reconcile via ls-remote —
   silent death is systemic). Will pre-register B3 positions before its diff.
+
+- **2026-06-07 — RAG-STAB review + final-marker (PR #146 @ `ac3510c`; inserted slice, Option-A).**
+  New branch `claude/rag-stabilization` appeared (no wake from the dead watcher `b5k59tj32`-successor;
+  caught via the overseer-branch REF wake + ls-remote). It's a class-(iii) scope expansion citing a
+  spec-author Option-A ruling "authenticated in-session" — NOT witnessed through my channel.
+  **Confirmed Option A directly with the spec-author via in-session AskUserQuestion (authenticated
+  channel) → ratified FOR MY sign-off.** Boundary recorded: my confirmation ≠ overseer's auth; the
+  overseer is correctly HOLDING for its own authenticated confirmation (§8.3 relay rule) — its lane,
+  I don't relay mine as theirs. **Independently verified the fix** (worktree install; backend
+  610/610 ×3; **0 "dtype" model-load lines** — real model no longer loads, the A2-aggravated race
+  eliminated at root; additive export, server.ts prod path unchanged; T-D60 inject-tests untouched).
+  CI green at `ac3510c` (`gate`✓×2 + `Gitar`✓); scope = only expected files. **Zero findings.**
+  Posted content final-marker (this status commit) + approval on #146. Last-seen remote HEADs:
+  `main`@`17c193a`, rag-stab@`ac3510c`, overseer@`2a70189`, self@`ca46f1e`. Finding-set-diff:
+  `0 dropped / 0 added`. Round-trips: 0/5. Staying subscribed for the overseer's authenticated-merge
+  resolution + B3.

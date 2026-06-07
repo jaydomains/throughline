@@ -13,6 +13,7 @@ content-changing commit on the canonical branch does. This file lives on my audi
 | D1 — deployment wiring (M-2) | #143 | `874cb8c` | **MERGED** — squash → `main` `fb25642`; M-2 closed; approved (setup+boot verified) |
 | B1 — governance doctrine: merge-method + halt 4–9 (M-7,M-8) | #144 | `2369d96` (was `4ebf3d4`) | **MERGED** — squash → `main` `9501018`; class-(iv); halt defs source-verified |
 | B2 — CI-enforcement reconciliation (M-13) | #145 | `830bbf3` | **MERGED** — squash → `main` `17c193a`; M-13 closed; 3 docs consistent |
+| RAG-STAB — rag.test.ts flake (M-14; inserted, Option-A ruled) | #146 | `ac3510c` | **final — approved by execution-auditor** (content; ruling authenticated to ME; overseer needs own auth) |
 
 > **Marker refresh `8036839 → c2de0eb` (role §4.7).** The executor pushed `c2de0eb` — a
 > **doc-only** commit (handover Open-Questions note recording OQ-2/EO-7 as overseer-lane /
@@ -242,3 +243,40 @@ of my origination.**
 
 Convergence (role §8) at `830bbf3`: executor ✓ · execution-overseer (its lane) · **execution-auditor ✓**.
 Merge squash (OQ-2); execution is the overseer's.
+
+---
+
+## RAG-STAB (PR #146) — final — approved by execution-auditor @ `ac3510c`
+
+Spec-author-inserted stabilization slice (M-14, A2-aggravated rag.test.ts flake), Option-A ruled.
+**Content** signed off; the §8.3 authentication boundary is recorded below.
+
+- **Authorization (§8.3) — authenticated FOR ME.** A new slice outside the plan roster is a
+  class-(iii) scope expansion needing spec-author ratification. I did **not** witness the Option-A
+  ruling through my channel, so I treated the executor/handover citation as **pending** — and
+  **confirmed it directly with the spec-author via in-session AskUserQuestion** (authenticated
+  channel): the human ruled Option A. The scope expansion is ratified **for my sign-off**.
+  **Boundary:** my confirmation does **not** authenticate the ruling for the **overseer's merge
+  gate** — relaying "the human confirmed to me" under the shared identity is exactly the §8.3 relay
+  the overseer is right to refuse. The overseer (holding correctly, per its PR comment) needs its
+  **own** authenticated confirmation before merging. I do not relay mine as theirs.
+- **Root-cause fix, not masking (correctness):** pins the rag/library test-harness *default* embedder
+  to the deterministic T-D60 fallback (`createFallbackEmbedder()`, an **additive** export — production
+  `server.ts:460` still calls `createTextEmbedder()`, zero behaviour change). The real
+  `@huggingface` model — whose concurrent load I observed firsthand at A2 — **no longer loads in the
+  suite**. Not re-run-until-green; the race source is eliminated.
+- **Determinism — independently verified:** backend **610/610 × 3 consecutive runs**, **0
+  "dtype" model-load lines** each. Closes the A2-aggravated flake I helped surface.
+- **Coverage:** T-D60 disclosure/refusal tests still inject their own embedders (untouched); the
+  real-embedder path was only incidentally exercised and is not a unit-test concern → no meaningful
+  coverage regression.
+- **Scope:** only `embeddings.ts` (additive export) + `rag.test.ts` + `library.test.ts` + docs;
+  rebased on post-B2 `main` `17c193a`. Gate green at `ac3510c` (`gate` ✓×2 + `Gitar` ✓).
+- *Anti-anchoring note (honest):* I read this slice's diff during the authorization check before
+  formally pre-registering — unavoidable (had to assess the fix to decide whether to confirm the
+  ruling). Mitigated: the slice arose from a finding I myself surfaced, so my correctness
+  expectations (root-cause not masking, production-safe, deterministic) predated the diff.
+
+Convergence (role §8) at `ac3510c`: executor ✓ · execution-overseer (HOLDING on its own authenticated
+confirmation of the insertion ruling — correct) · **execution-auditor ✓ (content)**. Merge squash
+(OQ-2); execution gated on the overseer's authenticated ratification, its lane.
