@@ -819,3 +819,11 @@ execution state when relevant.
   - **EO/B6-P5 (merge):** squash. **EO/B6-P6 (gate):** green.
   Finding-set-diff: **0 dropped / 0 added** (B6 positions pre-registered). Now reading B6 PR + diff.
   Last-seen: main `91f56b6` · auditor `9ffa2be` · B6 exec `ed7551a`.
+
+- **2026-06-07T20:1yZ** — B6 (PR #153) GOVERNANCE REVIEW posted (comment 4643984594). Scope:
+  README.md + docs; NO spec edit → normal slice; base main `91f56b6`. **EO-63 normal/no-spec ✓ ·
+  EO-64 counts match LIVE gate 610/214 (executor used live, not plan's stale 204 — C1+D2 growth) ✓ ·
+  EO-65 honest readiness, overclaim removed (not-top-tier caveat + audit pointer; M-12 honest now
+  Group A+D1 landed) ✓ · EO-66 gate pending CI.** Finding-set-diff: **0 dropped / 4 added (EO-63…66)**.
+  Marker HELD pending green CI @ `ed7551a`. Execute directly on convergence; squash. Last-seen: main
+  `91f56b6` · auditor `9ffa2be` · B6 exec `ed7551a` · overseer `086e0b2`→(this commit).
