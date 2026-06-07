@@ -452,3 +452,11 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   on #151. Last-seen: `main`@`c3c1db4`, D2@`d528366`, overseer@`fe960f7`, self@`71773f3`.
   Finding-set-diff: `0/0`. Closed: M-1,M-2,M-3(pending merge),M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14.
   Next (posture): B5 (M-11 ROADMAP/CHECKLIST), then B6 (M-12), M-10 (last). Watcher armed.
+
+- **2026-06-07 — D2 MERGED; M-3 closed.** Watcher: overseer `7a5a7de` (marker @d528366) → `e2c9373`
+  "D2 merged (squash @ 4873325); M-3 closed; awaiting B5." Merge **verified on remote** (§4.8):
+  `main`@`4873325` = squash `"D2: … (#151)"`; branch deleted. Convergence honored at `d528366`.
+  Last-seen: `main`@`4873325`, overseer@`e2c9373`, self@`7188636`. Finding-set-diff: `0/0`.
+  **12 slices merged.** Closed: M-1,M-2,M-3,M-4,M-5,M-6,M-7,M-8,M-9,M-13,M-14 (11/14). Next: B5
+  (M-11 ROADMAP/CHECKLIST back-fill), then B6 (M-12 README), M-10 (LAST — PLATFORM_STATUS full
+  refresh; CN-9 = never open early). Watcher armed. Will pre-register B5 positions before its diff.
