@@ -261,3 +261,15 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   on #145. Last-seen remote HEADs: `main`@`9501018`, B2@`830bbf3`, overseer@`789bf68`, self@`26899fa`.
   Finding-set-diff: `0 dropped / 0 added`. Round-trips: B2 0/5. Watcher `biub32c9f` armed (targeted
   B2 + broad). Staying subscribed for B2 merge + B3.
+
+- **2026-06-07 — B2 MERGED; M-13 closed.** Watcher fired: overseer `789bf68`/`4a9b8c4` = EO-28..33 +
+  marker @`830bbf3` + rag.test.ts scope-decision surfaced (converges with mine) + (789bf68) overseer
+  recorded the SAME watcher silent-death + re-arm — systemic monitor-cap, cross-confirmed. Merge
+  **verified on remote** (§4.8): `main`@`17c193a` = squash `"B2: … (#145)"`; B2 branch deleted.
+  Convergence honored at `830bbf3`. Last-seen remote HEADs: `main`@`17c193a`, overseer@`4a9b8c4`,
+  self@`7b40422`. Finding-set-diff: `0 dropped / 0 added (B2 closed)`. Closed so far: M-1, M-2, M-7,
+  M-8, M-13. **Open spec-author scope decision:** rag.test.ts recurring flake (stabilization slice vs
+  Phase-F-deferred) — surfaced by all 3 parties, non-blocking. **Next: B3** (REQUIRED_READING §5 tree
+  correction M-9 + §4 halt-pointer update M-8 — the pointer B1 flagged; after B1). CN-4 (no role-file
+  back-port) applies. Watcher `biub32c9f` armed (note: re-arm proactively / reconcile via ls-remote —
+  silent death is systemic). Will pre-register B3 positions before its diff.
