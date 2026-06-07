@@ -372,3 +372,23 @@ execution state when relevant.
   — approved by execution-overseer @ `2369d96`.** Convergence: overseer ✓ · executor (re-affirm @
   `2369d96` pending) · auditor (4e30a548 = B1 pre-reg, PENDING review) · CI green. Merge = squash.
   Last-seen: main `fb25642` · B1 executor `2369d96` · auditor `4e30a54` · overseer `7c09033`→(this).
+
+- **2026-06-07T11:4xZ** — **B1 (PR #144) MERGED — the class-(iv) governance floor.** Convergence
+  confirmed: executor ✓ @ `2369d96` (re-affirmed comment 4642383178 after the fix-round) · auditor
+  ✓ @ `2369d96` (`97dc768`; **independently source-verified halt 4–9 vs line 202** — corroborates
+  my EO-24; EA-1/Gitar consistency fix verified) · overseer ✓ @ `2369d96` (`1bcbb47`). Gate
+  re-confirmed from ground truth: 3 markers @ one content `2369d96` · CI green (gate ✓×2 · Gitar ✓)
+  · mergeable clean · base main `fb25642` unchanged. **Ratification class-(iv) COVERED** via
+  authenticated channels (§D = in-session OQ-2 ruling which specified the §D rule verbatim; halt
+  4–9 = 2026-05-30 bless source-verified by both reviewers + settled M-8) → faithful codification
+  of already-ratified decisions, mints nothing new → **executed directly, no fresh surface.**
+  **Executed: flip draft→ready → squash-merge** (B1 is the first slice merged under its OWN codified
+  §D). Merge `9501018 merged:true`; **verified via `git ls-remote`**: main `fb25642`→`9501018`, B1
+  branch **deleted**, dual-context §D + halt 4–9 on main. Merge-confirm posted (PR #144). **M-7 +
+  M-8 (codification) closed.** Finding-set-diff: **0 dropped / 0 added** (B1 EO-23…27 closed).
+  Cohort: A1✅ A2✅ A3✅ D1✅ B1✅. **Loop state: awaiting B2** (CI-enforcement reconciliation, M-13
+  — gate IS required on main; remove "advisory" from ci.yml + AUTO_CONTINUE hedge; PLATFORM_STATUS
+  already "DONE"). **B2 watch:** normal slice (M-13 settled; ci.yml/AUTO_CONTINUE/PLATFORM_STATUS
+  NOT in the class-(ii) spec-record set → not a ratification class → execute directly); **after B1**
+  (shared AUTO_CONTINUE — now landed). Re-arming watcher for B2. Last-seen: main `9501018` · auditor
+  `97dc768` · overseer `1bcbb47`→(this commit).
