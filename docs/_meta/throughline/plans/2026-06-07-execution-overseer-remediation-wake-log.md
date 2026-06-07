@@ -733,3 +733,12 @@ execution state when relevant.
 - **2026-06-07T19:4yZ** — D2 CI GREEN @ `d528366` (gate ✓×2 · Gitar ✓) → **final-marker BOUND**
   (comment 4643812652). Convergence: overseer ✓ · executor (marker pending confirm) · auditor
   (`71773f3` pre-reg, review pending) · CI green. Execute directly on convergence; squash.
+
+- **2026-06-07T19:4zZ — D2 (PR #151) MERGED.** 3 markers @ `d528366` (executor ✓ · auditor ✓
+  [picker→same-UUID verified, 14 tests/214 suite] · overseer ✓) · CI green (gate ✓×2 · Gitar ✓) ·
+  mergeable clean · base main `c3c1db4` · normal slice · squash. **Executed: flip→squash-merge.**
+  Merge `4873325 merged:true`; **verified via ls-remote**: main `c3c1db4`→`4873325`, D2 branch
+  **deleted**. **M-3 closed.** Finding-set-diff: **0 dropped / 0 added** (D2 EO-57…59 closed).
+  **Cohort merged (12):** +D2. Closed: M-1/M-2/M-3/M-4/M-5/M-6/M-7/M-8/M-9/M-13; M-14 stab. **Loop
+  state: awaiting B5** (ROADMAP/CHECKLIST back-fill, M-11) → B6 → M-10 (last). All normal-class.
+  Re-arming single watcher for B5. Last-seen: main `4873325` · auditor `7188636` · overseer (this).
