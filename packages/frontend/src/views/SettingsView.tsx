@@ -44,7 +44,6 @@ const FEATURE_OVERRIDES = [
   'drift_reverify',
   'tag_suggestion',
   'stakeholder',
-  'mermaid',
   'verifier_rule',
   'companion',
   'session_start',

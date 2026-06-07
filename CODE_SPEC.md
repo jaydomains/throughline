@@ -1035,7 +1035,7 @@ Per-feature model defaults (per SPEC §9). Settings (§7.25) allow per-feature o
 | Drift re-verify | `claude-sonnet-4-6` |
 | AI tag suggestion | `claude-haiku-4-5` |
 | Stakeholder view rendering | `claude-sonnet-4-6` (cached) |
-| Mermaid generation | `claude-sonnet-4-6` |
+| Mermaid generation *(deferred — SPEC §7.21, audit M-4)* | `claude-sonnet-4-6` |
 | Verifier rule drafting | `claude-sonnet-4-6` |
 | Companion review (judgement steps) | `claude-sonnet-4-6` |
 | Session-start prompt assembly | `claude-haiku-4-5` |
