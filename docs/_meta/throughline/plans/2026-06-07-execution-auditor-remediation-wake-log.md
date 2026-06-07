@@ -388,3 +388,14 @@ ref-moving commit is what wakes the executor (a ref-watcher is blind to comment-
   commit) + approval on #149. Last-seen: `main`@`dbb7a13`, D3@`d7e7251`, overseer@`fd791b3`, self@
   `af3e7df`. Finding-set-diff: `0/0`. Closed: M-1,M-2,M-4,M-6,M-7,M-8,M-9,M-13,M-14 (M-6 pending merge).
   Next (per posture): C1 (M-5 markdown export build), D2 (M-3), B5 (M-11), B6 (M-12), M-10 (last).
+
+- **2026-06-07 — D3 MERGED; M-6 closed; §8.3 recency cycle clean.** Watcher: overseer `96b9663`
+  (held) → `a8586c9` (reviewed, OQ-1 reversal recognized, held) → `17086ab` "D3 merged (squash @
+  ed4e6bb); M-6 closed; all ratification gates clear." Merge **verified on remote** (§4.8):
+  `main`@`ed4e6bb` = squash `"D3: … (#149)"`; branch deleted. Human authenticated OQ-1=defer to the
+  overseer (recency: defer superseded build) → merged. My content sign-off honored. Last-seen:
+  `main`@`ed4e6bb`, overseer@`17086ab`, self@`130ca22`. Finding-set-diff: `0/0 (D3 closed)`.
+  Closed: M-1,M-2,M-4,M-6,M-7,M-8,M-9,M-13,M-14 (9/14). **10 slices merged.** Next: C1 (M-5
+  per-session markdown export — a real BUILD slice; hands-on verify the serializer + copy affordance
+  + tests). Then D2 (M-3), B5 (M-11), B6 (M-12), M-10 (last, CN-9). Watcher armed. Will pre-register
+  C1 positions before its diff.
